@@ -23,4 +23,3 @@ extern bool bSignalFlag;
 #define error() std::cout<<"Error["<<GetLastError()<<"]\n";
 
 typedef unsigned int u_int;
-

@@ -2,7 +2,6 @@
 #include "misc.hpp"
 
 
-
 bool Servidor::m_Iniciar(){
     WSACleanup();
     if(WSAStartup(MAKEWORD(2,2), &wsa) != 0){
@@ -40,11 +39,18 @@ bool Servidor::m_Iniciar(){
     return true;
 }
 
-SOCKET Servidor::m_Aceptar(){
+ClientConInfo Servidor::m_Aceptar(){
+    struct ClientConInfo structNuevo;
     struct sockaddr_in structCliente;
     int iTempC = sizeof(struct sockaddr_in);
     SOCKET tmpSck = accept(this->sckSocket, (struct sockaddr *)&structCliente, &iTempC) ;
-    return tmpSck;
+    char strIP[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &(structCliente.sin_addr), strIP, INET_ADDRSTRLEN);
+    std::cout<<"Conection from "<<strIP<<":"<<ntohs(structCliente.sin_port)<<"\n";
+    structNuevo._strPuerto = std::to_string(ntohs(structCliente.sin_port));
+    structNuevo._sckSocket = tmpSck;
+    structNuevo._strIp = strIP;
+    return structNuevo;
 }
 
 void Servidor::m_Handler(){
@@ -80,7 +86,7 @@ void Servidor::m_Ping(){
                 ++it;
             }
         }
-        Sleep(10000);
+        Sleep(this->p_PingTime);
     }
     std::cout<<"FUNADO PING\n";
 }
@@ -91,9 +97,12 @@ void Servidor::m_Escucha(){
         //std::cout<<"Waiting...\n";
         Sleep(100);
         //Esperar conexion de nuevo cliente
-        SOCKET sckNuevoCliente = this->m_Aceptar();
-        if(sckNuevoCliente != INVALID_SOCKET){
-            struct Cliente structNuevoCliente = {sckNuevoCliente, RandomID(10), "127.0.0.1", "Windows"};
+        struct ClientConInfo sckNuevoCliente = this->m_Aceptar();
+        if(sckNuevoCliente._sckSocket != INVALID_SOCKET){
+            std::string strTmp = sckNuevoCliente._strIp;
+            strTmp.append(1, ':');
+            strTmp.append(sckNuevoCliente._strPuerto);
+            struct Cliente structNuevoCliente = {sckNuevoCliente._sckSocket, RandomID(10), strTmp, "Windows"};
             this->vc_Clientes.push_back(structNuevoCliente);
             this->m_InsertarCliente(structNuevoCliente);
             this->m_Lock();

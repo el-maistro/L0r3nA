@@ -7,6 +7,12 @@ struct Cliente{
     std::string _strSo;
 };
 
+struct ClientConInfo{
+    int _sckSocket;
+    std::string _strPuerto;
+    std::string _strIp;
+};
+
 class MyListCtrl: public wxListCtrl{
     public:
         long m_updated;
@@ -26,6 +32,8 @@ class Servidor{
         u_int uiPuertoLocal = 0;
         WSADATA wsa;
         struct sockaddr_in structServer;
+
+        int p_PingTime = 10000;
         
     public:
         Servidor()         : uiPuertoLocal(30000) {}
@@ -33,7 +41,7 @@ class Servidor{
 
         bool p_Escuchando = false;
         bool   m_Iniciar();
-        SOCKET m_Aceptar();
+        ClientConInfo m_Aceptar();
         int iCount = 0;
 
         std::thread thListener;
