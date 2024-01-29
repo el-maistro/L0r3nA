@@ -92,20 +92,19 @@ void Servidor::m_Ping(){
 }
 
 void Servidor::m_Escucha(){
-    //Mientras sea true, esperar por conexiones
     while(this->p_Escuchando){
-        //std::cout<<"Waiting...\n";
-        Sleep(100);
-        //Esperar conexion de nuevo cliente
+        Sleep(100); //uso de CPU
         struct ClientConInfo sckNuevoCliente = this->m_Aceptar();
         if(sckNuevoCliente._sckSocket != INVALID_SOCKET){
+            
             std::string strTmp = sckNuevoCliente._strIp;
             strTmp.append(1, ':');
             strTmp.append(sckNuevoCliente._strPuerto);
-            struct Cliente structNuevoCliente = {sckNuevoCliente._sckSocket, RandomID(10), strTmp, "Windows"};
+            
+            struct Cliente structNuevoCliente = {sckNuevoCliente._sckSocket, RandomID(7), strTmp, "Windows"};
             this->vc_Clientes.push_back(structNuevoCliente);
-            this->m_InsertarCliente(structNuevoCliente);
             this->m_Lock();
+            this->m_InsertarCliente(structNuevoCliente);
             this->iCount++;
             this->m_Unlock();
         }
@@ -114,11 +113,9 @@ void Servidor::m_Escucha(){
 }
 
 void Servidor::m_InsertarCliente(struct Cliente& p_Cliente){
-    this->m_Lock();
     m_listCtrl->InsertItem(this->iCount, wxString(p_Cliente._id));
     m_listCtrl->SetItem(this->iCount, 1, wxString(p_Cliente._strIp));
     m_listCtrl->SetItem(this->iCount, 2, wxString(p_Cliente._strSo));
-    this->m_Unlock();
 }
 
 void Servidor::m_RemoverCliente(std::string p_ID){

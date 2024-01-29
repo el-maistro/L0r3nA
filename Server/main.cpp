@@ -6,7 +6,10 @@ class MyApp : public wxApp{
         bool OnInit() override;
 };
 
-wxIMPLEMENT_APP(MyApp);
+enum{
+    ID_OInit = 1,
+    ID_OStop = 2
+};
 
 class MyFrame : public wxFrame{
     public:
@@ -22,16 +25,23 @@ class MyFrame : public wxFrame{
         void OnStopServidor(wxCommandEvent& event);
         void OnExit(wxCommandEvent& event);
         void OnAbout(wxCommandEvent& event);
+
+        wxDECLARE_EVENT_TABLE();
 };
 
-enum{
-    ID_OInit = 1,
-    ID_OStop = 2
-};
+wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
+    EVT_MENU(ID_OInit, MyFrame::OnInitServidor)
+    EVT_MENU(ID_OStop, MyFrame::OnStopServidor)
+    EVT_MENU(wxID_ABOUT, MyFrame::OnAbout)
+    EVT_MENU(wxID_EXIT, MyFrame::OnExit)
+wxEND_EVENT_TABLE()
+
+
+wxIMPLEMENT_APP(MyApp);
 
 bool MyApp::OnInit(){
     MyFrame *frame = new MyFrame();
-    frame->Show();
+    frame->Show(true);
     return true;
 }
 
@@ -63,7 +73,18 @@ MyFrame::MyFrame()
     wxBoxSizer* const sizer = new wxBoxSizer(wxVERTICAL);
     sizer->Add(this->p_Servidor->m_listCtrl, wxSizerFlags(2).Expand().Border());
     
-    //Build listview
+    this->m_Panel->SetSizer(sizer);
+
+
+    SetClientSize(this->m_Panel->GetBestSize());
+    
+    CreateStatusBar();
+    SetStatusText("IDLE");
+}
+
+void MyFrame::CrearLista(long flags, bool withText){
+    this->p_Servidor->m_listCtrl = new MyListCtrl(this->m_Panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, 
+    flags | wxBORDER_THEME | wxLC_EDIT_LABELS);
     wxListItem itemCol;
     itemCol.SetText("ID");
     itemCol.SetImage(-1);
@@ -76,36 +97,6 @@ MyFrame::MyFrame()
     itemCol.SetText("OS");
     itemCol.SetAlign(wxLIST_FORMAT_RIGHT);
     this->p_Servidor->m_listCtrl->InsertColumn(2, itemCol);
-
-
-    //Agregar como prueba
-    /*this->m_listCtrl->InsertItem(0, wxString("1"));
-    this->m_listCtrl->SetItem(0, 1, wxString("127.0.0.1"));
-
-    this->m_listCtrl->InsertItem(1, wxString("2"));
-    this->m_listCtrl->SetItem(1, 1, wxString("127.0.0.2"));
-    
-    this->m_listCtrl->InsertItem(2, wxString("3"));
-    this->m_listCtrl->SetItem(2, 1, wxString("127.0.0.4"));*/
-    
-
-    this->m_Panel->SetSizer(sizer);
-
-
-    SetClientSize(this->m_Panel->GetBestSize());
-    
-    CreateStatusBar();
-    SetStatusText("IDLE");
-
-    Bind(wxEVT_MENU, &MyFrame::OnInitServidor, this, ID_OInit);
-    Bind(wxEVT_MENU, &MyFrame::OnStopServidor, this, ID_OStop);
-    Bind(wxEVT_MENU, &MyFrame::OnAbout, this, wxID_ABOUT);
-    Bind(wxEVT_MENU, &MyFrame::OnExit, this, wxID_EXIT);
-}
-
-void MyFrame::CrearLista(long flags, bool withText){
-    this->p_Servidor->m_listCtrl = new MyListCtrl(this->m_Panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, 
-    flags | wxBORDER_THEME | wxLC_EDIT_LABELS);
 }
 
 void MyFrame::OnExit(wxCommandEvent& event){
