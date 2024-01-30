@@ -16,7 +16,9 @@ class MyFrame : public wxFrame{
         MyFrame();
     private:
         Servidor *p_Servidor = new Servidor();
-        wxPanel *m_Panel;
+        wxPanel *m_RPanel;
+        wxPanel *m_LPanel;
+        wxPanel *m_BPanel;
         wxMenu *menuFile, *menuHelp;
 
 
@@ -65,46 +67,57 @@ MyFrame::MyFrame()
     SetMenuBar(menuBar);
 
     this->p_Servidor->m_listCtrl = nullptr;
+
     
-    this->m_Panel = new wxPanel(this, wxID_ANY);
-
-    this->CrearLista(wxLC_REPORT | wxLC_SINGLE_SEL);
-
-    wxBoxSizer* const sizer = new wxBoxSizer(wxVERTICAL);
-    sizer->Add(this->p_Servidor->m_listCtrl, wxSizerFlags(2).Expand().Border());
+    this->m_RPanel = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(600, 300));
     
-    this->m_Panel->SetSizer(sizer);
+    this->m_LPanel = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(200, 600));
+    this->m_LPanel->SetBackgroundColour(wxColor(255,0,0));
 
+    this->m_BPanel = new wxPanel(this, wxID_ANY);
+    this->m_BPanel->SetBackgroundColour(wxColor(0,255,0));
 
-    SetClientSize(this->m_Panel->GetBestSize());
+        
+    this->CrearLista(wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES | wxEXPAND);
+
+    wxBoxSizer *sizer = new wxBoxSizer(wxHORIZONTAL);
+    sizer->Add(this->m_LPanel, 0, wxALL, 2);
+    sizer->Add(this->m_RPanel, 1, wxEXPAND | wxALL, 2);
+
+    this->SetSizerAndFit(sizer);
+
+    /*wxBoxSizer* const sizer = new wxBoxSizer(wxVERTICAL);
+    sizer->Add(this->m_RPanel, 1, wxEXPAND, 10);
+    sizer->Add(this->m_RPanel, 1, wxEXPAND, 10)
+    //sizer->Add(this->p_Servidor->m_listCtrl, wxSizerFlags(2).Expand().Border());*/
+    
+
+    SetClientSize(800,600);
     
     CreateStatusBar();
     SetStatusText("IDLE");
 }
 
 void MyFrame::CrearLista(long flags, bool withText){
-    this->p_Servidor->m_listCtrl = new MyListCtrl(this->m_Panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, 
-    flags | wxBORDER_THEME | wxLC_EDIT_LABELS);
+    this->p_Servidor->m_listCtrl = new MyListCtrl(this->m_RPanel, wxID_ANY, wxDefaultPosition, wxSize(600, 300), 
+    flags | wxBORDER_THEME);
     wxListItem itemCol;
     itemCol.SetText("ID");
-    itemCol.SetImage(-1);
+    itemCol.SetWidth(60);
+    itemCol.SetAlign(wxLIST_FORMAT_CENTRE);
     this->p_Servidor->m_listCtrl->InsertColumn(0, itemCol);
 
     itemCol.SetText("IP");
-    itemCol.SetAlign(wxLIST_FORMAT_CENTRE);
+    itemCol.SetWidth(120);
     this->p_Servidor->m_listCtrl->InsertColumn(1, itemCol);
 
-    itemCol.SetText("OS");
-    itemCol.SetAlign(wxLIST_FORMAT_RIGHT);
+    itemCol.SetText("SO");
+    itemCol.SetWidth(140);
     this->p_Servidor->m_listCtrl->InsertColumn(2, itemCol);
 }
 
 void MyFrame::OnExit(wxCommandEvent& event){
     this->p_Servidor->p_Escuchando = false;
-    if(this->p_Servidor->m_listCtrl != nullptr){
-        delete this->p_Servidor->m_listCtrl;
-        this->p_Servidor->m_listCtrl = nullptr;
-    }
     Sleep(2000);
     Close(true);
 }
