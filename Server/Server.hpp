@@ -1,5 +1,6 @@
 #include "headers.hpp"
 
+
 struct Cliente{
     int _sckCliente;
     std::string _id;
@@ -12,6 +13,19 @@ struct ClientConInfo{
     std::string _strPuerto;
     std::string _strIp;
 };
+
+namespace LogType{
+    const int LogMessage = 100;
+    const int LogError   = 101;
+    const int LogWarning = 102;
+}
+
+class MyLogClass{
+    public:
+        wxTextCtrl *p_txtCtrl;
+        void LogThis(std::string strLog, int iType);
+};
+
 
 class MyListCtrl: public wxListCtrl{
     public:
@@ -36,8 +50,7 @@ class Servidor{
         int p_PingTime = 10000;
         
     public:
-        Servidor()         : uiPuertoLocal(30000) {}
-        Servidor(u_int u1) : uiPuertoLocal(u1) {}
+        Servidor();
 
         bool p_Escuchando = false;
         bool   m_Iniciar();
@@ -57,6 +70,7 @@ class Servidor{
         //Manipular listview
         
         MyListCtrl *m_listCtrl;
+        MyLogClass *m_txtLog;
         void m_InsertarCliente(struct Cliente& p_Cliente);
         void m_RemoverCliente(std::string p_ID);
 

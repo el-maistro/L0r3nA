@@ -2,6 +2,42 @@
 #include "misc.hpp"
 
 
+void MyLogClass::LogThis(std::string strInput, int iType){
+    time_t temp = time(0);
+    struct tm *timeptr = localtime(&temp);
+
+    std::string strLine = "";
+    
+    switch (iType){
+        case LogType::LogMessage:
+            strLine = "[-] ";
+            break;
+        case LogType::LogError:
+            strLine = "[X] ";
+            break;
+        case LogType::LogWarning:
+            strLine = "[!] ";
+            break;
+        default:
+            strLine = "[-] ";
+            break; 
+    }
+    
+    strLine += "[" + std::to_string(timeptr->tm_hour);
+    strLine += ":" + std::to_string(timeptr->tm_min) + ":";
+    strLine += std::to_string(timeptr->tm_sec) + "]  ";
+    strLine += strInput + "\n";
+    this->p_txtCtrl->AppendText(strLine);
+
+}
+
+Servidor::Servidor(){
+    this->uiPuertoLocal = 30000;
+
+    //clase para logear
+    this->m_txtLog = new MyLogClass();
+}
+
 bool Servidor::m_Iniciar(){
     WSACleanup();
     if(WSAStartup(MAKEWORD(2,2), &wsa) != 0){
@@ -44,12 +80,20 @@ ClientConInfo Servidor::m_Aceptar(){
     struct sockaddr_in structCliente;
     int iTempC = sizeof(struct sockaddr_in);
     SOCKET tmpSck = accept(this->sckSocket, (struct sockaddr *)&structCliente, &iTempC) ;
-    char strIP[INET_ADDRSTRLEN];
-    inet_ntop(AF_INET, &(structCliente.sin_addr), strIP, INET_ADDRSTRLEN);
-    std::cout<<"Conection from "<<strIP<<":"<<ntohs(structCliente.sin_port)<<"\n";
-    structNuevo._strPuerto = std::to_string(ntohs(structCliente.sin_port));
-    structNuevo._sckSocket = tmpSck;
-    structNuevo._strIp = strIP;
+    if(tmpSck != INVALID_SOCKET){
+        char strIP[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &(structCliente.sin_addr), strIP, INET_ADDRSTRLEN);
+        std::string strTmp = "Nueva conexion de ";
+        strTmp += strIP;
+        strTmp +=  ":" + std::to_string(ntohs(structCliente.sin_port));
+        this->m_txtLog->LogThis(strTmp, LogType::LogMessage);
+        structNuevo._strPuerto = std::to_string(ntohs(structCliente.sin_port));
+        structNuevo._sckSocket = tmpSck;
+        structNuevo._strIp = strIP;
+    } else {
+        structNuevo._sckSocket = tmpSck;
+    }
+        
     return structNuevo;
 }
 
