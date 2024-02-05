@@ -46,16 +46,19 @@ bool Servidor::m_Iniciar(){
 
     this->sckSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
     if(!this->sckSocket){
+        this->m_txtLog->LogThis("No se pudo crear el socket", LogType::LogError);
         return false;
     }
 
     int iTemp = 1;
     if(setsockopt(this->sckSocket, SOL_SOCKET, SO_REUSEADDR, (const char*)&iTemp, sizeof(int)) < 0){
+        this->m_txtLog->LogThis("Error configurando el socket SO_REUSEADDR", LogType::LogError);
         return false;
     }
 
     unsigned long int iBlock = 1;
     if(ioctlsocket(this->sckSocket, FIONBIO, &iBlock) != 0){
+        this->m_txtLog->LogThis("Error configurando el socket NON_BLOCK", LogType::LogError);
         error();
         return false;
     }
@@ -65,10 +68,12 @@ bool Servidor::m_Iniciar(){
     this->structServer.sin_addr.s_addr =                 INADDR_ANY;
 
     if(bind(this->sckSocket, (struct sockaddr *)&structServer, sizeof(struct sockaddr)) == -1){
+        this->m_txtLog->LogThis("Error configurando el socket BIND", LogType::LogError);
         return false;
     }
 
     if(listen(this->sckSocket, 10) == -1){
+        this->m_txtLog->LogThis("Error configurando el socket LISTEN", LogType::LogError);
         return false;
     }
 
@@ -113,6 +118,9 @@ void Servidor::m_Handler(){
 }
 
 void Servidor::m_Ping(){
+    this->m_Lock();
+    this->m_txtLog->LogThis("Thread PING iniciada", LogType::LogMessage);
+    this->m_Unlock();
     while(this->p_Escuchando){
         //Ping cada 10 segundos
         int iCount = 0;
@@ -121,7 +129,8 @@ void Servidor::m_Ping(){
             if(iBytes <= 0){
                 //No se pudo enviar
                 this->m_RemoverCliente(it->_id);
-                std::cout<<it->_id<<" funado\n";
+                std::string strTmp = "Cliente " + it->_strIp + "-" + it->_id + " desconectado";
+                this->m_txtLog->LogThis(strTmp, LogType::LogMessage);
                 it = this->vc_Clientes.erase(it);
                 this->m_Lock();
                 this->iCount--;
@@ -132,10 +141,13 @@ void Servidor::m_Ping(){
         }
         Sleep(this->p_PingTime);
     }
-    std::cout<<"FUNADO PING\n";
+    this->m_txtLog->LogThis("Thread PING terminada", LogType::LogMessage);
 }
 
 void Servidor::m_Escucha(){
+    this->m_Lock();
+    this->m_txtLog->LogThis("Thread LISTENER iniciada", LogType::LogMessage);
+    this->m_Unlock();
     while(this->p_Escuchando){
         Sleep(100); //uso de CPU
         struct ClientConInfo sckNuevoCliente = this->m_Aceptar();
@@ -153,7 +165,7 @@ void Servidor::m_Escucha(){
             this->m_Unlock();
         }
     }
-    std::cout<<"FUNADO LISTENER\n";
+    this->m_txtLog->LogThis("Thread LISTENER terminada", LogType::LogMessage);
 }
 
 void Servidor::m_InsertarCliente(struct Cliente& p_Cliente){

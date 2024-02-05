@@ -7,8 +7,9 @@ class MyApp : public wxApp{
 };
 
 namespace EnumIDS{
-    const int ID_Escuchar = 100;
-    const int ID_Detener =  101;
+    const int ID_Escuchar   = 100;
+    const int ID_Detener    = 101;
+    const int ID_LimpiarLog = 102;
 };
 
 class MyFrame : public wxFrame{
@@ -18,7 +19,6 @@ class MyFrame : public wxFrame{
         Servidor *p_Servidor;
         wxPanel *m_RPanel, *m_LPanel, *m_BPanel;
         wxButton *btn_Escuchar, *btn_Detener, *btn_Salir;
-        wxTextCtrl *txt_Log;
         wxMenu *menuFile, *menuHelp;
         
         wxSize p_BotonS = wxSize(100, 30);
@@ -26,6 +26,7 @@ class MyFrame : public wxFrame{
         //Eventos
         void OnClickEscuchar(wxCommandEvent& event);
         void OnclickDetener(wxCommandEvent& event);
+        void OnLimpiar(wxCommandEvent& event);
 
         void CrearLista(long flags, bool withText = true);
         void CrearControlesPanelIzquierdo();
@@ -38,6 +39,7 @@ class MyFrame : public wxFrame{
 wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
     EVT_BUTTON(EnumIDS::ID_Escuchar, MyFrame::OnClickEscuchar)
     EVT_BUTTON(EnumIDS::ID_Detener, MyFrame::OnclickDetener)
+    EVT_BUTTON(EnumIDS::ID_LimpiarLog, MyFrame::OnLimpiar)
     EVT_BUTTON(wxID_EXIT, MyFrame::OnExit)
 wxEND_EVENT_TABLE()
 
@@ -79,13 +81,12 @@ MyFrame::MyFrame()
 
     //Crear txt para log
     this->p_Servidor->m_txtLog->p_txtCtrl = new wxTextCtrl(this->m_BPanel, wxID_ANY, ":v\n", wxDefaultPosition, wxSize(100,150), wxTE_MULTILINE | wxTE_READONLY);
-    wxBoxSizer *sizertxt = new wxBoxSizer(wxHORIZONTAL);
+    wxBoxSizer *sizertxt = new wxBoxSizer(wxVERTICAL);
+
+ 
+    sizertxt->Add(new wxButton(this->m_BPanel, EnumIDS::ID_LimpiarLog, "Limpiar Log", wxDefaultPosition, wxSize(100, 20)), 0, wxALL, 1);
     sizertxt->Add(this->p_Servidor->m_txtLog->p_txtCtrl, 1, wxALL | wxEXPAND, 1);
     this->m_BPanel->SetSizer(sizertxt);
-
-    this->p_Servidor->m_txtLog->LogThis("Lista creada", LogType::LogMessage);
-    this->p_Servidor->m_txtLog->LogThis("Lista creada", LogType::LogError);
-    this->p_Servidor->m_txtLog->LogThis("Lista creada", LogType::LogWarning);
 
     wxBoxSizer *sizer = new wxBoxSizer(wxHORIZONTAL);
     sizer->Add(this->m_LPanel, 0, wxALL, 2);
@@ -142,7 +143,9 @@ void MyFrame::CrearLista(long flags, bool withText){
 }
 
 void MyFrame::OnExit(wxCommandEvent& event){
+    this->p_Servidor->m_Lock();
     this->p_Servidor->p_Escuchando = false;
+    this->p_Servidor->m_Unlock();
     Sleep(2000);
     Close(true);
 }
@@ -165,6 +168,10 @@ void MyFrame::OnclickDetener(wxCommandEvent& event){
 
     this->btn_Detener->Enable(false);
     this->btn_Escuchar->Enable(true);
+}
+
+void MyFrame::OnLimpiar(wxCommandEvent& event) {
+    this->p_Servidor->m_txtLog->p_txtCtrl->Clear();
 }
 
 void MyFrame::OnAbout(wxCommandEvent& event){
