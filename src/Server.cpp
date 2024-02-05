@@ -125,7 +125,8 @@ void Servidor::m_Ping(){
         //Ping cada 10 segundos
         int iCount = 0;
         for(std::vector<struct Cliente>::iterator it = this->vc_Clientes.begin() ; it != this->vc_Clientes.end();){
-            int iBytes = send(it->_sckCliente, "PING", 4, 0);
+            //int iBytes = send(it->_sckCliente, "PING", 4, 0);
+            int iBytes = this->cSend(it->_sckCliente, "PING", 4, 0);
             if(iBytes <= 0){
                 //No se pudo enviar
                 this->m_RemoverCliente(it->_id);
@@ -181,4 +182,15 @@ void Servidor::m_RemoverCliente(std::string p_ID){
     } else{
         error();
     }
+}
+
+int Servidor::cSend(int pSocket, const char* pBuffer, int pLen, int pFlags) {
+    //Implementar encriptacion de datos aqui
+    //mientras tanto
+    return send(pSocket, pBuffer, pLen, pFlags);
+}
+
+int Servidor::cRecv(int pSocket, char*& pBuffer, int pLen, int pFlags) {
+    //Implementar desencriptacion una vez se reciban los datos
+    return recv(pSocket, pBuffer, pLen, pFlags);
 }

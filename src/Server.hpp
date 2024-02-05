@@ -68,11 +68,14 @@ class Servidor{
         void m_Ping();
 
         //Manipular listview
-        
         MyListCtrl *m_listCtrl;
         MyLogClass *m_txtLog;
         void m_InsertarCliente(struct Cliente& p_Cliente);
         void m_RemoverCliente(std::string p_ID);
+
+        //Socket
+        int cSend(int pSocket, const char* pBuffer, int pLen, int pFlags);
+        int cRecv(int pSocket, char*& pBuffer, int pLen, int pFlags);
 
         //Mutex
         void m_Lock(){
