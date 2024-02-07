@@ -27,7 +27,12 @@ void MyLogClass::LogThis(std::string strInput, int iType){
     strLine += ":" + std::to_string(timeptr->tm_min) + ":";
     strLine += std::to_string(timeptr->tm_sec) + "]  ";
     strLine += strInput + "\n";
-    this->p_txtCtrl->AppendText(strLine);
+
+    this->m_LogLock();
+    if (this->p_txtCtrl != nullptr) {
+        this->p_txtCtrl->AppendText(strLine);
+    }
+    this->m_LogUnlock();
 
 }
 
@@ -91,7 +96,9 @@ ClientConInfo Servidor::m_Aceptar(){
         std::string strTmp = "Nueva conexion de ";
         strTmp += strIP;
         strTmp +=  ":" + std::to_string(ntohs(structCliente.sin_port));
+        
         this->m_txtLog->LogThis(strTmp, LogType::LogMessage);
+        
         structNuevo._strPuerto = std::to_string(ntohs(structCliente.sin_port));
         structNuevo._sckSocket = tmpSck;
         structNuevo._strIp = strIP;
@@ -118,54 +125,86 @@ void Servidor::m_Handler(){
 }
 
 void Servidor::m_Ping(){
-    this->m_Lock();
     this->m_txtLog->LogThis("Thread PING iniciada", LogType::LogMessage);
-    this->m_Unlock();
+    
     while(this->p_Escuchando){
-        //Ping cada 10 segundos
-        int iCount = 0;
-        for(std::vector<struct Cliente>::iterator it = this->vc_Clientes.begin() ; it != this->vc_Clientes.end();){
-            //int iBytes = send(it->_sckCliente, "PING", 4, 0);
-            int iBytes = this->cSend(it->_sckCliente, "PING", 4, 0);
+        //Si no hay clientes seguir en el loop para cerrar thread mas rapido
+        this->m_CountLock();
+        if (this->iCount <= 0) {
+            this->m_CountUnlock();
+            Sleep(300);
+            continue;
+        }
+        this->m_CountUnlock();
+        
+        for(std::vector<struct Cliente>::iterator it = this->vc_Clientes.begin() ; it != this->vc_Clientes.end(); ){
+            //Si le mande un ping hace 10 segundos o menos continuar con el otro
+            int error_code;
+            int error_code_size = sizeof(error_code);
+            getsockopt(it->_sckCliente, SOL_SOCKET, SO_ERROR, (char*)&error_code, &error_code_size);
+            this->m_txtLog->LogThis(std::to_string(error_code), LogType::LogMessage);
+            
+            if ((time(0) - it->_ttUltimaVez) <= 10) {
+                ++it;
+                Sleep(500);
+                continue;
+            }
+
+            int iBytes = this->cSend(it->_sckCliente, "PING", 4, 0, false);
             if(iBytes <= 0){
                 //No se pudo enviar
                 this->m_RemoverCliente(it->_id);
                 std::string strTmp = "Cliente " + it->_strIp + "-" + it->_id + " desconectado";
+                
                 this->m_txtLog->LogThis(strTmp, LogType::LogMessage);
+                
+                this->m_CountLock();
                 it = this->vc_Clientes.erase(it);
-                this->m_Lock();
-                this->iCount--;
-                this->m_Unlock();
+                this->iCount--;                
+                this->m_CountUnlock();
             } else {
+                it->_ttUltimaVez = time(0);
                 ++it;
             }
         }
-        Sleep(this->p_PingTime);
     }
+
     this->m_txtLog->LogThis("Thread PING terminada", LogType::LogMessage);
 }
 
 void Servidor::m_Escucha(){
-    this->m_Lock();
     this->m_txtLog->LogThis("Thread LISTENER iniciada", LogType::LogMessage);
-    this->m_Unlock();
+    
     while(this->p_Escuchando){
         Sleep(100); //uso de CPU
         struct ClientConInfo sckNuevoCliente = this->m_Aceptar();
         if(sckNuevoCliente._sckSocket != INVALID_SOCKET){
+            //Socket nuevo hereda non_block del mainsocket
             
             std::string strTmp = sckNuevoCliente._strIp;
             strTmp.append(1, ':');
             strTmp.append(sckNuevoCliente._strPuerto);
+
+            //Leer version y SO
+            char cBuff[1024];
+            memset(&cBuff, 0, 1024);
+
+            int iR = this->cRecv(sckNuevoCliente._sckSocket, cBuff, 1024, 0, true);
             
-            struct Cliente structNuevoCliente = {sckNuevoCliente._sckSocket, RandomID(7), strTmp, "Windows"};
+
+            struct Cliente structNuevoCliente = { sckNuevoCliente._sckSocket, time(0), RandomID(7), strTmp, cBuff};
             this->vc_Clientes.push_back(structNuevoCliente);
-            this->m_Lock();
+            
+            this->m_CountLock();
             this->m_InsertarCliente(structNuevoCliente);
             this->iCount++;
-            this->m_Unlock();
+            this->m_CountUnlock();
+
+            
+
         }
     }
+    
     this->m_txtLog->LogThis("Thread LISTENER terminada", LogType::LogMessage);
 }
 
@@ -184,13 +223,50 @@ void Servidor::m_RemoverCliente(std::string p_ID){
     }
 }
 
-int Servidor::cSend(int pSocket, const char* pBuffer, int pLen, int pFlags) {
+int Servidor::cSend(int& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock) {
     //Implementar encriptacion de datos aqui
-    //mientras tanto
-    return send(pSocket, pBuffer, pLen, pFlags);
+    // 1 non block
+    // 0 block
+    if (isBlock) {
+        //Hacer el socket block
+        unsigned long int iBlock = 0;
+        if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
+            this->m_txtLog->LogThis("Error configurando el socket NON_BLOCK", LogType::LogError);
+        }
+        int iTemp = send(pSocket, pBuffer, pLen, pFlags);
+        //Restaurar
+        iBlock = 1;
+        if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
+            this->m_txtLog->LogThis("Error configurando el socket NON_BLOCK", LogType::LogError);
+        }
+
+        return iTemp;
+    }
+    else {
+        return send(pSocket, pBuffer, pLen, pFlags);
+    } 
 }
 
-int Servidor::cRecv(int pSocket, char*& pBuffer, int pLen, int pFlags) {
+int Servidor::cRecv(int& pSocket, char* pBuffer, int pLen, int pFlags, bool isBlock) {
     //Implementar desencriptacion una vez se reciban los datos
-    return recv(pSocket, pBuffer, pLen, pFlags);
+    // 1 non block
+    // 0 block
+    if (isBlock) {
+        //Hacer el socket block
+        unsigned long int iBlock = 0;
+        if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
+            this->m_txtLog->LogThis("Error configurando el socket NON_BLOCK", LogType::LogError);
+        }
+        int iTemp = recv(pSocket, pBuffer, pLen, pFlags);
+        //Restaurar
+        iBlock = 1;
+        if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
+            this->m_txtLog->LogThis("Error configurando el socket NON_BLOCK", LogType::LogError);
+        }
+
+        return iTemp;
+    }
+    else {
+        return recv(pSocket, pBuffer, pLen, pFlags);
+    }
 }

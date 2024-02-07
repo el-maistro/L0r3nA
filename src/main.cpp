@@ -1,11 +1,6 @@
 #include "Server.hpp"
 #include "headers.hpp"
 
-class MyApp : public wxApp{
-    public:
-        bool OnInit() override;
-};
-
 namespace EnumIDS{
     const int ID_Escuchar   = 100;
     const int ID_Detener    = 101;
@@ -18,7 +13,7 @@ class MyFrame : public wxFrame{
     private:
         Servidor *p_Servidor;
         wxPanel *m_RPanel, *m_LPanel, *m_BPanel;
-        wxButton *btn_Escuchar, *btn_Detener, *btn_Salir;
+        wxButton* btn_Escuchar, * btn_Detener;
         wxMenu *menuFile, *menuHelp;
         
         wxSize p_BotonS = wxSize(100, 30);
@@ -31,6 +26,7 @@ class MyFrame : public wxFrame{
         void CrearLista(long flags, bool withText = true);
         void CrearControlesPanelIzquierdo();
         void OnExit(wxCommandEvent& event);
+        void OnClose(wxCloseEvent& event);
         void OnAbout(wxCommandEvent& event);
 
         wxDECLARE_EVENT_TABLE();
@@ -40,22 +36,30 @@ wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
     EVT_BUTTON(EnumIDS::ID_Escuchar, MyFrame::OnClickEscuchar)
     EVT_BUTTON(EnumIDS::ID_Detener, MyFrame::OnclickDetener)
     EVT_BUTTON(EnumIDS::ID_LimpiarLog, MyFrame::OnLimpiar)
-    EVT_BUTTON(wxID_EXIT, MyFrame::OnExit)
+    EVT_CLOSE(MyFrame::OnClose)
 wxEND_EVENT_TABLE()
 
+class MyApp : public wxApp {
+public:
+    MyFrame* frame = nullptr;
+    bool OnInit() override;
+};
 
 wxIMPLEMENT_APP(MyApp);
 
 bool MyApp::OnInit(){
-    MyFrame *frame = new MyFrame();
-    frame->Show(true);
+    this->frame = new MyFrame();
+    this->frame->Show(true);
     return true;
 }
 
 MyFrame::MyFrame()
     : wxFrame(nullptr, wxID_ANY, "Lorena")
 {
-
+    //Trace memory leak
+    //_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+    //_CrtSetBreakAlloc(40402);
+    
     this->p_Servidor = new Servidor();
     this->p_Servidor->m_listCtrl = nullptr;
 
@@ -109,15 +113,12 @@ void MyFrame::CrearControlesPanelIzquierdo(){
     
     this->btn_Escuchar = new wxButton(this->m_LPanel, EnumIDS::ID_Escuchar, "Iniciar Servidor", wxDefaultPosition, this->p_BotonS);
     this->btn_Detener = new wxButton(this->m_LPanel, EnumIDS::ID_Detener, "Detener Servidor", wxDefaultPosition, this->p_BotonS);
-    this->btn_Salir = new wxButton(this->m_LPanel, wxID_EXIT, "Salir", wxDefaultPosition, this->p_BotonS);
-    
 
     wxBoxSizer *m_paneSizer = new wxBoxSizer(wxVERTICAL);
     m_paneSizer->AddSpacer(20);    
     m_paneSizer->Add(this->btn_Escuchar, 0, wxALIGN_CENTER | wxALL, 3);
     m_paneSizer->Add(this->btn_Detener,0, wxALIGN_CENTER | wxALL, 3);
-    m_paneSizer->Add(this->btn_Salir,0, wxALIGN_CENTER | wxALL, 3);
-
+    
     this->btn_Detener->Enable(false);
 
     this->m_LPanel->SetSizerAndFit(m_paneSizer);
@@ -142,11 +143,29 @@ void MyFrame::CrearLista(long flags, bool withText){
     this->p_Servidor->m_listCtrl->InsertColumn(2, itemCol);
 }
 
-void MyFrame::OnExit(wxCommandEvent& event){
+void MyFrame::OnClose(wxCloseEvent& event){
+    wxMessageDialog dialog(this, "Seguro que quieres salir?", "Salir", wxCENTER | wxYES_NO | wxICON_QUESTION);
+
+    switch (dialog.ShowModal()) {
+    case wxID_NO:
+        event.Veto();
+        return;
+    case wxID_YES:
+        break;
+    }  
+
     this->p_Servidor->m_Lock();
     this->p_Servidor->p_Escuchando = false;
     this->p_Servidor->m_Unlock();
-    Sleep(2000);
+
+    //Sleep(3000);
+    delete this->p_Servidor;
+    this->p_Servidor = nullptr;
+    
+    event.Skip();
+}
+
+void MyFrame::OnExit(wxCommandEvent& event) {
     Close(true);
 }
 
@@ -155,8 +174,13 @@ void MyFrame::OnClickEscuchar(wxCommandEvent& event){
         this->p_Servidor->m_Handler();
         this->btn_Detener->Enable(true);
         this->btn_Escuchar->Enable(false);
+        SetStatusText("Esperando clientes...");
     } else {
-        error();
+        //error();
+        std::string strTmp = "Error escuchando ";
+        strTmp.append(std::to_string(GetLastError()));
+        this->p_Servidor->m_txtLog->LogThis(strTmp, LogType::LogError);
+        SetStatusText("Error");
     }
 }
 
@@ -168,6 +192,7 @@ void MyFrame::OnclickDetener(wxCommandEvent& event){
 
     this->btn_Detener->Enable(false);
     this->btn_Escuchar->Enable(true);
+    SetStatusText("IDLE");
 }
 
 void MyFrame::OnLimpiar(wxCommandEvent& event) {

@@ -3,6 +3,7 @@
 
 struct Cliente{
     int _sckCliente;
+    time_t _ttUltimaVez;
     std::string _id;
     std::string _strIp;
     std::string _strSo;
@@ -24,6 +25,15 @@ class MyLogClass{
     public:
         wxTextCtrl *p_txtCtrl;
         void LogThis(std::string strLog, int iType);
+        std::mutex log_mutex;
+
+        void m_LogLock() {
+            log_mutex.lock();
+        }
+
+        void m_LogUnlock() {
+            log_mutex.unlock();
+        }
 };
 
 
@@ -41,13 +51,16 @@ class MyListCtrl: public wxListCtrl{
 class Servidor{
     private:
         std::mutex p_mutex;
+        std::mutex ping_mutex;
+        std::mutex count_mutex;
+
         SOCKET sckSocket = INVALID_SOCKET;
         std::vector<struct Cliente> vc_Clientes;
         u_int uiPuertoLocal = 0;
         WSADATA wsa;
         struct sockaddr_in structServer;
 
-        int p_PingTime = 10000;
+        int p_PingTime = 1000 * 60; //60 segundos
         
     public:
         Servidor();
@@ -59,8 +72,7 @@ class Servidor{
 
         std::thread thListener;
         std::thread thPing;
-    
-        
+      
 
         //Hilos
         void m_Handler();
@@ -73,18 +85,19 @@ class Servidor{
         void m_InsertarCliente(struct Cliente& p_Cliente);
         void m_RemoverCliente(std::string p_ID);
 
-        //Socket
-        int cSend(int pSocket, const char* pBuffer, int pLen, int pFlags);
-        int cRecv(int pSocket, char*& pBuffer, int pLen, int pFlags);
+        //Socket wraps
+        int cSend(int& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock = false);
+        int cRecv(int& pSocket, char* pBuffer, int pLen, int pFlags, bool isBlock = false);
 
-        //Mutex
-        void m_Lock(){
-            this->p_mutex.lock();
-        }
+        //Mutexes
+        void m_Lock(){       p_mutex.lock();}
+        void m_Unlock(){     p_mutex.unlock();}
 
-        void m_Unlock(){
-            this->p_mutex.unlock();
-        }
+        void m_PingLock(){   ping_mutex.lock();}
+        void m_PingUnlock(){ ping_mutex.unlock();}
+        
+        void m_CountLock(){  count_mutex.lock();}
+        void m_CountUnlock(){count_mutex.unlock();}
 
         u_int m_lPuerto(){
             return uiPuertoLocal;
@@ -99,5 +112,11 @@ class Servidor{
                 closesocket(sckSocket);
                 sckSocket = INVALID_SOCKET;
             }
+
+            if (m_txtLog != nullptr) {
+                delete m_txtLog;
+                m_txtLog = nullptr;
+            }
+       
         }
 };
