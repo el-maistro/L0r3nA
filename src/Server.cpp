@@ -28,11 +28,10 @@ void MyLogClass::LogThis(std::string strInput, int iType){
     strLine += std::to_string(timeptr->tm_sec) + "]  ";
     strLine += strInput + "\n";
 
-    this->m_LogLock();
+    std::lock_guard<std::mutex> lock(this->log_mutex);
     if (this->p_txtCtrl != nullptr) {
         this->p_txtCtrl->AppendText(strLine);
     }
-    this->m_LogUnlock();
 
 }
 
@@ -111,17 +110,28 @@ ClientConInfo Servidor::m_Aceptar(){
 
 void Servidor::m_Handler(){
     this->p_Escuchando = true;
-    const auto Listener = [this](){
-        this->m_Escucha();
-        this->thListener.detach();
-    };   
 
-    const auto Ping = [this](){
-        this->m_Ping();
-        this->thPing.detach();
-    };
-    this->thListener = std::thread{Listener};
-    this->thPing = std::thread(Ping);
+    this->thListener = std::thread(&Servidor::m_Escucha, this);
+    this->thPing = std::thread(&Servidor::m_Ping, this);
+}
+
+void Servidor::m_JoinThreads() {
+    if (this->thPing.joinable()) {
+        this->thPing.join();
+    }
+    this->m_txtLog->LogThis("Thread PING terminada", LogType::LogMessage);
+
+    if (this->thListener.joinable()) {
+        this->thListener.join();
+    }
+    this->m_txtLog->LogThis("Thread LISTENER terminada", LogType::LogMessage);
+
+}
+
+void Servidor::m_StopHandler() {
+    this->m_txtLog->LogThis("Apagando", LogType::LogError);
+    std::lock_guard<std::mutex> lock(this->p_mutex);
+    this->p_Escuchando = false;
 }
 
 void Servidor::m_Ping(){
@@ -129,24 +139,19 @@ void Servidor::m_Ping(){
     
     while(this->p_Escuchando){
         //Si no hay clientes seguir en el loop para cerrar thread mas rapido
-        this->m_CountLock();
+        std::unique_lock<std::mutex> lock(this->count_mutex);
         if (this->iCount <= 0) {
-            this->m_CountUnlock();
-            Sleep(300);
+            lock.unlock();
+            Sleep(100);
             continue;
         }
-        this->m_CountUnlock();
-        
+        lock.unlock();
+
         for(std::vector<struct Cliente>::iterator it = this->vc_Clientes.begin() ; it != this->vc_Clientes.end(); ){
             //Si le mande un ping hace 10 segundos o menos continuar con el otro
-            int error_code;
-            int error_code_size = sizeof(error_code);
-            getsockopt(it->_sckCliente, SOL_SOCKET, SO_ERROR, (char*)&error_code, &error_code_size);
-            this->m_txtLog->LogThis(std::to_string(error_code), LogType::LogMessage);
-            
             if ((time(0) - it->_ttUltimaVez) <= 10) {
                 ++it;
-                Sleep(500);
+                Sleep(100);
                 continue;
             }
 
@@ -158,23 +163,19 @@ void Servidor::m_Ping(){
                 
                 this->m_txtLog->LogThis(strTmp, LogType::LogMessage);
                 
-                this->m_CountLock();
+                std::lock_guard<std::mutex> lock(this->count_mutex);
                 it = this->vc_Clientes.erase(it);
-                this->iCount--;                
-                this->m_CountUnlock();
+                this->iCount--;       
             } else {
                 it->_ttUltimaVez = time(0);
                 ++it;
             }
         }
     }
-
-    this->m_txtLog->LogThis("Thread PING terminada", LogType::LogMessage);
 }
 
 void Servidor::m_Escucha(){
     this->m_txtLog->LogThis("Thread LISTENER iniciada", LogType::LogMessage);
-    
     while(this->p_Escuchando){
         Sleep(100); //uso de CPU
         struct ClientConInfo sckNuevoCliente = this->m_Aceptar();
@@ -188,24 +189,17 @@ void Servidor::m_Escucha(){
             //Leer version y SO
             char cBuff[1024];
             memset(&cBuff, 0, 1024);
-
             int iR = this->cRecv(sckNuevoCliente._sckSocket, cBuff, 1024, 0, true);
-            
 
             struct Cliente structNuevoCliente = { sckNuevoCliente._sckSocket, time(0), RandomID(7), strTmp, cBuff};
-            this->vc_Clientes.push_back(structNuevoCliente);
             
-            this->m_CountLock();
+            std::lock_guard<std::mutex> lock(this->count_mutex);
+            this->vc_Clientes.push_back(structNuevoCliente);
             this->m_InsertarCliente(structNuevoCliente);
             this->iCount++;
-            this->m_CountUnlock();
-
-            
 
         }
     }
-    
-    this->m_txtLog->LogThis("Thread LISTENER terminada", LogType::LogMessage);
 }
 
 void Servidor::m_InsertarCliente(struct Cliente& p_Cliente){

@@ -1,7 +1,9 @@
 *.vscode
 *.o
 *.exe
+build*
 src/build*
+src/cliente/build*
 src/out*
 .vs*
 *.json

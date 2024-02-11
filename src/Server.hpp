@@ -27,13 +27,6 @@ class MyLogClass{
         void LogThis(std::string strLog, int iType);
         std::mutex log_mutex;
 
-        void m_LogLock() {
-            log_mutex.lock();
-        }
-
-        void m_LogUnlock() {
-            log_mutex.unlock();
-        }
 };
 
 
@@ -50,7 +43,6 @@ class MyListCtrl: public wxListCtrl{
 
 class Servidor{
     private:
-        std::mutex p_mutex;
         std::mutex ping_mutex;
         std::mutex count_mutex;
 
@@ -65,6 +57,8 @@ class Servidor{
     public:
         Servidor();
 
+        std::mutex p_mutex;
+
         bool p_Escuchando = false;
         bool   m_Iniciar();
         ClientConInfo m_Aceptar();
@@ -76,6 +70,8 @@ class Servidor{
 
         //Hilos
         void m_Handler();
+        void m_StopHandler();
+        void m_JoinThreads();
         void m_Escucha();
         void m_Ping();
 
@@ -88,16 +84,6 @@ class Servidor{
         //Socket wraps
         int cSend(int& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock = false);
         int cRecv(int& pSocket, char* pBuffer, int pLen, int pFlags, bool isBlock = false);
-
-        //Mutexes
-        void m_Lock(){       p_mutex.lock();}
-        void m_Unlock(){     p_mutex.unlock();}
-
-        void m_PingLock(){   ping_mutex.lock();}
-        void m_PingUnlock(){ ping_mutex.unlock();}
-        
-        void m_CountLock(){  count_mutex.lock();}
-        void m_CountUnlock(){count_mutex.unlock();}
 
         u_int m_lPuerto(){
             return uiPuertoLocal;

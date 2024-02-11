@@ -48,6 +48,9 @@ public:
 wxIMPLEMENT_APP(MyApp);
 
 bool MyApp::OnInit(){
+    //AllocConsole();
+    //freopen("CONOUT$", "w", stdout);
+    //freopen("CONOUT$", "w", stderr);
     this->frame = new MyFrame();
     this->frame->Show(true);
     return true;
@@ -58,8 +61,10 @@ MyFrame::MyFrame()
 {
     //Trace memory leak
     //_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+    //_CrtSetBreakAlloc(40404);
+    //_CrtSetBreakAlloc(40403);
     //_CrtSetBreakAlloc(40402);
-    
+
     this->p_Servidor = new Servidor();
     this->p_Servidor->m_listCtrl = nullptr;
 
@@ -153,12 +158,19 @@ void MyFrame::OnClose(wxCloseEvent& event){
     case wxID_YES:
         break;
     }  
-
-    this->p_Servidor->m_Lock();
+    
+    std::unique_lock<std::mutex> lock(this->p_Servidor->p_mutex);
     this->p_Servidor->p_Escuchando = false;
-    this->p_Servidor->m_Unlock();
+    lock.unlock();
+    if (this->p_Servidor->thListener.joinable()) {
+        this->p_Servidor->thListener.join();
+    }
+    if (this->p_Servidor->thPing.joinable()) {
+        this->p_Servidor->thPing.join();
+    }
+    
+    Sleep(500);
 
-    //Sleep(3000);
     delete this->p_Servidor;
     this->p_Servidor = nullptr;
     
@@ -186,12 +198,14 @@ void MyFrame::OnClickEscuchar(wxCommandEvent& event){
 
 void MyFrame::OnclickDetener(wxCommandEvent& event){
     //Bloquear acceso a la variable 
-    this->p_Servidor->m_Lock();
-    this->p_Servidor->p_Escuchando = false;
-    this->p_Servidor->m_Unlock();
-
+    
+    this->p_Servidor->m_StopHandler();
+    this->p_Servidor->m_JoinThreads();
+    
     this->btn_Detener->Enable(false);
     this->btn_Escuchar->Enable(true);
+
+    this->p_Servidor->m_listCtrl->ClearAll();
     SetStatusText("IDLE");
 }
 
