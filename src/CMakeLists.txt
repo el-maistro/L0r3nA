@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 
-project(wx_cmake_fetchcontent_template LANGUAGES CXX)
+project(L0r3na LANGUAGES CXX)
 
 include(FetchContent)
 
@@ -8,6 +8,8 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(wxBUILD_SHARED OFF)
+
+add_subdirectory(cliente)
 
 message(STATUS "Fetching wxWidgets...")
 

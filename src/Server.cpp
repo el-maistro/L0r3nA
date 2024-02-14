@@ -146,7 +146,7 @@ void Servidor::m_Ping(){
             continue;
         }
         lock.unlock();
-
+        
         for(std::vector<struct Cliente>::iterator it = this->vc_Clientes.begin() ; it != this->vc_Clientes.end(); ){
             //Si le mande un ping hace 10 segundos o menos continuar con el otro
             if ((time(0) - it->_ttUltimaVez) <= 10) {

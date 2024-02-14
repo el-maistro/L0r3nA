@@ -10,11 +10,23 @@ int main(int argc, char** argv) {
 
 	Cliente* cCliente = new Cliente();
 
-	if (cCliente->bConectar(argv[1], argv[2])) {
-		cCliente->MainLoop();
+	while (cCliente->isRunning) {
+		if (cCliente->bConectar("127.0.0.1", "30000")) {
+			cCliente->iniPacket();
+			cCliente->MainLoop();
+		}
+		else {
+			//no se pudo conectar
+#ifdef ___DEBUG_
+			std::cout<<"No se pudo conectar el host\n";
+#endif
+		}
+		Sleep(6000); //Esperar cinco segundos para volver a intentar
 	}
 
 	delete cCliente;
 	cCliente = nullptr;
+
+	WSACleanup();
 	return 0;
 }
