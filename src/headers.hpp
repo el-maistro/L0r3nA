@@ -10,6 +10,7 @@
 #include<mutex>
 #include<atomic>
 #include<thread>
+#include<random>
 #include<fcntl.h>
 #include<fstream>
 #include<sstream>
@@ -17,6 +18,8 @@
 #include<vector>
 #include<cstring>
 #include<ctime>
+
+#define PING_TIME 10
 
 
 extern bool bSignalFlag;

@@ -43,7 +43,7 @@ class MyListCtrl: public wxListCtrl{
 
 class Servidor{
     private:
-        std::mutex ping_mutex;
+        std::mutex vector_mutex;
         std::mutex count_mutex;
 
         SOCKET sckSocket = INVALID_SOCKET;
@@ -79,11 +79,15 @@ class Servidor{
         MyListCtrl *m_listCtrl;
         MyLogClass *m_txtLog;
         void m_InsertarCliente(struct Cliente& p_Cliente);
-        void m_RemoverCliente(std::string p_ID);
+        void m_RemoverClienteLista(std::string p_ID);
 
+        
         //Socket wraps
         int cSend(int& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock = false);
         int cRecv(int& pSocket, char* pBuffer, int pLen, int pFlags, bool isBlock = false);
+
+        void m_CerrarConexiones();
+        void m_CerrarConexion(int& pSocket);
 
         u_int m_lPuerto(){
             return uiPuertoLocal;

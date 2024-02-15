@@ -48,9 +48,9 @@ public:
 wxIMPLEMENT_APP(MyApp);
 
 bool MyApp::OnInit(){
-    //AllocConsole();
-    //freopen("CONOUT$", "w", stdout);
-    //freopen("CONOUT$", "w", stderr);
+    AllocConsole();
+    freopen("CONOUT$", "w", stdout);
+    freopen("CONOUT$", "w", stderr);
     this->frame = new MyFrame();
     this->frame->Show(true);
     return true;
@@ -205,7 +205,10 @@ void MyFrame::OnclickDetener(wxCommandEvent& event){
     this->btn_Detener->Enable(false);
     this->btn_Escuchar->Enable(true);
 
-    this->p_Servidor->m_listCtrl->ClearAll();
+    this->p_Servidor->m_CerrarConexiones();
+
+    //this->p_Servidor->m_listCtrl->ClearAll();
+    this->p_Servidor->m_listCtrl->DeleteAllItems();
     SetStatusText("IDLE");
 }
 

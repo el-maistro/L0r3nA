@@ -125,13 +125,29 @@ void Servidor::m_JoinThreads() {
         this->thListener.join();
     }
     this->m_txtLog->LogThis("Thread LISTENER terminada", LogType::LogMessage);
-
 }
 
 void Servidor::m_StopHandler() {
     this->m_txtLog->LogThis("Apagando", LogType::LogError);
     std::lock_guard<std::mutex> lock(this->p_mutex);
     this->p_Escuchando = false;
+}
+
+void Servidor::m_CerrarConexion(int& pSocket) {
+    if (pSocket != -1) {
+        closesocket(pSocket);
+        pSocket = -1;
+    }
+}
+
+void Servidor::m_CerrarConexiones() {
+    for (auto it = this->vc_Clientes.begin(); it != this->vc_Clientes.end();) {
+        this->m_CerrarConexion(it->_sckCliente);
+        it = this->vc_Clientes.erase(it);
+    }
+    closesocket(this->sckSocket);
+    this->sckSocket = -1;
+    this->iCount = 0;
 }
 
 void Servidor::m_Ping(){
@@ -147,30 +163,42 @@ void Servidor::m_Ping(){
         }
         lock.unlock();
         
-        for(std::vector<struct Cliente>::iterator it = this->vc_Clientes.begin() ; it != this->vc_Clientes.end(); ){
+        std::unique_lock<std::mutex> lock2(this->vector_mutex);
+        for(auto it = this->vc_Clientes.begin(); it != this->vc_Clientes.end();){
             //Si le mande un ping hace 10 segundos o menos continuar con el otro
-            if ((time(0) - it->_ttUltimaVez) <= 10) {
+            if ((time(0) - it->_ttUltimaVez) <= PING_TIME) {
                 ++it;
                 Sleep(100);
                 continue;
             }
 
-            int iBytes = this->cSend(it->_sckCliente, "PING", 4, 0, false);
+            int iBytes = this->cSend(it->_sckCliente, "PING~1", 6, 0, false);
             if(iBytes <= 0){
                 //No se pudo enviar
-                this->m_RemoverCliente(it->_id);
                 std::string strTmp = "Cliente " + it->_strIp + "-" + it->_id + " desconectado";
-                
                 this->m_txtLog->LogThis(strTmp, LogType::LogMessage);
-                
-                std::lock_guard<std::mutex> lock(this->count_mutex);
+
+                this->m_RemoverClienteLista(it->_id);
                 it = this->vc_Clientes.erase(it);
-                this->iCount--;       
+                
+                std::unique_lock<std::mutex> lock3(this->count_mutex);
+                this->iCount--;
             } else {
-                it->_ttUltimaVez = time(0);
+                //Leer pong
+                char cBuff[5];
+                int iRecv = this->cRecv(it->_sckCliente, cBuff, 4, 0, true);
+                cBuff[4] = '\0';
+                if (strncmp(cBuff, "PONG", 4) != 0) {
+                    //Error recibiendo el pong, desconectar cliente
+                    this->m_CerrarConexion(it->_sckCliente);
+                    it->_ttUltimaVez = PING_TIME;
+                }else {
+                    it->_ttUltimaVez = time(0);
+                }
                 ++it;
             }
         }
+        lock2.unlock(); //desbloquear vector
     }
 }
 
@@ -193,13 +221,16 @@ void Servidor::m_Escucha(){
 
             struct Cliente structNuevoCliente = { sckNuevoCliente._sckSocket, time(0), RandomID(7), strTmp, cBuff};
             
-            std::lock_guard<std::mutex> lock(this->count_mutex);
+            std::unique_lock<std::mutex> lock(this->vector_mutex);
             this->vc_Clientes.push_back(structNuevoCliente);
+            lock.unlock();
+
+            std::unique_lock<std::mutex> lock2(this->count_mutex);
             this->m_InsertarCliente(structNuevoCliente);
             this->iCount++;
-
         }
     }
+    std::cout << "DONE Listen\n";
 }
 
 void Servidor::m_InsertarCliente(struct Cliente& p_Cliente){
@@ -208,7 +239,7 @@ void Servidor::m_InsertarCliente(struct Cliente& p_Cliente){
     m_listCtrl->SetItem(this->iCount, 2, wxString(p_Cliente._strSo));
 }
 
-void Servidor::m_RemoverCliente(std::string p_ID){
+void Servidor::m_RemoverClienteLista(std::string p_ID){
     long lFound = this->m_listCtrl->FindItem(0, wxString(p_ID));
     if(lFound != wxNOT_FOUND){
         this->m_listCtrl->DeleteItem(lFound);
