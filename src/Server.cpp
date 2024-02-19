@@ -1,6 +1,10 @@
 #include "Server.hpp"
 #include "misc.hpp"
 
+//Definir el servidor globalmente
+Servidor* p_Servidor;
+std::mutex vector_mutex;
+
 
 void MyLogClass::LogThis(std::string strInput, int iType){
     time_t temp = time(0);
@@ -163,12 +167,11 @@ void Servidor::m_Ping(){
         }
         lock.unlock();
         
-        std::unique_lock<std::mutex> lock2(this->vector_mutex);
+        std::unique_lock<std::mutex> lock2(vector_mutex);
         for(auto it = this->vc_Clientes.begin(); it != this->vc_Clientes.end();){
-            //Si le mande un ping hace 10 segundos o menos continuar con el otro
-            if ((time(0) - it->_ttUltimaVez) <= PING_TIME) {
+            //Si le mande un ping hace 10 segundos o si esta ocupado continuar con el otro
+            if ((time(0) - it->_ttUltimaVez) <= PING_TIME || it->_isBusy) {
                 ++it;
-                Sleep(100);
                 continue;
             }
 
@@ -199,6 +202,7 @@ void Servidor::m_Ping(){
             }
         }
         lock2.unlock(); //desbloquear vector
+
     }
 }
 
@@ -221,7 +225,7 @@ void Servidor::m_Escucha(){
 
             struct Cliente structNuevoCliente = { sckNuevoCliente._sckSocket, time(0), RandomID(7), strTmp, cBuff};
             
-            std::unique_lock<std::mutex> lock(this->vector_mutex);
+            std::unique_lock<std::mutex> lock(vector_mutex);
             this->vc_Clientes.push_back(structNuevoCliente);
             lock.unlock();
 
@@ -294,4 +298,118 @@ int Servidor::cRecv(int& pSocket, char* pBuffer, int pLen, int pFlags, bool isBl
     else {
         return recv(pSocket, pBuffer, pLen, pFlags);
     }
+}
+
+//control list events
+void MyListCtrl::ShowContextMenu(const wxPoint& pos, long item) {
+    
+    wxMenu menu;
+    menu.Append(EnumIDS::ID_Interactuar, "Interactuar");
+    menu.Append(wxID_ABOUT, "&About");
+    menu.AppendSeparator();
+    menu.Append(wxID_EXIT, "E&xit");
+
+    PopupMenu(&menu, pos.x, pos.y);
+}
+
+void MyListCtrl::OnContextMenu(wxContextMenuEvent& event)
+{
+    if (GetEditControl() == NULL)
+    {
+        wxPoint point = event.GetPosition();
+        
+        // If from keyboard
+        if ((point.x == -1) && (point.y == -1))
+        {
+            wxSize size = GetSize();
+            point.x = size.x / 2;
+            point.y = size.y / 2;
+        }
+        else
+        {
+            point = ScreenToClient(point);
+        }
+        
+        int flags;
+        long iItem = HitTest(point, flags);
+
+        if (iItem == -1) {
+            return;
+        }
+
+        wxString st1 = this->GetItemText(iItem, 0);
+        std::cout << iItem<< " - "<<st1<<"\n";
+        this->strTmp = st1;
+        ShowContextMenu(point, iItem);
+    }
+    else
+    {
+        // the user is editing:
+        // allow the text control to display its context menu
+        // if it has one (it has on Windows) rather than display our one
+        event.Skip();
+    }
+}
+
+void MyListCtrl::OnInteractuar(wxCommandEvent& event) {
+    long lFound = this->FindItem(0, this->strTmp.ToStdString());
+    
+
+    FrameCliente* n_FrameCli = new FrameCliente(this->strTmp.ToStdString());
+    n_FrameCli->Show(true);
+}
+
+
+FrameCliente::FrameCliente(std::string strID)
+        : wxFrame(nullptr, wxID_ANY, ":v")
+    {
+    
+    std::unique_lock<std::mutex> lock(vector_mutex);
+    for (auto iter = p_Servidor->vc_Clientes.begin(); iter != p_Servidor->vc_Clientes.end();) {
+        if (iter->_id == strID) {
+            iter->_isBusy = true;
+            break;
+        }
+        ++iter;
+    }
+    lock.unlock();
+    
+    this->strClienteID = strID;
+    wxString strTitle = "[";
+    strTitle.append(strID.c_str());
+    strTitle.append("] - Admin");
+    this->SetTitle(strTitle);
+    this->btn_Test = new wxButton(this, EnumIDS::ID_FrameClienteTest, "EXEC");
+    
+    
+    
+}
+
+void FrameCliente::OnTest(wxCommandEvent& event) {
+    std::vector<struct Cliente> vc_Copy;
+    std::unique_lock<std::mutex> lock(vector_mutex);
+    vc_Copy = p_Servidor->vc_Clientes;
+    lock.unlock();
+
+    for (auto aClient : vc_Copy) {
+        if (aClient._id == this->strClienteID) {
+            int ib= p_Servidor->cSend(aClient._sckCliente, "CUSTOM_TEST~0", 13, 0, false);
+            std::cout << "SENT " << ib << "\n";
+            break;
+        }
+    }
+}
+
+void FrameCliente::OnClose(wxCloseEvent& event) {
+    std::lock_guard<std::mutex> lock(vector_mutex);
+    for (auto iter = p_Servidor->vc_Clientes.begin(); iter != p_Servidor->vc_Clientes.end();) {
+        if (iter->_id == this->strClienteID) {
+            iter->_isBusy = false;
+            iter->_ttUltimaVez = time(0);
+            break;
+        }
+        ++iter;
+    }
+
+    event.Skip();
 }

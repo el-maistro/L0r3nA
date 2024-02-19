@@ -12,6 +12,7 @@ int main(int argc, char** argv) {
 
 	while (cCliente->isRunning) {
 		if (cCliente->bConectar("127.0.0.1", "30000")) {
+			std::cout << "Conectado\n";
 			cCliente->iniPacket();
 			cCliente->MainLoop();
 		}

@@ -1,17 +1,20 @@
 #include "Server.hpp"
 #include "headers.hpp"
 
-namespace EnumIDS{
-    const int ID_Escuchar   = 100;
-    const int ID_Detener    = 101;
+extern Servidor* p_Servidor;
+
+/*mespace EnumIDS{
+    const int ID_Escuchar = 100;
+    const int ID_Detener = 101;
     const int ID_LimpiarLog = 102;
-};
+    const int ID_Interactuar = 103;
+};*/
 
 class MyFrame : public wxFrame{
     public:
         MyFrame();
     private:
-        Servidor *p_Servidor;
+        //Servidor *p_Servidor;
         wxPanel *m_RPanel, *m_LPanel, *m_BPanel;
         wxButton* btn_Escuchar, * btn_Detener;
         wxMenu *menuFile, *menuHelp;
@@ -39,6 +42,20 @@ wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
     EVT_CLOSE(MyFrame::OnClose)
 wxEND_EVENT_TABLE()
 
+wxBEGIN_EVENT_TABLE(MyListCtrl, wxListCtrl)
+    EVT_CONTEXT_MENU(MyListCtrl::OnContextMenu)
+    EVT_MENU(EnumIDS::ID_Interactuar, MyListCtrl::OnInteractuar)
+wxEND_EVENT_TABLE()
+
+wxBEGIN_EVENT_TABLE(FrameCliente, wxFrame)
+    EVT_BUTTON(EnumIDS::ID_FrameClienteTest, FrameCliente::OnTest)
+    EVT_CLOSE(FrameCliente::OnClose)
+wxEND_EVENT_TABLE()
+
+//wxBEGIN_EVENT_TABLE(FrameCliente, wxFrame)
+    //EVT_MENU(EnumIDS::ID_List_Manage, FrameCliente::OnManage)
+//wxEND_EVENT_TABLE()
+
 class MyApp : public wxApp {
 public:
     MyFrame* frame = nullptr;
@@ -65,23 +82,27 @@ MyFrame::MyFrame()
     //_CrtSetBreakAlloc(40403);
     //_CrtSetBreakAlloc(40402);
 
-    this->p_Servidor = new Servidor();
-    this->p_Servidor->m_listCtrl = nullptr;
+    //this->p_Servidor = new Servidor();
+    //this->p_Servidor->m_listCtrl = nullptr;
+    p_Servidor = new Servidor();
+    p_Servidor->m_listCtrl = nullptr;
 
     
     this->m_RPanel = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(600, 450));
     
     this->m_LPanel = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(110, 600));
-    this->m_LPanel->SetBackgroundColour(wxColor(255,0,0)); // REMOVE AT THE END
+    //this->m_LPanel->SetBackgroundColour(wxColor(255,0,0)); // REMOVE AT THE END
 
     this->m_BPanel = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(100, 150));
-    this->m_BPanel->SetBackgroundColour(wxColor(0,255,0)); // REMOVE AT THE END
+    //this->m_BPanel->SetBackgroundColour(wxColor(0,255,0)); // REMOVE AT THE END
 
     
     //Crear lista
     this->CrearLista(wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES | wxEXPAND);
     wxBoxSizer *sizerlist = new wxBoxSizer(wxHORIZONTAL);
-    sizerlist->Add(this->p_Servidor->m_listCtrl, 1, wxALL | wxEXPAND, 1);
+
+    sizerlist->Add(p_Servidor->m_listCtrl, 1, wxALL | wxEXPAND, 1);
+
     this->m_RPanel->SetSizer(sizerlist);
 
     
@@ -89,12 +110,12 @@ MyFrame::MyFrame()
     this->CrearControlesPanelIzquierdo();
 
     //Crear txt para log
-    this->p_Servidor->m_txtLog->p_txtCtrl = new wxTextCtrl(this->m_BPanel, wxID_ANY, ":v\n", wxDefaultPosition, wxSize(100,150), wxTE_MULTILINE | wxTE_READONLY);
+    p_Servidor->m_txtLog->p_txtCtrl = new wxTextCtrl(this->m_BPanel, wxID_ANY, ":v\n", wxDefaultPosition, wxSize(100,150), wxTE_MULTILINE | wxTE_READONLY);
     wxBoxSizer *sizertxt = new wxBoxSizer(wxVERTICAL);
 
  
     sizertxt->Add(new wxButton(this->m_BPanel, EnumIDS::ID_LimpiarLog, "Limpiar Log", wxDefaultPosition, wxSize(100, 20)), 0, wxALL, 1);
-    sizertxt->Add(this->p_Servidor->m_txtLog->p_txtCtrl, 1, wxALL | wxEXPAND, 1);
+    sizertxt->Add(p_Servidor->m_txtLog->p_txtCtrl, 1, wxALL | wxEXPAND, 1);
     this->m_BPanel->SetSizer(sizertxt);
 
     wxBoxSizer *sizer = new wxBoxSizer(wxHORIZONTAL);
@@ -131,21 +152,21 @@ void MyFrame::CrearControlesPanelIzquierdo(){
 }
 
 void MyFrame::CrearLista(long flags, bool withText){
-    this->p_Servidor->m_listCtrl = new MyListCtrl(this->m_RPanel, wxID_ANY, wxDefaultPosition, wxSize(600, 300), 
-    flags | wxBORDER_THEME);
+    p_Servidor->m_listCtrl = new MyListCtrl(this->m_RPanel, wxID_ANY, wxDefaultPosition, wxSize(600, 300), flags | wxBORDER_THEME);
+   
     wxListItem itemCol;
     itemCol.SetText("ID");
     itemCol.SetWidth(60);
     itemCol.SetAlign(wxLIST_FORMAT_CENTRE);
-    this->p_Servidor->m_listCtrl->InsertColumn(0, itemCol);
+    p_Servidor->m_listCtrl->InsertColumn(0, itemCol);
 
     itemCol.SetText("IP");
     itemCol.SetWidth(120);
-    this->p_Servidor->m_listCtrl->InsertColumn(1, itemCol);
+    p_Servidor->m_listCtrl->InsertColumn(1, itemCol);
 
     itemCol.SetText("SO");
     itemCol.SetWidth(140);
-    this->p_Servidor->m_listCtrl->InsertColumn(2, itemCol);
+    p_Servidor->m_listCtrl->InsertColumn(2, itemCol);
 }
 
 void MyFrame::OnClose(wxCloseEvent& event){
@@ -159,20 +180,20 @@ void MyFrame::OnClose(wxCloseEvent& event){
         break;
     }  
     
-    std::unique_lock<std::mutex> lock(this->p_Servidor->p_mutex);
-    this->p_Servidor->p_Escuchando = false;
+    std::unique_lock<std::mutex> lock(p_Servidor->p_mutex);
+    p_Servidor->p_Escuchando = false;
     lock.unlock();
-    if (this->p_Servidor->thListener.joinable()) {
-        this->p_Servidor->thListener.join();
+    if (p_Servidor->thListener.joinable()) {
+        p_Servidor->thListener.join();
     }
-    if (this->p_Servidor->thPing.joinable()) {
-        this->p_Servidor->thPing.join();
+    if (p_Servidor->thPing.joinable()) {
+        p_Servidor->thPing.join();
     }
     
     Sleep(500);
 
-    delete this->p_Servidor;
-    this->p_Servidor = nullptr;
+    delete p_Servidor;
+    p_Servidor = nullptr;
     
     event.Skip();
 }
@@ -182,8 +203,8 @@ void MyFrame::OnExit(wxCommandEvent& event) {
 }
 
 void MyFrame::OnClickEscuchar(wxCommandEvent& event){
-    if(this->p_Servidor->m_Iniciar()){
-        this->p_Servidor->m_Handler();
+    if(p_Servidor->m_Iniciar()){
+        p_Servidor->m_Handler();
         this->btn_Detener->Enable(true);
         this->btn_Escuchar->Enable(false);
         SetStatusText("Esperando clientes...");
@@ -191,7 +212,7 @@ void MyFrame::OnClickEscuchar(wxCommandEvent& event){
         //error();
         std::string strTmp = "Error escuchando ";
         strTmp.append(std::to_string(GetLastError()));
-        this->p_Servidor->m_txtLog->LogThis(strTmp, LogType::LogError);
+        p_Servidor->m_txtLog->LogThis(strTmp, LogType::LogError);
         SetStatusText("Error");
     }
 }
@@ -199,27 +220,27 @@ void MyFrame::OnClickEscuchar(wxCommandEvent& event){
 void MyFrame::OnclickDetener(wxCommandEvent& event){
     //Bloquear acceso a la variable 
     
-    this->p_Servidor->m_StopHandler();
-    this->p_Servidor->m_JoinThreads();
+    p_Servidor->m_StopHandler();
+    p_Servidor->m_JoinThreads();
     
     this->btn_Detener->Enable(false);
     this->btn_Escuchar->Enable(true);
 
-    this->p_Servidor->m_CerrarConexiones();
+    p_Servidor->m_CerrarConexiones();
 
     //this->p_Servidor->m_listCtrl->ClearAll();
-    this->p_Servidor->m_listCtrl->DeleteAllItems();
+    p_Servidor->m_listCtrl->DeleteAllItems();
     SetStatusText("IDLE");
 }
 
 void MyFrame::OnLimpiar(wxCommandEvent& event) {
-    this->p_Servidor->m_txtLog->p_txtCtrl->Clear();
+    p_Servidor->m_txtLog->p_txtCtrl->Clear();
 }
 
 void MyFrame::OnAbout(wxCommandEvent& event){
-    long lFound = this->p_Servidor->m_listCtrl->FindItem(0, wxString("2"));
+    long lFound = p_Servidor->m_listCtrl->FindItem(0, wxString("2"));
     if(lFound != wxNOT_FOUND){
-        this->p_Servidor->m_listCtrl->DeleteItem(lFound);
+        p_Servidor->m_listCtrl->DeleteItem(lFound);
     }
 }
 

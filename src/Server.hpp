@@ -1,5 +1,6 @@
 #include "headers.hpp"
-
+#ifndef _SERVER_H
+#define _SERVER_H
 
 struct Cliente{
     int _sckCliente;
@@ -7,6 +8,7 @@ struct Cliente{
     std::string _id;
     std::string _strIp;
     std::string _strSo;
+    bool _isBusy = false;
 };
 
 struct ClientConInfo{
@@ -39,15 +41,38 @@ class MyListCtrl: public wxListCtrl{
             m_updated = -1;
         }
 
+        void ShowContextMenu(const wxPoint& pos, long item);
+        void OnContextMenu(wxContextMenuEvent& event);
+        void OnInteractuar(wxCommandEvent& event);
+
+    private:
+        wxString strTmp = "";
+        wxDECLARE_EVENT_TABLE();
 };
+
+class FrameCliente : public wxFrame {
+    public:
+        std::string strClienteID = "";
+        std::vector<struct Cliente>::iterator p_Ite;
+        FrameCliente(std::string pstrID);
+    private:
+        wxButton* btn_Test;
+        
+        //Eventos
+        void OnTest(wxCommandEvent& event);
+        void OnClose(wxCloseEvent& event);
+
+        wxDECLARE_EVENT_TABLE();
+
+};
+
+
 
 class Servidor{
     private:
-        std::mutex vector_mutex;
         std::mutex count_mutex;
 
         SOCKET sckSocket = INVALID_SOCKET;
-        std::vector<struct Cliente> vc_Clientes;
         u_int uiPuertoLocal = 0;
         WSADATA wsa;
         struct sockaddr_in structServer;
@@ -58,6 +83,8 @@ class Servidor{
         Servidor();
 
         std::mutex p_mutex;
+
+        std::vector<struct Cliente> vc_Clientes;
 
         bool p_Escuchando = false;
         bool   m_Iniciar();
@@ -110,3 +137,5 @@ class Servidor{
        
         }
 };
+
+#endif
