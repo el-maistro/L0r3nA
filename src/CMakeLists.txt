@@ -15,14 +15,15 @@ message(STATUS "Fetching wxWidgets...")
 
 FetchContent_Declare(
    wxWidgets
-   GIT_REPOSITORY https://github.com/wxWidgets/wxWidgets.git
-   GIT_SHALLOW ON
+   #GIT_REPOSITORY https://github.com/wxWidgets/wxWidgets.git
+   #GIT_SHALLOW ON
 )
 FetchContent_MakeAvailable(wxWidgets)
 
 set(SRCS main.cpp
          misc.cpp
-         Server.cpp)
+         server.cpp
+         frame_cliente.cpp)
 
 add_executable(main WIN32 ${SRCS})
 target_link_libraries(main PRIVATE wxcore wxnet)

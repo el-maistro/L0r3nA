@@ -1,5 +1,6 @@
-#include "Server.hpp"
+#include "server.hpp"
 #include "misc.hpp"
+#include "frame_client.hpp"
 
 //Definir el servidor globalmente
 Servidor* p_Servidor;
@@ -360,56 +361,3 @@ void MyListCtrl::OnInteractuar(wxCommandEvent& event) {
 }
 
 
-FrameCliente::FrameCliente(std::string strID)
-        : wxFrame(nullptr, wxID_ANY, ":v")
-    {
-    
-    std::unique_lock<std::mutex> lock(vector_mutex);
-    for (auto iter = p_Servidor->vc_Clientes.begin(); iter != p_Servidor->vc_Clientes.end();) {
-        if (iter->_id == strID) {
-            iter->_isBusy = true;
-            break;
-        }
-        ++iter;
-    }
-    lock.unlock();
-    
-    this->strClienteID = strID;
-    wxString strTitle = "[";
-    strTitle.append(strID.c_str());
-    strTitle.append("] - Admin");
-    this->SetTitle(strTitle);
-    this->btn_Test = new wxButton(this, EnumIDS::ID_FrameClienteTest, "EXEC");
-    
-    
-    
-}
-
-void FrameCliente::OnTest(wxCommandEvent& event) {
-    std::vector<struct Cliente> vc_Copy;
-    std::unique_lock<std::mutex> lock(vector_mutex);
-    vc_Copy = p_Servidor->vc_Clientes;
-    lock.unlock();
-
-    for (auto aClient : vc_Copy) {
-        if (aClient._id == this->strClienteID) {
-            int ib= p_Servidor->cSend(aClient._sckCliente, "CUSTOM_TEST~0", 13, 0, false);
-            std::cout << "SENT " << ib << "\n";
-            break;
-        }
-    }
-}
-
-void FrameCliente::OnClose(wxCloseEvent& event) {
-    std::lock_guard<std::mutex> lock(vector_mutex);
-    for (auto iter = p_Servidor->vc_Clientes.begin(); iter != p_Servidor->vc_Clientes.end();) {
-        if (iter->_id == this->strClienteID) {
-            iter->_isBusy = false;
-            iter->_ttUltimaVez = time(0);
-            break;
-        }
-        ++iter;
-    }
-
-    event.Skip();
-}

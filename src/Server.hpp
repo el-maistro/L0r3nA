@@ -31,7 +31,6 @@ class MyLogClass{
 
 };
 
-
 class MyListCtrl: public wxListCtrl{
     public:
         long m_updated;
@@ -49,24 +48,6 @@ class MyListCtrl: public wxListCtrl{
         wxString strTmp = "";
         wxDECLARE_EVENT_TABLE();
 };
-
-class FrameCliente : public wxFrame {
-    public:
-        std::string strClienteID = "";
-        std::vector<struct Cliente>::iterator p_Ite;
-        FrameCliente(std::string pstrID);
-    private:
-        wxButton* btn_Test;
-        
-        //Eventos
-        void OnTest(wxCommandEvent& event);
-        void OnClose(wxCloseEvent& event);
-
-        wxDECLARE_EVENT_TABLE();
-
-};
-
-
 
 class Servidor{
     private:

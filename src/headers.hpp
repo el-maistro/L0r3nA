@@ -4,6 +4,7 @@
 #include<wx/wx.h> 
 #include<wx/thread.h>
 #include<wx/listctrl.h>
+#include<wx/treectrl.h>
 #include<wx/sizer.h>
 
 #include<ws2tcpip.h>
@@ -35,7 +36,8 @@ namespace EnumIDS {
         ID_Detener,
         ID_LimpiarLog,
         ID_Interactuar,
-        ID_FrameClienteTest
+        ID_FrameClienteTest,
+        TreeCtrl_ID
     };
 }
 

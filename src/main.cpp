@@ -1,20 +1,14 @@
-#include "Server.hpp"
+#include "frame_client.hpp"
+#include "server.hpp"
+
 #include "headers.hpp"
 
 extern Servidor* p_Servidor;
-
-/*mespace EnumIDS{
-    const int ID_Escuchar = 100;
-    const int ID_Detener = 101;
-    const int ID_LimpiarLog = 102;
-    const int ID_Interactuar = 103;
-};*/
 
 class MyFrame : public wxFrame{
     public:
         MyFrame();
     private:
-        //Servidor *p_Servidor;
         wxPanel *m_RPanel, *m_LPanel, *m_BPanel;
         wxButton* btn_Escuchar, * btn_Detener;
         wxMenu *menuFile, *menuHelp;
@@ -52,9 +46,9 @@ wxBEGIN_EVENT_TABLE(FrameCliente, wxFrame)
     EVT_CLOSE(FrameCliente::OnClose)
 wxEND_EVENT_TABLE()
 
-//wxBEGIN_EVENT_TABLE(FrameCliente, wxFrame)
-    //EVT_MENU(EnumIDS::ID_List_Manage, FrameCliente::OnManage)
-//wxEND_EVENT_TABLE()
+wxBEGIN_EVENT_TABLE(MyTreeCtrl, wxTreeCtrl)
+    EVT_TREE_ITEM_ACTIVATED(EnumIDS::TreeCtrl_ID, MyTreeCtrl::OnItemActivated)
+wxEND_EVENT_TABLE()
 
 class MyApp : public wxApp {
 public:
@@ -82,8 +76,6 @@ MyFrame::MyFrame()
     //_CrtSetBreakAlloc(40403);
     //_CrtSetBreakAlloc(40402);
 
-    //this->p_Servidor = new Servidor();
-    //this->p_Servidor->m_listCtrl = nullptr;
     p_Servidor = new Servidor();
     p_Servidor->m_listCtrl = nullptr;
 
@@ -91,10 +83,10 @@ MyFrame::MyFrame()
     this->m_RPanel = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(600, 450));
     
     this->m_LPanel = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(110, 600));
-    //this->m_LPanel->SetBackgroundColour(wxColor(255,0,0)); // REMOVE AT THE END
+    this->m_LPanel->SetBackgroundColour(wxColor(255,0,0)); // REMOVE AT THE END
 
     this->m_BPanel = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(100, 150));
-    //this->m_BPanel->SetBackgroundColour(wxColor(0,255,0)); // REMOVE AT THE END
+    this->m_BPanel->SetBackgroundColour(wxColor(0,255,0)); // REMOVE AT THE END
 
     
     //Crear lista
@@ -228,7 +220,6 @@ void MyFrame::OnclickDetener(wxCommandEvent& event){
 
     p_Servidor->m_CerrarConexiones();
 
-    //this->p_Servidor->m_listCtrl->ClearAll();
     p_Servidor->m_listCtrl->DeleteAllItems();
     SetStatusText("IDLE");
 }
@@ -238,10 +229,11 @@ void MyFrame::OnLimpiar(wxCommandEvent& event) {
 }
 
 void MyFrame::OnAbout(wxCommandEvent& event){
-    long lFound = p_Servidor->m_listCtrl->FindItem(0, wxString("2"));
-    if(lFound != wxNOT_FOUND){
-        p_Servidor->m_listCtrl->DeleteItem(lFound);
-    }
+    wxMessageBox(wxT("L0r3na v0.1"), wxT("About"));
+    //long lFound = p_Servidor->m_listCtrl->FindItem(0, wxString("2"));
+    //if(lFound != wxNOT_FOUND){
+    //    p_Servidor->m_listCtrl->DeleteItem(lFound);
+    //}
 }
 
 

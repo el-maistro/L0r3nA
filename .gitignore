@@ -7,3 +7,4 @@ src/cliente/build*
 src/out*
 .vs*
 *.json
+*.zip
