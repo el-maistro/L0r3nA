@@ -26,4 +26,4 @@ set(SRCS main.cpp
          frame_cliente.cpp)
 
 add_executable(main WIN32 ${SRCS})
-target_link_libraries(main PRIVATE wxcore wxnet)
+target_link_libraries(main PRIVATE wxcore wxnet wxaui)
