@@ -147,10 +147,10 @@ void Servidor::m_StopHandler() {
     this->p_Escuchando = false;
 }
 
-void Servidor::m_CerrarConexion(int& pSocket) {
+void Servidor::m_CerrarConexion(SOCKET& pSocket) {
     if (pSocket != -1) {
         closesocket(pSocket);
-        pSocket = -1;
+        pSocket = INVALID_SOCKET;
     }
 }
 
@@ -198,12 +198,12 @@ void Servidor::m_Ping(){
                 this->iCount--;
             } else {
                 //Leer pong
-                char cBuff[5];
-                //cambiar esto ya que bloquea la thread
-                int iRecv = this->cRecv(it->_sckCliente, cBuff, 4, 0, true);
-                cBuff[4] = '\0';
-                std::cout << cBuff << "\n";
-                if (strncmp(cBuff, "PONG~", 5) != 0) {
+                char cBuff[1024];
+                memset(&cBuff, 0, sizeof(cBuff));
+                
+                int iRecv = this->cRecv(it->_sckCliente, cBuff, sizeof(cBuff), 0, true);
+                
+                if (strncmp(cBuff, "PONG", 4) != 0) {
                     //Error recibiendo el pong, desconectar cliente
                     this->m_CerrarConexion(it->_sckCliente);
                     it->_ttUltimaVez = PING_TIME;
@@ -264,7 +264,7 @@ void Servidor::m_RemoverClienteLista(std::string p_ID){
     }
 }
 
-int Servidor::cSend(int& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock) {
+int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock) {
     // 1 non block
     // 0 block
     
@@ -282,7 +282,7 @@ int Servidor::cSend(int& pSocket, const char* pBuffer, int pLen, int pFlags, boo
         }
 
         int iEnviado = send(pSocket, strPaqueteFinal.c_str(), cData.size(), pFlags);
-        std::cout << "Block- Enviados " << iEnviado << " bytes\n";
+        
         //Restaurar
         iBlock = 1;
         if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
@@ -293,12 +293,11 @@ int Servidor::cSend(int& pSocket, const char* pBuffer, int pLen, int pFlags, boo
     }
     else {
         int iEnv = send(pSocket, strPaqueteFinal.c_str(), cData.size(), pFlags);
-        std::cout << "NonBlock- Enviados " << iEnv << " bytes\n";
         return iEnv;
     } 
 }
 
-int Servidor::cRecv(int& pSocket, char* pBuffer, int pLen, int pFlags, bool isBlock) {
+int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool isBlock) {
     
     // 1 non block
     // 0 block
@@ -308,7 +307,7 @@ int Servidor::cRecv(int& pSocket, char* pBuffer, int pLen, int pFlags, bool isBl
 
     int iRecibido = 0;
     
-    if (isBlock) {
+     if (isBlock) {
         //Hacer el socket block
         unsigned long int iBlock = 0;
         if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
@@ -316,6 +315,7 @@ int Servidor::cRecv(int& pSocket, char* pBuffer, int pLen, int pFlags, bool isBl
         }
 
         iRecibido = recv(pSocket, cTmpBuff, pLen, pFlags);
+        std::cout << "Got " << iRecibido << " bytes - " << cTmpBuff << "\n";
         if (iRecibido <= 0) {
             return -1;
         }
@@ -341,6 +341,7 @@ int Servidor::cRecv(int& pSocket, char* pBuffer, int pLen, int pFlags, bool isBl
     }
     else {
         iRecibido = recv(pSocket, cTmpBuff, pLen, pFlags);
+        std::cout << "Got " << iRecibido << " bytes - " << cTmpBuff << "\n";
 
         if (iRecibido <= 0) {
             return -1;

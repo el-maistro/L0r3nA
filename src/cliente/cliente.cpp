@@ -99,7 +99,7 @@ void Cliente::ProcesarComando(std::vector<std::string> strIn) {
         std::cout << "Ping\n";
 #endif
         //implementar un metodo para devolverle el pong con el numero de parametro
-        this->cSend(this->sckSocket, "PONG~", 5, 0, false);
+        int iB = this->cSend(this->sckSocket, "PONG", 4, 0, false);
     }
 }
 
@@ -107,6 +107,7 @@ void Cliente::ProcesarComando(std::vector<std::string> strIn) {
 void Cliente::iniPacket() {
     //Enviar SO
     std::string strOut = strOS();
+    
     int iB = cSend(this->sckSocket, strOut.c_str(), strOut.length(), 0, false);
 #ifdef ___DEBUG_
     std::cout << "Enviados " << iB << " bytes - "<< strOut <<"\n";
