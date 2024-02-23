@@ -44,7 +44,6 @@ FrameCliente::FrameCliente(std::string strID)
     this->m_tree->AppendItem(rootSurveilance, wxT("Keylogger"));
     this->m_tree->AppendItem(rootSurveilance, wxT("Camara"));
     
-    //this->m_tree->CrearNotebook();
     this->m_tree->p_Notebook = new wxAuiNotebook(pnl_Right, wxID_ANY, wxDefaultPosition, wxSize(600, 450),
         wxAUI_NB_CLOSE_ON_ACTIVE_TAB | wxAUI_NB_DEFAULT_STYLE | wxAUI_NB_TAB_EXTERNAL_MOVE | wxNO_BORDER);
 

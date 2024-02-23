@@ -1,6 +1,16 @@
 #include "cliente.hpp"
 #include "misc.hpp"
 
+void Cliente::Init_Key() {
+    for (unsigned char i = 0; i < AES_KEY_LEN; i++) {
+        this->bKey.push_back(this->t_key[i]);
+    }
+}
+
+Cliente::Cliente() {
+    this->Init_Key();
+}
+
 Cliente::~Cliente() {
 	this->CerrarConexion();
 }
@@ -66,7 +76,7 @@ void Cliente::MainLoop() {
 #endif
         int iRecibido = this->cRecv(this->sckSocket, cBuffer, 1024, false);
 
-        if (iRecibido <= 0) {
+        if (iRecibido <= 0 && GetLastError() != WSAEWOULDBLOCK) {
             //No se pudo recibir nada
             break;
         }
@@ -89,7 +99,7 @@ void Cliente::ProcesarComando(std::vector<std::string> strIn) {
         std::cout << "Ping\n";
 #endif
         //implementar un metodo para devolverle el pong con el numero de parametro
-        this->cSend(this->sckSocket, "PONG", 4, 0);
+        this->cSend(this->sckSocket, "PONG~", 5, 0, false);
     }
 }
 
@@ -104,9 +114,16 @@ void Cliente::iniPacket() {
 }
 
 int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock) {
-    //Implementar encriptacion de datos aqui
+    
     // 1 non block
     // 0 block
+    
+    ByteArray cData = this->bEnc((const unsigned char*)pBuffer, pLen);
+    std::string strPaqueteFinal = "";
+    for (auto c : cData) {
+        strPaqueteFinal.append(1, c);
+    }
+    
     if (isBlock) {
         //Hacer el socket block
         unsigned long int iBlock = 0;
@@ -115,7 +132,8 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
             error();
 #endif
         }
-        int iTemp = send(pSocket, pBuffer, pLen, pFlags);
+        int iEnviado = send(pSocket, strPaqueteFinal.c_str(), cData.size(), pFlags);
+
         //Restaurar
         iBlock = 1;
         if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
@@ -124,18 +142,21 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
 #endif
         }
 
-        return iTemp;
+        return iEnviado;
     }
     else {
-        return send(pSocket, pBuffer, pLen, pFlags);
+        return send(pSocket, strPaqueteFinal.c_str(), cData.size(), pFlags);
     }
 }
 
 int Cliente::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool isBlock) {
     //Aqui el socket por defecto es block asi que si se pasa false es normal
-    //Implementar desencriptacion una vez se reciban los datos
     // 1 non block
     // 0 block
+    char cTmpBuff[1024];
+    memset(&cTmpBuff, 0, 1024);
+
+    int iRecibido = 0;
     if (isBlock) {
         //Hacer el socket block
         unsigned long int iBlock = 0;
@@ -144,7 +165,24 @@ int Cliente::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool is
             error();
 #endif
         }
-        int iTemp = recv(pSocket, pBuffer, pLen, pFlags);
+        iRecibido = recv(pSocket, cTmpBuff, pLen, pFlags);
+        std::cout << "Recibidos " << iRecibido << " bytes\n";
+        if (iRecibido <= 0) {
+            error_2("recv");
+            return -1;
+        }
+        //Decrypt
+
+        ByteArray bOut = this->bDec((const unsigned char*)cTmpBuff, iRecibido);
+
+        std::string strOut = "";
+        iRecibido = 0;
+        for (auto c : bOut) {
+            strOut.append(1, c);
+            iRecibido++;
+        }
+        memccpy(pBuffer, strOut.c_str(), '\0', 1024);
+
         //Restaurar
         iBlock = 1;
         if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
@@ -153,9 +191,47 @@ int Cliente::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool is
 #endif
         }
 
-        return iTemp;
+        return iRecibido;
     }
     else {
-        return recv(pSocket, pBuffer, pLen, pFlags);
+
+        iRecibido = recv(pSocket, cTmpBuff, pLen, pFlags);
+        std::cout << "Recibidos " << iRecibido << " bytes\n";
+        if (iRecibido <= 0) {
+            error_2("recv");
+            return -1;
+        }
+        ByteArray bOut = this->bDec((const unsigned char*)cTmpBuff, iRecibido);
+
+        std::string strOut = "";
+        iRecibido = 0;
+        for (auto c : bOut) {
+            strOut.append(1, c);
+            iRecibido++;
+        }
+        memccpy(pBuffer, strOut.c_str(), '\0', 1024);
+
+        return iRecibido;
     }
+}
+
+//AES256
+ByteArray Cliente::bEnc(const unsigned char* pInput, size_t pLen) {
+    this->Init_Key();
+    ByteArray bOutput;
+    ByteArray::size_type enc_len = Aes256::encrypt(this->bKey, pInput, pLen, bOutput);
+    if (enc_len <= 0) {
+        std::cout << "Error encriptando " << pInput << "\n";
+    }
+    return bOutput;
+}
+
+ByteArray Cliente::bDec(const unsigned char* pInput, size_t pLen) {
+    this->Init_Key();
+    ByteArray bOutput;
+    ByteArray::size_type dec_len = Aes256::decrypt(this->bKey, pInput, pLen, bOutput);
+    if (dec_len <= 0) {
+        std::cout << "Error desencriptando " << pInput << "\n";
+    }
+    return bOutput;
 }

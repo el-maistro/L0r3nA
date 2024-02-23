@@ -23,7 +23,10 @@
 #include<cstring>
 #include<ctime>
 
-#define PING_TIME 60 * 1
+#include "aes256/aes256.hpp"
+
+#define PING_TIME 4 * 1
+#define AES_KEY_LEN 32
 
 
 extern bool bSignalFlag;

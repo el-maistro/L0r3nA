@@ -40,11 +40,20 @@ void MyLogClass::LogThis(std::string strInput, int iType){
 
 }
 
+void Servidor::Init_Key() {
+    for (unsigned char i = 0; i < AES_KEY_LEN; i++) {
+        this->bKey.push_back(this->t_key[i]);
+    }
+}
+
 Servidor::Servidor(){
     this->uiPuertoLocal = 30000;
 
     //clase para logear
     this->m_txtLog = new MyLogClass();
+
+    this->Init_Key();
+    
 }
 
 bool Servidor::m_Iniciar(){
@@ -181,7 +190,7 @@ void Servidor::m_Ping(){
                 //No se pudo enviar
                 std::string strTmp = "Cliente " + it->_strIp + "-" + it->_id + " desconectado";
                 this->m_txtLog->LogThis(strTmp, LogType::LogMessage);
-
+                this->m_txtLog->LogThis(std::to_string(GetLastError()), LogType::LogMessage);
                 this->m_RemoverClienteLista(it->_id);
                 it = this->vc_Clientes.erase(it);
                 
@@ -190,9 +199,11 @@ void Servidor::m_Ping(){
             } else {
                 //Leer pong
                 char cBuff[5];
+                //cambiar esto ya que bloquea la thread
                 int iRecv = this->cRecv(it->_sckCliente, cBuff, 4, 0, true);
                 cBuff[4] = '\0';
-                if (strncmp(cBuff, "PONG", 4) != 0) {
+                std::cout << cBuff << "\n";
+                if (strncmp(cBuff, "PONG~", 5) != 0) {
                     //Error recibiendo el pong, desconectar cliente
                     this->m_CerrarConexion(it->_sckCliente);
                     it->_ttUltimaVez = PING_TIME;
@@ -254,51 +265,120 @@ void Servidor::m_RemoverClienteLista(std::string p_ID){
 }
 
 int Servidor::cSend(int& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock) {
-    //Implementar encriptacion de datos aqui
     // 1 non block
     // 0 block
+    
+    ByteArray cData = this->bEnc((const unsigned char*)pBuffer, pLen);
+    std::string strPaqueteFinal = "";
+    for (auto c : cData) {
+        strPaqueteFinal.append(1, c);
+    }
+
     if (isBlock) {
         //Hacer el socket block
         unsigned long int iBlock = 0;
         if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
             this->m_txtLog->LogThis("Error configurando el socket NON_BLOCK", LogType::LogError);
         }
-        int iTemp = send(pSocket, pBuffer, pLen, pFlags);
+
+        int iEnviado = send(pSocket, strPaqueteFinal.c_str(), cData.size(), pFlags);
+        std::cout << "Block- Enviados " << iEnviado << " bytes\n";
         //Restaurar
         iBlock = 1;
         if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
             this->m_txtLog->LogThis("Error configurando el socket NON_BLOCK", LogType::LogError);
         }
 
-        return iTemp;
+        return iEnviado;
     }
     else {
-        return send(pSocket, pBuffer, pLen, pFlags);
+        int iEnv = send(pSocket, strPaqueteFinal.c_str(), cData.size(), pFlags);
+        std::cout << "NonBlock- Enviados " << iEnv << " bytes\n";
+        return iEnv;
     } 
 }
 
 int Servidor::cRecv(int& pSocket, char* pBuffer, int pLen, int pFlags, bool isBlock) {
-    //Implementar desencriptacion una vez se reciban los datos
+    
     // 1 non block
     // 0 block
+    
+    char cTmpBuff[1024];
+    memset(&cTmpBuff, 0, 1024);
+
+    int iRecibido = 0;
+    
     if (isBlock) {
         //Hacer el socket block
         unsigned long int iBlock = 0;
         if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
             this->m_txtLog->LogThis("Error configurando el socket NON_BLOCK", LogType::LogError);
         }
-        int iTemp = recv(pSocket, pBuffer, pLen, pFlags);
+
+        iRecibido = recv(pSocket, cTmpBuff, pLen, pFlags);
+        if (iRecibido <= 0) {
+            return -1;
+        }
+        //Decrypt
+        ByteArray bOut = this->bDec((const unsigned char*)cTmpBuff, iRecibido);
+
+        std::string strOut = "";
+        //set a 0 para volver a contar los bytes
+        iRecibido = 0;
+        for (auto c : bOut) {
+            strOut.append(1, c);
+            iRecibido++;
+        }
+        memccpy(pBuffer, strOut.c_str(), '\0', 1024);
+
         //Restaurar
         iBlock = 1;
         if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
             this->m_txtLog->LogThis("Error configurando el socket NON_BLOCK", LogType::LogError);
         }
 
-        return iTemp;
+        return iRecibido;
     }
     else {
-        return recv(pSocket, pBuffer, pLen, pFlags);
+        iRecibido = recv(pSocket, cTmpBuff, pLen, pFlags);
+
+        if (iRecibido <= 0) {
+            return -1;
+        }
+
+        ByteArray bOut = this->bDec((const unsigned char*)cTmpBuff, iRecibido);
+
+        std::string strOut = "";
+        iRecibido = 0;
+        for (auto c : bOut) {
+            strOut.append(1, c);
+            iRecibido++;
+        }
+        memccpy(pBuffer, strOut.c_str(), '\0', 1024);
+        return iRecibido;
     }
+}
+
+
+//AES256
+ByteArray Servidor::bEnc(const unsigned char* pInput, size_t pLen) {
+    this->Init_Key();
+    ByteArray bOutput;
+    ByteArray::size_type enc_len = Aes256::encrypt(this->bKey, pInput, pLen, bOutput);
+    if (enc_len <= 0) {
+        std::cout<<"Error encriptando "<<pInput<<"\n";
+    }
+    return bOutput;
+}
+
+ByteArray Servidor::bDec(const unsigned char* pInput, size_t pLen) {
+    this->Init_Key();
+    ByteArray bOutput;
+    ByteArray::size_type dec_len = Aes256::decrypt(this->bKey, pInput, pLen, bOutput);
+    if (dec_len <= 0) {
+        std::cout << "Error desencriptando " << pInput << "\n";
+    }
+    return bOutput;
 }
 
 //control list events

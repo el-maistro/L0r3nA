@@ -23,7 +23,8 @@ FetchContent_MakeAvailable(wxWidgets)
 set(SRCS main.cpp
          misc.cpp
          server.cpp
-         frame_cliente.cpp)
+         frame_cliente.cpp
+         aes256/aes256.cpp)
 
 add_executable(main WIN32 ${SRCS})
 target_link_libraries(main PRIVATE wxcore wxnet wxaui)

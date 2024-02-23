@@ -58,6 +58,11 @@ class Servidor{
         WSADATA wsa;
         struct sockaddr_in structServer;
 
+        unsigned char t_key[AES_KEY_LEN] = { 0x74, 0X48, 0X33, 0X2D, 0X4A, 0X5C, 0X2F, 0X61, 0X4E, 0X7C, 0X3C, 0X45, 0X72, 0X7B, 0X31, 0X33,
+                                  0X33, 0X37, 0X7D, 0X2E, 0X7E, 0X40, 0X69, 0X6C, 0X65, 0X72, 0X61, 0x25, 0x25, 0x5D, 0x00, 0x5E };
+
+        ByteArray bKey;
+        void Init_Key();
         int p_PingTime = 1000 * 60; //60 segundos
         
     public:
@@ -93,6 +98,10 @@ class Servidor{
         //Socket wraps
         int cSend(int& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock = false);
         int cRecv(int& pSocket, char* pBuffer, int pLen, int pFlags, bool isBlock = false);
+
+        //AES 256
+        ByteArray bDec(const unsigned char* pInput, size_t pLen);
+        ByteArray bEnc(const unsigned char* pInput, size_t pLen);
 
         void m_CerrarConexiones();
         void m_CerrarConexion(int& pSocket);
