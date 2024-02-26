@@ -172,6 +172,7 @@ void MyTreeCtrl::OnItemActivated(wxTreeEvent& event) {
 
 //Modulos
 panelTest::panelTest(wxWindow* pParent) :
-    wxPanel(pParent) {
+    wxPanel(pParent, EnumIDS::ID_Panel_Test) {
     wxButton* btn_Test = new wxButton(this, EnumIDS::ID_FrameClienteTest, "EXEC");
+    this->lblOutputTest = new wxStaticText(this, EnumIDS::ID_Panel_Label_Test, wxT("Output"), wxPoint(20, 20));
 }

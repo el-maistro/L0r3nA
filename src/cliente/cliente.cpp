@@ -94,13 +94,24 @@ void Cliente::ProcesarComando(std::vector<std::string> strIn) {
         //No hay comandos
         return;
     }
+    int iEnviado = 0;
     if(strIn[0] == "PING"){
 #ifdef ___DEBUG_
         std::cout << "Ping\n";
 #endif
         //implementar un metodo para devolverle el pong con el numero de parametro
-        int iB = this->cSend(this->sckSocket, "02\\P", 4, 0, false);
+        iEnviado = this->cSend(this->sckSocket, "02\\P", 4, 0, false);
     }
+
+    if (strIn[0] == "CUSTOM_TEST") {
+        std::string strTest = "03\\";
+        strTest += RandomID(7);
+        iEnviado = this->cSend(this->sckSocket, strTest.c_str(), strTest.size(), 0, false);
+    }
+
+#ifdef ___DEBUG_
+    std::cout << "Enviados "<<iEnviado<<" bytes\n";
+#endif
 }
 
 

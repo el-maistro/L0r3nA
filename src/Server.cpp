@@ -339,6 +339,32 @@ void Servidor::m_Escucha(){
                         lock.unlock();
                         
                     }
+
+                    if (vcDatos[0] == "03") { //CUSTOM_TEST
+                        std::string strTempID = "";
+                        std::unique_lock<std::mutex> lock(vector_mutex);
+                        for (auto vcCli : this->vc_Clientes) {
+                            if (vcCli._sckCliente == iSock) {
+                                strTempID = vcCli._id;
+                                break;
+                            }
+                        }
+                        lock.unlock();
+
+                        FrameCliente* temp = (FrameCliente*)wxWindow::FindWindowByName(strTempID);
+                        if (temp) {
+                            panelTest* temp_panel = (panelTest*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Test, temp);
+                            if (temp_panel) {
+                                wxStaticText* temp_static_text = (wxStaticText*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Label_Test, temp_panel);
+                                if (temp_static_text) {
+                                    temp_static_text->SetLabelText(vcDatos[1]);
+                                }
+                            }
+                        } else {
+                            std::cout << "No se pudo encontrar ventana activa con nombre " << strTempID << std::endl;
+                        }
+
+                    }
                 }
             }
 

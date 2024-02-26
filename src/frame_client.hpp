@@ -41,6 +41,7 @@ class FrameCliente : public wxFrame {
 class panelTest : public wxPanel {
     public:
         panelTest(wxWindow* pParent);
+        wxStaticText* lblOutputTest;
     private:
         
 };

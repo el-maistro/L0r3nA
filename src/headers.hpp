@@ -42,7 +42,9 @@ namespace EnumIDS {
         ID_LimpiarLog,
         ID_Interactuar,
         ID_FrameClienteTest,
-        TreeCtrl_ID
+        TreeCtrl_ID,
+        ID_Panel_Test,
+        ID_Panel_Label_Test
     };
 }
 
