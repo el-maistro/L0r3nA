@@ -20,7 +20,7 @@ class FrameCliente : public wxFrame {
     public:
         std::string strClienteID = "";
         std::vector<struct Cliente>::iterator p_Ite;
-        FrameCliente(std::string pstrID, int pID);
+        FrameCliente(std::string pstrID, wxString nameID);
 
         MyTreeCtrl* m_tree;
         

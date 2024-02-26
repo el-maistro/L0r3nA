@@ -3,8 +3,8 @@
 #define _SERVER_H
 
 struct Cliente{
-    SOCKET _sckCliente;
-    time_t _ttUltimaVez;
+    SOCKET _sckCliente = INVALID_SOCKET;
+    time_t _ttUltimaVez = 0;
     std::string _id;
     std::string _strIp;
     std::string _strSo;

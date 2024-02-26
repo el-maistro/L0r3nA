@@ -183,6 +183,12 @@ void MyFrame::OnClose(wxCloseEvent& event){
     
     std::unique_lock<std::mutex> lock(p_Servidor->p_mutex);
     p_Servidor->p_Escuchando = false;
+    for (auto it : p_Servidor->vc_Clientes) {
+        FrameCliente* temp = (FrameCliente*)wxWindow::FindWindowByName(it._id);
+        if (temp) {
+            temp->Close(true);
+        }
+    }
     lock.unlock();
     if (p_Servidor->thListener.joinable()) {
         p_Servidor->thListener.join();

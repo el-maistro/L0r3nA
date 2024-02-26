@@ -26,7 +26,7 @@
 
 #include "aes256/aes256.hpp"
 
-#define PING_TIME 4 * 1
+#define PING_TIME 5 * 1
 #define AES_KEY_LEN 32
 
 

