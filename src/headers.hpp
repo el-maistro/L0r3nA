@@ -6,6 +6,7 @@
 #include<wx/listctrl.h>
 #include<wx/treectrl.h>
 #include<wx/sizer.h>
+#include<wx/wxhtml.h>
 #include<wx/aui/aui.h>
 
 #include<ws2tcpip.h>

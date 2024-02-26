@@ -3,6 +3,8 @@
 
 #include<ws2tcpip.h>
 #include<windows.h>
+#include<lmcons.h>
+#include <intrin.h>
 #include<iostream>
 #include<mutex>
 #include<atomic>

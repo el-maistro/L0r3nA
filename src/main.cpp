@@ -80,7 +80,7 @@ MyFrame::MyFrame()
     p_Servidor->m_listCtrl = nullptr;
 
     
-    this->m_RPanel = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(600, 450));
+    this->m_RPanel = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(700, 450));
     
     this->m_LPanel = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(110, 600));
     this->m_LPanel->SetBackgroundColour(wxColor(255,0,0)); // REMOVE AT THE END
@@ -121,7 +121,8 @@ MyFrame::MyFrame()
 
     this->SetSizerAndFit(sizer);
 
-    SetClientSize(800,600);
+    SetClientSize(900,600);
+    SetSizeHints(920, 635, 920, 635);
     
     CreateStatusBar();
     SetStatusText("IDLE");
@@ -152,13 +153,21 @@ void MyFrame::CrearLista(long flags, bool withText){
     itemCol.SetAlign(wxLIST_FORMAT_CENTRE);
     p_Servidor->m_listCtrl->InsertColumn(0, itemCol);
 
+    itemCol.SetText("USUARIO");
+    itemCol.SetWidth(160);
+    p_Servidor->m_listCtrl->InsertColumn(1, itemCol);
+
     itemCol.SetText("IP");
     itemCol.SetWidth(120);
-    p_Servidor->m_listCtrl->InsertColumn(1, itemCol);
+    p_Servidor->m_listCtrl->InsertColumn(2, itemCol);
 
     itemCol.SetText("SO");
     itemCol.SetWidth(140);
-    p_Servidor->m_listCtrl->InsertColumn(2, itemCol);
+    p_Servidor->m_listCtrl->InsertColumn(3, itemCol);
+
+    itemCol.SetText("CPU");
+    itemCol.SetWidth(200);
+    p_Servidor->m_listCtrl->InsertColumn(4, itemCol);
 }
 
 void MyFrame::OnClose(wxCloseEvent& event){

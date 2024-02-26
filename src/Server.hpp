@@ -8,6 +8,8 @@ struct Cliente{
     std::string _id;
     std::string _strIp;
     std::string _strSo;
+    std::string _strUser;
+    std::string _strCpu;
     bool _isBusy = false;
 };
 

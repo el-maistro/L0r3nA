@@ -107,6 +107,10 @@ void Cliente::ProcesarComando(std::vector<std::string> strIn) {
 void Cliente::iniPacket() {
     //Enviar SO
     std::string strOut = strOS();
+    strOut.append(1, '\\');
+    strOut += strUserName();
+    strOut.append(1, '\\');
+    strOut += strCpu();
     
     int iB = cSend(this->sckSocket, strOut.c_str(), strOut.length(), 0, false);
 #ifdef ___DEBUG_
