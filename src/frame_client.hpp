@@ -55,6 +55,7 @@ class panelReverseShell : public wxPanel {
         unsigned long int p_uliUltimo = 19;
 
     private:
+        ~panelReverseShell();
         std::string strID = "";
 };
 #endif

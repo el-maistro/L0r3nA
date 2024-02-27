@@ -274,7 +274,7 @@ void Servidor::m_Escucha(){
                 
             } else {
                 //Datos de algun cliente :v
-                
+                std::cout << iSock << " IN...\n";
                 char cBuffer[4096];
                 ZeroMemory(cBuffer, sizeof(cBuffer));
 

