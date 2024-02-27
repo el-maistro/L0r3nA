@@ -1,5 +1,6 @@
 #include "misc.hpp"
 
+
 std::string RandomID(int iLongitud) {
 	const char* Map = "abcdefghijklmnopqrstuvwxyz1234567890-";
 	std::string strSalida = "";
