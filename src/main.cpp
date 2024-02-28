@@ -44,6 +44,7 @@ wxEND_EVENT_TABLE()
 wxBEGIN_EVENT_TABLE(FrameCliente, wxFrame)
     EVT_BUTTON(EnumIDS::ID_FrameClienteTest, FrameCliente::OnTest)
     EVT_CLOSE(FrameCliente::OnClose)
+    EVT_AUINOTEBOOK_PAGE_CLOSE(wxID_ANY, FrameCliente::OnClosePage)
 wxEND_EVENT_TABLE()
 
 wxBEGIN_EVENT_TABLE(MyTreeCtrl, wxTreeCtrl)

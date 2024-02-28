@@ -225,16 +225,14 @@ void Servidor::m_Escucha(){
     
     //Crear descriptor and setearlo a zero
     struct timeval timeout;
-    timeout.tv_sec = 0;
-    timeout.tv_usec = 600000;
+    timeout.tv_sec = 1;
+    timeout.tv_usec = 0;
     fd_set fdMaster;
     FD_ZERO(&fdMaster);
     
     FD_SET(this->sckSocket, &fdMaster);
     
     while(this->p_Escuchando){
-        //Sleep(10); //uso de CPU
-
         fd_set fdMaster_copy = fdMaster;
         
         int iNumeroSockets = select(this->sckSocket + 1, &fdMaster_copy, nullptr, nullptr, &timeout);
@@ -266,7 +264,6 @@ void Servidor::m_Escucha(){
                 FD_SET(sckNuevoCliente._sckSocket, &fdMaster);
 
                 //Agregar el cliente al vector global - se agrega a la list una vez se reciba la info
-                
                 std::unique_lock<std::mutex> lock(vector_mutex);
                 this->vc_Clientes.push_back(structNuevoCliente);
                 lock.unlock();
@@ -274,13 +271,11 @@ void Servidor::m_Escucha(){
                 
             } else {
                 //Datos de algun cliente :v
-                std::cout << iSock << " IN...\n";
                 char cBuffer[4096];
                 ZeroMemory(cBuffer, sizeof(cBuffer));
 
                 int iRecibido = this->cRecv(iSock, cBuffer, sizeof(cBuffer), 0, false);
                 if (iRecibido == WSAECONNRESET) {
-                    std::cout << "Conexion cerrada\n";
                     //El cliente cerro la conexion
                     std::unique_lock<std::mutex> lock(vector_mutex);
                     
@@ -298,8 +293,6 @@ void Servidor::m_Escucha(){
                     continue;
                 }
 
-                std::cout <<"BUFFER: "<< cBuffer << "\n";
-                
                 if (iRecibido <= 0) {
                     closesocket(iSock);
                     FD_CLR(iSock, &fdMaster);
@@ -327,7 +320,6 @@ void Servidor::m_Escucha(){
                     }
 
                     if (vcDatos[0] == "02") {//Pong
-                        std::cout << "PONG desde " << iSock << "\n";
                         std::unique_lock<std::mutex> lock(vector_mutex);
                         
                         for (auto vcCli : this->vc_Clientes) {
@@ -366,11 +358,27 @@ void Servidor::m_Escucha(){
 
                     }
 
+                    if (vcDatos[0] == "05") { //Termino la shell
+                        std::string strTempID = "";
+                        std::unique_lock<std::mutex> lock(vector_mutex);
+                        for(auto vcCli = this->vc_Clientes.begin(); vcCli != this->vc_Clientes.end(); vcCli++){
+                            if (vcCli->_sckCliente == iSock) {
+                                strTempID = vcCli->_id;
+                                vcCli->_isRunningShell = false;
+                                break;
+                            }
+                        }
+                        lock.unlock();
+
+                        isEscribirSalidaShell(strTempID, vcDatos[1]);
+                    }
+
                     if (vcDatos[0] == "06") {
                         std::string strOutJoined = "";
                         for (int i = 1; i<int(vcDatos.size()); i++) {
                             strOutJoined += vcDatos[i] + "\\";
                         }
+                        strOutJoined = strOutJoined.substr(0, strOutJoined.size() - 1);
 
                         std::string strTempID = "";
                         std::unique_lock<std::mutex> lock(vector_mutex);
@@ -382,18 +390,7 @@ void Servidor::m_Escucha(){
                         }
                         lock.unlock();
 
-                        FrameCliente* temp = (FrameCliente*)wxWindow::FindWindowByName(strTempID);
-                        if (temp) {
-                            panelReverseShell* panel_shell = (panelReverseShell*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Reverse_Shell, temp);
-                            if (panel_shell) {
-                                panel_shell->txtConsole->AppendText(strOutJoined);
-                                panel_shell->p_uliUltimo = panel_shell->txtConsole->GetLastPosition();
-
-                            }
-                        }
-                        else {
-                            std::cout << "No se pudo encontrar ventana activa con nombre " << strTempID << std::endl;
-                        }
+                        isEscribirSalidaShell(strTempID, strOutJoined);
 
                     }
                 }
@@ -402,7 +399,7 @@ void Servidor::m_Escucha(){
 
         }
     }
-    std::cout << "DONE Listen\n";
+    std::cout << "DONE Listen" << std::endl;
 }
 
 void Servidor::m_InsertarCliente(struct Cliente& p_Cliente){
@@ -472,7 +469,6 @@ int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool i
         }
 
         iRecibido = recv(pSocket, cTmpBuff, pLen, pFlags);
-        std::cout << "Got " << iRecibido << " bytes - " << cTmpBuff << " - "<<GetLastError()<<"\n";
         
         if (GetLastError() == WSAECONNRESET) {
             //funado el cliente
@@ -515,7 +511,7 @@ int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool i
         return iRecibido;
     }else {
         iRecibido = recv(pSocket, cTmpBuff, pLen, pFlags);
-        std::cout << "Got " << iRecibido << " bytes - " << cTmpBuff << "\n";
+        
         if (GetLastError() == WSAECONNRESET) {
             //funado el cliente
             if (cTmpBuff) {

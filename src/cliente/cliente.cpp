@@ -368,21 +368,21 @@ void Cliente::thLeerShell(HANDLE hPipe) {
             }
             cBuffer2[dBytesToWrite] = '\0';
 
-            //enviar buffer al server
             std::string strOut = "06\\";
             strOut += cBuffer2;
 
-            int isent = this->cSend(this->sckSocket, strOut.c_str(), strOut.size(), 0, false);
-            Sleep(100);
-#ifdef ___DEBUG_
-            std::cout << isent << "\n";
-#endif
+            int iEnviado = this->cSend(this->sckSocket, strOut.c_str(), strOut.size(), 0, false);
+            Sleep(10);
+            if (iEnviado <= 0) {
+                //Desconectado o se perdio la conexion
+                std::unique_lock<std::mutex> lock(this->mtx_shell);
+                this->isShellRunning = false;
+                lock.unlock();
+                break;
+            }
 
         }else {
-#ifdef ___DEBUG_
-            std::cout << "PeekNamedPipe error\n";
-            error();
-#endif
+            //error peeknamedpipe
             std::unique_lock<std::mutex> lock(this->mtx_shell);
             this->isShellRunning = false;
             lock.unlock();
@@ -390,7 +390,7 @@ void Cliente::thLeerShell(HANDLE hPipe) {
         }
     }
 #ifdef ___DEBUG_
-    std::cout << "Stop reading from shell\n";
+    std::cout<<"[!]thLeerShell finalizada"<<std::endl;
     error();
 #endif
 }
@@ -400,6 +400,7 @@ void Cliente::thEscribirShell(HANDLE hPipe) {
     char cRecvBytes[4096];
     DWORD dBytesWrited = 0;
     while (this->isShellRunning) {
+        ZeroMemory(cRecvBytes, sizeof(cRecvBytes));
         int iRecibido = this->cRecv(this->sckSocket, cRecvBytes, sizeof(cRecvBytes), 0, false);
 
         std::string strIn = cRecvBytes;
@@ -409,25 +410,19 @@ void Cliente::thEscribirShell(HANDLE hPipe) {
             lock.unlock();
             break;
         }
-        //if (cRecvBytes[0] == '\n' || cRecvBytes[0] == '\r' || dBufferC > 2047) {
-            if (!WriteFile(hPipe, cRecvBytes, iRecibido, &dBytesWrited, nullptr)) {
+        if (!WriteFile(hPipe, cRecvBytes, iRecibido, &dBytesWrited, nullptr)) {
 #ifdef ___DEBUG_
-                std::cout << "Error writing to pipe\n-DATA: " << cRecvBytes << std::endl;
-                error();
+            std::cout << "Error escribiendo a la tuberia\n-DATA: " << cRecvBytes << std::endl;
+            error();
 #endif
-                std::unique_lock<std::mutex> lock(this->mtx_shell);
-                this->isShellRunning = false;
-                lock.unlock();
-                break;
-            }
-#ifdef ___DEBUG_
-            //std::cout << "Writed " << dBytesWrited << " bytes\n";
-#endif
-            //dBufferC = 0;
-        //}
+            std::unique_lock<std::mutex> lock(this->mtx_shell);
+            this->isShellRunning = false;
+            lock.unlock();
+            break;
+        }
     }
 #ifdef ___DEBUG_
-    std::cout << "Stop writing to shell\n";
+    std::cout << "[!]thEscribirShell finalizada\n";
     error();
 #endif
 }

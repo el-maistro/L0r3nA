@@ -11,6 +11,7 @@ struct Cliente{
     std::string _strUser;
     std::string _strCpu;
     bool _isBusy = false;
+    bool _isRunningShell = false;
 };
 
 struct ClientConInfo{

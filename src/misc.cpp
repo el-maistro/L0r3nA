@@ -1,4 +1,23 @@
 #include "misc.hpp"
+#include "frame_client.hpp"
+
+bool isEscribirSalidaShell(std::string stdID, std::string strSalida) {
+	FrameCliente* temp = (FrameCliente*)wxWindow::FindWindowByName(stdID);
+	if (temp) {
+		panelReverseShell* panel_shell = (panelReverseShell*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Reverse_Shell, temp);
+		if (panel_shell) {
+			panel_shell->txtConsole->AppendText(strSalida);
+			panel_shell->p_uliUltimo = panel_shell->txtConsole->GetLastPosition();
+			return true;
+		}else {
+			return false;
+		}
+	}else {
+		std::cout << "No se pudo encontrar ventana activa con nombre " << stdID << std::endl;
+		return false;
+	}
+	return true;
+}
 
 std::string RandomTestLen() {
 	const char* Map = "abcdefghijklmnopqrstuvwxyz1234567890-@";
