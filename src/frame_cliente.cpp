@@ -260,6 +260,9 @@ void panelReverseShell::OnHook(wxKeyEvent& event) {
           
           event.Skip();
     } else {
+        if (this->txtConsole->GetInsertionPoint() < this->txtConsole->GetLastPosition()) {
+            this->txtConsole->SetInsertionPointEnd();
+        }
         event.Skip();
     }
 }
