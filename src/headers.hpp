@@ -26,7 +26,7 @@
 
 #include "aes256/aes256.hpp"
 
-#define PING_TIME 4 * 1
+#define PING_TIME 5 * 1
 #define AES_KEY_LEN 32
 
 
@@ -42,7 +42,11 @@ namespace EnumIDS {
         ID_LimpiarLog,
         ID_Interactuar,
         ID_FrameClienteTest,
-        TreeCtrl_ID
+        TreeCtrl_ID,
+        ID_Panel_Reverse_Shell,
+        ID_Panel_Reverse_Shell_TxtConsole,
+        ID_Panel_Test,
+        ID_Panel_Label_Test
     };
 }
 

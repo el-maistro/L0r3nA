@@ -178,79 +178,228 @@ void Servidor::m_Ping(){
         lock.unlock();
         
         std::unique_lock<std::mutex> lock2(vector_mutex);
+        
         for(auto it = this->vc_Clientes.begin(); it != this->vc_Clientes.end();){
-            //Si le mande un ping hace 10 segundos o si esta ocupado continuar con el otro
-            if ((time(0) - it->_ttUltimaVez) <= PING_TIME || it->_isBusy) {
-                ++it;
-                continue;
-            }
-
-            int iBytes = this->cSend(it->_sckCliente, "PING~1", 6, 0, false);
-            if(iBytes <= 0){
-                //No se pudo enviar
-                std::string strTmp = "Cliente " + it->_strIp + "-" + it->_id + " desconectado";
-                this->m_txtLog->LogThis(strTmp, LogType::LogMessage);
-                this->m_txtLog->LogThis(std::to_string(GetLastError()), LogType::LogMessage);
-                this->m_RemoverClienteLista(it->_id);
-                it = this->vc_Clientes.erase(it);
-                
-                std::unique_lock<std::mutex> lock3(this->count_mutex);
-                this->iCount--;
+            if ((time(0) - it->_ttUltimaVez) <= PING_TIME) {
+                    ++it;
+                    continue;
             } else {
-                //Leer pong
-                char cBuff[1024];
-                memset(&cBuff, 0, sizeof(cBuff));
-                
-                int iRecv = this->cRecv(it->_sckCliente, cBuff, sizeof(cBuff), 0, true);
-                
-                if (strncmp(cBuff, "PONG", 4) != 0) {
-                    //Error recibiendo el pong, desconectar cliente
-                    this->m_CerrarConexion(it->_sckCliente);
-                    it->_ttUltimaVez = PING_TIME;
-                }else {
-                    it->_ttUltimaVez = time(0);
+                if (!it->_isBusy) {
+                    //Si no esta activo enviar el ping
+                    int iBytes = this->cSend(it->_sckCliente, "PING~1", 6, 0, false);
+                    if (iBytes <= 0) {
+                        //No se pudo enviar el ping
+                        std::string strTmp = "Cliente " + it->_strIp + "-" + it->_id + " desconectado";
+                        this->m_txtLog->LogThis(strTmp, LogType::LogMessage);
+
+                        FrameCliente* temp = (FrameCliente*)wxWindow::FindWindowByName(it->_id);
+                        if (temp) {
+                            wxString strTmp = it->_id;
+                            strTmp.append(1, '>');
+                            strTmp += " desconectado";
+                            temp->SetTitle(strTmp);
+                        } else {
+                            std::cout << "No se pudo encontrar el objeto\n";
+                        }
+
+                        this->m_RemoverClienteLista(it->_id);
+                        it = this->vc_Clientes.erase(it);
+
+                        std::unique_lock<std::mutex> lock3(this->count_mutex);
+                        this->iCount--;
+                    } else {
+                        it->_ttUltimaVez = time(0);
+                        ++it;
+                    }
+                } else {
+                    ++it;
                 }
-                ++it;
             }
         }
         lock2.unlock(); //desbloquear vector
-
     }
 }
 
 void Servidor::m_Escucha(){
     this->m_txtLog->LogThis("Thread LISTENER iniciada", LogType::LogMessage);
+    
+    //Crear descriptor and setearlo a zero
+    struct timeval timeout;
+    timeout.tv_sec = 1;
+    timeout.tv_usec = 0;
+    fd_set fdMaster;
+    FD_ZERO(&fdMaster);
+    
+    FD_SET(this->sckSocket, &fdMaster);
+    
     while(this->p_Escuchando){
-        Sleep(100); //uso de CPU
-        struct ClientConInfo sckNuevoCliente = this->m_Aceptar();
-        if(sckNuevoCliente._sckSocket != INVALID_SOCKET){
-            //Socket nuevo hereda non_block del mainsocket
-            
-            std::string strtmpIP = sckNuevoCliente._strIp;
-            strtmpIP.append(1, ':');
-            strtmpIP.append(sckNuevoCliente._strPuerto);
+        fd_set fdMaster_copy = fdMaster;
+        
+        int iNumeroSockets = select(this->sckSocket + 1, &fdMaster_copy, nullptr, nullptr, &timeout);
+        
+        for (int iCont = 0; iCont < iNumeroSockets; iCont++) {
+            SOCKET iSock = fdMaster_copy.fd_array[iCont];
 
-            //Leer config inicial user, so, cpu
-            char cBuff[2048];
-            memset(&cBuff, 0, 2048);
-            int iR = this->cRecv(sckNuevoCliente._sckSocket, cBuff, 2048, 0, true);
-            std::cout << cBuff << "\n";
-            std::vector<std::string> vcDatos = strSplit(std::string(cBuff), '\\', 5);
-            std::string strTmpId = RandomID(7); 
-            strTmpId.append(1, '-');
-            strTmpId += std::to_string(sckNuevoCliente._sckSocket);
-            struct Cliente structNuevoCliente = { sckNuevoCliente._sckSocket, time(0), strTmpId, strtmpIP, vcDatos[0], vcDatos[1], vcDatos[2]};
-            
-            std::unique_lock<std::mutex> lock(vector_mutex);
-            this->vc_Clientes.push_back(structNuevoCliente);
-            lock.unlock();
+            if (iSock == this->sckSocket) {
+                //Nueva conexion
+                struct ClientConInfo sckNuevoCliente = this->m_Aceptar();
+                
+                //IP:PUERTO
+                std::string strtmpIP = sckNuevoCliente._strIp;
+                strtmpIP.append(1, ':');
+                strtmpIP.append(sckNuevoCliente._strPuerto);
 
-            std::unique_lock<std::mutex> lock2(this->count_mutex);
-            this->m_InsertarCliente(structNuevoCliente);
-            this->iCount++;
+                //RANDOM ID
+                std::string strTmpId = RandomID(7);
+                strTmpId.append(1, '-');
+                strTmpId += std::to_string(sckNuevoCliente._sckSocket);
+
+                struct Cliente structNuevoCliente;
+                structNuevoCliente._sckCliente = sckNuevoCliente._sckSocket;
+                structNuevoCliente._ttUltimaVez = time(0);
+                structNuevoCliente._id = strTmpId;
+                structNuevoCliente._strIp = strtmpIP;
+
+                //Agregar el cliente al fdmaster
+                FD_SET(sckNuevoCliente._sckSocket, &fdMaster);
+
+                //Agregar el cliente al vector global - se agrega a la list una vez se reciba la info
+                std::unique_lock<std::mutex> lock(vector_mutex);
+                this->vc_Clientes.push_back(structNuevoCliente);
+                lock.unlock();
+                
+                
+            } else {
+                //Datos de algun cliente :v
+                char cBuffer[4096];
+                ZeroMemory(cBuffer, sizeof(cBuffer));
+
+                int iRecibido = this->cRecv(iSock, cBuffer, sizeof(cBuffer), 0, false);
+                if (iRecibido == WSAECONNRESET) {
+                    //El cliente cerro la conexion
+                    std::unique_lock<std::mutex> lock(vector_mutex);
+                    
+                    for (int i = 0; i < int(this->vc_Clientes.size()); i++) {
+                        if (this->vc_Clientes[i]._sckCliente == iSock) {
+                            this->vc_Clientes[i]._isBusy = false;
+                            this->vc_Clientes[i]._ttUltimaVez = PING_TIME;
+
+                            FD_CLR(iSock, &fdMaster);
+                            break;
+                        }
+                    }
+                    lock.unlock();
+                    
+                    continue;
+                }
+
+                if (iRecibido <= 0) {
+                    closesocket(iSock);
+                    FD_CLR(iSock, &fdMaster);
+                } else {
+                    std::vector<std::string> vcDatos = strSplit(std::string(cBuffer), '\\', 10000000); //maximo 5 por ahora, pero se deberia de incrementar en un futuro
+
+                    if(vcDatos[0] == "01") { //Paquete inicial user,so,cpu
+                        struct Cliente structTmp;
+                        std::unique_lock<std::mutex> lock(vector_mutex);
+                        
+                        for (auto vcCli : this->vc_Clientes) {
+                            if (vcCli._sckCliente == iSock) {
+                                vcCli._strSo = vcDatos[1];
+                                vcCli._strUser = vcDatos[2];
+                                vcCli._strCpu = vcDatos[3];
+                                structTmp = vcCli;
+                                break;
+                            }
+                        }
+                        lock.unlock();
+                        
+                        std::unique_lock<std::mutex> lock2(this->count_mutex);
+                        this->m_InsertarCliente(structTmp);
+                        this->iCount++;
+                    }
+
+                    if (vcDatos[0] == "02") {//Pong
+                        std::unique_lock<std::mutex> lock(vector_mutex);
+                        
+                        for (auto vcCli : this->vc_Clientes) {
+                            if (vcCli._sckCliente == iSock) {
+                                vcCli._ttUltimaVez = time(0);
+                                break;
+                            }
+                        }
+                        lock.unlock();
+                        
+                    }
+
+                    if (vcDatos[0] == "03") { //CUSTOM_TEST
+                        std::string strTempID = "";
+                        std::unique_lock<std::mutex> lock(vector_mutex);
+                        for (auto vcCli : this->vc_Clientes) {
+                            if (vcCli._sckCliente == iSock) {
+                                strTempID = vcCli._id;
+                                break;
+                            }
+                        }
+                        lock.unlock();
+
+                        FrameCliente* temp = (FrameCliente*)wxWindow::FindWindowByName(strTempID);
+                        if (temp) {
+                            panelTest* temp_panel = (panelTest*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Test, temp);
+                            if (temp_panel) {
+                                wxStaticText* temp_static_text = (wxStaticText*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Label_Test, temp_panel);
+                                if (temp_static_text) {
+                                    temp_static_text->SetLabelText(vcDatos[1]);
+                                }
+                            }
+                        } else {
+                            std::cout << "No se pudo encontrar ventana activa con nombre " << strTempID << std::endl;
+                        }
+
+                    }
+
+                    if (vcDatos[0] == "05") { //Termino la shell
+                        std::string strTempID = "";
+                        std::unique_lock<std::mutex> lock(vector_mutex);
+                        for(auto vcCli = this->vc_Clientes.begin(); vcCli != this->vc_Clientes.end(); vcCli++){
+                            if (vcCli->_sckCliente == iSock) {
+                                strTempID = vcCli->_id;
+                                vcCli->_isRunningShell = false;
+                                break;
+                            }
+                        }
+                        lock.unlock();
+
+                        isEscribirSalidaShell(strTempID, vcDatos[1]);
+                    }
+
+                    if (vcDatos[0] == "06") {
+                        std::string strOutJoined = "";
+                        for (int i = 1; i<int(vcDatos.size()); i++) {
+                            strOutJoined += vcDatos[i] + "\\";
+                        }
+                        strOutJoined = strOutJoined.substr(0, strOutJoined.size() - 1);
+
+                        std::string strTempID = "";
+                        std::unique_lock<std::mutex> lock(vector_mutex);
+                        for (auto vcCli : this->vc_Clientes) {
+                            if (vcCli._sckCliente == iSock) {
+                                strTempID = vcCli._id;
+                                break;
+                            }
+                        }
+                        lock.unlock();
+
+                        isEscribirSalidaShell(strTempID, strOutJoined);
+
+                    }
+                }
+            }
+
+
         }
     }
-    std::cout << "DONE Listen\n";
+    std::cout << "DONE Listen" << std::endl;
 }
 
 void Servidor::m_InsertarCliente(struct Cliente& p_Cliente){
@@ -308,9 +457,8 @@ int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool i
     // 1 non block
     // 0 block
     
-    char cTmpBuff[1024];
-    memset(&cTmpBuff, 0, 1024);
-
+    char *cTmpBuff = new char[pLen];
+    ZeroMemory(cTmpBuff, pLen);
     int iRecibido = 0;
     
      if (isBlock) {
@@ -321,8 +469,21 @@ int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool i
         }
 
         iRecibido = recv(pSocket, cTmpBuff, pLen, pFlags);
-        std::cout << "Got " << iRecibido << " bytes - " << cTmpBuff << "\n";
+        
+        if (GetLastError() == WSAECONNRESET) {
+            //funado el cliente
+            if (cTmpBuff) {
+                ZeroMemory(cTmpBuff, pLen);
+                delete[] cTmpBuff;
+            }
+            return WSAECONNRESET;
+        }
+
         if (iRecibido <= 0) {
+            if (cTmpBuff) {
+                ZeroMemory(cTmpBuff, pLen);
+                delete[] cTmpBuff;
+            }
             return -1;
         }
         //Decrypt
@@ -343,13 +504,27 @@ int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool i
             this->m_txtLog->LogThis("Error configurando el socket NON_BLOCK", LogType::LogError);
         }
 
+        if (cTmpBuff) {
+            ZeroMemory(cTmpBuff, pLen);
+            delete[] cTmpBuff;
+        }
         return iRecibido;
-    }
-    else {
+    }else {
         iRecibido = recv(pSocket, cTmpBuff, pLen, pFlags);
-        std::cout << "Got " << iRecibido << " bytes - " << cTmpBuff << "\n";
-
+        
+        if (GetLastError() == WSAECONNRESET) {
+            //funado el cliente
+            if (cTmpBuff) {
+                ZeroMemory(cTmpBuff, pLen);
+                delete[] cTmpBuff;
+            }
+            return WSAECONNRESET;
+        }
         if (iRecibido <= 0) {
+            if (cTmpBuff) {
+                ZeroMemory(cTmpBuff, pLen);
+                delete[] cTmpBuff;
+            }
             return -1;
         }
 
@@ -362,6 +537,11 @@ int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool i
             iRecibido++;
         }
         memccpy(pBuffer, strOut.c_str(), '\0', 1024);
+
+        if (cTmpBuff) {
+            ZeroMemory(cTmpBuff, pLen);
+            delete[] cTmpBuff;
+        }
         return iRecibido;
     }
 }
@@ -446,7 +626,8 @@ void MyListCtrl::OnInteractuar(wxCommandEvent& event) {
     //long lFound = this->FindItem(0, vcOut[0]);
     std::vector<std::string> vcOut = strSplit(strTmp.ToStdString(), '/', 2);
     
-    FrameCliente* n_FrameCli = new FrameCliente(this->strTmp.ToStdString(), 2);
+    
+    FrameCliente* n_FrameCli = new FrameCliente(this->strTmp.ToStdString(), vcOut[0]);
     n_FrameCli->Show(true);
 }
 

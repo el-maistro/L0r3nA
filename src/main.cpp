@@ -44,6 +44,7 @@ wxEND_EVENT_TABLE()
 wxBEGIN_EVENT_TABLE(FrameCliente, wxFrame)
     EVT_BUTTON(EnumIDS::ID_FrameClienteTest, FrameCliente::OnTest)
     EVT_CLOSE(FrameCliente::OnClose)
+    EVT_AUINOTEBOOK_PAGE_CLOSE(wxID_ANY, FrameCliente::OnClosePage)
 wxEND_EVENT_TABLE()
 
 wxBEGIN_EVENT_TABLE(MyTreeCtrl, wxTreeCtrl)
@@ -149,7 +150,7 @@ void MyFrame::CrearLista(long flags, bool withText){
    
     wxListItem itemCol;
     itemCol.SetText("ID");
-    itemCol.SetWidth(60);
+    itemCol.SetWidth(100);
     itemCol.SetAlign(wxLIST_FORMAT_CENTRE);
     p_Servidor->m_listCtrl->InsertColumn(0, itemCol);
 
@@ -183,6 +184,12 @@ void MyFrame::OnClose(wxCloseEvent& event){
     
     std::unique_lock<std::mutex> lock(p_Servidor->p_mutex);
     p_Servidor->p_Escuchando = false;
+    for (auto it : p_Servidor->vc_Clientes) {
+        FrameCliente* temp = (FrameCliente*)wxWindow::FindWindowByName(it._id);
+        if (temp) {
+            temp->Close(true);
+        }
+    }
     lock.unlock();
     if (p_Servidor->thListener.joinable()) {
         p_Servidor->thListener.join();

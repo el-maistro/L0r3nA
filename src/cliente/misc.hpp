@@ -1,5 +1,6 @@
 #include "headers.hpp"
 
+std::string RandomID(int iLongitud);
 std::string strCpu();
 std::string strUserName();
 std::string strOS();
