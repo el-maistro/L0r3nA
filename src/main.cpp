@@ -150,7 +150,7 @@ void MyFrame::CrearLista(long flags, bool withText){
    
     wxListItem itemCol;
     itemCol.SetText("ID");
-    itemCol.SetWidth(60);
+    itemCol.SetWidth(100);
     itemCol.SetAlign(wxLIST_FORMAT_CENTRE);
     p_Servidor->m_listCtrl->InsertColumn(0, itemCol);
 

@@ -54,11 +54,14 @@ class panelReverseShell : public wxPanel {
     public:
         panelReverseShell(wxWindow* pParent);
         wxTextCtrl* txtConsole;
-        void OnText(wxCommandEvent& event);
         void OnHook(wxKeyEvent& event);
         unsigned long int p_uliUltimo = 19;
 
     private:
+        //Historial
+        std::vector<wxString> vc_History;
+        int iHistorialPos = 0;
+
         std::string strID = "";
 };
 #endif
