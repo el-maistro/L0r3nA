@@ -1,7 +1,7 @@
-LINK2=-lws2_32 -Wl,-Bstatic -s -w -ffunction-sections -fdata-sections -Wno-write-strings -fno-exceptions -fmerge-all-constants -static-libgcc -Wl,-Bstatic
-LINK=-lws2_32
+LINK2=-lws2_32 -lwinmm -Wl,-Bstatic -s -w -ffunction-sections -fdata-sections -Wno-write-strings -fno-exceptions -fmerge-all-constants -static-libgcc -Wl,-Bstatic
+LINK=-lws2_32 -lwinmm
 CFLAG=-Wall -Wextra -std=c++11 -pedantic -g
-OBJ=main.o misc.o cliente.o
+OBJ=main.o misc.o cliente.o mod_mic.o
 BIN=cliente.exe
 CC=x86_64-w64-mingw32-g++.exe
 RM=rm

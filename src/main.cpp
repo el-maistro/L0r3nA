@@ -76,7 +76,8 @@ MyFrame::MyFrame()
     //_CrtSetBreakAlloc(40404);
     //_CrtSetBreakAlloc(40403);
     //_CrtSetBreakAlloc(40402);
-
+    SetBackgroundColour(wxColour(255, 255, 255, 128)); // Establecer el color de fondo con transparencia
+    SetTransparent(245);
     p_Servidor = new Servidor();
     p_Servidor->m_listCtrl = nullptr;
 

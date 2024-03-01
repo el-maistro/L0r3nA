@@ -1,7 +1,7 @@
 #include "headers.hpp"
 #include "cliente.hpp"
 
-int main(int argc, char** argv) {
+int main() {
 	WSADATA wsa;
 	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
 		error();
@@ -9,7 +9,7 @@ int main(int argc, char** argv) {
 	}
 
 	Cliente* cCliente = new Cliente();
-
+	
 	while (cCliente->isRunning) {
 		if (cCliente->bConectar("127.0.0.1", "30000")) {
 			std::cout << "Conectado\n";
