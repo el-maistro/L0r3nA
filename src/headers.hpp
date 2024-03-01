@@ -50,4 +50,13 @@ namespace EnumIDS {
     };
 }
 
+namespace EnumComandos {
+    enum Enum {
+        Reverse_Shell_Start = 500,
+        Reverse_Shell_Command,
+        Reverse_Shell_Salida,
+        PING
+    };
+}
+
 #endif

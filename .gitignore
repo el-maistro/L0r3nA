@@ -8,3 +8,4 @@ src/out*
 .vs*
 *.json
 *.zip
+enc_temp_folder/*
