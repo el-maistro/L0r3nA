@@ -38,7 +38,9 @@ namespace EnumComandos {
         Reverse_Shell_Start,
         Reverse_Shell_Command,
         Reverse_Shell_Salida,
-        Reverse_Shell_Finish
+        Reverse_Shell_Finish,
+        Mic_Refre_Dispositivos,
+        Mic_Refre_Resultado
     };
 }
 

@@ -47,7 +47,10 @@ namespace EnumIDS {
         ID_Panel_Reverse_Shell,
         ID_Panel_Reverse_Shell_TxtConsole,
         ID_Panel_Test,
-        ID_Panel_Label_Test
+        ID_Panel_Label_Test,
+        ID_Panel_Microphone,
+        ID_Panel_Mic_CMB_Devices,
+        ID_Panel_Mic_BTN_Refresh
     };
 }
 
@@ -58,7 +61,9 @@ namespace EnumComandos {
         Reverse_Shell_Start,
         Reverse_Shell_Command,
         Reverse_Shell_Salida,
-        Reverse_Shell_Finish
+        Reverse_Shell_Finish,
+        Mic_Refre_Dispositivos,
+        Mic_Refre_Resultado
     };
 }
 

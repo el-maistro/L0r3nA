@@ -36,20 +36,6 @@ wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
     EVT_CLOSE(MyFrame::OnClose)
 wxEND_EVENT_TABLE()
 
-wxBEGIN_EVENT_TABLE(MyListCtrl, wxListCtrl)
-    EVT_CONTEXT_MENU(MyListCtrl::OnContextMenu)
-    EVT_MENU(EnumIDS::ID_Interactuar, MyListCtrl::OnInteractuar)
-wxEND_EVENT_TABLE()
-
-wxBEGIN_EVENT_TABLE(FrameCliente, wxFrame)
-    EVT_BUTTON(EnumIDS::ID_FrameClienteTest, FrameCliente::OnTest)
-    EVT_CLOSE(FrameCliente::OnClose)
-    EVT_AUINOTEBOOK_PAGE_CLOSE(wxID_ANY, FrameCliente::OnClosePage)
-wxEND_EVENT_TABLE()
-
-wxBEGIN_EVENT_TABLE(MyTreeCtrl, wxTreeCtrl)
-    EVT_TREE_ITEM_ACTIVATED(EnumIDS::TreeCtrl_ID, MyTreeCtrl::OnItemActivated)
-wxEND_EVENT_TABLE()
 
 class MyApp : public wxApp {
 public:
@@ -72,10 +58,10 @@ MyFrame::MyFrame()
     : wxFrame(nullptr, wxID_ANY, "Lorena")
 {
     //Trace memory leak
-    //_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-    //_CrtSetBreakAlloc(40404);
-    //_CrtSetBreakAlloc(40403);
-    //_CrtSetBreakAlloc(40402);
+    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+    //_CrtSetBreakAlloc(73502);
+    //_CrtSetBreakAlloc(71043);
+    //_CrtSetBreakAlloc(71042);
     SetBackgroundColour(wxColour(255, 255, 255, 128)); // Establecer el color de fondo con transparencia
     SetTransparent(245);
     p_Servidor = new Servidor();

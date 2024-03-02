@@ -64,4 +64,15 @@ class panelReverseShell : public wxPanel {
 
         std::string strID = "";
 };
+
+class panelMicrophone : public wxPanel {
+    public:
+        panelMicrophone(wxWindow* pParent);
+
+    private:
+        std::string strID = "";
+        void OnRefrescarDispositivos(wxCommandEvent& event);
+        
+        wxDECLARE_EVENT_TABLE();
+};
 #endif

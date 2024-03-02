@@ -15,8 +15,7 @@ int main() {
 			std::cout << "Conectado\n";
 			cCliente->iniPacket();
 			cCliente->MainLoop();
-		}
-		else {
+		} else {
 			//no se pudo conectar
 #ifdef ___DEBUG_
 			std::cout<<"No se pudo conectar el host\n";

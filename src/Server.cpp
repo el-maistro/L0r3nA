@@ -301,6 +301,12 @@ void Servidor::m_Escucha(){
                 } else {
                     std::vector<std::string> vcDatos = strSplit(std::string(cBuffer), '\\', 10000000); //maximo 5 por ahora, pero se deberia de incrementar en un futuro
 
+                    if (vcDatos.size() == 0) {
+                        std::cout << "No su pudo procesa:<<< " << cBuffer << std::endl;
+                        continue;
+                    }
+
+
                     if(vcDatos[0] == "01") { //Paquete inicial user,so,cpu
                         struct Cliente structTmp;
                         std::unique_lock<std::mutex> lock(vector_mutex);
@@ -393,6 +399,38 @@ void Servidor::m_Escucha(){
 
                         isEscribirSalidaShell(strTempID, strOutJoined);
                         
+                    }
+
+                    if (vcDatos[0] == std::to_string(EnumComandos::Mic_Refre_Resultado)) {
+                        //Resultado de dispositivos de entrada (Mic)
+                        wxArrayString cli_devices;
+                        for (int i = 1; i<int(vcDatos.size()); i++) {
+                            cli_devices.push_back(vcDatos[i]);
+                        }
+
+                        std::string strTempID = "";
+                        std::unique_lock<std::mutex> lock(vector_mutex);
+                        for (auto vcCli : this->vc_Clientes) {
+                            if (vcCli._sckCliente == iSock) {
+                                strTempID = vcCli._id;
+                                break;
+                            }
+                        }
+
+                        FrameCliente* temp = (FrameCliente*)wxWindow::FindWindowByName(strTempID);
+                        if (temp) {
+                            panelMicrophone* temp_panel = (panelMicrophone*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Microphone, temp);
+                            if (temp_panel) {
+                                wxComboBox* temp_combo_box = (wxComboBox*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Mic_CMB_Devices, temp_panel);
+                                if (temp_combo_box) {
+                                    temp_combo_box->Clear();
+                                    temp_combo_box->Append(cli_devices);
+                                }
+                            }
+                        }
+                        else {
+                            std::cout << "No se pudo encontrar ventana activa con nombre " << strTempID << std::endl;
+                        }
                     }
                 }
             }

