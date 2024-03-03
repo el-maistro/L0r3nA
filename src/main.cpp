@@ -58,7 +58,7 @@ MyFrame::MyFrame()
     : wxFrame(nullptr, wxID_ANY, "Lorena")
 {
     //Trace memory leak
-    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+    //_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
     //_CrtSetBreakAlloc(73502);
     //_CrtSetBreakAlloc(71043);
     //_CrtSetBreakAlloc(71042);

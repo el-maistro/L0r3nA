@@ -97,7 +97,9 @@ class Servidor{
         void m_InsertarCliente(struct Cliente& p_Cliente);
         void m_RemoverClienteLista(std::string p_ID);
 
-        
+        //Mic en tiempo real
+        void m_ReproducirPaquete(const char* pBuffer, size_t iLen);
+
         //Socket wraps
         int cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock = false);
         int cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool isBlock = false);

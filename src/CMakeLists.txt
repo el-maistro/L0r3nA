@@ -27,4 +27,4 @@ set(SRCS main.cpp
          aes256/aes256.cpp)
 
 add_executable(main WIN32 ${SRCS})
-target_link_libraries(main PRIVATE wxcore wxnet wxaui wxhtml)
+target_link_libraries(main PRIVATE wxcore wxnet wxaui wxhtml winmm)

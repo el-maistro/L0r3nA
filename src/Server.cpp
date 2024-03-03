@@ -432,6 +432,20 @@ void Servidor::m_Escucha(){
                             std::cout << "No se pudo encontrar ventana activa con nombre " << strTempID << std::endl;
                         }
                     }
+
+                    if (vcDatos[0] == std::to_string(EnumComandos::Mic_Live_Packet)) {
+                        //Siempre escucha el mic por defecto, 
+                        //implementar que escucha por el dispositivo seleccionado en el combobox
+                        //std::cout << "Live Mic: " << iRecibido - 4 << " bytes" << std::endl;
+                        char* nBuffer = new char[iRecibido - 2];
+                        //ZeroMemory(nBuffer, iRecibido - 2);
+                        memcpy(nBuffer, &cBuffer[4], iRecibido - 4);
+                        std::cout << "LIVE\n" << nBuffer << std::endl;
+                        //std::string strPaquete = std::string(cBuffer).substr(4, iRecibido - 4);
+                        this->m_ReproducirPaquete(nBuffer, iRecibido-4);
+                        delete nBuffer;
+                        nBuffer = nullptr;
+                    }
                 }
             }
 
@@ -439,6 +453,46 @@ void Servidor::m_Escucha(){
         }
     }
     std::cout << "DONE Listen" << std::endl;
+}
+
+void Servidor::m_ReproducirPaquete(const char* pBuffer, size_t iLen) {
+    // Configurar formato de audio para reproducción
+    WAVEFORMATEX wfx = {};
+    wfx.wFormatTag = WAVE_FORMAT_PCM;
+    wfx.nChannels = 2;
+    wfx.nSamplesPerSec = 44100;
+    wfx.wBitsPerSample = 16;
+    wfx.nBlockAlign = wfx.wBitsPerSample * wfx.nChannels / 8;
+    wfx.nAvgBytesPerSec = wfx.nBlockAlign * wfx.nSamplesPerSec;
+
+    // Abrir el dispositivo de reproducción de audio
+    HWAVEOUT wo;
+    if (waveOutOpen(&wo, WAVE_MAPPER, &wfx, NULL, NULL, CALLBACK_NULL) != MMSYSERR_NOERROR) {
+        std::cerr << "Error al abrir el dispositivo de reproducción de audio" << std::endl;
+        return;
+    }
+
+    std::cout << "Cliente conectado. Reproduciendo audio..." << std::endl;
+
+    // Reproducir los datos de audio recibidos
+    char* nBuffer = new char[iLen];
+    memcpy(nBuffer, pBuffer, iLen);
+
+    WAVEHDR header = {};
+    header.lpData = nBuffer;
+    header.dwBufferLength = iLen;
+    if (waveOutPrepareHeader(wo, &header, sizeof(header)) != MMSYSERR_NOERROR) {
+        std::cerr << "Error al preparar el encabezado del buffer de audio" << std::endl;
+    } else {
+        if (waveOutWrite(wo, &header, sizeof(header)) != MMSYSERR_NOERROR) {
+            std::cerr << "Error al escribir el buffer de audio en el dispositivo de reproducción" << std::endl;
+        }
+    }
+
+    delete nBuffer;
+    nBuffer = nullptr;
+
+    waveOutClose(wo);
 }
 
 void Servidor::m_InsertarCliente(struct Cliente& p_Cliente){

@@ -40,7 +40,10 @@ namespace EnumComandos {
         Reverse_Shell_Salida,
         Reverse_Shell_Finish,
         Mic_Refre_Dispositivos,
-        Mic_Refre_Resultado
+        Mic_Refre_Resultado,
+        Mic_Iniciar_Escucha,
+        Mic_Detener_Escucha,
+        Mic_Live_Packet,
     };
 }
 

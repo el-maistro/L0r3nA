@@ -22,6 +22,8 @@ wxEND_EVENT_TABLE()
 
 wxBEGIN_EVENT_TABLE(panelMicrophone, wxPanel)
     EVT_BUTTON(EnumIDS::ID_Panel_Mic_BTN_Refresh, panelMicrophone::OnRefrescarDispositivos)
+    EVT_BUTTON(EnumIDS::ID_Panel_Mic_BTN_Escuchar, panelMicrophone::OnEscuchar)
+    EVT_BUTTON(EnumIDS::ID_Panel_Mic_BTN_Detener, panelMicrophone::OnDetener)
 wxEND_EVENT_TABLE()
 
 FrameCliente::FrameCliente(std::string strID, wxString nameID)
@@ -327,26 +329,54 @@ panelMicrophone::panelMicrophone(wxWindow* pParent) :
 
     this->SetBackgroundColour(wxColor(200, 200, 200));
 
-    //wxBoxSizer* mic_sizer = new wxBoxSizer(wxHORIZONTAL);
-
-    //wxGridSizer* mic_grid = new wxGridSizer(1, 3, 2, 2);
+    
+    wxBoxSizer* main_sizer = new wxBoxSizer(wxVERTICAL);    
+    wxBoxSizer* row_sizer1 = new wxBoxSizer(wxHORIZONTAL);
+    wxBoxSizer* row_sizer2 = new wxBoxSizer(wxHORIZONTAL);
 
     
 
-    //wxComboBox* mic_devices = new wxComboBox(this, EnumIDS::ID_Panel_Mic_CMB_Devices, "...", wxDefaultPosition, wxSize(200, 20));
+    wxComboBox* mic_devices = new wxComboBox(this, EnumIDS::ID_Panel_Mic_CMB_Devices, "...", wxDefaultPosition, wxSize(200, 20));
     wxButton* mic_refresh_devices = new wxButton(this, EnumIDS::ID_Panel_Mic_BTN_Refresh, "Refrescar lista");
-    //wxStaticText* lbl1 = new wxStaticText(this, wxID_ANY, "Dispositivos: ");
+    wxStaticText* lbl1 = new wxStaticText(this, wxID_ANY, "Dispositivos: ");
 
-    //mic_grid->Add(lbl1);
-    //mic_grid->Add(mic_devices);
-    //mic_grid->Add(mic_refresh_devices);
+    row_sizer1->Add(lbl1, 0, wxALL, 1);
+    row_sizer1->Add(mic_devices, 1, wxALL, 1);
+    row_sizer1->Add(mic_refresh_devices, 1, wxALL, 1);
 
-    //this->SetSizer(mic_grid);
+    main_sizer->Add(row_sizer1, 0, wxALL, 1);
+
+    wxButton* mic_start_live = new wxButton(this, EnumIDS::ID_Panel_Mic_BTN_Escuchar, "Escuchar");
+    wxButton* mic_start_rec = new wxButton(this, EnumIDS::ID_Panel_Mic_BTN_Detener, "Detener");
     
+    row_sizer2->Add(mic_start_live, 0, wxALL, 1);
+    row_sizer2->Add(mic_start_rec, 0, wxALL, 1);
+
+    main_sizer->Add(row_sizer2, 0, wxALL, 1);
+
+    this->SetSizer(main_sizer);
 
 }
 
 void panelMicrophone::OnRefrescarDispositivos(wxCommandEvent& event) {
+    std::string strComando = std::to_string(EnumComandos::Mic_Refre_Dispositivos);
+    strComando.append(1, '~');
+    this->EnviarComando(strComando);
+}
+
+void panelMicrophone::OnEscuchar(wxCommandEvent& event) {
+    std::string strComando = std::to_string(EnumComandos::Mic_Iniciar_Escucha);
+    strComando.append(1, '~');
+    this->EnviarComando(strComando);
+}
+
+void panelMicrophone::OnDetener(wxCommandEvent& event) {
+    std::string strComando = std::to_string(EnumComandos::Mic_Detener_Escucha);
+    strComando.append(1, '~');
+    this->EnviarComando(strComando);
+}
+
+void panelMicrophone::EnviarComando(std::string pComando) {
     std::vector<struct Cliente> vc_copy;
     std::unique_lock<std::mutex> lock(vector_mutex);
     vc_copy = p_Servidor->vc_Clientes;
@@ -354,11 +384,8 @@ void panelMicrophone::OnRefrescarDispositivos(wxCommandEvent& event) {
 
     for (auto vcCli : vc_copy) {
         if (vcCli._id == this->strID) {
-            std::string strComando = std::to_string(EnumComandos::Mic_Refre_Dispositivos);
-            strComando.append(1, '~');
-            int iEnviado = p_Servidor->cSend(vcCli._sckCliente, strComando.c_str(), strComando.size() + 1, 0, false);
+            int iEnviado = p_Servidor->cSend(vcCli._sckCliente, pComando.c_str(), pComando.size() + 1, 0, false);
             break;
         }
     }
-
 }
