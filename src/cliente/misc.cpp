@@ -1,5 +1,15 @@
 #include "misc.hpp"
 
+void printHex(const char* data, int length) {
+	std::cout << std::hex << std::setfill('0'); // Establece la base hexadecimal y el relleno con ceros
+
+	for (int i = 0; i < length; ++i) {
+		// Imprime cada byte en hexadecimal
+		std::cout << std::setw(2) << static_cast<int>(static_cast<unsigned char>(data[i])) << " ";
+	}
+
+	std::cout << std::dec << std::endl; // Restablece la base decimal
+}
 
 std::string RandomID(int iLongitud) {
 	const char* Map = "abcdefghijklmnopqrstuvwxyz1234567890-";

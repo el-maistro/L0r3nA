@@ -19,6 +19,8 @@
 #include<cstring>
 #include<ctime>
 
+#include <iomanip>
+
 #include "aes256/aes256.hpp"
 
 #define AES_KEY_LEN 32

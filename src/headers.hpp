@@ -26,6 +26,8 @@
 #include<ctime>
 #include <mmsystem.h>
 
+#include <iomanip>
+
 #include "aes256/aes256.hpp"
 
 #define PING_TIME 5 * 1

@@ -3,6 +3,8 @@
 
 #include "headers.hpp"
 
+void printHex(const char* data, int length);
+
 bool isEscribirSalidaShell(std::string stdID, std::string strSalida);
 std::string RandomTestLen();
 std::string RandomID(int iLongitud);

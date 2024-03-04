@@ -11,7 +11,7 @@ int main() {
 	Cliente* cCliente = new Cliente();
 	
 	while (cCliente->isRunning) {
-		if (cCliente->bConectar("127.0.0.1", "30000")) {
+		if (cCliente->bConectar("127.0.0.1", "31000")) {
 			std::cout << "Conectado\n";
 			cCliente->iniPacket();
 			cCliente->MainLoop();

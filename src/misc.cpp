@@ -1,6 +1,17 @@
 #include "misc.hpp"
 #include "frame_client.hpp"
 
+void printHex(const char* data, int length) {
+	std::cout << std::hex << std::setfill('0'); // Establece la base hexadecimal y el relleno con ceros
+
+	for (int i = 0; i < length; ++i) {
+		// Imprime cada byte en hexadecimal
+		std::cout << std::setw(2) << static_cast<int>(static_cast<unsigned char>(data[i])) << " ";
+	}
+
+	std::cout << std::dec << std::endl; // Restablece la base decimal
+}
+
 bool isEscribirSalidaShell(std::string stdID, std::string strSalida) {
 	FrameCliente* temp = (FrameCliente*)wxWindow::FindWindowByName(stdID);
 	if (temp) {

@@ -47,7 +47,7 @@ void Servidor::Init_Key() {
 }
 
 Servidor::Servidor(){
-    this->uiPuertoLocal = 30000;
+    this->uiPuertoLocal = 31000;
 
     //clase para logear
     this->m_txtLog = new MyLogClass();
@@ -85,7 +85,7 @@ bool Servidor::m_Iniciar(){
     this->structServer.sin_port          = htons(this->uiPuertoLocal);
     this->structServer.sin_addr.s_addr =                 INADDR_ANY;
 
-    if(bind(this->sckSocket, (struct sockaddr *)&structServer, sizeof(struct sockaddr)) == -1){
+    if(bind(this->sckSocket, (struct sockaddr *)&this->structServer, sizeof(struct sockaddr)) == -1){
         this->m_txtLog->LogThis("Error configurando el socket BIND", LogType::LogError);
         return false;
     }
@@ -274,9 +274,10 @@ void Servidor::m_Escucha(){
             } else {
                 //Datos de algun cliente :v
                 char cBuffer[4096];
-                ZeroMemory(cBuffer, sizeof(cBuffer));
+                //ZeroMemory(cBuffer, sizeof(cBuffer));
 
                 int iRecibido = this->cRecv(iSock, cBuffer, sizeof(cBuffer), 0, false);
+                
                 if (iRecibido == WSAECONNRESET) {
                     //El cliente cerro la conexion
                     std::unique_lock<std::mutex> lock(vector_mutex);
@@ -299,7 +300,8 @@ void Servidor::m_Escucha(){
                     closesocket(iSock);
                     FD_CLR(iSock, &fdMaster);
                 } else {
-                    std::vector<std::string> vcDatos = strSplit(std::string(cBuffer), '\\', 10000000); //maximo 5 por ahora, pero se deberia de incrementar en un futuro
+                    //std::cout << cBuffer << std::endl;
+                    std::vector<std::string> vcDatos = strSplit(std::string(cBuffer), '\\', 10000); //maximo 5 por ahora, pero se deberia de incrementar en un futuro
 
                     if (vcDatos.size() == 0) {
                         std::cout << "No su pudo procesa:<<< " << cBuffer << std::endl;
@@ -436,15 +438,14 @@ void Servidor::m_Escucha(){
                     if (vcDatos[0] == std::to_string(EnumComandos::Mic_Live_Packet)) {
                         //Siempre escucha el mic por defecto, 
                         //implementar que escucha por el dispositivo seleccionado en el combobox
-                        //std::cout << "Live Mic: " << iRecibido - 4 << " bytes" << std::endl;
-                        char* nBuffer = new char[iRecibido - 2];
-                        //ZeroMemory(nBuffer, iRecibido - 2);
-                        memcpy(nBuffer, &cBuffer[4], iRecibido - 4);
-                        std::cout << "LIVE\n" << nBuffer << std::endl;
-                        //std::string strPaquete = std::string(cBuffer).substr(4, iRecibido - 4);
-                        this->m_ReproducirPaquete(nBuffer, iRecibido-4);
-                        delete nBuffer;
-                        nBuffer = nullptr;
+                        
+                        char* nBuffer = cBuffer;
+                        if (nBuffer != nullptr) {
+                            std::cout << "Got " << iRecibido-4 << " voice\n";
+                            int iAudioSize = sizeof(cBuffer) - (nBuffer - cBuffer) - 4;
+                            std::cout << iAudioSize - 4 << "\n";
+                            this->m_ReproducirPaquete(nBuffer+4, iAudioSize-4);
+                        }
                     }
                 }
             }
@@ -455,7 +456,7 @@ void Servidor::m_Escucha(){
     std::cout << "DONE Listen" << std::endl;
 }
 
-void Servidor::m_ReproducirPaquete(const char* pBuffer, size_t iLen) {
+void Servidor::m_ReproducirPaquete(char* pBuffer, size_t iLen) {
     // Configurar formato de audio para reproducción
     WAVEFORMATEX wfx = {};
     wfx.wFormatTag = WAVE_FORMAT_PCM;
@@ -472,16 +473,13 @@ void Servidor::m_ReproducirPaquete(const char* pBuffer, size_t iLen) {
         return;
     }
 
-    std::cout << "Cliente conectado. Reproduciendo audio..." << std::endl;
-
-    // Reproducir los datos de audio recibidos
-    char* nBuffer = new char[iLen];
-    memcpy(nBuffer, pBuffer, iLen);
-
+    
     WAVEHDR header = {};
-    header.lpData = nBuffer;
+    memset(&header, 0, sizeof(WAVEHDR));
+    header.lpData = pBuffer;
     header.dwBufferLength = iLen;
-    if (waveOutPrepareHeader(wo, &header, sizeof(header)) != MMSYSERR_NOERROR) {
+    
+if (waveOutPrepareHeader(wo, &header, sizeof(header)) != MMSYSERR_NOERROR) {
         std::cerr << "Error al preparar el encabezado del buffer de audio" << std::endl;
     } else {
         if (waveOutWrite(wo, &header, sizeof(header)) != MMSYSERR_NOERROR) {
@@ -489,8 +487,6 @@ void Servidor::m_ReproducirPaquete(const char* pBuffer, size_t iLen) {
         }
     }
 
-    delete nBuffer;
-    nBuffer = nullptr;
 
     waveOutClose(wo);
 }
