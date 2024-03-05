@@ -1,7 +1,7 @@
 #include "mod_mic.hpp"
 
 constexpr int NUM_BUFFERS = 2;
-constexpr int SAMPLE_RATE = 44100;
+constexpr int SAMPLE_RATE = 2000; // 2.0khz
 constexpr int NUM_CHANNELS = 2;
 constexpr int BITS_PER_SAMPLE = 16;
 constexpr int BUFFER_SIZE = SAMPLE_RATE * NUM_CHANNELS * BITS_PER_SAMPLE / 8 / 2; // Mitad de un segundo
@@ -112,7 +112,7 @@ void Mod_Mic::m_LiveMicTh() {
 
     //Real time
     // Bucle principal de captura y envío de audio
-    char newBuffer[BUFFER_SIZE + 4];
+    char newBuffer[BUFFER_SIZE + 5];
     while (this->isLiveMic) {
         for (int i = 0; i < NUM_BUFFERS; i++) {
             WAVEHDR& h = headers[i];
@@ -120,17 +120,22 @@ void Mod_Mic::m_LiveMicTh() {
                 // Enviar datos de audio al servidor
                 memset(newBuffer, 0, sizeof(newBuffer));
 
-                //char* nTest = new char[h.dwBufferLength];
-                //std::memcpy(nTest, h.lpData, h.dwBufferLength);
-
-                std::strcpy(newBuffer, std::to_string(EnumComandos::Mic_Live_Packet).c_str()); 
-                std::strcpy(newBuffer + 3, "\\");
-                std::memcpy(newBuffer + 4, h.lpData, h.dwBufferLength);
-                //std::memcpy(newBuffer + 4, nTest, h.dwBufferLength);
-
-                this->ptr_copy->cSend(this->sckSocket, newBuffer, sizeof(newBuffer), 0, false);
-                Sleep(10);
-                //delete[] nTest;
+                
+                std::strcpy(newBuffer, "LMIC");
+                std::strcpy(newBuffer + 4, "\\");
+                std::memcpy(newBuffer + 5, h.lpData, h.dwBufferLength);
+                
+                int iSent = this->ptr_copy->cSend(this->sckSocket, newBuffer, sizeof(newBuffer), 0, false);
+#ifdef ___DEBUG_
+                std::cout << "AUDIO " << iSent << " bytes sent - "<<std::endl;
+#endif
+                Sleep(20);
+                
+                //Enviar fin del buffer para reproducir
+                //std::string strEnd = "MIC-END";
+                //strEnd.append(1, '\\');
+                //this->ptr_copy->cSend(this->sckSocket, strEnd.c_str(), strEnd.size(), 0, false);
+                
 
                 h.dwFlags = 0;
                 h.dwBytesRecorded = 0;

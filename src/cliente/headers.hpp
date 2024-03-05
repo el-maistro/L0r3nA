@@ -45,7 +45,7 @@ namespace EnumComandos {
         Mic_Refre_Resultado,
         Mic_Iniciar_Escucha,
         Mic_Detener_Escucha,
-        Mic_Live_Packet,
+        Mic_Live_Packet
     };
 }
 

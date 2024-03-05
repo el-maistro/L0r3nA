@@ -230,14 +230,15 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
     // 0 block
     
     ByteArray cData = this->bEnc((const unsigned char*)pBuffer, pLen);
-    std::string strPaqueteFinal = "";
-    for (auto c : cData) {
-        strPaqueteFinal.append(1, c);
+    int iDataSize = cData.size();
+    char* newBuffer = new char[iDataSize];
+    for (int iBytePos = 0; iBytePos < iDataSize; iBytePos++) {
+        std::memcpy(newBuffer + iBytePos, &cData[iBytePos], 1);
     }
     
     if (isBlock) {
 #ifdef ___DEBUG_
-        std::cout << "[BLOCK-MODE] send" << strPaqueteFinal.size() << " bytes\n";
+        std::cout << "[BLOCK-MODE] send" << iDataSize << " bytes\n";
 #endif
         //Hacer el socket block
         unsigned long int iBlock = 0;
@@ -247,7 +248,7 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
             error();
 #endif
         }
-        int iEnviado = send(pSocket, strPaqueteFinal.c_str(), cData.size(), pFlags);
+        int iEnviado = send(pSocket, newBuffer, iDataSize, pFlags);
 
         //Restaurar
         iBlock = 1;
@@ -256,11 +257,17 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
             error();
 #endif
         }
-
+        if (newBuffer != nullptr) {
+            delete[] newBuffer;
+        }
         return iEnviado;
     }
     else {
-        return send(pSocket, strPaqueteFinal.c_str(), cData.size(), pFlags);
+        int iSent = send(pSocket, newBuffer, iDataSize, pFlags);
+        if (newBuffer != nullptr) {
+            delete[] newBuffer;
+        }
+        return iSent;
     }
 }
 
