@@ -62,7 +62,7 @@ void Mod_Mic::m_DetenerLive() {
 
 void Mod_Mic::m_LiveMicTh() {
 #ifdef ___DEBUG_
-    std::cout << "[!] thLiveMic iniciada" << std::endl;
+    std::cout << "[!] thLiveMic iniciada, dispositivo#: "<<this->p_DeviceID<< std::endl;
 #endif //___DEBUG_
     
     // Definir el formato de audio

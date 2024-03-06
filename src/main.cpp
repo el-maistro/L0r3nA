@@ -46,9 +46,9 @@ public:
 wxIMPLEMENT_APP(MyApp);
 
 bool MyApp::OnInit(){
-    AllocConsole();
-    freopen("CONOUT$", "w", stdout);
-    freopen("CONOUT$", "w", stderr);
+    //AllocConsole();
+    //freopen("CONOUT$", "w", stdout);
+    //freopen("CONOUT$", "w", stderr);
     this->frame = new MyFrame();
     this->frame->Show(true);
     return true;

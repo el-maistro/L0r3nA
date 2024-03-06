@@ -18,7 +18,9 @@ bool isEscribirSalidaShell(std::string stdID, std::string strSalida) {
 		panelReverseShell* panel_shell = (panelReverseShell*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Reverse_Shell, temp);
 		if (panel_shell) {
 			panel_shell->txtConsole->AppendText(strSalida);
-			panel_shell->p_uliUltimo = panel_shell->txtConsole->GetLastPosition();
+			int iLast = panel_shell->txtConsole->GetLastPosition();
+			panel_shell->p_uliUltimo = iLast;
+
 			return true;
 		}else {
 			return false;

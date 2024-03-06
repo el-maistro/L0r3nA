@@ -336,12 +336,12 @@ panelMicrophone::panelMicrophone(wxWindow* pParent) :
 
     
 
-    wxComboBox* mic_devices = new wxComboBox(this, EnumIDS::ID_Panel_Mic_CMB_Devices, "...", wxDefaultPosition, wxSize(200, 20));
+    this->mic_devices = new wxComboBox(this, EnumIDS::ID_Panel_Mic_CMB_Devices, "...", wxDefaultPosition, wxSize(200, 20));
     wxButton* mic_refresh_devices = new wxButton(this, EnumIDS::ID_Panel_Mic_BTN_Refresh, "Refrescar lista");
     wxStaticText* lbl1 = new wxStaticText(this, wxID_ANY, "Dispositivos: ");
 
     row_sizer1->Add(lbl1, 0, wxALL, 1);
-    row_sizer1->Add(mic_devices, 1, wxALL, 1);
+    row_sizer1->Add(this->mic_devices, 1, wxALL, 1);
     row_sizer1->Add(mic_refresh_devices, 1, wxALL, 1);
 
     main_sizer->Add(row_sizer1, 0, wxALL, 1);
@@ -367,6 +367,13 @@ void panelMicrophone::OnRefrescarDispositivos(wxCommandEvent& event) {
 void panelMicrophone::OnEscuchar(wxCommandEvent& event) {
     std::string strComando = std::to_string(EnumComandos::Mic_Iniciar_Escucha);
     strComando.append(1, '~');
+    
+    wxString str_device_id = this->mic_devices->GetStringSelection();
+    std::cout << str_device_id << std::endl;
+    
+    //Quien tiene mas de 10 microfonos :v ?
+    strComando.append(1, str_device_id[1]);
+
     this->EnviarComando(strComando);
 }
 

@@ -273,7 +273,8 @@ void Servidor::m_Escucha(){
                 
             } else {
                 //Datos de algun cliente :v
-                char cBuffer[5000];
+                char cBuffer[4096];
+                ZeroMemory(cBuffer, sizeof(cBuffer));
                 
                 int iRecibido = this->cRecv(iSock, cBuffer, sizeof(cBuffer), 0, false);
                 
@@ -439,8 +440,18 @@ void Servidor::m_Escucha(){
                         //implementar que escucha por el dispositivo seleccionado en el combobox
                         
                         //Solo reproducir por ahora, no importa de quien venga
-                        std::cout << "AUDIO " << iRecibido<< " bytes" << std::endl;
-                        this->m_ReproducirPaquete(cBuffer + 5, iRecibido - 5);
+                        if (iRecibido > 5) {
+                            try{
+                                this->m_ReproducirPaquete(cBuffer + 5, iRecibido - 5);
+                            }
+                            catch (const std::exception& e) {
+                                std::cerr << "Hubo un error\n" << e.what() << std::endl;
+                            }catch (...) {
+                                std::cerr << "Excepción desconocida atrapada" << std::endl;
+                            }
+                        }else {
+                            std::cout << "Paquete muy pequeño\n";
+                        }
                     }
                 }
             }
@@ -453,6 +464,7 @@ void Servidor::m_Escucha(){
 
 void Servidor::m_ReproducirPaquete(char* pBuffer, size_t iLen) {
     // Configurar formato de audio para reproducción
+    HWAVEOUT wo;
     WAVEFORMATEX wfx = {};
     wfx.wFormatTag = WAVE_FORMAT_PCM;
     wfx.nChannels = 2;
@@ -462,27 +474,26 @@ void Servidor::m_ReproducirPaquete(char* pBuffer, size_t iLen) {
     wfx.nAvgBytesPerSec = wfx.nBlockAlign * wfx.nSamplesPerSec;
 
     // Abrir el dispositivo de reproducción de audio
-    HWAVEOUT wo;
+        
     if (waveOutOpen(&wo, WAVE_MAPPER, &wfx, NULL, NULL, CALLBACK_NULL) != MMSYSERR_NOERROR) {
         std::cerr << "Error al abrir el dispositivo de reproducción de audio" << std::endl;
         return;
     }
 
-    
     WAVEHDR header = {};
-    memset(&header, 0, sizeof(WAVEHDR));
+    
     header.lpData = pBuffer;
     header.dwBufferLength = iLen;
     
-if (waveOutPrepareHeader(wo, &header, sizeof(header)) != MMSYSERR_NOERROR) {
+    if (waveOutPrepareHeader(wo, &header, sizeof(header)) != MMSYSERR_NOERROR) {
         std::cerr << "Error al preparar el encabezado del buffer de audio" << std::endl;
-    } else {
+    }
+    else {
+        waveOutReset(wo);
         if (waveOutWrite(wo, &header, sizeof(header)) != MMSYSERR_NOERROR) {
             std::cerr << "Error al escribir el buffer de audio en el dispositivo de reproducción" << std::endl;
         }
     }
-
-
     waveOutClose(wo);
 }
 
@@ -559,14 +570,15 @@ int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool i
             if (cTmpBuff) {
                 ZeroMemory(cTmpBuff, pLen);
                 delete[] cTmpBuff;
+                cTmpBuff = nullptr;
             }
             return WSAECONNRESET;
         }
 
         if (iRecibido <= 0) {
             if (cTmpBuff) {
-                ZeroMemory(cTmpBuff, pLen);
                 delete[] cTmpBuff;
+                cTmpBuff = nullptr;
             }
             return -1;
         }
@@ -608,6 +620,7 @@ int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool i
             return -1;
         }
 
+        //Desencriptar los datos
         ByteArray bOut = this->bDec((const unsigned char*)cTmpBuff, iRecibido);
 
         iRecibido = bOut.size();

@@ -70,6 +70,9 @@ class panelMicrophone : public wxPanel {
         panelMicrophone(wxWindow* pParent);
 
     private:
+
+        wxComboBox* mic_devices = nullptr;
+
         std::string strID = "";
         void OnRefrescarDispositivos(wxCommandEvent& event);
         void OnEscuchar(wxCommandEvent& event);
