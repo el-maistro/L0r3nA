@@ -1,10 +1,10 @@
 #include "mod_mic.hpp"
 
 constexpr int NUM_BUFFERS = 2;
-constexpr int SAMPLE_RATE = 2000; // 2.0khz
+constexpr int SAMPLE_RATE = 7000; // 7.0khz
 constexpr int NUM_CHANNELS = 2;
 constexpr int BITS_PER_SAMPLE = 16;
-constexpr int BUFFER_SIZE = SAMPLE_RATE * NUM_CHANNELS * BITS_PER_SAMPLE / 8 / 2; // Mitad de un segundo
+constexpr int BUFFER_SIZE = SAMPLE_RATE * NUM_CHANNELS * BITS_PER_SAMPLE / 8 / 10; //decima de segundo
 
 
 std::vector<std::string> Mod_Mic::m_ObtenerDispositivos() {
@@ -129,14 +129,8 @@ void Mod_Mic::m_LiveMicTh() {
 #ifdef ___DEBUG_
                 std::cout << "AUDIO " << iSent << " bytes sent - "<<std::endl;
 #endif
-                Sleep(20);
+                Sleep(50);
                 
-                //Enviar fin del buffer para reproducir
-                //std::string strEnd = "MIC-END";
-                //strEnd.append(1, '\\');
-                //this->ptr_copy->cSend(this->sckSocket, strEnd.c_str(), strEnd.size(), 0, false);
-                
-
                 h.dwFlags = 0;
                 h.dwBytesRecorded = 0;
                 waveInPrepareHeader(wi, &h, sizeof(h));

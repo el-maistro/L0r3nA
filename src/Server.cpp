@@ -441,14 +441,8 @@ void Servidor::m_Escucha(){
                         
                         //Solo reproducir por ahora, no importa de quien venga
                         if (iRecibido > 5) {
-                            try{
-                                this->m_ReproducirPaquete(cBuffer + 5, iRecibido - 5);
-                            }
-                            catch (const std::exception& e) {
-                                std::cerr << "Hubo un error\n" << e.what() << std::endl;
-                            }catch (...) {
-                                std::cerr << "Excepción desconocida atrapada" << std::endl;
-                            }
+                            std::cout << "MIC " << iRecibido << std::endl;
+                            this->m_ReproducirPaquete(cBuffer + 5, iRecibido - 5);
                         }else {
                             std::cout << "Paquete muy pequeño\n";
                         }
@@ -468,15 +462,15 @@ void Servidor::m_ReproducirPaquete(char* pBuffer, size_t iLen) {
     WAVEFORMATEX wfx = {};
     wfx.wFormatTag = WAVE_FORMAT_PCM;
     wfx.nChannels = 2;
-    wfx.nSamplesPerSec = 2000; // 2.0khz
+    wfx.nSamplesPerSec = 7000; // 7.0khz
     wfx.wBitsPerSample = 16;
     wfx.nBlockAlign = wfx.wBitsPerSample * wfx.nChannels / 8;
     wfx.nAvgBytesPerSec = wfx.nBlockAlign * wfx.nSamplesPerSec;
-
+    //wfx.cbSize = 0;
     // Abrir el dispositivo de reproducción de audio
-        
-    if (waveOutOpen(&wo, WAVE_MAPPER, &wfx, NULL, NULL, CALLBACK_NULL) != MMSYSERR_NOERROR) {
-        std::cerr << "Error al abrir el dispositivo de reproducción de audio" << std::endl;
+    
+    if (sizeof(wfx) != sizeof(WAVEFORMATEX)) {
+        std::cerr << "Tamaño incorrecto de la estructura WAVEFORMATEX." << std::endl;
         return;
     }
 
@@ -485,15 +479,40 @@ void Servidor::m_ReproducirPaquete(char* pBuffer, size_t iLen) {
     header.lpData = pBuffer;
     header.dwBufferLength = iLen;
     
-    if (waveOutPrepareHeader(wo, &header, sizeof(header)) != MMSYSERR_NOERROR) {
-        std::cerr << "Error al preparar el encabezado del buffer de audio" << std::endl;
+    // Intentar abrir el dispositivo de reproducción de audio
+    if (waveOutOpen(&wo, WAVE_MAPPER, &wfx, NULL, NULL, CALLBACK_NULL) != MMSYSERR_NOERROR) {
+        std::cerr << "Error al abrir el dispositivo de reproducción de audio" << std::endl;
+        return;
     }
-    else {
-        waveOutReset(wo);
+
+    try {
+        if (waveOutPrepareHeader(wo, &header, sizeof(header)) != MMSYSERR_NOERROR) {
+            std::cerr << "Error al preparar el encabezado del buffer de audio" << std::endl;
+            waveOutUnprepareHeader(wo, &header, sizeof(header));
+            waveOutClose(wo);
+            return;
+        }
+    }catch (const std::exception& e) {
+        std::cerr << "Excepción al preparar el encabezado del buffer de audio: " << e.what() << std::endl;
+        waveOutClose(wo);
+        return;
+    }
+
+    try {
         if (waveOutWrite(wo, &header, sizeof(header)) != MMSYSERR_NOERROR) {
             std::cerr << "Error al escribir el buffer de audio en el dispositivo de reproducción" << std::endl;
+            waveOutUnprepareHeader(wo, &header, sizeof(header));
+            waveOutClose(wo);
+            return;
         }
+    }catch (const std::exception& e) {
+        std::cerr << "Excepción al escribir el buffer de audio en el dispositivo de reproducción: " << e.what() << std::endl;
+        waveOutUnprepareHeader(wo, &header, sizeof(header));
+        waveOutClose(wo);
+        return;
     }
+
+    waveOutUnprepareHeader(wo, &header, sizeof(header));
     waveOutClose(wo);
 }
 
