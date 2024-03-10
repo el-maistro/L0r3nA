@@ -1,4 +1,5 @@
 #include "frame_client.hpp"
+#include "panel_file_manager.hpp"
 #include "server.hpp"
 #include "misc.hpp"
 
@@ -188,6 +189,10 @@ void MyTreeCtrl::OnItemActivated(wxTreeEvent& event) {
 
         if (wStr == "Reverse Shell") {
             this->p_Notebook->AddPage(new panelReverseShell(this), wStr, true);
+        }
+
+        if (wStr == "Administrador de archivos") {
+            this->p_Notebook->AddPage(new panelFileManager(this), wStr, true);
         }
         
         if (wStr == "Microfono") {

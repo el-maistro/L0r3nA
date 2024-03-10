@@ -24,6 +24,7 @@ set(SRCS main.cpp
          misc.cpp
          server.cpp
          frame_cliente.cpp
+         panel_file_manager.cpp
          aes256/aes256.cpp)
 
 add_executable(main WIN32 ${SRCS})

@@ -4,6 +4,7 @@
 #include<wx/wx.h> 
 #include<wx/thread.h>
 #include<wx/listctrl.h>
+#include<wx/toolbar.h>
 #include<wx/treectrl.h>
 #include<wx/sizer.h>
 #include<wx/wxhtml.h>
@@ -55,7 +56,8 @@ namespace EnumIDS {
         ID_Panel_Mic_CMB_Devices,
         ID_Panel_Mic_BTN_Refresh,
         ID_Panel_Mic_BTN_Escuchar,
-        ID_Panel_Mic_BTN_Detener
+        ID_Panel_Mic_BTN_Detener,
+        ID_Panel_FM
     };
 }
 
