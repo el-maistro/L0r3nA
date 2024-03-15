@@ -36,11 +36,10 @@ class MyLogClass{
 
 class MyListCtrl: public wxListCtrl{
     public:
-        long m_updated;
         MyListCtrl(wxWindow *parent,
                const wxWindowID id, const wxPoint& pos, const wxSize& size, long style)
         : wxListCtrl(parent, id, pos, size, style){
-            m_updated = -1;
+           
         }
 
         void ShowContextMenu(const wxPoint& pos, long item);
