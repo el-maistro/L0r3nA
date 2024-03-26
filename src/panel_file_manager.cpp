@@ -60,6 +60,7 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 			itemCol.SetText("Libre");
 			itemCol.SetWidth(50);
 			this->listManager->InsertColumn(2, itemCol);
+			//ENVIAR COMANDO OBTENER DRIVES
 			break;
 		case EnumIDS::ID_Panel_FM_Descargas:
 			this->listManager->ClearAll();
@@ -76,6 +77,7 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 			itemCol.SetText("Tamaño");
 			itemCol.SetWidth(100);
 			this->listManager->InsertColumn(2, itemCol);
+			//ENVIAR COMANDO OBTENER FOLDER DESCARGAS
 			break;
 	}
 }

@@ -366,6 +366,7 @@ panelMicrophone::panelMicrophone(wxWindow* pParent) :
 void panelMicrophone::OnRefrescarDispositivos(wxCommandEvent& event) {
     std::string strComando = std::to_string(EnumComandos::Mic_Refre_Dispositivos);
     strComando.append(1, '~');
+    strComando.append(1, '0');
     this->EnviarComando(strComando);
 }
 

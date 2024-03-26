@@ -1,5 +1,6 @@
 #include "cliente.hpp"
 #include "mod_mic.hpp"
+#include "mod_file_manager.hpp"
 #include "misc.hpp"
 
 
@@ -136,8 +137,19 @@ void Cliente::ProcesarComando(std::vector<std::string> strIn) {
         iEnviado = this->cSend(this->sckSocket, strTest.c_str(), strTest.size(), 0, false);
     }
 
+    //Listar drives
+    if (this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Discos) {
+        std::vector<struct sDrives> vDrives = Drives();
+        std::string strDipositivos = "";
+        
+    }
+
     //Lista de dispositivos de entrada (mic)
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::Mic_Refre_Dispositivos) {
+#ifdef ___DEBUG_
+        std::cout << "MIC_DEVICES\n";
+#endif // ___DEBUG
+
         if (this->mod_Mic == nullptr) {
             this->mod_Mic = new Mod_Mic(this);
         }
