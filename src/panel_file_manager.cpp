@@ -1,4 +1,5 @@
 #include "panel_file_manager.hpp"
+#include "frame_client.hpp"
 #include "server.hpp"
 #include "misc.hpp"
 
@@ -14,8 +15,18 @@ panelFileManager::panelFileManager(wxWindow* pParent) :
 	wxPanel(pParent, EnumIDS::ID_Panel_FM) {
 	this->SetBackgroundColour(wxColor(200, 200, 200));
 	
-	//Crear barra lateral dentro del panel con accesos rapidos como
-	//dispositivos conectados, desktop, downloads, etc...
+	
+	wxWindow* wxTree = (MyTreeCtrl*)this->GetParent();
+	if (wxTree) {
+		wxPanel* panel_cliente = (wxPanel*)wxTree->GetParent();
+		if (panel_cliente) {
+			FrameCliente* frame_cliente = (FrameCliente*)panel_cliente->GetParent();
+			if (frame_cliente) {
+				this->strID = frame_cliente->strClienteID;
+			}
+		}
+	}
+
 	this->p_ToolBar = new wxToolBar(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTB_VERTICAL | wxTB_LEFT);
 	wxImage::AddHandler(new wxPNGHandler);
 
@@ -43,6 +54,7 @@ panelFileManager::panelFileManager(wxWindow* pParent) :
 
 void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 	wxListItem itemCol;
+	std::string strComando = "";
 	switch (event.GetId()) {
 		case EnumIDS::ID_Panel_FM_Equipo:
 			this->listManager->ClearAll();
@@ -52,15 +64,23 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 			itemCol.SetAlign(wxLIST_FORMAT_CENTRE);
 			this->listManager->InsertColumn(0, itemCol);
 
-			itemCol.SetText("Capacidad");
+			itemCol.SetText("Nombre");
 			itemCol.SetAlign(wxLIST_FORMAT_LEFT);
-			itemCol.SetWidth(100);
+			itemCol.SetWidth(150);
 			this->listManager->InsertColumn(1, itemCol);
 
-			itemCol.SetText("Libre");
-			itemCol.SetWidth(50);
+			itemCol.SetText("Tipo");
+			itemCol.SetWidth(100);
 			this->listManager->InsertColumn(2, itemCol);
+
+			itemCol.SetText("Capacidad");
+			itemCol.SetWidth(100);
+			this->listManager->InsertColumn(3, itemCol);
+
 			//ENVIAR COMANDO OBTENER DRIVES
+			strComando = std::to_string(EnumComandos::FM_Discos);
+			strComando.append(1, '~');
+			this->EnviarComando(strComando);
 			break;
 		case EnumIDS::ID_Panel_FM_Descargas:
 			this->listManager->ClearAll();
@@ -83,29 +103,20 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 }
 
 void panelFileManager::CrearLista() {
-	this->listManager = new ListCtrlManager(this, wxID_ANY, wxDefaultPosition, wxSize(600, 300), wxBORDER_THEME | wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES | wxEXPAND);
-	
-	/*p_Servidor->m_listCtrl = new MyListCtrl(this->m_RPanel, wxID_ANY, wxDefaultPosition, wxSize(600, 300), flags | wxBORDER_THEME);
-   
-    wxListItem itemCol;
-    itemCol.SetText("ID");
-    itemCol.SetWidth(100);
-    itemCol.SetAlign(wxLIST_FORMAT_CENTRE);
-    p_Servidor->m_listCtrl->InsertColumn(0, itemCol);
+	this->listManager = new ListCtrlManager(this, EnumIDS::ID_Panel_FM_List, wxDefaultPosition, wxSize(600, 300), wxBORDER_THEME | wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES | wxEXPAND);
 
-    itemCol.SetText("USUARIO");
-    itemCol.SetWidth(160);
-    p_Servidor->m_listCtrl->InsertColumn(1, itemCol);
+}
 
-    itemCol.SetText("IP");
-    itemCol.SetWidth(120);
-    p_Servidor->m_listCtrl->InsertColumn(2, itemCol);
+void panelFileManager::EnviarComando(std::string pComando) {
+	std::vector<struct Cliente> vc_copy;
+	std::unique_lock<std::mutex> lock(vector_mutex);
+	vc_copy = p_Servidor->vc_Clientes;
+	lock.unlock();
 
-    itemCol.SetText("SO");
-    itemCol.SetWidth(140);
-    p_Servidor->m_listCtrl->InsertColumn(3, itemCol);
-
-    itemCol.SetText("CPU");
-    itemCol.SetWidth(200);
-    p_Servidor->m_listCtrl->InsertColumn(4, itemCol);*/
+	for (auto vcCli : vc_copy) {
+		if (vcCli._id == this->strID) {
+			int iEnviado = p_Servidor->cSend(vcCli._sckCliente, pComando.c_str(), pComando.size() + 1, 0, false);
+			break;
+		}
+	}
 }

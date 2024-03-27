@@ -60,7 +60,8 @@ namespace EnumIDS {
         ID_Panel_FM,
         ID_Panel_FM_Equipo,
         ID_Panel_FM_Escritorio,
-        ID_Panel_FM_Descargas
+        ID_Panel_FM_Descargas,
+        ID_Panel_FM_List
     };
 }
 
@@ -77,7 +78,8 @@ namespace EnumComandos {
         Mic_Iniciar_Escucha,
         Mic_Detener_Escucha,
         Mic_Live_Packet,
-        FM_Discos
+        FM_Discos,
+        FM_Discos_Lista
     };
 }
 

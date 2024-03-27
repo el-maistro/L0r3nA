@@ -10,6 +10,7 @@ class panelFileManager: public wxPanel{
 		ListCtrlManager* listManager = nullptr;
 		
 		void CrearLista();
+		void EnviarComando(std::string pComando);
 
 		panelFileManager(wxWindow* pParent);
 
@@ -17,6 +18,7 @@ class panelFileManager: public wxPanel{
 		void OnToolBarClick(wxCommandEvent& event);
 	private:
 		wxToolBar* p_ToolBar = nullptr;
+		std::string strID = "";
 
 		wxDECLARE_EVENT_TABLE();
 

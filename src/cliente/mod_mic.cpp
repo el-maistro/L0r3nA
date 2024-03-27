@@ -8,8 +8,7 @@ constexpr int BUFFER_SIZE = SAMPLE_RATE * NUM_CHANNELS * BITS_PER_SAMPLE / 8 / 1
 
 
 std::vector<std::string> Mod_Mic::m_ObtenerDispositivos() {
-    std::cout << "OBTENER_DEV - " << waveInGetNumDevs() << std::endl;;
-
+    
     std::vector<std::string> vcOut;
     for (int i = 0; i < int(waveInGetNumDevs()); i++) {
         WAVEINCAPS wvMic;
@@ -30,7 +29,7 @@ std::vector<std::string> Mod_Mic::m_ObtenerDispositivos() {
 }
 
 void Mod_Mic::m_Enviar_Dispositivos() {
-    std::cout << "ENVIR_DEV\n";
+    
     std::vector<std::string> vc_devices = this->m_ObtenerDispositivos();
     std::string strSalida = "";
 

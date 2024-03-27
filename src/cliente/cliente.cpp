@@ -140,8 +140,29 @@ void Cliente::ProcesarComando(std::vector<std::string> strIn) {
     //Listar drives
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Discos) {
         std::vector<struct sDrives> vDrives = Drives();
-        std::string strDipositivos = "";
+        std::string strDipositivos = std::to_string(EnumComandos::FM_Discos_Lista);
+        strDipositivos.append(1, '\\');
+        for (auto dev : vDrives) {
+            std::string sLetter = dev.cLetter;
+            std::string sFree = std::to_string(dev.dFree);
+            std::string sTotal = std::to_string(dev.dTotal);
+            std::string strTemp = sLetter.substr(0, sLetter.length() - 2);
+            strTemp.append(1, '|');
+            strTemp += dev.cType;
+            strTemp.append(1, '|');
+            strTemp += dev.cLabel;
+            strTemp.append(1, '|');
+            strTemp += sFree.substr(0, sFree.length() - 4);
+            strTemp.append(1, '|');
+            strTemp += sTotal.substr(0, sTotal.length() - 4);
+            strTemp.append(1, '\\');
+
+            strDipositivos += strTemp;
+        }
+        strDipositivos = strDipositivos.substr(0, strDipositivos.length() - 1);
         
+        this->cSend(this->sckSocket, strDipositivos.c_str(), strDipositivos.size() + 1, 0, false);
+
     }
 
     //Lista de dispositivos de entrada (mic)

@@ -1,6 +1,7 @@
 #include "server.hpp"
 #include "misc.hpp"
 #include "frame_client.hpp"
+#include "panel_file_manager.hpp"
 
 //Definir el servidor globalmente
 Servidor* p_Servidor;
@@ -301,7 +302,7 @@ void Servidor::m_Escucha(){
                     FD_CLR(iSock, &fdMaster);
                 } else {
                     
-                    std::vector<std::string> vcDatos = strSplit(std::string(cBuffer), '\\', 100); //maximo 5 por ahora, pero se deberia de incrementar en un futuro
+                    std::vector<std::string> vcDatos = strSplit(std::string(cBuffer), '\\', 100); //maximo 100 por ahora, pero se deberia de incrementar en un futuro
 
                     if (vcDatos.size() == 0) {
                         std::cout << "No su pudo procesar :<<< " << cBuffer << std::endl;
@@ -432,6 +433,40 @@ void Servidor::m_Escucha(){
                         }
                         else {
                             std::cout << "No se pudo encontrar ventana activa con nombre " << strTempID << std::endl;
+                        }
+                    }
+
+                    if (vcDatos[0] == std::to_string(EnumComandos::FM_Discos_Lista)) {
+                        char* pBuf = cBuffer + 4;
+                        std::vector<std::string> vDrives = strSplit(std::string(pBuf), '\\', 100); //maximo 100 por ahora, pero se deberia de incrementar en un futuro
+                        
+                        if (vDrives.size() > 0) {
+                            std::string strTempID = "";
+                            std::unique_lock<std::mutex> lock(vector_mutex);
+                            for (auto vcCli : this->vc_Clientes) {
+                                if (vcCli._sckCliente == iSock) {
+                                    strTempID = vcCli._id;
+                                    break;
+                                }
+                            }
+
+                            FrameCliente* temp = (FrameCliente*)wxWindow::FindWindowByName(strTempID);
+                            if (temp) {
+                                ListCtrlManager* temp_list = (ListCtrlManager*)wxWindow::FindWindowById(EnumIDS::ID_Panel_FM_List, temp);
+                                if (temp_list) {
+                                    for (int iCount = 0; iCount<int(vDrives.size()); iCount++) {
+                                        std::vector<std::string> vDrive = strSplit(vDrives[iCount], '|', 5); //maximo 100 por ahora, pero se deberia de incrementar en un futuro
+
+                                        temp_list->InsertItem(iCount, wxString(vDrive[0]));
+                                        temp_list->SetItem(iCount, 1, wxString(vDrive[2]));
+                                        temp_list->SetItem(iCount, 2, wxString(vDrive[1]));
+                                        temp_list->SetItem(iCount, 3, wxString(vDrive[3]) + "/" + wxString(vDrive[4]));
+                                    }
+                                }
+                            }
+                            else {
+                                std::cout << "No se pudo encontrar ventana activa con nombre " << strTempID << std::endl;
+                            }
                         }
                     }
 
