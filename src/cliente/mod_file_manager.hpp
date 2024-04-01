@@ -11,5 +11,6 @@ struct sDrives {
 };
 
 std::vector<struct sDrives> Drives();
+std::vector<std::string> vDir(const char* cPath);
 
 #endif

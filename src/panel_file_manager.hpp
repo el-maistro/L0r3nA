@@ -16,6 +16,9 @@ class panelFileManager: public wxPanel{
 
 		//Eventos
 		void OnToolBarClick(wxCommandEvent& event);
+		int iMODE = -1;
+		wxStaticText* p_RutaActual = nullptr;
+
 	private:
 		wxToolBar* p_ToolBar = nullptr;
 		std::string strID = "";
@@ -30,7 +33,10 @@ class ListCtrlManager : public wxListCtrl {
 			            const wxPoint& pos, const wxSize& size, long style)
 			: wxListCtrl(parent, id, pos, size, style) {}
 	private:
-		//wxDECLARE_EVENT_TABLE();
+		
+		void OnActivated(wxListEvent& event);
+
+		wxDECLARE_EVENT_TABLE();
 };
 
 #endif

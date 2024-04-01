@@ -34,7 +34,8 @@ class Cliente {
 			{"506", EnumComandos::Mic_Refre_Resultado},
 			{"507", EnumComandos::Mic_Iniciar_Escucha},
 			{"508", EnumComandos::Mic_Detener_Escucha},
-			{"510", EnumComandos::FM_Discos}
+			{"510", EnumComandos::FM_Discos},
+			{"512", EnumComandos::FM_Dir_Folder}
 		};
 
 		Cliente();
@@ -44,6 +45,7 @@ class Cliente {
 
 		bool isRunning = true;
 		bool isShellRunning = false;
+		bool BLOCK_MODE = true;
 		//Sockets
 		bool bConectar(const char* cIP, const char* cPuerto);
 		void CerrarConexion();

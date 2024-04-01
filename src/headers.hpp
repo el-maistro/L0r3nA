@@ -33,6 +33,13 @@
 
 #define PING_TIME 5 * 1
 #define AES_KEY_LEN 32
+#define FRAME_CLIENT_SIZE_WIDTH 600
+
+//FM Modos
+#define FM_EQUIPO    500
+#define FM_DESKTOP   501
+#define FM_DOWNLOADS 502
+#define FM_NORMAL    503
 
 
 extern bool bSignalFlag;
@@ -61,7 +68,8 @@ namespace EnumIDS {
         ID_Panel_FM_Equipo,
         ID_Panel_FM_Escritorio,
         ID_Panel_FM_Descargas,
-        ID_Panel_FM_List
+        ID_Panel_FM_List,
+        ID_Panel_FM_LblRuta
     };
 }
 
@@ -79,7 +87,8 @@ namespace EnumComandos {
         Mic_Detener_Escucha,
         Mic_Live_Packet,
         FM_Discos,
-        FM_Discos_Lista
+        FM_Discos_Lista,
+        FM_Dir_Folder
     };
 }
 

@@ -10,11 +10,13 @@ wxBEGIN_EVENT_TABLE(panelFileManager, wxPanel)
 	EVT_MENU(wxID_ANY, panelFileManager::OnToolBarClick)
 wxEND_EVENT_TABLE()
 
+wxBEGIN_EVENT_TABLE(ListCtrlManager, wxListCtrl)
+	EVT_LIST_ITEM_ACTIVATED(EnumIDS::ID_Panel_FM_List, ListCtrlManager::OnActivated)
+wxEND_EVENT_TABLE()
 
 panelFileManager::panelFileManager(wxWindow* pParent) :
 	wxPanel(pParent, EnumIDS::ID_Panel_FM) {
 	this->SetBackgroundColour(wxColor(200, 200, 200));
-	
 	
 	wxWindow* wxTree = (MyTreeCtrl*)this->GetParent();
 	if (wxTree) {
@@ -44,9 +46,16 @@ panelFileManager::panelFileManager(wxWindow* pParent) :
 
 	this->CrearLista();
 
+	this->p_RutaActual = new wxStaticText(this, EnumIDS::ID_Panel_FM_LblRuta, wxT("\\"), wxDefaultPosition, wxSize(FRAME_CLIENT_SIZE_WIDTH, 10));
+
 	wxBoxSizer* sizer = new wxBoxSizer(wxHORIZONTAL);
 	sizer->Add(this->p_ToolBar, 0, wxEXPAND);
-	sizer->Add(this->listManager, 1, wxEXPAND, 1);
+	
+	wxBoxSizer* sizer2 = new wxBoxSizer(wxVERTICAL);
+	sizer2->Add(this->listManager, 0, wxEXPAND, 1);
+	sizer2->Add(this->p_RutaActual, 1, wxEXPAND, 1);
+
+	sizer->Add(sizer2);
 	//sizer->Add(new wxStaticText(this, wxID_ANY, "Testing"), 0, wxEXPAND);
 	SetSizer(sizer);
 
@@ -73,11 +82,16 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 			itemCol.SetWidth(100);
 			this->listManager->InsertColumn(2, itemCol);
 
-			itemCol.SetText("Capacidad");
-			itemCol.SetWidth(100);
+			itemCol.SetText("Libre");
+			itemCol.SetWidth(50);
 			this->listManager->InsertColumn(3, itemCol);
 
+			itemCol.SetText("Total");
+			itemCol.SetWidth(50);
+			this->listManager->InsertColumn(4, itemCol);
+
 			//ENVIAR COMANDO OBTENER DRIVES
+			this->iMODE = FM_EQUIPO;
 			strComando = std::to_string(EnumComandos::FM_Discos);
 			strComando.append(1, '~');
 			this->EnviarComando(strComando);
@@ -98,12 +112,13 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 			itemCol.SetWidth(100);
 			this->listManager->InsertColumn(2, itemCol);
 			//ENVIAR COMANDO OBTENER FOLDER DESCARGAS
+			this->iMODE = FM_DESKTOP;
 			break;
 	}
 }
 
 void panelFileManager::CrearLista() {
-	this->listManager = new ListCtrlManager(this, EnumIDS::ID_Panel_FM_List, wxDefaultPosition, wxSize(600, 300), wxBORDER_THEME | wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES | wxEXPAND);
+	this->listManager = new ListCtrlManager(this, EnumIDS::ID_Panel_FM_List, wxDefaultPosition, wxSize(FRAME_CLIENT_SIZE_WIDTH, 300), wxBORDER_THEME | wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES | wxEXPAND);
 
 }
 
@@ -119,4 +134,49 @@ void panelFileManager::EnviarComando(std::string pComando) {
 			break;
 		}
 	}
+}
+
+void ListCtrlManager::OnActivated(wxListEvent& event) {
+	panelFileManager* itemp = (panelFileManager*)this->GetParent();
+	wxString strPath = "";
+	wxListItem itemCol;
+	std::string strCommand = "";
+	switch (itemp->iMODE) {
+		case FM_EQUIPO:
+
+			strPath = this->GetItemText(event.GetIndex(), 0) + ":\\";
+			itemp->p_RutaActual->SetLabelText(strPath);
+			strCommand = std::to_string(EnumComandos::FM_Dir_Folder);
+			strCommand.append(1, '~');
+			strCommand += strPath;
+			
+			this->ClearAll();
+			itemCol.SetText("-");
+			itemCol.SetWidth(20);
+			itemCol.SetAlign(wxLIST_FORMAT_CENTRE);
+			this->InsertColumn(0, itemCol);
+
+			itemCol.SetText("Nombre");
+			itemCol.SetWidth(150);
+			itemCol.SetAlign(wxLIST_FORMAT_LEFT);
+			this->InsertColumn(1, itemCol);
+
+			itemCol.SetText("Tamaño");
+			itemCol.SetWidth(80);
+			this->InsertColumn(2, itemCol);
+
+			itemCol.SetText("Fecha Mod");
+			itemCol.SetWidth(100);
+			this->InsertColumn(3, itemCol);
+
+			Sleep(100);
+
+			itemp->EnviarComando(strCommand);
+			itemp->iMODE = FM_NORMAL;
+			break;
+		default:
+			//
+			break;
+	}
+	//std::cout << this->GetItemText(event.GetIndex(), 1) << std::endl;
 }

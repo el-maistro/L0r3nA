@@ -69,3 +69,69 @@ std::vector<struct sDrives> Drives() {
 	return vcOutput;
 
 }
+
+std::vector<std::string> vDir(const char* cPath) {
+	std::vector<std::string> vcFolders;
+	std::vector<std::string> vcFiles;
+	struct stat info;
+	WIN32_FIND_DATA win32Archivo;
+	TCHAR szDir[MAX_PATH];
+	HANDLE hFind = INVALID_HANDLE_VALUE;
+	snprintf(szDir, MAX_PATH, "%s*", cPath);
+	SYSTEMTIME FileDate;
+	char cFecha[10];
+	char cTmpdir[2048];
+	hFind = FindFirstFileA(szDir, &win32Archivo);
+
+	if (!hFind) {
+#ifdef ___DEBUG_		
+		error();
+#endif
+	}
+	do {
+		//cFecha tmpdir baia.cFileName win32Archivo.nFilesizeLow
+
+		FileTimeToSystemTime(&win32Archivo.ftCreationTime, &FileDate);
+		
+		ZeroMemory(cFecha, sizeof(cFecha));
+		ZeroMemory(cTmpdir, sizeof(cTmpdir));
+
+		snprintf(cFecha, 10, "%d/%d/%d", FileDate.wDay, FileDate.wMonth, FileDate.wYear);
+		
+		strncpy(cTmpdir, cPath, 2047);
+		strncat(cTmpdir, win32Archivo.cFileName, 2047 - strnlen(cTmpdir, 2047));
+		
+		stat(cTmpdir, &info);
+
+		std::string strEntry = "";
+
+		if (info.st_mode & S_IFDIR) {
+			//Directorio
+			strEntry = "0>";
+			strEntry += win32Archivo.cFileName;
+			strEntry += ">->";
+			strEntry += cFecha;
+			vcFolders.push_back(strEntry);
+		} else {
+			strEntry = "0<";
+			strEntry += win32Archivo.cFileName;
+			strEntry += "<";
+			strEntry += std::to_string(win32Archivo.nFileSizeLow);
+			strEntry += "<";
+			strEntry += cFecha;
+			vcFiles.push_back(strEntry);
+
+		}
+
+	} while (FindNextFile(hFind, &win32Archivo) != 0);
+	if (hFind) {
+		FindClose(hFind);
+	}
+
+	for (auto item : vcFiles) {
+		vcFolders.push_back(item);
+		
+	}
+
+	return vcFolders;
+}

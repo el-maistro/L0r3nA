@@ -18,6 +18,8 @@
 #include<vector>
 #include<cstring>
 #include<ctime>
+#include<sys/stat.h>
+
 
 #include <iomanip>
 
@@ -47,7 +49,8 @@ namespace EnumComandos {
         Mic_Detener_Escucha,
         Mic_Live_Packet,
         FM_Discos,
-        FM_Discos_Lista
+        FM_Discos_Lista,
+        FM_Dir_Folder
     };
 }
 

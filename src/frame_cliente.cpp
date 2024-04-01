@@ -55,7 +55,7 @@ FrameCliente::FrameCliente(std::string strID, wxString nameID)
     wxPanel* pnl_Left = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(200, 450));
     pnl_Left->SetBackgroundColour(wxColor(255, 0, 0));
 
-    wxPanel* pnl_Right = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(600, 450));
+    wxPanel* pnl_Right = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(FRAME_CLIENT_SIZE_WIDTH, 450));
     pnl_Right->SetBackgroundColour(wxColor(0, 255, 0));
     
     this->m_tree = new MyTreeCtrl(pnl_Left, EnumIDS::TreeCtrl_ID,
@@ -76,12 +76,12 @@ FrameCliente::FrameCliente(std::string strID, wxString nameID)
     
     this->m_tree->AppendItem(rootMisc, wxT("Testing"));
 
-    this->m_tree->p_Notebook = new wxAuiNotebook(pnl_Right, wxID_ANY, wxDefaultPosition, wxSize(600, 450),
+    this->m_tree->p_Notebook = new wxAuiNotebook(pnl_Right, wxID_ANY, wxDefaultPosition, wxSize(FRAME_CLIENT_SIZE_WIDTH, 450),
         wxAUI_NB_CLOSE_ON_ACTIVE_TAB | wxAUI_NB_DEFAULT_STYLE | wxAUI_NB_TAB_EXTERNAL_MOVE | wxNO_BORDER);
 
     wxHtmlWindow* html = new wxHtmlWindow(this->m_tree->p_Notebook, wxID_ANY, wxDefaultPosition, wxSize(200, 200));
     html->SetBackgroundColour(wxColor(0, 0, 255));
-    wxString htmlsource = "<center><h1>Bienvenido a mi morada entre libremente por su propia voluntad</h1></center>";
+    wxString htmlsource = "<center>ALGUN MENSAJE AQUI, GIF?</center>";
     html->SetPage(htmlsource);
     html->SetSize(wxSize(200, 200));
 
