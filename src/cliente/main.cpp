@@ -12,7 +12,6 @@ int main() {
 	
 	while (cCliente->isRunning) {
 		if (cCliente->bConectar("127.0.0.1", "31000")) {
-			std::cout << cCliente->ObtenerDesk() << "-----" << cCliente->ObtenerDown() << std::endl;
 			cCliente->iniPacket();
 			cCliente->MainLoop();
 		} else {

@@ -233,15 +233,4 @@ void MyFrame::OnLimpiar(wxCommandEvent& event) {
 
 void MyFrame::OnAbout(wxCommandEvent& event){
     wxMessageBox(wxT("L0r3na v0.1"), wxT("About"));
-    //long lFound = p_Servidor->m_listCtrl->FindItem(0, wxString("2"));
-    //if(lFound != wxNOT_FOUND){
-    //    p_Servidor->m_listCtrl->DeleteItem(lFound);
-    //}
 }
-
-
-/*
-
-g++ `wx-config --cppflags` wx.cpp -lwx_baseu-3.2 -lwx_baseu_net-3.2 -lwx_baseu_xml-3.2 -lwx_mswu_adv-3.2 -lwx_mswu_aui-3.2 -lwx_mswu_core-3.2 -lwx_mswu_gl-3.2 -lwx_mswu_html-3.2 -lwx_mswu_media-3.2 -lwx_mswu_propgrid-3.2 -lwx_mswu_qa-3.2 -lwx_mswu_ribbon-3.2 -lwx_mswu_richtext-3.2 -lwx_mswu_stc-3.2 -lwx_mswu_webview-3.2 -lwx_mswu_xrc-3.2
-
-*/

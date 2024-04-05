@@ -11,6 +11,7 @@ wxBEGIN_EVENT_TABLE(panelFileManager, wxPanel)
 wxEND_EVENT_TABLE()
 
 wxBEGIN_EVENT_TABLE(ListCtrlManager, wxListCtrl)
+    EVT_CONTEXT_MENU(ListCtrlManager::OnContextMenu)
 	EVT_LIST_ITEM_ACTIVATED(EnumIDS::ID_Panel_FM_List, ListCtrlManager::OnActivated)
 wxEND_EVENT_TABLE()
 
@@ -248,4 +249,54 @@ void ListCtrlManager::OnActivated(wxListEvent& event) {
 			break;
 	}
 	//std::cout << this->GetItemText(event.GetIndex(), 1) << std::endl;
+}
+
+void ListCtrlManager::ShowContextMenu(const wxPoint& pos, long item) {
+
+	wxMenu menu;
+	menu.Append(wxID_ANY, "Eliminar");
+	menu.Append(wxID_ANY, "Editar");
+	menu.Append(wxID_ANY, "Ejecutar");
+	menu.AppendSeparator();
+	menu.Append(wxID_ANY, ":v");
+
+	PopupMenu(&menu, pos.x, pos.y);
+}
+
+void ListCtrlManager::OnContextMenu(wxContextMenuEvent& event)
+{
+	if (GetEditControl() == NULL)
+	{
+		wxPoint point = event.GetPosition();
+
+		// If from keyboard
+		if ((point.x == -1) && (point.y == -1))
+		{
+			wxSize size = GetSize();
+			point.x = size.x / 2;
+			point.y = size.y / 2;
+		}
+		else
+		{
+			point = ScreenToClient(point);
+		}
+
+		int flags;
+		long iItem = HitTest(point, flags);
+
+		if (iItem == -1) {
+			return;
+		}
+
+		//wxString st1 = this->GetItemText(iItem, 0);
+		
+		ShowContextMenu(point, iItem);
+	}
+	else
+	{
+		// the user is editing:
+		// allow the text control to display its context menu
+		// if it has one (it has on Windows) rather than display our one
+		event.Skip();
+	}
 }
