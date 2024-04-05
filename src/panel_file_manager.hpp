@@ -10,14 +10,18 @@ class panelFileManager: public wxPanel{
 		ListCtrlManager* listManager = nullptr;
 		
 		void CrearLista();
+		wxString RutaActual();
 		void EnviarComando(std::string pComando);
 
 		panelFileManager(wxWindow* pParent);
 
 		//Eventos
 		void OnToolBarClick(wxCommandEvent& event);
+		
+		//Variables
 		int iMODE = -1;
 		wxStaticText* p_RutaActual = nullptr;
+		std::vector<wxString> c_RutaActual;
 
 	private:
 		wxToolBar* p_ToolBar = nullptr;

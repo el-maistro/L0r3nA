@@ -37,9 +37,7 @@
 
 //FM Modos
 #define FM_EQUIPO    500
-#define FM_DESKTOP   501
-#define FM_DOWNLOADS 502
-#define FM_NORMAL    503
+#define FM_NORMAL    501
 
 
 extern bool bSignalFlag;
@@ -88,7 +86,8 @@ namespace EnumComandos {
         Mic_Live_Packet,
         FM_Discos,
         FM_Discos_Lista,
-        FM_Dir_Folder
+        FM_Dir_Folder,
+        FM_CPATH //El cliente envia una ruta al servidor
     };
 }
 

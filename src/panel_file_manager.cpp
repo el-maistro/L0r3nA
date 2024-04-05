@@ -109,16 +109,51 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 			this->listManager->InsertColumn(1, itemCol);
 
 			itemCol.SetText("Tamaño");
-			itemCol.SetWidth(100);
+			itemCol.SetWidth(80);
 			this->listManager->InsertColumn(2, itemCol);
+
+			itemCol.SetText("Fecha Mod");
+			itemCol.SetWidth(100);
+			this->listManager->InsertColumn(3, itemCol);
 			//ENVIAR COMANDO OBTENER FOLDER DESCARGAS
-			this->iMODE = FM_DESKTOP;
+			this->iMODE = FM_NORMAL;
+
+			strComando = std::to_string(EnumComandos::FM_Dir_Folder);
+			strComando += "~DESCAR-DOWN";
+			this->EnviarComando(strComando);
+			break;
+		case EnumIDS::ID_Panel_FM_Escritorio:
+			this->listManager->ClearAll();
+			itemCol.SetText("-");
+			itemCol.SetWidth(20);
+			itemCol.SetAlign(wxLIST_FORMAT_CENTRE);
+			this->listManager->InsertColumn(0, itemCol);
+
+			itemCol.SetText("Nombre");
+			itemCol.SetWidth(150);
+			itemCol.SetAlign(wxLIST_FORMAT_LEFT);
+			this->listManager->InsertColumn(1, itemCol);
+
+			itemCol.SetText("Tamaño");
+			itemCol.SetWidth(80);
+			this->listManager->InsertColumn(2, itemCol);
+
+			itemCol.SetText("Fecha Mod");
+			itemCol.SetWidth(100);
+			this->listManager->InsertColumn(3, itemCol);
+			//ENVIAR COMANDO OBTENER FOLDER DE ESCRITORIO
+
+			this->iMODE = FM_NORMAL;
+
+			strComando = std::to_string(EnumComandos::FM_Dir_Folder);
+			strComando += "~ESCRI-DESK";
+			this->EnviarComando(strComando);
 			break;
 	}
 }
 
 void panelFileManager::CrearLista() {
-	this->listManager = new ListCtrlManager(this, EnumIDS::ID_Panel_FM_List, wxDefaultPosition, wxSize(FRAME_CLIENT_SIZE_WIDTH, 300), wxBORDER_THEME | wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES | wxEXPAND);
+	this->listManager = new ListCtrlManager(this, EnumIDS::ID_Panel_FM_List, wxDefaultPosition, wxSize(FRAME_CLIENT_SIZE_WIDTH, 400), wxBORDER_THEME | wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES | wxEXPAND);
 
 }
 
@@ -136,20 +171,31 @@ void panelFileManager::EnviarComando(std::string pComando) {
 	}
 }
 
+wxString panelFileManager::RutaActual() {
+	wxString strOut = "";
+	for (auto item : this->c_RutaActual) {
+		strOut += item;
+	}
+	return strOut;
+}
+
 void ListCtrlManager::OnActivated(wxListEvent& event) {
 	panelFileManager* itemp = (panelFileManager*)this->GetParent();
 	wxString strPath = "";
+	wxString strSelected = "";
 	wxListItem itemCol;
 	std::string strCommand = "";
 	switch (itemp->iMODE) {
 		case FM_EQUIPO:
+			itemp->c_RutaActual.clear();
 
 			strPath = this->GetItemText(event.GetIndex(), 0) + ":\\";
 			itemp->p_RutaActual->SetLabelText(strPath);
+			itemp->c_RutaActual.push_back(strPath);
 			strCommand = std::to_string(EnumComandos::FM_Dir_Folder);
 			strCommand.append(1, '~');
 			strCommand += strPath;
-			
+
 			this->ClearAll();
 			itemCol.SetText("-");
 			itemCol.SetWidth(20);
@@ -173,6 +219,29 @@ void ListCtrlManager::OnActivated(wxListEvent& event) {
 
 			itemp->EnviarComando(strCommand);
 			itemp->iMODE = FM_NORMAL;
+			break;
+		case FM_NORMAL:
+			if (this->GetItemText(event.GetIndex(), 2) == wxString("-")) {
+				//Folder
+				strSelected = this->GetItemText(event.GetIndex(), 1) + "\\";
+				if (strSelected != ".\\") {
+					if (strSelected == "..\\") {
+						itemp->c_RutaActual.pop_back();
+					}
+					else {
+						itemp->c_RutaActual.push_back(strSelected);
+					}
+
+					itemp->p_RutaActual->SetLabelText(itemp->RutaActual());
+
+					this->DeleteAllItems();
+
+					strCommand = std::to_string(EnumComandos::FM_Dir_Folder);
+					strCommand.append(1, '~');
+					strCommand += itemp->RutaActual();
+					itemp->EnviarComando(strCommand);
+				}
+			}
 			break;
 		default:
 			//

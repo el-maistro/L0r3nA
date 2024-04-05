@@ -73,13 +73,15 @@ std::vector<struct sDrives> Drives() {
 std::vector<std::string> vDir(const char* cPath) {
 	std::vector<std::string> vcFolders;
 	std::vector<std::string> vcFiles;
-	struct stat info;
+	
 	WIN32_FIND_DATA win32Archivo;
+	struct stat info;
+
 	TCHAR szDir[MAX_PATH];
 	HANDLE hFind = INVALID_HANDLE_VALUE;
 	snprintf(szDir, MAX_PATH, "%s*", cPath);
 	SYSTEMTIME FileDate;
-	char cFecha[10];
+	char cFecha[15];
 	char cTmpdir[2048];
 	hFind = FindFirstFileA(szDir, &win32Archivo);
 
@@ -96,7 +98,7 @@ std::vector<std::string> vDir(const char* cPath) {
 		ZeroMemory(cFecha, sizeof(cFecha));
 		ZeroMemory(cTmpdir, sizeof(cTmpdir));
 
-		snprintf(cFecha, 10, "%d/%d/%d", FileDate.wDay, FileDate.wMonth, FileDate.wYear);
+		snprintf(cFecha, 15, "%d/%d/%d", FileDate.wDay, FileDate.wMonth, FileDate.wYear);
 		
 		strncpy(cTmpdir, cPath, 2047);
 		strncat(cTmpdir, win32Archivo.cFileName, 2047 - strnlen(cTmpdir, 2047));

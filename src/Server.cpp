@@ -464,13 +464,7 @@ void Servidor::m_Escucha(){
                                 if (vcFileEntry.size() >= 4) {
                                     int iCount = temp_list->GetItemCount() > 0 ? temp_list->GetItemCount() - 1 : 0;
                                     temp_list->InsertItem(iCount, wxString("-"));
-                                    std::cout << vcFileEntry[1] << std::endl;
-                                    try {
-                                        temp_list->SetItem(iCount, 1, wxString(vcFileEntry[1]));
-                                    }catch (const std::exception& e) {
-                                        // Captura cualquier excepción de tipo std::exception y sus subtipos
-                                        std::cerr << "Excepción atrapada: " << e.what() << std::endl;
-                                    }
+                                    temp_list->SetItem(iCount, 1, wxString(vcFileEntry[1]));
                                     temp_list->SetItem(iCount, 2, wxString(vcFileEntry[2]));
                                     temp_list->SetItem(iCount, 3, wxString(vcFileEntry[3]));
                                 }
@@ -480,6 +474,27 @@ void Servidor::m_Escucha(){
                             std::cout << "No se pudo encontrar ventana activa con nombre " << strTempID << std::endl;
                         }
 
+                    }
+
+                    if (vcDatos[0] == std::to_string(EnumComandos::FM_CPATH)) {
+                        FrameCliente* temp = (FrameCliente*)wxWindow::FindWindowByName(strTempID);
+                        if (temp) {
+                            panelFileManager* temp_panel = (panelFileManager*)wxWindow::FindWindowById(EnumIDS::ID_Panel_FM, temp);
+                            if (temp_panel) {
+                                temp_panel->p_RutaActual->SetLabelText(wxString(cBuffer+4));
+                                temp_panel->c_RutaActual.clear();
+                                std::vector<std::string> vcSubRutas = strSplit(cBuffer+4, '\\', 100);
+                                for (auto item : vcSubRutas) {
+                                    std::string strTemp = item;
+                                    strTemp += "\\";
+                                    temp_panel->c_RutaActual.push_back(strTemp);
+                                }
+                            }else {
+                                std::cout << "No se pudo encontrar panel activo con nombre " << strTempID << std::endl;
+                            }
+                        }else {
+                            std::cout << "No se pudo encontrar ventana activa con nombre " << strTempID << std::endl;
+                        }
                     }
 
                     if (vcDatos[0] == "LMIC") {

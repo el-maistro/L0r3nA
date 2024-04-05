@@ -19,6 +19,7 @@
 #include<cstring>
 #include<ctime>
 #include<sys/stat.h>
+#include<shlobj.h>
 
 
 #include <iomanip>
@@ -50,7 +51,8 @@ namespace EnumComandos {
         Mic_Live_Packet,
         FM_Discos,
         FM_Discos_Lista,
-        FM_Dir_Folder
+        FM_Dir_Folder,
+        FM_CPATH
     };
 }
 

