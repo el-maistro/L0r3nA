@@ -4,6 +4,7 @@
 #include<wx/wx.h> 
 #include<wx/thread.h>
 #include<wx/listctrl.h>
+#include<wx/tglbtn.h >
 #include<wx/toolbar.h>
 #include<wx/treectrl.h>
 #include<wx/sizer.h>
@@ -47,9 +48,7 @@ typedef unsigned int u_int;
 
 namespace EnumIDS {
     enum Enum {
-        ID_Escuchar = 100,
-        ID_Detener,
-        ID_LimpiarLog,
+        ID_LimpiarLog = 100,
         ID_Interactuar,
         ID_FrameClienteTest,
         TreeCtrl_ID,
@@ -66,8 +65,25 @@ namespace EnumIDS {
         ID_Panel_FM_Equipo,
         ID_Panel_FM_Escritorio,
         ID_Panel_FM_Descargas,
+        ID_Panel_FM_Refresh,
+        ID_Panel_FM_Subir,
         ID_Panel_FM_List,
-        ID_Panel_FM_LblRuta
+        ID_Panel_FM_LblRuta,
+        ID_Toggle
+    };
+}
+
+namespace EnumMenuFM {
+    enum Enum {
+        ID_Exec_Oculto = 9999,
+        ID_Exec_Visible,
+        ID_Editar,
+        ID_Eliminar,
+        ID_Descargar,
+        ID_Crypt,
+        ID_Decrypt,
+        ID_New_Folder,
+        ID_New_Archivo
     };
 }
 
@@ -87,7 +103,9 @@ namespace EnumComandos {
         FM_Discos,
         FM_Discos_Lista,
         FM_Dir_Folder,
-        FM_CPATH //El cliente envia una ruta al servidor
+        FM_CPATH,
+        FM_Crear_Folder,
+        FM_Crear_Archivo
     };
 }
 

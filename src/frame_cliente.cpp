@@ -64,24 +64,25 @@ FrameCliente::FrameCliente(std::string strID, wxString nameID)
     wxTreeItemId rootC = this->m_tree->AddRoot(wxT("CLI"));
     
     wxTreeItemId rootAdmin = this->m_tree->AppendItem(rootC, wxT("[Admin]"));
-    wxTreeItemId rootSurveilance = this->m_tree->AppendItem(rootC, wxT("[Spy]"));
-    wxTreeItemId rootMisc = this->m_tree->AppendItem(rootC, wxT("[Misc]"));
+    //wxTreeItemId rootSurveilance = this->m_tree->AppendItem(rootC, wxT("[Spy]"));
+    //wxTreeItemId rootMisc = this->m_tree->AppendItem(rootC, wxT("[Misc]"));
 
     this->m_tree->AppendItem(rootAdmin, wxT("Reverse Shell"));
     this->m_tree->AppendItem(rootAdmin, wxT("Administrador de archivos"));
+    //this->m_tree->AppendItem(rootAdmin, wxT("Persistencia"));
 
-    this->m_tree->AppendItem(rootSurveilance, wxT("Keylogger"));
+    /*this->m_tree->AppendItem(rootSurveilance, wxT("Keylogger"));
     this->m_tree->AppendItem(rootSurveilance, wxT("Microfono"));
     this->m_tree->AppendItem(rootSurveilance, wxT("Camara"));
     
-    this->m_tree->AppendItem(rootMisc, wxT("Testing"));
+    this->m_tree->AppendItem(rootMisc, wxT("Testing"));*/
 
     this->m_tree->p_Notebook = new wxAuiNotebook(pnl_Right, wxID_ANY, wxDefaultPosition, wxSize(FRAME_CLIENT_SIZE_WIDTH, 450),
         wxAUI_NB_CLOSE_ON_ACTIVE_TAB | wxAUI_NB_DEFAULT_STYLE | wxAUI_NB_TAB_EXTERNAL_MOVE | wxNO_BORDER);
 
     wxHtmlWindow* html = new wxHtmlWindow(this->m_tree->p_Notebook, wxID_ANY, wxDefaultPosition, wxSize(200, 200));
     html->SetBackgroundColour(wxColor(0, 0, 255));
-    wxString htmlsource = "<center>ALGUN MENSAJE AQUI, GIF?</center>";
+    wxString htmlsource = "<center><p>L0R3NA v0.1</p></center>";
     html->SetPage(htmlsource);
     html->SetSize(wxSize(200, 200));
 

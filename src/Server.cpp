@@ -786,9 +786,6 @@ void MyListCtrl::OnContextMenu(wxContextMenuEvent& event)
     }
     else
     {
-        // the user is editing:
-        // allow the text control to display its context menu
-        // if it has one (it has on Windows) rather than display our one
         event.Skip();
     }
 }

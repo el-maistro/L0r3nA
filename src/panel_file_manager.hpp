@@ -40,8 +40,12 @@ class ListCtrlManager : public wxListCtrl {
 		
 		void OnActivated(wxListEvent& event);
 
-		void ShowContextMenu(const wxPoint& pos, long item);
+		void ShowContextMenu(const wxPoint& pos, bool isFolder);
 		void OnContextMenu(wxContextMenuEvent& event);
+
+		//Eventos acciones menu contextual
+		void OnCrearFolder(wxCommandEvent& event);
+		void OnCrearArchivo(wxCommandEvent& event);
 
 		wxDECLARE_EVENT_TABLE();
 };

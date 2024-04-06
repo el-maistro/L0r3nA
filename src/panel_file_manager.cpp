@@ -11,6 +11,8 @@ wxBEGIN_EVENT_TABLE(panelFileManager, wxPanel)
 wxEND_EVENT_TABLE()
 
 wxBEGIN_EVENT_TABLE(ListCtrlManager, wxListCtrl)
+	EVT_MENU(EnumMenuFM::ID_New_Folder, ListCtrlManager::OnCrearFolder)
+	EVT_MENU(EnumMenuFM::ID_New_Archivo, ListCtrlManager::OnCrearArchivo)
     EVT_CONTEXT_MENU(ListCtrlManager::OnContextMenu)
 	EVT_LIST_ITEM_ACTIVATED(EnumIDS::ID_Panel_FM_List, ListCtrlManager::OnActivated)
 wxEND_EVENT_TABLE()
@@ -36,13 +38,20 @@ panelFileManager::panelFileManager(wxWindow* pParent) :
 	wxBitmap pcBitmap(wxT(".\\imgs\\computer.png"), wxBITMAP_TYPE_PNG);
 	wxBitmap desktopBitmap(wxT(".\\imgs\\desktop.png"), wxBITMAP_TYPE_PNG);
 	wxBitmap downloadBitmap(wxT(".\\imgs\\download.png"), wxBITMAP_TYPE_PNG);
+	wxBitmap refreshBitmap(wxT(".\\imgs\\refresh.png"), wxBITMAP_TYPE_PNG);
+	//wxBitmap uploadBitmap(wxT(".\\imgs\\upload.png"), wxBITMAP_TYPE_PNG);
 
 
 	this->p_ToolBar->AddTool(EnumIDS::ID_Panel_FM_Equipo, wxT("Equipo"), pcBitmap, "Equipo");
 	this->p_ToolBar->AddSeparator(); // Separador entre grupos de botones
 	this->p_ToolBar->AddTool(EnumIDS::ID_Panel_FM_Escritorio, wxT("Escritorio"), desktopBitmap, "Escritorio");
-	this->p_ToolBar->AddSeparator(); // Separador entre grupos de botones
+	this->p_ToolBar->AddSeparator();
 	this->p_ToolBar->AddTool(EnumIDS::ID_Panel_FM_Descargas, wxT("Descargas"), downloadBitmap, "Descargas");
+	this->p_ToolBar->AddSeparator(); 
+	this->p_ToolBar->AddSeparator(); 
+	this->p_ToolBar->AddSeparator();
+	this->p_ToolBar->AddTool(EnumIDS::ID_Panel_FM_Refresh, wxT("Refrescar"), refreshBitmap, wxT("Refrescar"));
+	//this->p_ToolBar->AddTool(EnumIDS::ID_Panel_FM_Subir, wxT("Subir"), uploadBitmap, "Subir archivo a ruta actual");
 	this->p_ToolBar->Realize();
 
 	this->CrearLista();
@@ -150,6 +159,14 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 			strComando += "~ESCRI-DESK";
 			this->EnviarComando(strComando);
 			break;
+		case EnumIDS::ID_Panel_FM_Refresh:
+			this->listManager->DeleteAllItems();
+			Sleep(100);
+			strComando = std::to_string(EnumComandos::FM_Dir_Folder);
+			strComando.append(1, '~');
+			strComando += this->p_RutaActual->GetLabelText();
+			this->EnviarComando(strComando);
+			break;
 	}
 }
 
@@ -179,6 +196,35 @@ wxString panelFileManager::RutaActual() {
 	}
 	return strOut;
 }
+
+//        Acciones menu contextual
+//----------------------------------------------
+void ListCtrlManager::OnCrearFolder(wxCommandEvent& event) {
+	panelFileManager* itemp = (panelFileManager*)this->GetParent();
+
+	wxTextEntryDialog dialog(this, "Nombre", "Crear folder/carpeta", "Nueva Carpeta", wxOK | wxCANCEL);
+	if (dialog.ShowModal() == wxID_OK){
+		std::string strComando = std::to_string(EnumComandos::FM_Crear_Folder);
+		strComando.append(1, '~');
+		strComando += itemp->p_RutaActual->GetLabelText();
+		strComando += dialog.GetValue();
+		itemp->EnviarComando(strComando);
+	}
+}
+
+void ListCtrlManager::OnCrearArchivo(wxCommandEvent& event) {
+	panelFileManager* itemp = (panelFileManager*)this->GetParent();
+
+	wxTextEntryDialog dialog(this, "Nombre", "Crear archivo", "LEEME.txt", wxOK | wxCANCEL);
+	if (dialog.ShowModal() == wxID_OK) {
+		std::string strComando = std::to_string(EnumComandos::FM_Crear_Archivo);
+		strComando.append(1, '~');
+		strComando += itemp->p_RutaActual->GetLabelText();
+		strComando += dialog.GetValue();
+		itemp->EnviarComando(strComando);
+	}
+}
+//----------------------------------------------
 
 void ListCtrlManager::OnActivated(wxListEvent& event) {
 	panelFileManager* itemp = (panelFileManager*)this->GetParent();
@@ -251,16 +297,43 @@ void ListCtrlManager::OnActivated(wxListEvent& event) {
 	//std::cout << this->GetItemText(event.GetIndex(), 1) << std::endl;
 }
 
-void ListCtrlManager::ShowContextMenu(const wxPoint& pos, long item) {
-
+void ListCtrlManager::ShowContextMenu(const wxPoint& pos, bool isFolder) {
 	wxMenu menu;
-	menu.Append(wxID_ANY, "Eliminar");
-	menu.Append(wxID_ANY, "Editar");
-	menu.Append(wxID_ANY, "Ejecutar");
-	menu.AppendSeparator();
-	menu.Append(wxID_ANY, ":v");
 
-	PopupMenu(&menu, pos.x, pos.y);
+	if (!isFolder) {
+		wxMenu *exec_Menu = new wxMenu;
+		exec_Menu->Append(EnumMenuFM::ID_Exec_Visible, "Normal");
+		exec_Menu->Append(EnumMenuFM::ID_Exec_Oculto, "Oculto");
+
+		wxMenu* crypt_Menu = new wxMenu;
+		crypt_Menu->Append(EnumMenuFM::ID_Crypt, "Encriptar");
+		crypt_Menu->Append(EnumMenuFM::ID_Decrypt, "Desencriptar");
+
+		wxMenu* new_menu = new wxMenu;
+		new_menu->Append(EnumMenuFM::ID_New_Folder, "Folder/Carpeta");
+		new_menu->Append(EnumMenuFM::ID_New_Archivo, "Archivo");
+
+		menu.AppendSubMenu(new_menu, "Nuevo");
+		menu.AppendSubMenu(exec_Menu, "Ejecutar");
+		menu.Append(EnumMenuFM::ID_Descargar, "Descargar");
+		menu.Append(EnumMenuFM::ID_Editar, "Editar");
+		menu.AppendSeparator();
+		menu.AppendSubMenu(crypt_Menu, "Crypt");
+		menu.Append(EnumMenuFM::ID_Eliminar, "Eliminar");
+
+		PopupMenu(&menu, pos.x, pos.y);
+	} else {
+		//pop menu para folder
+		wxMenu* new_menu = new wxMenu;
+		new_menu->Append(EnumMenuFM::ID_New_Folder, "Folder/Carpeta");
+		new_menu->Append(EnumMenuFM::ID_New_Archivo, "Archivo");
+
+		menu.AppendSubMenu(new_menu, "Nuevo");
+		menu.AppendSeparator();
+		menu.Append(EnumMenuFM::ID_Eliminar, "Eliminar");
+
+		PopupMenu(&menu, pos.x, pos.y);
+	}
 }
 
 void ListCtrlManager::OnContextMenu(wxContextMenuEvent& event)
@@ -285,18 +358,13 @@ void ListCtrlManager::OnContextMenu(wxContextMenuEvent& event)
 		long iItem = HitTest(point, flags);
 
 		if (iItem == -1) {
+			ShowContextMenu(point, true);
 			return;
 		}
 
-		//wxString st1 = this->GetItemText(iItem, 0);
-		
-		ShowContextMenu(point, iItem);
-	}
-	else
-	{
-		// the user is editing:
-		// allow the text control to display its context menu
-		// if it has one (it has on Windows) rather than display our one
+		ShowContextMenu(point, (this->GetItemText(iItem, 2) == "-") ? true : false);
+
+	}else {
 		event.Skip();
 	}
 }

@@ -193,9 +193,20 @@ void Cliente::ProcesarComando(std::vector<std::string> strIn) {
             strCommand.append(item);
             this->cSend(this->sckSocket, strCommand.c_str(), strCommand.size(), 0, true);
             Sleep(10);
-            std::cout << strCommand << std::endl;
+            //std::cout << strCommand << std::endl;
         }
     }
+
+    //crear folder
+    if (this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Crear_Folder) {
+        CrearFolder(strIn[1].c_str());
+    }
+
+    //Crear archivo
+    if (this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Crear_Archivo) {
+        CrearArchivo(strIn[1].c_str());
+    }
+
 
     //Lista de dispositivos de entrada (mic)
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::Mic_Refre_Dispositivos) {

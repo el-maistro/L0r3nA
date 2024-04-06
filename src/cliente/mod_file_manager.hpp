@@ -12,5 +12,7 @@ struct sDrives {
 
 std::vector<struct sDrives> Drives();
 std::vector<std::string> vDir(const char* cPath);
+void CrearFolder(const char* cPath);
+void CrearArchivo(const char* cPath);
 
 #endif

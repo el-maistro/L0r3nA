@@ -10,15 +10,14 @@ class MyFrame : public wxFrame{
         MyFrame();
     private:
         wxPanel *m_RPanel, *m_LPanel, *m_BPanel;
-        wxButton* btn_Escuchar, * btn_Detener;
         wxMenu *menuFile, *menuHelp;
+        wxToggleButton* btn_toggle;
         
         wxSize p_BotonS = wxSize(100, 30);
 
         //Eventos
-        void OnClickEscuchar(wxCommandEvent& event);
-        void OnclickDetener(wxCommandEvent& event);
         void OnLimpiar(wxCommandEvent& event);
+        void OnToggle(wxCommandEvent& event); //Iniciar/detener servidor
 
         void CrearLista(long flags, bool withText = true);
         void CrearControlesPanelIzquierdo();
@@ -30,9 +29,8 @@ class MyFrame : public wxFrame{
 };
 
 wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
-    EVT_BUTTON(EnumIDS::ID_Escuchar, MyFrame::OnClickEscuchar)
-    EVT_BUTTON(EnumIDS::ID_Detener, MyFrame::OnclickDetener)
     EVT_BUTTON(EnumIDS::ID_LimpiarLog, MyFrame::OnLimpiar)
+    EVT_TOGGLEBUTTON(EnumIDS::ID_Toggle, MyFrame::OnToggle)
     EVT_CLOSE(MyFrame::OnClose)
 wxEND_EVENT_TABLE()
 
@@ -116,18 +114,44 @@ MyFrame::MyFrame()
     SetStatusText("IDLE");
 }
 
+void MyFrame::OnToggle(wxCommandEvent& event) {
+
+    bool isSel = this->btn_toggle->GetValue();
+    if (isSel) {
+        //Iniciar escucha
+        
+        if (p_Servidor->m_Iniciar()) {
+            p_Servidor->m_Handler();
+            this->btn_toggle->SetLabelText("Detener Servidor");
+            SetStatusText("Esperando clientes...");
+        }
+        else {
+            std::string strTmp = "Error escuchando ";
+            strTmp.append(std::to_string(GetLastError()));
+            p_Servidor->m_txtLog->LogThis(strTmp, LogType::LogError);
+            SetStatusText("Error");
+        }
+        
+    }else {
+        //Detener escuchar
+        p_Servidor->m_StopHandler();
+        p_Servidor->m_JoinThreads();
+
+        p_Servidor->m_CerrarConexiones();
+
+        p_Servidor->m_listCtrl->DeleteAllItems();
+        SetStatusText("IDLE");
+        this->btn_toggle->SetLabelText("Iniciar Servidor");
+    }
+}
+
 void MyFrame::CrearControlesPanelIzquierdo(){
     
-    this->btn_Escuchar = new wxButton(this->m_LPanel, EnumIDS::ID_Escuchar, "Iniciar Servidor", wxDefaultPosition, this->p_BotonS);
-    this->btn_Detener = new wxButton(this->m_LPanel, EnumIDS::ID_Detener, "Detener Servidor", wxDefaultPosition, this->p_BotonS);
-
+    this->btn_toggle = new wxToggleButton(this->m_LPanel, EnumIDS::ID_Toggle, "Iniciar Servidor");
     wxBoxSizer *m_paneSizer = new wxBoxSizer(wxVERTICAL);
     m_paneSizer->AddSpacer(20);    
-    m_paneSizer->Add(this->btn_Escuchar, 0, wxALIGN_CENTER | wxALL, 3);
-    m_paneSizer->Add(this->btn_Detener,0, wxALIGN_CENTER | wxALL, 3);
+    m_paneSizer->Add(this->btn_toggle, 0, wxALIGN_CENTER | wxALL, 3);
     
-    this->btn_Detener->Enable(false);
-
     this->m_LPanel->SetSizerAndFit(m_paneSizer);
 
 }
@@ -195,36 +219,6 @@ void MyFrame::OnClose(wxCloseEvent& event){
 
 void MyFrame::OnExit(wxCommandEvent& event) {
     Close(true);
-}
-
-void MyFrame::OnClickEscuchar(wxCommandEvent& event){
-    if(p_Servidor->m_Iniciar()){
-        p_Servidor->m_Handler();
-        this->btn_Detener->Enable(true);
-        this->btn_Escuchar->Enable(false);
-        SetStatusText("Esperando clientes...");
-    } else {
-        //error();
-        std::string strTmp = "Error escuchando ";
-        strTmp.append(std::to_string(GetLastError()));
-        p_Servidor->m_txtLog->LogThis(strTmp, LogType::LogError);
-        SetStatusText("Error");
-    }
-}
-
-void MyFrame::OnclickDetener(wxCommandEvent& event){
-    //Bloquear acceso a la variable 
-    
-    p_Servidor->m_StopHandler();
-    p_Servidor->m_JoinThreads();
-    
-    this->btn_Detener->Enable(false);
-    this->btn_Escuchar->Enable(true);
-
-    p_Servidor->m_CerrarConexiones();
-
-    p_Servidor->m_listCtrl->DeleteAllItems();
-    SetStatusText("IDLE");
 }
 
 void MyFrame::OnLimpiar(wxCommandEvent& event) {

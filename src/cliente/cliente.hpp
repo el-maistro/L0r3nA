@@ -35,7 +35,9 @@ class Cliente {
 			{"507", EnumComandos::Mic_Iniciar_Escucha},
 			{"508", EnumComandos::Mic_Detener_Escucha},
 			{"510", EnumComandos::FM_Discos},
-			{"512", EnumComandos::FM_Dir_Folder}
+			{"512", EnumComandos::FM_Dir_Folder},
+			{"514", EnumComandos::FM_Crear_Folder},
+			{"515", EnumComandos::FM_Crear_Archivo}
 		};
 
 		Cliente();

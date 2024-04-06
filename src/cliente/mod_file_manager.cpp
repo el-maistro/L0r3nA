@@ -137,3 +137,17 @@ std::vector<std::string> vDir(const char* cPath) {
 
 	return vcFolders;
 }
+
+void CrearFolder(const char* cPath) {
+	CreateDirectoryA((LPCSTR)cPath, nullptr);
+}
+
+void CrearArchivo(const char* cPath) {
+	HANDLE hNewFile = CreateFileA((LPCSTR)cPath, GENERIC_READ | GENERIC_WRITE, 
+		FILE_SHARE_WRITE | FILE_SHARE_READ | FILE_SHARE_DELETE, nullptr, 
+		CREATE_NEW, FILE_ATTRIBUTE_NORMAL, nullptr);
+	if (hNewFile != INVALID_HANDLE_VALUE) {
+		CloseHandle(hNewFile);
+		hNewFile = nullptr;
+	}
+}

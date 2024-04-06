@@ -52,7 +52,9 @@ namespace EnumComandos {
         FM_Discos,
         FM_Discos_Lista,
         FM_Dir_Folder,
-        FM_CPATH
+        FM_CPATH,
+        FM_Crear_Folder,
+        FM_Crear_Archivo
     };
 }
 
