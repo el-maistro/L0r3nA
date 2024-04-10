@@ -37,7 +37,9 @@ class Cliente {
 			{"510", EnumComandos::FM_Discos},
 			{"512", EnumComandos::FM_Dir_Folder},
 			{"514", EnumComandos::FM_Crear_Folder},
-			{"515", EnumComandos::FM_Crear_Archivo}
+			{"515", EnumComandos::FM_Crear_Archivo},
+			{"516", EnumComandos::FM_Borrar_Archivo}
+
 		};
 
 		Cliente();

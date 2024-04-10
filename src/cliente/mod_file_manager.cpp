@@ -151,3 +151,11 @@ void CrearArchivo(const char* cPath) {
 		hNewFile = nullptr;
 	}
 }
+
+void BorrarArchivo(const char* cPath) {
+	DeleteFile((LPCSTR)cPath);
+}
+
+void BorrarFolder(const char* cPath) {
+	RemoveDirectoryA((LPCSTR)cPath);
+}

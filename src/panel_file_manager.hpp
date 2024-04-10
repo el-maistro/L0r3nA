@@ -46,6 +46,7 @@ class ListCtrlManager : public wxListCtrl {
 		//Eventos acciones menu contextual
 		void OnCrearFolder(wxCommandEvent& event);
 		void OnCrearArchivo(wxCommandEvent& event);
+		void OnBorrarArchivo(wxCommandEvent& event);
 
 		wxDECLARE_EVENT_TABLE();
 };

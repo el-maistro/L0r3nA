@@ -13,6 +13,7 @@ wxEND_EVENT_TABLE()
 wxBEGIN_EVENT_TABLE(ListCtrlManager, wxListCtrl)
 	EVT_MENU(EnumMenuFM::ID_New_Folder, ListCtrlManager::OnCrearFolder)
 	EVT_MENU(EnumMenuFM::ID_New_Archivo, ListCtrlManager::OnCrearArchivo)
+	EVT_MENU(EnumMenuFM::ID_Eliminar, ListCtrlManager::OnBorrarArchivo)
     EVT_CONTEXT_MENU(ListCtrlManager::OnContextMenu)
 	EVT_LIST_ITEM_ACTIVATED(EnumIDS::ID_Panel_FM_List, ListCtrlManager::OnActivated)
 wxEND_EVENT_TABLE()
@@ -197,8 +198,9 @@ wxString panelFileManager::RutaActual() {
 	return strOut;
 }
 
+//#####################################################
+//#####################################################
 //        Acciones menu contextual
-//----------------------------------------------
 void ListCtrlManager::OnCrearFolder(wxCommandEvent& event) {
 	panelFileManager* itemp = (panelFileManager*)this->GetParent();
 
@@ -224,7 +226,23 @@ void ListCtrlManager::OnCrearArchivo(wxCommandEvent& event) {
 		itemp->EnviarComando(strComando);
 	}
 }
-//----------------------------------------------
+
+void ListCtrlManager::OnBorrarArchivo(wxCommandEvent& event) {
+	panelFileManager* itemp = (panelFileManager*)this->GetParent();
+	long item = this->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+	wxString strFile = this->GetItemText(item, 1);
+	//wxDialog dialog(this, 10000, "Borrar arhivo", wxDefaultPosition, wxDefaultSize, wxYES_NO, "Seguro que quieres borrar el archivo: " + strFile);
+	wxMessageDialog dialog(this, "Seguro que quieres borrar el archivo: ", strFile, wxCENTER | wxNO_DEFAULT | wxYES_NO | wxICON_QUESTION);
+	if (dialog.ShowModal() == wxID_YES) {
+		//Borrar archivo
+		std::string strComando = std::to_string(EnumComandos::FM_Borrar_Archivo);
+		strComando.append(1, '~');
+		strComando += itemp->p_RutaActual->GetLabelText();
+		strComando += strFile;
+		itemp->EnviarComando(strComando);
+	}
+}
+//#####################################################
 
 void ListCtrlManager::OnActivated(wxListEvent& event) {
 	panelFileManager* itemp = (panelFileManager*)this->GetParent();

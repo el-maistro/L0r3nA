@@ -14,5 +14,7 @@ std::vector<struct sDrives> Drives();
 std::vector<std::string> vDir(const char* cPath);
 void CrearFolder(const char* cPath);
 void CrearArchivo(const char* cPath);
+void BorrarArchivo(const char* cPath);
+void BorrarFolder(const char* cPath);
 
 #endif

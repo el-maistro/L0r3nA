@@ -165,6 +165,11 @@ void Cliente::ProcesarComando(std::vector<std::string> strIn) {
 
     }
 
+
+    //#####################################################
+    //#####################################################
+    //#        COMANDOS SUBMENU ADMIN ARCHIVOS           #
+    
     //Lista directorio
     if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Dir_Folder){
         std::string strPath = "";
@@ -206,6 +211,14 @@ void Cliente::ProcesarComando(std::vector<std::string> strIn) {
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Crear_Archivo) {
         CrearArchivo(strIn[1].c_str());
     }
+
+    //Borrar archivo
+    if (this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Borrar_Archivo) {
+        BorrarArchivo(strIn[1].c_str());
+    }
+    //#####################################################
+    //#####################################################
+
 
 
     //Lista de dispositivos de entrada (mic)
