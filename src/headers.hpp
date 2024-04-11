@@ -83,7 +83,7 @@ namespace EnumMenuFM {
         ID_Crypt,
         ID_Decrypt,
         ID_New_Folder,
-        ID_New_Archivo
+        ID_New_Archivo,
     };
 }
 

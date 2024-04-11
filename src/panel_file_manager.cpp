@@ -1,5 +1,6 @@
 #include "panel_file_manager.hpp"
 #include "frame_client.hpp"
+#include "file_editor.hpp"
 #include "server.hpp"
 #include "misc.hpp"
 
@@ -14,6 +15,7 @@ wxBEGIN_EVENT_TABLE(ListCtrlManager, wxListCtrl)
 	EVT_MENU(EnumMenuFM::ID_New_Folder, ListCtrlManager::OnCrearFolder)
 	EVT_MENU(EnumMenuFM::ID_New_Archivo, ListCtrlManager::OnCrearArchivo)
 	EVT_MENU(EnumMenuFM::ID_Eliminar, ListCtrlManager::OnBorrarArchivo)
+	EVT_MENU(EnumMenuFM::ID_Editar, ListCtrlManager::OnEditarArchivo)
     EVT_CONTEXT_MENU(ListCtrlManager::OnContextMenu)
 	EVT_LIST_ITEM_ACTIVATED(EnumIDS::ID_Panel_FM_List, ListCtrlManager::OnActivated)
 wxEND_EVENT_TABLE()
@@ -202,33 +204,28 @@ wxString panelFileManager::RutaActual() {
 //#####################################################
 //        Acciones menu contextual
 void ListCtrlManager::OnCrearFolder(wxCommandEvent& event) {
-	panelFileManager* itemp = (panelFileManager*)this->GetParent();
-
 	wxTextEntryDialog dialog(this, "Nombre", "Crear folder/carpeta", "Nueva Carpeta", wxOK | wxCANCEL);
 	if (dialog.ShowModal() == wxID_OK){
 		std::string strComando = std::to_string(EnumComandos::FM_Crear_Folder);
 		strComando.append(1, '~');
-		strComando += itemp->p_RutaActual->GetLabelText();
+		strComando += this->itemp->p_RutaActual->GetLabelText();
 		strComando += dialog.GetValue();
-		itemp->EnviarComando(strComando);
+		this->itemp->EnviarComando(strComando);
 	}
 }
 
 void ListCtrlManager::OnCrearArchivo(wxCommandEvent& event) {
-	panelFileManager* itemp = (panelFileManager*)this->GetParent();
-
 	wxTextEntryDialog dialog(this, "Nombre", "Crear archivo", "LEEME.txt", wxOK | wxCANCEL);
 	if (dialog.ShowModal() == wxID_OK) {
 		std::string strComando = std::to_string(EnumComandos::FM_Crear_Archivo);
 		strComando.append(1, '~');
-		strComando += itemp->p_RutaActual->GetLabelText();
+		strComando += this->itemp->p_RutaActual->GetLabelText();
 		strComando += dialog.GetValue();
-		itemp->EnviarComando(strComando);
+		this->itemp->EnviarComando(strComando);
 	}
 }
 
 void ListCtrlManager::OnBorrarArchivo(wxCommandEvent& event) {
-	panelFileManager* itemp = (panelFileManager*)this->GetParent();
 	long item = this->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
 	wxString strFile = this->GetItemText(item, 1);
 	//wxDialog dialog(this, 10000, "Borrar arhivo", wxDefaultPosition, wxDefaultSize, wxYES_NO, "Seguro que quieres borrar el archivo: " + strFile);
@@ -237,10 +234,15 @@ void ListCtrlManager::OnBorrarArchivo(wxCommandEvent& event) {
 		//Borrar archivo
 		std::string strComando = std::to_string(EnumComandos::FM_Borrar_Archivo);
 		strComando.append(1, '~');
-		strComando += itemp->p_RutaActual->GetLabelText();
+		strComando += this->itemp->p_RutaActual->GetLabelText();
 		strComando += strFile;
-		itemp->EnviarComando(strComando);
+		this->itemp->EnviarComando(strComando);
 	}
+}
+
+void ListCtrlManager::OnEditarArchivo(wxCommandEvent& event) {
+	wxEditForm* editor_txt = new wxEditForm(this, "random.txt");
+	editor_txt->Show(true);
 }
 //#####################################################
 
@@ -318,6 +320,7 @@ void ListCtrlManager::OnActivated(wxListEvent& event) {
 void ListCtrlManager::ShowContextMenu(const wxPoint& pos, bool isFolder) {
 	wxMenu menu;
 
+	this->itemp = (panelFileManager*)this->GetParent();
 	if (!isFolder) {
 		wxMenu *exec_Menu = new wxMenu;
 		exec_Menu->Append(EnumMenuFM::ID_Exec_Visible, "Normal");

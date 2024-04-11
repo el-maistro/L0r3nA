@@ -33,6 +33,8 @@ class panelFileManager: public wxPanel{
 
 class ListCtrlManager : public wxListCtrl {
 	public:
+		panelFileManager* itemp = nullptr;
+
 		ListCtrlManager(wxWindow* parent, const wxWindowID id, 
 			            const wxPoint& pos, const wxSize& size, long style)
 			: wxListCtrl(parent, id, pos, size, style) {}
@@ -47,8 +49,10 @@ class ListCtrlManager : public wxListCtrl {
 		void OnCrearFolder(wxCommandEvent& event);
 		void OnCrearArchivo(wxCommandEvent& event);
 		void OnBorrarArchivo(wxCommandEvent& event);
+		void OnEditarArchivo(wxCommandEvent& event);
 
 		wxDECLARE_EVENT_TABLE();
 };
+
 
 #endif
