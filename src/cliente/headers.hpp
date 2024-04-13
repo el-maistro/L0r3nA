@@ -33,6 +33,9 @@
 
 
 typedef unsigned int u_int;
+typedef const char c_char;
+typedef unsigned long long int u64;
+
 
 #define ___DEBUG_
 
@@ -55,7 +58,10 @@ namespace EnumComandos {
         FM_CPATH,
         FM_Crear_Folder,
         FM_Crear_Archivo,
-        FM_Borrar_Archivo
+        FM_Borrar_Archivo,
+        FM_Descargar_Archivo, //Enviar archivo al servidor
+        FM_Descargar_Archivo_Recibir, //Enviar paquete al cliente
+        FM_Descargar_Archivo_Init //Enviar tamaño del archivo
     };
 }
 

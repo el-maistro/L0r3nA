@@ -2,6 +2,11 @@
 #ifndef _SERVER_H
 #define _SERVER_H
 
+struct Archivo_Descarga {
+    std::string cID;
+    u64 uTamarchivo;
+};
+
 struct Cliente{
     SOCKET _sckCliente = INVALID_SOCKET;
     time_t _ttUltimaVez = 0;
@@ -12,6 +17,7 @@ struct Cliente{
     std::string _strCpu;
     bool _isBusy = false;
     bool _isRunningShell = false;
+    std::vector<struct Archivo_Descarga> vc_Archivos_Descarga;
 };
 
 struct ClientConInfo{

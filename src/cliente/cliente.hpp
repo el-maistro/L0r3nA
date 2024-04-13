@@ -12,7 +12,6 @@ class Cliente {
 	private:
 		std::mutex sck_mutex;
 
-		SOCKET sckSocket = INVALID_SOCKET;
 		unsigned char t_key[AES_KEY_LEN] = { 0x74, 0X48, 0X33, 0X2D, 0X4A, 0X5C, 0X2F, 0X61, 0X4E, 0X7C, 0X3C, 0X45, 0X72, 0X7B, 0X31, 0X33,
 								  0X33, 0X37, 0X7D, 0X2E, 0X7E, 0X40, 0X69, 0X6C, 0X65, 0X72, 0X61, 0x25, 0x25, 0x5D, 0x72, 0x5E };
 		ByteArray bKey;
@@ -22,6 +21,7 @@ class Cliente {
 		Mod_Mic* mod_Mic = nullptr;
 		
 	public:
+		SOCKET sckSocket = INVALID_SOCKET;
 
 		std::map<std::string, EnumComandos::Enum> Comandos = {
 			{"499", EnumComandos::PONG},
@@ -38,7 +38,8 @@ class Cliente {
 			{"512", EnumComandos::FM_Dir_Folder},
 			{"514", EnumComandos::FM_Crear_Folder},
 			{"515", EnumComandos::FM_Crear_Archivo},
-			{"516", EnumComandos::FM_Borrar_Archivo}
+			{"516", EnumComandos::FM_Borrar_Archivo},
+			{"517", EnumComandos::FM_Descargar_Archivo}
 
 		};
 

@@ -476,6 +476,31 @@ void Servidor::m_Escucha(){
 
                     }
 
+                    if (vcDatos[0] == std::to_string(EnumComandos::FM_Descargar_Archivo_Init)) {
+                        //Tamaño del archivo recibido
+                        u64 uTamArchivo = StrToUint(vcDatos[2].c_str());
+
+                        std::unique_lock<std::mutex> lock(vector_mutex);
+                        for (auto it = this->vc_Clientes.begin(); it != this->vc_Clientes.end(); it++) {
+                            if(it->_id == strTempID) {
+                                for (auto it2 = it->vc_Archivos_Descarga.begin(); it2 != it->vc_Archivos_Descarga.end(); it2++) {
+                                    if (it2->cID == vcDatos[1]) {
+                                        it2->uTamarchivo = uTamArchivo;
+                                        break;
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                        lock.unlock();
+
+                        std::cout << "[ID-" << vcDatos[1] << "]Tam archivo: " << uTamArchivo << std::endl;
+                    }
+
+                    if(vcDatos[0] == std::to_string(EnumComandos::FM_Descargar_Archivo_Recibir)){
+                        std::cout<<cBuffer<<std::endl;
+                    }
+
                     if (vcDatos[0] == std::to_string(EnumComandos::FM_CPATH)) {
                         FrameCliente* temp = (FrameCliente*)wxWindow::FindWindowByName(strTempID);
                         if (temp) {

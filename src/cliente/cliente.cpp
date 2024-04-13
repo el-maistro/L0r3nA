@@ -216,6 +216,10 @@ void Cliente::ProcesarComando(std::vector<std::string> strIn) {
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Borrar_Archivo) {
         BorrarArchivo(strIn[1].c_str());
     }
+
+    if (this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Descargar_Archivo) {
+        EnviarArchivo(strIn[1].c_str(), strIn[2].c_str(), this);
+    }
     //#####################################################
     //#####################################################
 

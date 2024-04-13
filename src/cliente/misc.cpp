@@ -144,3 +144,16 @@ std::string strCpu() {
 
 	return strOut;
 }
+
+u64 GetFileSize(c_char* cPath) {
+	std::ifstream strmInputFile(cPath, std::ios::binary);
+	if (!strmInputFile.is_open()) {
+		return 0;
+	}
+	std::filebuf* pBuf = strmInputFile.rdbuf();
+	u64 uTmp = 0;
+	uTmp = pBuf->pubseekoff(0, strmInputFile.end, strmInputFile.in);
+	pBuf->pubseekpos(0, strmInputFile.in);
+	strmInputFile.close();
+	return uTmp;
+}

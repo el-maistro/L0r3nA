@@ -45,6 +45,7 @@ extern bool bSignalFlag;
 #define error() std::cout<<"Error["<<GetLastError()<<"]\n";
 
 typedef unsigned int u_int;
+typedef unsigned long long int u64;
 
 namespace EnumIDS {
     enum Enum {
@@ -106,7 +107,10 @@ namespace EnumComandos {
         FM_CPATH,
         FM_Crear_Folder,
         FM_Crear_Archivo,
-        FM_Borrar_Archivo
+        FM_Borrar_Archivo,
+        FM_Descargar_Archivo,
+        FM_Descargar_Archivo_Recibir, //Recibir paquete del cliente
+        FM_Descargar_Archivo_Init //Recibir el tamaño del archivo
     };
 }
 

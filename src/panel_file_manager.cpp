@@ -16,6 +16,7 @@ wxBEGIN_EVENT_TABLE(ListCtrlManager, wxListCtrl)
 	EVT_MENU(EnumMenuFM::ID_New_Archivo, ListCtrlManager::OnCrearArchivo)
 	EVT_MENU(EnumMenuFM::ID_Eliminar, ListCtrlManager::OnBorrarArchivo)
 	EVT_MENU(EnumMenuFM::ID_Editar, ListCtrlManager::OnEditarArchivo)
+	EVT_MENU(EnumMenuFM::ID_Descargar, ListCtrlManager::OnDescargarArchivo)
     EVT_CONTEXT_MENU(ListCtrlManager::OnContextMenu)
 	EVT_LIST_ITEM_ACTIVATED(EnumIDS::ID_Panel_FM_List, ListCtrlManager::OnActivated)
 wxEND_EVENT_TABLE()
@@ -240,11 +241,44 @@ void ListCtrlManager::OnBorrarArchivo(wxCommandEvent& event) {
 	}
 }
 
+void ListCtrlManager::OnDescargarArchivo(wxCommandEvent& event) {
+	std::string strComando = std::to_string(EnumComandos::FM_Descargar_Archivo);
+	std::string strID = RandomID(3);
+	strComando.append(1, '~');
+	strComando += this->ArchivoSeleccionado();
+	strComando.append(1, '~');
+	strComando += strID;
+
+	//Agregar el archivo al vector del cliente pero solo el id
+	//actualizar el tamaño al obtener la info del cliente
+	struct Archivo_Descarga nuevo_archivo;
+	nuevo_archivo.cID = strID;
+	nuevo_archivo.uTamarchivo = 0;
+	
+	std::unique_lock<std::mutex> lock(vector_mutex);
+	for (auto it = p_Servidor->vc_Clientes.begin(); it != p_Servidor->vc_Clientes.end(); it++) {
+		if (it->_id == this->itemp->strID) {
+			it->vc_Archivos_Descarga.push_back(nuevo_archivo);
+		}
+	}
+	lock.unlock();
+
+	this->itemp->EnviarComando(strComando);
+}
+
 void ListCtrlManager::OnEditarArchivo(wxCommandEvent& event) {
 	wxEditForm* editor_txt = new wxEditForm(this, "random.txt");
 	editor_txt->Show(true);
 }
+
 //#####################################################
+
+std::string ListCtrlManager::ArchivoSeleccionado() {
+	long item = this->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+	std::string strFile = this->itemp->p_RutaActual->GetLabelText(); 
+	strFile += this->GetItemText(item, 1);
+	return strFile;
+}
 
 void ListCtrlManager::OnActivated(wxListEvent& event) {
 	panelFileManager* itemp = (panelFileManager*)this->GetParent();

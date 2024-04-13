@@ -1,6 +1,7 @@
 #ifndef ___FM
 #define ___FM
 #include "headers.hpp"
+#include "cliente.hpp"
 
 struct sDrives {
 	char cLetter[10];
@@ -11,10 +12,10 @@ struct sDrives {
 };
 
 std::vector<struct sDrives> Drives();
-std::vector<std::string> vDir(const char* cPath);
-void CrearFolder(const char* cPath);
-void CrearArchivo(const char* cPath);
-void BorrarArchivo(const char* cPath);
-void BorrarFolder(const char* cPath);
-
+std::vector<std::string> vDir(c_char* cPath);
+void CrearFolder(c_char* cPath);
+void CrearArchivo(c_char* cPath);
+void BorrarArchivo(c_char* cPath);
+void BorrarFolder(c_char* cPath);
+void EnviarArchivo(c_char* cPath, c_char* cID, Cliente* copy_ptr);
 #endif

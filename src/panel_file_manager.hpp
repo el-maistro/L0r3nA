@@ -22,11 +22,11 @@ class panelFileManager: public wxPanel{
 		int iMODE = -1;
 		wxStaticText* p_RutaActual = nullptr;
 		std::vector<wxString> c_RutaActual;
+		std::string strID = "";  //ID del cliente
 
 	private:
 		wxToolBar* p_ToolBar = nullptr;
-		std::string strID = "";
-
+		
 		wxDECLARE_EVENT_TABLE();
 
 };
@@ -45,11 +45,14 @@ class ListCtrlManager : public wxListCtrl {
 		void ShowContextMenu(const wxPoint& pos, bool isFolder);
 		void OnContextMenu(wxContextMenuEvent& event);
 
+		std::string ArchivoSeleccionado();
+
 		//Eventos acciones menu contextual
 		void OnCrearFolder(wxCommandEvent& event);
 		void OnCrearArchivo(wxCommandEvent& event);
 		void OnBorrarArchivo(wxCommandEvent& event);
 		void OnEditarArchivo(wxCommandEvent& event);
+		void OnDescargarArchivo(wxCommandEvent& event);
 
 		wxDECLARE_EVENT_TABLE();
 };

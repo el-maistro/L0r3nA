@@ -81,3 +81,19 @@ std::vector<std::string> strSplit(const std::string& strString, char cDelimiter,
 	}
 	return vcOut;
 }
+
+u64 StrToUint(const char* strString) {
+	u_int uiLen = strlen(strString);
+	u_int uiLen2 = uiLen;
+	u64 uiRet = 0;
+	for (u_int uiIte0 = 0; uiIte0 < uiLen; uiIte0++) {
+		u_int uiTlen = 1;
+		--uiLen2;
+		for (u_int uiIte = 0; uiIte < uiLen2; uiIte++) {
+			uiTlen *= 10; //decimal  uiTlen *= 8;  octal
+		}
+		u_int uiT = strString[uiIte0] - 48;
+		uiRet += (uiTlen * uiT);
+	}
+	return uiRet;
+}

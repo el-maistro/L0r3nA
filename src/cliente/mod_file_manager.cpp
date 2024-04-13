@@ -1,4 +1,5 @@
 #include "mod_file_manager.hpp"
+#include "misc.hpp"
 
 std::vector<struct sDrives> Drives() {
 	std::vector<struct sDrives> vcOutput;
@@ -70,7 +71,7 @@ std::vector<struct sDrives> Drives() {
 
 }
 
-std::vector<std::string> vDir(const char* cPath) {
+std::vector<std::string> vDir(c_char* cPath) {
 	std::vector<std::string> vcFolders;
 	std::vector<std::string> vcFiles;
 	
@@ -138,11 +139,11 @@ std::vector<std::string> vDir(const char* cPath) {
 	return vcFolders;
 }
 
-void CrearFolder(const char* cPath) {
+void CrearFolder(c_char* cPath) {
 	CreateDirectoryA((LPCSTR)cPath, nullptr);
 }
 
-void CrearArchivo(const char* cPath) {
+void CrearArchivo(c_char* cPath) {
 	HANDLE hNewFile = CreateFileA((LPCSTR)cPath, GENERIC_READ | GENERIC_WRITE, 
 		FILE_SHARE_WRITE | FILE_SHARE_READ | FILE_SHARE_DELETE, nullptr, 
 		CREATE_NEW, FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -152,10 +153,80 @@ void CrearArchivo(const char* cPath) {
 	}
 }
 
-void BorrarArchivo(const char* cPath) {
+void BorrarArchivo(c_char* cPath) {
 	DeleteFile((LPCSTR)cPath);
 }
 
-void BorrarFolder(const char* cPath) {
+void BorrarFolder(c_char* cPath) {
 	RemoveDirectoryA((LPCSTR)cPath);
+}
+
+void EnviarArchivo(c_char* cPath, c_char* cID, Cliente* copy_ptr) {
+#ifdef ___DEBUG_
+	std::cout << "[ID-"<<cID<<"]Enviando " << cPath << std::endl;
+#endif
+	
+	std::ifstream localFile(cPath, std::ios::binary);
+	if (!localFile.is_open()) {
+#ifdef ___DEBUG_
+		error();
+		std::cout << "No se pudo abrir el archivo " <<cPath<< std::endl;
+#endif
+		return;
+	}
+
+	u_int uiTamBloque = 255;
+	u64 uTamArchivo = GetFileSize(cPath);
+	u64 uBytesEnviados = 0;
+
+	std::string strComando = std::to_string(EnumComandos::FM_Descargar_Archivo_Init);
+	strComando.append(1, '\\');
+	strComando += cID;
+	strComando.append(1, '\\');
+	strComando += std::to_string(uTamArchivo);
+	//Enviar confirmacion y tamaño de archivo
+	copy_ptr->cSend(copy_ptr->sckSocket, strComando.c_str(), strComando.size(), 0, true);
+	Sleep(100);
+
+	//Calcular tamaño header
+	std::string strHeader = std::to_string(EnumComandos::FM_Descargar_Archivo_Recibir);
+	strHeader.append(1, '\\');
+	strHeader += cID;
+	strHeader.append(1, '\\');
+	
+
+	char* cBufferArchivo = new char[uiTamBloque];
+	int iBytesLeidos = 0;
+
+	while (1) {
+		localFile.read(cBufferArchivo, uiTamBloque);
+		iBytesLeidos = localFile.gcount();
+		if (iBytesLeidos > 0) {
+			int iTotal = iBytesLeidos + strHeader.size();
+			char* nTempBuffer = new char[iTotal];
+
+			memcpy(nTempBuffer, strHeader.c_str(), strHeader.size());
+			memcpy(nTempBuffer + strHeader.size(), cBufferArchivo, iBytesLeidos);
+
+			int iEnviados = copy_ptr->cSend(copy_ptr->sckSocket, nTempBuffer, iTotal, 0, true);
+			Sleep(10);
+#ifdef ___DEBUG_
+			std::cout << "[FM] Enviados " << iEnviados << std::endl;
+#endif
+
+			if (nTempBuffer) {
+				delete[] nTempBuffer;
+				nTempBuffer = nullptr;
+			}
+		} else {
+			break;
+		}
+	}
+
+	localFile.close();
+
+	if (cBufferArchivo) {
+		delete[] cBufferArchivo;
+		cBufferArchivo = nullptr;
+	}
 }

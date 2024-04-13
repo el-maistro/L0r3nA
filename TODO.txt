@@ -1,4 +1,7 @@
 Mod File manager
+-Subir/descargar archivos
+-Editar archivos
+-Encriptacion de archivos
 Mod Keylogger
 Mod Camara
 Mod Live Mic
