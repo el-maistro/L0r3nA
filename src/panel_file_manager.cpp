@@ -251,9 +251,20 @@ void ListCtrlManager::OnDescargarArchivo(wxCommandEvent& event) {
 
 	//Agregar el archivo al vector del cliente pero solo el id
 	//actualizar el tamaño al obtener la info del cliente
+	long item = this->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+	std::string strNombre = this->itemp->strID;
+	strNombre.append(1, '-');
+	strNombre += this->GetItemText(item, 1);
+	
 	struct Archivo_Descarga nuevo_archivo;
 	nuevo_archivo.cID = strID;
 	nuevo_archivo.uTamarchivo = 0;
+	nuevo_archivo.stArchivo.open(strNombre.c_str(), std::ios::binary);
+	if (!nuevo_archivo.stArchivo.is_open()) {
+		error();
+		p_Servidor->m_txtLog->LogThis("[X] No se pudo abrir el archivo" + strNombre, LogType::LogError);
+		return;
+	}
 	
 	std::unique_lock<std::mutex> lock(vector_mutex);
 	for (auto it = p_Servidor->vc_Clientes.begin(); it != p_Servidor->vc_Clientes.end(); it++) {

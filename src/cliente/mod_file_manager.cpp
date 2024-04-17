@@ -225,6 +225,13 @@ void EnviarArchivo(c_char* cPath, c_char* cID, Cliente* copy_ptr) {
 
 	localFile.close();
 
+	//Ya se envio todo, cerrar el archivo
+	std::string strComandoCerrar = std::to_string(EnumComandos::FM_Descargar_Archivo_End);
+	strComandoCerrar.append(1, '\\');
+	strComandoCerrar += cID;
+	copy_ptr->cSend(copy_ptr->sckSocket, strComandoCerrar.c_str(), strComandoCerrar.size(), 0, true);
+
+
 	if (cBufferArchivo) {
 		delete[] cBufferArchivo;
 		cBufferArchivo = nullptr;

@@ -110,7 +110,8 @@ namespace EnumComandos {
         FM_Borrar_Archivo,
         FM_Descargar_Archivo,
         FM_Descargar_Archivo_Recibir, //Recibir paquete del cliente
-        FM_Descargar_Archivo_Init //Recibir el tamaño del archivo
+        FM_Descargar_Archivo_Init, //Recibir el tamaño del archivo
+        FM_Descargar_Archivo_End //Ya se recibio todo, cerrar archivo
     };
 }
 
