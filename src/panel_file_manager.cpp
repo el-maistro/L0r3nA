@@ -259,8 +259,8 @@ void ListCtrlManager::OnDescargarArchivo(wxCommandEvent& event) {
 	struct Archivo_Descarga nuevo_archivo;
 	nuevo_archivo.cID = strID;
 	nuevo_archivo.uTamarchivo = 0;
-	nuevo_archivo.stArchivo.open(strNombre.c_str(), std::ios::binary);
-	if (!nuevo_archivo.stArchivo.is_open()) {
+	nuevo_archivo.iFP = fopen(strNombre.c_str(), "wb");
+	if (nuevo_archivo.iFP == nullptr) {
 		error();
 		p_Servidor->m_txtLog->LogThis("[X] No se pudo abrir el archivo" + strNombre, LogType::LogError);
 		return;

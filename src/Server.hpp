@@ -3,7 +3,7 @@
 #define _SERVER_H
 
 struct Archivo_Descarga {
-    std::ofstream stArchivo;
+    FILE* iFP;
     std::string cID;
     u64 uTamarchivo;
 };

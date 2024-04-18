@@ -332,7 +332,7 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
     int iEnviado = 0;
     if (isBlock) {
 #ifdef ___DEBUG_
-        std::cout << "[BLOCK-MODE] send" << iDataSize << " bytes\n";
+        //std::cout << "[BLOCK-MODE] send" << iDataSize << " bytes\n";
 #endif
         //Hacer el socket block
         unsigned long int iBlock = 0;

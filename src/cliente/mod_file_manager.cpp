@@ -175,7 +175,7 @@ void EnviarArchivo(c_char* cPath, c_char* cID, Cliente* copy_ptr) {
 		return;
 	}
 
-	u_int uiTamBloque = 255;
+	u_int uiTamBloque = 2048;
 	u64 uTamArchivo = GetFileSize(cPath);
 	u64 uBytesEnviados = 0;
 
@@ -208,10 +208,10 @@ void EnviarArchivo(c_char* cPath, c_char* cID, Cliente* copy_ptr) {
 			memcpy(nTempBuffer, strHeader.c_str(), strHeader.size());
 			memcpy(nTempBuffer + strHeader.size(), cBufferArchivo, iBytesLeidos);
 
-			int iEnviados = copy_ptr->cSend(copy_ptr->sckSocket, nTempBuffer, iTotal, 0, true);
+			uBytesEnviados += copy_ptr->cSend(copy_ptr->sckSocket, nTempBuffer, iTotal, 0, true);
 			Sleep(10);
 #ifdef ___DEBUG_
-			std::cout << "[FM] Enviados " << iEnviados << std::endl;
+			std::cout << "\r[FM] Enviados " << uBytesEnviados;
 #endif
 
 			if (nTempBuffer) {

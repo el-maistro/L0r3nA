@@ -498,16 +498,17 @@ void Servidor::m_Escucha(){
                     }
 
                     if(vcDatos[0] == std::to_string(EnumComandos::FM_Descargar_Archivo_Recibir)){
-                        // CMD + slash / len del id
-                        int iHeader = 4 + strnlen(vcDatos[1].c_str(), 5);
+                        // CMD + 2 slashs /  +len del id
+                        int iHeader = 5 + strnlen(vcDatos[1].c_str(), 5);
                         char* cBytes = cBuffer + iHeader;
                         std::unique_lock<std::mutex> lock(vector_mutex);
                         for (auto it = this->vc_Clientes.begin(); it != this->vc_Clientes.end(); it++) {
                             if (it->_id == strTempID) {
                                 for (auto it2 = it->vc_Archivos_Descarga.begin(); it2 != it->vc_Archivos_Descarga.end(); it2++) {
                                     if (it2->cID == vcDatos[1]) {
-                                        if (it2->stArchivo.is_open()) {
-                                            it2->stArchivo.write(cBytes, iRecibido - iHeader);
+                                        if (it2->iFP != nullptr) {
+                                            fwrite(cBytes, sizeof(char), iRecibido - iHeader, it2->iFP);
+                                            //it2->stArchivo.write(cBytes, iRecibido - iHeader);
                                         }
                                         break;
                                     }
@@ -524,8 +525,8 @@ void Servidor::m_Escucha(){
                             if (it->_id == strTempID) {
                                 for (auto it2 = it->vc_Archivos_Descarga.begin(); it2 != it->vc_Archivos_Descarga.end(); it2++) {
                                     if (it2->cID == vcDatos[1]) {
-                                        if (it2->stArchivo.is_open()) {
-                                            it2->stArchivo.close();
+                                        if (it2->iFP != nullptr) {
+                                            fclose(it2->iFP);
                                         }
                                         break;
                                     }
