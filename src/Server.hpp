@@ -2,9 +2,8 @@
 #ifndef _SERVER_H
 #define _SERVER_H
 
-struct Archivo_Descarga {
+struct Archivo_Descarga2 {
     FILE* iFP;
-    std::string cID;
     u64 uTamarchivo;
 };
 
@@ -18,7 +17,7 @@ struct Cliente{
     std::string _strCpu;
     bool _isBusy = false;
     bool _isRunningShell = false;
-    std::vector<struct Archivo_Descarga> vc_Archivos_Descarga;
+    std::unordered_map<std::string, struct Archivo_Descarga2> um_Archivos_Descarga2;
 };
 
 struct ClientConInfo{
@@ -80,6 +79,7 @@ class Servidor{
         std::mutex p_mutex;
 
         std::vector<struct Cliente> vc_Clientes;
+        std::unordered_map<SOCKET, struct Cliente> um_Clientes;
 
         bool p_Escuchando = false;
         bool   m_Iniciar();

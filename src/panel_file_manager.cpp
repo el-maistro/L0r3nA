@@ -256,10 +256,9 @@ void ListCtrlManager::OnDescargarArchivo(wxCommandEvent& event) {
 	strNombre.append(1, '-');
 	strNombre += this->GetItemText(item, 1);
 	
-	struct Archivo_Descarga nuevo_archivo;
-	nuevo_archivo.cID = strID;
-	nuevo_archivo.uTamarchivo = 0;
+	struct Archivo_Descarga2 nuevo_archivo;
 	nuevo_archivo.iFP = fopen(strNombre.c_str(), "wb");
+	nuevo_archivo.uTamarchivo = 0;
 	if (nuevo_archivo.iFP == nullptr) {
 		error();
 		p_Servidor->m_txtLog->LogThis("[X] No se pudo abrir el archivo" + strNombre, LogType::LogError);
@@ -267,10 +266,11 @@ void ListCtrlManager::OnDescargarArchivo(wxCommandEvent& event) {
 	}
 	
 	std::unique_lock<std::mutex> lock(vector_mutex);
-	for (auto it = p_Servidor->vc_Clientes.begin(); it != p_Servidor->vc_Clientes.end(); it++) {
-		if (it->_id == this->itemp->strID) {
-			it->vc_Archivos_Descarga.push_back(nuevo_archivo);
-		}
+	
+	int iTempID = atoi(this->itemp->strID.substr(this->itemp->strID.size() - 3, 3).c_str());
+	auto itArchivo = p_Servidor->um_Clientes.find(iTempID);
+	if (itArchivo != p_Servidor->um_Clientes.end()) {
+		itArchivo->second.um_Archivos_Descarga2.insert({ strID , nuevo_archivo });
 	}
 	lock.unlock();
 

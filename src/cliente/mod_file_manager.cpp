@@ -175,7 +175,7 @@ void EnviarArchivo(c_char* cPath, c_char* cID, Cliente* copy_ptr) {
 		return;
 	}
 
-	u_int uiTamBloque = 2048;
+	u_int uiTamBloque = 1024 * 70; //70 KB
 	u64 uTamArchivo = GetFileSize(cPath);
 	u64 uBytesEnviados = 0;
 
@@ -184,11 +184,11 @@ void EnviarArchivo(c_char* cPath, c_char* cID, Cliente* copy_ptr) {
 	strComando += cID;
 	strComando.append(1, '\\');
 	strComando += std::to_string(uTamArchivo);
-	//Enviar confirmacion y tamaño de archivo
+	//Enviar confirmacion y tamaï¿½o de archivo
 	copy_ptr->cSend(copy_ptr->sckSocket, strComando.c_str(), strComando.size(), 0, true);
 	Sleep(100);
 
-	//Calcular tamaño header
+	//Calcular tamaï¿½o header
 	std::string strHeader = std::to_string(EnumComandos::FM_Descargar_Archivo_Recibir);
 	strHeader.append(1, '\\');
 	strHeader += cID;
@@ -209,7 +209,7 @@ void EnviarArchivo(c_char* cPath, c_char* cID, Cliente* copy_ptr) {
 			memcpy(nTempBuffer + strHeader.size(), cBufferArchivo, iBytesLeidos);
 
 			uBytesEnviados += copy_ptr->cSend(copy_ptr->sckSocket, nTempBuffer, iTotal, 0, true);
-			Sleep(10);
+			Sleep(30);
 #ifdef ___DEBUG_
 			std::cout << "\r[FM] Enviados " << uBytesEnviados;
 #endif
@@ -226,6 +226,7 @@ void EnviarArchivo(c_char* cPath, c_char* cID, Cliente* copy_ptr) {
 	localFile.close();
 
 	//Ya se envio todo, cerrar el archivo
+	Sleep(500);
 	std::string strComandoCerrar = std::to_string(EnumComandos::FM_Descargar_Archivo_End);
 	strComandoCerrar.append(1, '\\');
 	strComandoCerrar += cID;
