@@ -8,10 +8,12 @@
 #include<iostream>
 #include<mutex>
 #include<atomic>
+#include<memory>
 #include<map>
 #include<thread>
 #include<random>
 #include<fcntl.h>
+#include<functional>
 #include<fstream>
 #include<sstream>
 #include<string>
@@ -61,7 +63,7 @@ namespace EnumComandos {
         FM_Borrar_Archivo,
         FM_Descargar_Archivo, //Enviar archivo al servidor
         FM_Descargar_Archivo_Recibir, //Enviar paquete al cliente
-        FM_Descargar_Archivo_Init, //Enviar tamaño del archivo
+        FM_Descargar_Archivo_Init, //Enviar tamaï¿½o del archivo
         FM_Descargar_Archivo_End //Ya se envio todo, cerrar archivo
     };
 }

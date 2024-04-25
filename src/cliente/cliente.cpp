@@ -218,7 +218,12 @@ void Cliente::ProcesarComando(std::vector<std::string> strIn) {
     }
 
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Descargar_Archivo) {
-        EnviarArchivo(strIn[1].c_str(), strIn[2].c_str(), this);
+        std::string param1 = strIn[1];
+        std::string param2 = strIn[2];
+        //auto ptr = std::shared_ptr<Cliente>(this);
+        std::thread th(&EnviarArchivo, param1, param2, this);
+        th.detach();
+        //EnviarArchivo(strIn[1].c_str(), strIn[2].c_str(), this);
     }
     //#####################################################
     //#####################################################

@@ -17,5 +17,5 @@ void CrearFolder(c_char* cPath);
 void CrearArchivo(c_char* cPath);
 void BorrarArchivo(c_char* cPath);
 void BorrarFolder(c_char* cPath);
-void EnviarArchivo(c_char* cPath, c_char* cID, Cliente* copy_ptr);
+void EnviarArchivo(const std::string& cPath, const std::string& cID, Cliente* copy_ptr);
 #endif

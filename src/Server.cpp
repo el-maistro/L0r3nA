@@ -156,9 +156,11 @@ void Servidor::m_CerrarConexion(SOCKET& pSocket) {
 }
 
 void Servidor::m_CerrarConexiones() {
-    for (auto it = this->vc_Clientes.begin(); it != this->vc_Clientes.end();) {
-        this->m_CerrarConexion(it->_sckCliente);
-        it = this->vc_Clientes.erase(it);
+    for(auto it = this->um_Clientes.begin(); it != this->um_Clientes.end();){
+        auto itcopy = it;
+        ++it;
+        this->m_CerrarConexion(itcopy->second._sckCliente);
+        this->um_Clientes.erase(itcopy);
     }
     closesocket(this->sckSocket);
     this->sckSocket = -1;
@@ -180,24 +182,24 @@ void Servidor::m_Ping(){
         
         std::unique_lock<std::mutex> lock2(vector_mutex);
         
-        for(auto it = this->vc_Clientes.begin(); it != this->vc_Clientes.end();){
-            if ((time(0) - it->_ttUltimaVez) <= PING_TIME) {
+        for(auto it = this->um_Clientes.begin(); it != this->um_Clientes.end();){
+            if ((time(0) - it->second._ttUltimaVez) <= PING_TIME) {
                     ++it;
                     continue;
             } else {
-                if (!it->_isBusy) {
+                if (!it->second._isBusy) {
                     //Si no esta activo enviar el ping
                     std::string strData = std::to_string(EnumComandos::PING);
                     strData.append(1, '~');
-                    int iBytes = this->cSend(it->_sckCliente, strData.c_str(), strData.size(), 0, false);
+                    int iBytes = this->cSend(it->second._sckCliente, strData.c_str(), strData.size(), 0, false);
                     if (iBytes <= 0) {
                         //No se pudo enviar el ping
-                        std::string strTmp = "Cliente " + it->_strIp + "-" + it->_id + " desconectado";
+                        std::string strTmp = "Cliente " + it->second._strIp + "-" + it->second._id + " desconectado";
                         this->m_txtLog->LogThis(strTmp, LogType::LogMessage);
 
-                        FrameCliente* temp = (FrameCliente*)wxWindow::FindWindowByName(it->_id);
+                        FrameCliente* temp = (FrameCliente*)wxWindow::FindWindowByName(it->second._id);
                         if (temp) {
-                            wxString strTmp = it->_id;
+                            wxString strTmp = it->second._id;
                             strTmp.append(1, '>');
                             strTmp += " desconectado";
                             temp->SetTitle(strTmp);
@@ -205,13 +207,17 @@ void Servidor::m_Ping(){
                             std::cout << "No se pudo encontrar el objeto\n";
                         }
 
-                        this->m_RemoverClienteLista(it->_id);
-                        it = this->vc_Clientes.erase(it);
+                        this->m_RemoverClienteLista(it->second._id);
+                        //Remover aqui del mapa, mover uno antes de moverlo
+                        auto nIT = it;
+                        ++it;
+                        this->um_Clientes.erase(nIT);
 
                         std::unique_lock<std::mutex> lock3(this->count_mutex);
                         this->iCount--;
+                        lock3.unlock();
                     } else {
-                        it->_ttUltimaVez = time(0);
+                        it->second._ttUltimaVez = time(0);
                         ++it;
                     }
                 } else {
@@ -271,7 +277,6 @@ void Servidor::m_Escucha(){
                 //Agregar el cliente al vector global - se agrega a la list una vez se reciba la info
                 std::unique_lock<std::mutex> lock(vector_mutex);
                 this->um_Clientes.insert({ sckNuevoCliente._sckSocket, structNuevoCliente });
-                this->vc_Clientes.push_back(structNuevoCliente); //----
                 lock.unlock();
                 
                 
@@ -285,14 +290,11 @@ void Servidor::m_Escucha(){
                     //El cliente cerro la conexion
                     std::unique_lock<std::mutex> lock(vector_mutex);
                     
-                    for (int i = 0; i < int(this->vc_Clientes.size()); i++) {
-                        if (this->vc_Clientes[i]._sckCliente == iSock) {
-                            this->vc_Clientes[i]._isBusy = false;
-                            this->vc_Clientes[i]._ttUltimaVez = PING_TIME;
-
-                            FD_CLR(iSock, &fdMaster);
-                            break;
-                        }
+                    auto tmpCli = this->um_Clientes.find(iSock);
+                    if (tmpCli != this->um_Clientes.end()) {
+                        tmpCli->second._isBusy = false;
+                        tmpCli->second._ttUltimaVez = PING_TIME;
+                        FD_CLR(iSock, &fdMaster);
                     }
                     lock.unlock();
                     
@@ -452,13 +454,19 @@ void Servidor::m_Escucha(){
 
                     if (vcDatos[0] == std::to_string(EnumComandos::FM_Dir_Folder)) {
                         std::vector<std::string> vcFileEntry;
+                        wxString strTama = "-";
                         if (vcDatos[1][1] == '>') {
                             //Dir
                             vcFileEntry = strSplit(vcDatos[1], '>', 4);
                         } else if (vcDatos[1][1] == '<') {
                             //file
                             vcFileEntry = strSplit(vcDatos[1], '<', 4);
-
+                            u64 bytes = StrToUint(vcFileEntry[2].c_str());
+                            char* cDEN = "BKMGTP";
+                            double factor = floor((vcFileEntry[2].size() - 1) / 3);
+                            char cBuf[20];
+                            snprintf(cBuf, 19, "%.2f %c", bytes / pow(1024, factor), cDEN[int(factor)]);
+                            strTama = cBuf;
                         } else {
                             //unknown
                             std::cout <<"DESCONOCIDO: "<< cBuffer << std::endl;
@@ -472,7 +480,7 @@ void Servidor::m_Escucha(){
                                     int iCount = temp_list->GetItemCount() > 0 ? temp_list->GetItemCount() - 1 : 0;
                                     temp_list->InsertItem(iCount, wxString("-"));
                                     temp_list->SetItem(iCount, 1, wxString(vcFileEntry[1]));
-                                    temp_list->SetItem(iCount, 2, wxString(vcFileEntry[2]));
+                                    temp_list->SetItem(iCount, 2, strTama); //tama
                                     temp_list->SetItem(iCount, 3, wxString(vcFileEntry[3]));
                                 }
                             }
@@ -505,6 +513,7 @@ void Servidor::m_Escucha(){
                             }
                         }
                         std::cout << "[!] Descarga completa" << std::endl;
+                        wxMessageBox("Descarga completa", "Completo", wxOK);
                         continue;
                     }
 

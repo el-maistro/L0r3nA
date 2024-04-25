@@ -180,16 +180,10 @@ void panelFileManager::CrearLista() {
 }
 
 void panelFileManager::EnviarComando(std::string pComando) {
-	std::vector<struct Cliente> vc_copy;
-	std::unique_lock<std::mutex> lock(vector_mutex);
-	vc_copy = p_Servidor->vc_Clientes;
-	lock.unlock();
-
-	for (auto vcCli : vc_copy) {
-		if (vcCli._id == this->strID) {
-			int iEnviado = p_Servidor->cSend(vcCli._sckCliente, pComando.c_str(), pComando.size() + 1, 0, false);
-			break;
-		}
+	int iTempID = atoi(this->strID.substr(this->strID.size() - 3, 3).c_str());
+	auto cliIT = p_Servidor->um_Clientes.find(iTempID);
+	if (cliIT != p_Servidor->um_Clientes.end()) {
+		p_Servidor->cSend(cliIT->second._sckCliente, pComando.c_str(), pComando.size() + 1, 0, false);
 	}
 }
 

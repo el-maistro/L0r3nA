@@ -161,7 +161,7 @@ void BorrarFolder(c_char* cPath) {
 	RemoveDirectoryA((LPCSTR)cPath);
 }
 
-void EnviarArchivo(c_char* cPath, c_char* cID, Cliente* copy_ptr) {
+void EnviarArchivo(const std::string& cPath, const std::string& cID, Cliente* copy_ptr) {
 #ifdef ___DEBUG_
 	std::cout << "[ID-"<<cID<<"]Enviando " << cPath << std::endl;
 #endif
@@ -176,7 +176,7 @@ void EnviarArchivo(c_char* cPath, c_char* cID, Cliente* copy_ptr) {
 	}
 
 	u_int uiTamBloque = 1024 * 70; //70 KB
-	u64 uTamArchivo = GetFileSize(cPath);
+	u64 uTamArchivo = GetFileSize(cPath.c_str());
 	u64 uBytesEnviados = 0;
 
 	std::string strComando = std::to_string(EnumComandos::FM_Descargar_Archivo_Init);
