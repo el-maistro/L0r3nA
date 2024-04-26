@@ -28,7 +28,7 @@ wxBEGIN_EVENT_TABLE(panelMicrophone, wxPanel)
 wxEND_EVENT_TABLE()
 
 FrameCliente::FrameCliente(std::string strID, wxString nameID)
-    : wxFrame(nullptr, wxID_ANY, ":v", wxDefaultPosition, wxDefaultSize, wxDD_DEFAULT_STYLE, nameID)
+    : wxFrame(nullptr, EnumIDS::ID_Panel_Cliente, ":v", wxDefaultPosition, wxDefaultSize, wxDD_DEFAULT_STYLE, nameID)
 {
     SetBackgroundColour(wxColour(255, 255, 255, 128)); // Establecer el color de fondo con transparencia
     SetTransparent(245);
@@ -67,7 +67,7 @@ FrameCliente::FrameCliente(std::string strID, wxString nameID)
     
     wxTreeItemId rootAdmin = this->m_tree->AppendItem(rootC, wxT("[Admin]"));
     //wxTreeItemId rootSurveilance = this->m_tree->AppendItem(rootC, wxT("[Spy]"));
-    //wxTreeItemId rootMisc = this->m_tree->AppendItem(rootC, wxT("[Misc]"));
+    wxTreeItemId rootMisc = this->m_tree->AppendItem(rootC, wxT("[Misc]"));
 
     this->m_tree->AppendItem(rootAdmin, wxT("Reverse Shell"));
     this->m_tree->AppendItem(rootAdmin, wxT("Administrador de archivos"));
@@ -78,6 +78,7 @@ FrameCliente::FrameCliente(std::string strID, wxString nameID)
     this->m_tree->AppendItem(rootSurveilance, wxT("Camara"));
     
     this->m_tree->AppendItem(rootMisc, wxT("Testing"));*/
+    this->m_tree->AppendItem(rootMisc, wxT("Transferencias"));
 
     this->m_tree->p_Notebook = new wxAuiNotebook(pnl_Right, wxID_ANY, wxDefaultPosition, wxSize(FRAME_CLIENT_SIZE_WIDTH, 450),
         wxAUI_NB_CLOSE_ON_ACTIVE_TAB | wxAUI_NB_DEFAULT_STYLE | wxAUI_NB_TAB_EXTERNAL_MOVE | wxNO_BORDER);
@@ -194,12 +195,47 @@ void MyTreeCtrl::OnItemActivated(wxTreeEvent& event) {
             this->p_Notebook->AddPage(new panelMicrophone(this), wStr, true);
         }
 
+        if (wStr == "Transferencias") {
+            this->p_Notebook->AddPage(new panelTransferencias(this), wStr, true);
+        }
+
         this->p_Notebook->Thaw();
     } 
 }
 
 
 //-----------------Modulos-----------------//
+
+//Transferencias activas
+panelTransferencias::panelTransferencias(wxWindow* pParent) :
+    wxPanel(pParent, wxID_ANY) {
+
+    FrameCliente* temp_ctrl = (FrameCliente*)this->GetParent()->GetParent();
+    if (temp_ctrl) {
+        temp_ctrl->isEstadoTransferencia = true;
+    }
+
+    wxListCtrl* listView = new wxListCtrl(this, wxID_ANY, wxDefaultPosition, wxSize(FRAME_CLIENT_SIZE_WIDTH, 450), wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES | wxEXPAND);
+    
+    wxListItem itemCol;
+    itemCol.SetText("Cliente");
+    itemCol.SetWidth(100);
+    itemCol.SetAlign(wxLIST_FORMAT_CENTRE);
+    listView->InsertColumn(0, itemCol);
+
+    itemCol.SetText("Nombre");
+    itemCol.SetWidth(160);
+    listView->InsertColumn(1, itemCol);
+
+    itemCol.SetText("Estado");
+    itemCol.SetWidth(120);
+    listView->InsertColumn(2, itemCol);
+
+    itemCol.SetText("Progreso");
+    itemCol.SetWidth(140);
+    listView->InsertColumn(3, itemCol);
+
+}
 
 //Test
 panelTest::panelTest(wxWindow* pParent) :

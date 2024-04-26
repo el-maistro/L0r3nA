@@ -24,6 +24,7 @@ class FrameCliente : public wxFrame {
 
         MyTreeCtrl* m_tree;
 
+        bool isEstadoTransferencia = false;
         
         //wxAuiNotebook* p_Notebook;
     private:
@@ -48,6 +49,13 @@ class panelTest : public wxPanel {
         wxStaticText* lblOutputTest;
     private:
         
+};
+
+class panelTransferencias : public wxPanel {
+    public:
+        panelTransferencias(wxWindow* pParent);
+    private:
+
 };
 
 class panelReverseShell : public wxPanel {

@@ -53,6 +53,7 @@ namespace EnumIDS {
         ID_Interactuar,
         ID_FrameClienteTest,
         TreeCtrl_ID,
+        ID_Panel_Cliente,
         ID_Panel_Reverse_Shell,
         ID_Panel_Reverse_Shell_TxtConsole,
         ID_Panel_Test,
