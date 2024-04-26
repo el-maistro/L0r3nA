@@ -12,6 +12,7 @@ class panelFileManager: public wxPanel{
 		void CrearLista();
 		wxString RutaActual();
 		void EnviarComando(std::string pComando);
+		void EnviarArchivo(const std::string cPath, const char* rPath, int iIdCliente);
 
 		panelFileManager(wxWindow* pParent);
 
@@ -53,6 +54,7 @@ class ListCtrlManager : public wxListCtrl {
 		void OnBorrarArchivo(wxCommandEvent& event);
 		void OnEditarArchivo(wxCommandEvent& event);
 		void OnDescargarArchivo(wxCommandEvent& event);
+		void OnSubirArchivo(wxCommandEvent& event);
 
 		wxDECLARE_EVENT_TABLE();
 };

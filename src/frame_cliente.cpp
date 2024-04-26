@@ -36,11 +36,14 @@ FrameCliente::FrameCliente(std::string strID, wxString nameID)
     //std::vector<std::string> vcOut = strSplit(strID, '/', 1);
     this->strClienteID = nameID;
 
+    //No siempre son 3 de len en el socket id, pasar el id como parametro al llamar al frame
     int iTempID = atoi(nameID.substr(nameID.size() - 3, 3).c_str());
     std::unique_lock<std::mutex> lock(vector_mutex);
     auto cliIT = p_Servidor->um_Clientes.find(iTempID);
     if (cliIT != p_Servidor->um_Clientes.end()) {
         cliIT->second._isBusy = true;
+    }else {
+        std::cout << "[X] No se pudo encontrar cliente " << iTempID << std::endl;
     }
     lock.unlock();
 

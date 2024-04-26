@@ -1,4 +1,4 @@
-#include "panel_file_manager.hpp"
+ï»¿#include "panel_file_manager.hpp"
 #include "frame_client.hpp"
 #include "file_editor.hpp"
 #include "server.hpp"
@@ -17,7 +17,7 @@ wxBEGIN_EVENT_TABLE(ListCtrlManager, wxListCtrl)
 	EVT_MENU(EnumMenuFM::ID_Eliminar, ListCtrlManager::OnBorrarArchivo)
 	EVT_MENU(EnumMenuFM::ID_Editar, ListCtrlManager::OnEditarArchivo)
 	EVT_MENU(EnumMenuFM::ID_Descargar, ListCtrlManager::OnDescargarArchivo)
-    EVT_CONTEXT_MENU(ListCtrlManager::OnContextMenu)
+	EVT_CONTEXT_MENU(ListCtrlManager::OnContextMenu)
 	EVT_LIST_ITEM_ACTIVATED(EnumIDS::ID_Panel_FM_List, ListCtrlManager::OnActivated)
 wxEND_EVENT_TABLE()
 
@@ -43,7 +43,7 @@ panelFileManager::panelFileManager(wxWindow* pParent) :
 	wxBitmap desktopBitmap(wxT(".\\imgs\\desktop.png"), wxBITMAP_TYPE_PNG);
 	wxBitmap downloadBitmap(wxT(".\\imgs\\download.png"), wxBITMAP_TYPE_PNG);
 	wxBitmap refreshBitmap(wxT(".\\imgs\\refresh.png"), wxBITMAP_TYPE_PNG);
-	//wxBitmap uploadBitmap(wxT(".\\imgs\\upload.png"), wxBITMAP_TYPE_PNG);
+	wxBitmap uploadBitmap(wxT(".\\imgs\\upload.png"), wxBITMAP_TYPE_PNG);
 
 
 	this->p_ToolBar->AddTool(EnumIDS::ID_Panel_FM_Equipo, wxT("Equipo"), pcBitmap, "Equipo");
@@ -55,7 +55,8 @@ panelFileManager::panelFileManager(wxWindow* pParent) :
 	this->p_ToolBar->AddSeparator(); 
 	this->p_ToolBar->AddSeparator();
 	this->p_ToolBar->AddTool(EnumIDS::ID_Panel_FM_Refresh, wxT("Refrescar"), refreshBitmap, wxT("Refrescar"));
-	//this->p_ToolBar->AddTool(EnumIDS::ID_Panel_FM_Subir, wxT("Subir"), uploadBitmap, "Subir archivo a ruta actual");
+	this->p_ToolBar->AddSeparator();
+	this->p_ToolBar->AddTool(EnumIDS::ID_Panel_FM_Subir, wxT("Subir"), uploadBitmap, "Subir archivo a ruta actual");
 	this->p_ToolBar->Realize();
 
 	this->CrearLista();
@@ -122,7 +123,7 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 			itemCol.SetAlign(wxLIST_FORMAT_LEFT);
 			this->listManager->InsertColumn(1, itemCol);
 
-			itemCol.SetText("Tamaño");
+			itemCol.SetText("TamaÃ±o");
 			itemCol.SetWidth(80);
 			this->listManager->InsertColumn(2, itemCol);
 
@@ -148,7 +149,7 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 			itemCol.SetAlign(wxLIST_FORMAT_LEFT);
 			this->listManager->InsertColumn(1, itemCol);
 
-			itemCol.SetText("Tamaño");
+			itemCol.SetText("TamaÃ±o");
 			itemCol.SetWidth(80);
 			this->listManager->InsertColumn(2, itemCol);
 
@@ -171,6 +172,21 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 			strComando += this->p_RutaActual->GetLabelText();
 			this->EnviarComando(strComando);
 			break;
+		case EnumIDS::ID_Panel_FM_Subir:
+			wxFileDialog dialog(this, "Seleccionar archivo a enviar", wxEmptyString, wxEmptyString, wxFileSelectorDefaultWildcardStr);
+			if (dialog.ShowModal() == wxID_OK) {
+				//dialog.GetPath() ruta al archivo seleccionado
+				int iTempID = atoi(this->strID.substr(this->strID.size() - 3, 3).c_str());
+				std::string strRutaLocal = dialog.GetPath();
+				std::string strRutaRemota = this->p_RutaActual->GetLabelText();
+				strRutaRemota += dialog.GetFilename();
+				//std::thread thEnviar(&panelFileManager::EnviarArchivo, this, dialog.GetPath(), strRutaRemota.c_str(), iTempID);
+				std::thread thEnviar([this, strRutaLocal, strRutaRemota, iTempID] {
+					this->EnviarArchivo(strRutaLocal, strRutaRemota.c_str(), iTempID);
+				});
+				thEnviar.detach();
+			}
+			break;
 	}
 }
 
@@ -184,6 +200,84 @@ void panelFileManager::EnviarComando(std::string pComando) {
 	auto cliIT = p_Servidor->um_Clientes.find(iTempID);
 	if (cliIT != p_Servidor->um_Clientes.end()) {
 		p_Servidor->cSend(cliIT->second._sckCliente, pComando.c_str(), pComando.size() + 1, 0, false);
+	}
+}
+
+void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath, int iIdCliente) {
+	std::cout << "Enviando " << lPath << std::endl;
+
+	std::ifstream localFile(lPath, std::ios::binary);
+	if (!localFile.is_open()) {
+		error();
+		std::cout << "No se pudo abrir el archivo " << lPath << std::endl;
+		return;
+	}
+
+	std::unique_lock<std::mutex> lock(vector_mutex);
+
+	auto cliIT = p_Servidor->um_Clientes.find(iIdCliente);
+	if (cliIT == p_Servidor->um_Clientes.end()) {
+		std::cout << "[X] No se puedo encontrar cliente con socket " << iIdCliente << std::endl;
+		lock.unlock();
+		return;
+	}
+
+	lock.unlock();
+
+	u_int uiTamBloque = 1024 * 70; //70 KB
+	u64 uTamArchivo = GetFileSize(lPath.c_str());
+	u64 uBytesEnviados = 0;
+
+	std::string strComando = std::to_string(EnumComandos::FM_Descargar_Archivo_Init);
+	strComando.append(1, '~');
+	strComando += rPath;
+	strComando.append(1, '~');
+	strComando += std::to_string(uTamArchivo);
+	//Enviar ruta remota y tamaÃ±o de archivo
+	p_Servidor->cSend(cliIT->second._sckCliente, strComando.c_str(), strComando.size(), 0, true);
+	Sleep(100);
+
+	//Calcular tamaÃ±o header
+	std::string strHeader = std::to_string(EnumComandos::FM_Descargar_Archivo_Recibir);
+	strHeader.append(1, '~');
+		
+	char* cBufferArchivo = new char[uiTamBloque];
+	int iBytesLeidos = 0;
+
+	while (1) {
+		localFile.read(cBufferArchivo, uiTamBloque);
+		iBytesLeidos = localFile.gcount();
+		if (iBytesLeidos > 0) {
+			int iTotal = iBytesLeidos + strHeader.size();
+			char* nTempBuffer = new char[iTotal];
+
+			memcpy(nTempBuffer, strHeader.c_str(), strHeader.size());
+			memcpy(nTempBuffer + strHeader.size(), cBufferArchivo, iBytesLeidos);
+
+			//Implementar otro metodo para verificar el id antes de enviar
+			uBytesEnviados += p_Servidor->cSend(cliIT->second._sckCliente, nTempBuffer, iTotal, 0, true);
+			
+			if (nTempBuffer) {
+				delete[] nTempBuffer;
+				nTempBuffer = nullptr;
+			}
+		}
+		else {
+			break;
+		}
+	}
+
+	localFile.close();
+
+	//Ya se envio todo, cerrar el archivo
+	Sleep(500);
+	std::string strComandoCerrar = std::to_string(EnumComandos::FM_Descargar_Archivo_End);
+	strComandoCerrar.append(1, '~');
+	p_Servidor->cSend(cliIT->second._sckCliente, strComandoCerrar.c_str(), strComandoCerrar.size(), 0, true);
+	
+	if (cBufferArchivo) {
+		delete[] cBufferArchivo;
+		cBufferArchivo = nullptr;
 	}
 }
 
@@ -244,7 +338,7 @@ void ListCtrlManager::OnDescargarArchivo(wxCommandEvent& event) {
 	strComando += strID;
 
 	//Agregar el archivo al vector del cliente pero solo el id
-	//actualizar el tamaño al obtener la info del cliente
+	//actualizar el tamaÃ±o al obtener la info del cliente
 	long item = this->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
 	std::string strNombre = this->itemp->strID;
 	strNombre.append(1, '-');
@@ -252,7 +346,7 @@ void ListCtrlManager::OnDescargarArchivo(wxCommandEvent& event) {
 	
 	struct Archivo_Descarga2 nuevo_archivo;
 	nuevo_archivo.iFP = fopen(strNombre.c_str(), "wb");
-	nuevo_archivo.uTamarchivo = 0;
+	nuevo_archivo.uTamarchivo = nuevo_archivo.uDescargado = 0;
 	if (nuevo_archivo.iFP == nullptr) {
 		error();
 		p_Servidor->m_txtLog->LogThis("[X] No se pudo abrir el archivo" + strNombre, LogType::LogError);
@@ -313,7 +407,7 @@ void ListCtrlManager::OnActivated(wxListEvent& event) {
 			itemCol.SetAlign(wxLIST_FORMAT_LEFT);
 			this->InsertColumn(1, itemCol);
 
-			itemCol.SetText("Tamaño");
+			itemCol.SetText("TamaÃ±o");
 			itemCol.SetWidth(80);
 			this->InsertColumn(2, itemCol);
 

@@ -139,6 +139,8 @@ void MyFrame::OnToggle(wxCommandEvent& event) {
 
         p_Servidor->m_CerrarConexiones();
 
+        std::cout <<"MAP SIZE: "<< p_Servidor->um_Clientes.size() << std::endl;
+
         p_Servidor->m_listCtrl->DeleteAllItems();
         SetStatusText("IDLE");
         this->btn_toggle->SetLabelText("Iniciar Servidor");

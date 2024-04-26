@@ -157,3 +157,9 @@ u64 GetFileSize(c_char* cPath) {
 	strmInputFile.close();
 	return uTmp;
 }
+
+void DebugPrint(const char* cMessage){
+#ifdef ___DEBUG_
+	std::cout<<cMessage<<std::endl;
+#endif
+}

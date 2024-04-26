@@ -5,6 +5,7 @@
 struct Archivo_Descarga2 {
     FILE* iFP;
     u64 uTamarchivo;
+    u64 uDescargado;
 };
 
 struct Cliente{
