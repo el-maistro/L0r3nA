@@ -215,6 +215,10 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 
 	std::unique_lock<std::mutex> lock(vector_mutex);
 
+	u_int uiTamBloque = 1024 * 70; //70 KB
+	u64 uTamArchivo = GetFileSize(lPath.c_str());
+	u64 uBytesEnviados = 0;
+
 	auto cliIT = p_Servidor->um_Clientes.find(iIdCliente);
 	if (cliIT == p_Servidor->um_Clientes.end()) {
 		std::cout << "[X] No se puedo encontrar cliente con socket " << iIdCliente << std::endl;
@@ -222,11 +226,10 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 		return;
 	}
 
-	lock.unlock();
+	//AGREGAR TRANSFER AL VECTOR DEL SERVIDOR
 
-	u_int uiTamBloque = 1024 * 70; //70 KB
-	u64 uTamArchivo = GetFileSize(lPath.c_str());
-	u64 uBytesEnviados = 0;
+	lock.unlock();
+	
 
 	std::string strComando = std::to_string(EnumComandos::FM_Descargar_Archivo_Init);
 	strComando.append(1, '~');
@@ -347,20 +350,35 @@ void ListCtrlManager::OnDescargarArchivo(wxCommandEvent& event) {
 	struct Archivo_Descarga2 nuevo_archivo;
 	nuevo_archivo.iFP = fopen(strNombre.c_str(), "wb");
 	nuevo_archivo.uTamarchivo = nuevo_archivo.uDescargado = 0;
+	nuevo_archivo.strNombre = this->GetItemText(item, 1);
 	if (nuevo_archivo.iFP == nullptr) {
 		error();
 		p_Servidor->m_txtLog->LogThis("[X] No se pudo abrir el archivo" + strNombre, LogType::LogError);
 		return;
 	}
 	
-	std::unique_lock<std::mutex> lock(vector_mutex);
-	
+	std::unique_lock<std::mutex> lock1(vector_mutex);
+
 	int iTempID = atoi(this->itemp->strID.substr(this->itemp->strID.size() - 3, 3).c_str());
 	auto itArchivo = p_Servidor->um_Clientes.find(iTempID);
-	if (itArchivo != p_Servidor->um_Clientes.end()) {
-		itArchivo->second.um_Archivos_Descarga2.insert({ strID , nuevo_archivo });
+	if (itArchivo == p_Servidor->um_Clientes.end()) {
+		lock1.unlock();
+		std::cout << "No se pudo encontrar el cliente " << iTempID << std::endl;
+		return;
 	}
-	lock.unlock();
+		
+	itArchivo->second.um_Archivos_Descarga2.insert({ strID , nuevo_archivo });
+
+	struct TransferStatus nueva_transfer;
+	nueva_transfer.isUpload = false;
+	nueva_transfer.strCliente = this->itemp->strID;
+	nueva_transfer.strNombre = this->GetItemText(item, 1);
+	nueva_transfer.uDescargado = nueva_transfer.uTamano = 0;
+		
+	//Agregar nueva transfer al vector del server
+	p_Servidor->vcTransferencias.push_back(nueva_transfer);
+
+	lock1.unlock();
 
 	this->itemp->EnviarComando(strComando);
 }

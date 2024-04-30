@@ -50,7 +50,7 @@ std::string RandomTestLen() {
 }
 
 std::string RandomID(int iLongitud){
-    const char *Map = "abcdefghijklmnopqrstuvwxyz1234567890-";
+    const char *Map = "abcdefghijklmnopqrstuvwxyz1234567890_";
     std::string strSalida = "";
     
     std::random_device rd;
@@ -109,4 +109,9 @@ u64 GetFileSize(const char* cPath) {
 	pBuf->pubseekpos(0, strmInputFile.in);
 	strmInputFile.close();
 	return uTmp;
+}
+
+int FilterSocket(std::string cID) {
+	int npos = cID.find('-', 0);
+	return atoi(cID.substr(npos + 1, cID.size()).c_str());
 }

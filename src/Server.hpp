@@ -2,7 +2,16 @@
 #ifndef _SERVER_H
 #define _SERVER_H
 
+struct TransferStatus {
+    std::string strCliente;
+    std::string strNombre;
+    bool isUpload = false;
+    u64 uTamano = 0;
+    u64 uDescargado = 0;
+};
+
 struct Archivo_Descarga2 {
+    std::string strNombre;
     FILE* iFP;
     u64 uTamarchivo;
     u64 uDescargado;
@@ -78,17 +87,21 @@ class Servidor{
         Servidor();
 
         std::mutex p_mutex;
+        std::mutex p_transfers;
 
-        std::vector<struct Cliente> vc_Clientes;
         std::unordered_map<SOCKET, struct Cliente> um_Clientes;
 
+        std::vector<struct TransferStatus> vcTransferencias;
+        
         bool p_Escuchando = false;
+        bool p_Transferencias = false;
         bool   m_Iniciar();
         ClientConInfo m_Aceptar();
         int iCount = 0;
 
         std::thread thListener;
         std::thread thPing;
+        std::thread thTransfers;
       
 
         //Hilos
@@ -97,6 +110,7 @@ class Servidor{
         void m_JoinThreads();
         void m_Escucha();
         void m_Ping();
+        void m_MonitorTransferencias();
 
         //Manipular listview
         MyListCtrl *m_listCtrl;

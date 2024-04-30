@@ -71,7 +71,10 @@ namespace EnumIDS {
         ID_Panel_FM_Subir,
         ID_Panel_FM_List,
         ID_Panel_FM_LblRuta,
-        ID_Toggle
+        ID_Panel_Transferencias,
+        ID_Panel_Transferencias_List,
+        ID_Toggle,
+        ID_Mostrar_Transfers
     };
 }
 

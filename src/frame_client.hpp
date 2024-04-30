@@ -19,13 +19,12 @@ private:
 class FrameCliente : public wxFrame {
     public:
         std::string strClienteID = "";
-        std::vector<struct Cliente>::iterator p_Ite;
+        
+
         FrameCliente(std::string pstrID, wxString nameID);
 
         MyTreeCtrl* m_tree;
 
-        bool isEstadoTransferencia = false;
-        
         //wxAuiNotebook* p_Notebook;
     private:
         wxButton* btn_Test;
@@ -35,6 +34,8 @@ class FrameCliente : public wxFrame {
         void OnClose(wxCloseEvent& event);
 
         void OnClosePage(wxAuiNotebookEvent& event);
+
+        void MonitorTransferencias();
 
         wxDECLARE_EVENT_TABLE();
 

@@ -229,6 +229,53 @@ void Servidor::m_Ping(){
     }
 }
 
+
+void Servidor::m_MonitorTransferencias() {
+    while (this->p_Transferencias) {
+        auto parent = (wxFrame*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Transferencias);
+        if (parent) {
+            auto list_transfer = (wxListCtrl*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Transferencias_List, parent);
+            if (list_transfer) {
+                //Esta activo el listview
+                list_transfer->DeleteAllItems();
+                std::unique_lock<std::mutex> lock(vector_mutex);
+                //std::cout << "[VECTOR] " << this->vcTransferencias.size() << std::endl;
+
+                for (int iCount = 0; iCount < int(this->vcTransferencias.size()); iCount++) {
+                    auto tc = this->vcTransferencias[iCount];
+
+                    list_transfer->InsertItem(iCount, wxString(tc.strCliente));
+                    list_transfer->SetItem(iCount, 1, wxString(tc.strNombre));
+                    list_transfer->SetItem(iCount, 2, wxString((tc.isUpload ? "SUBIENDO" : "DESCARGANDO")));
+
+                    //std::unique_lock<std::mutex> lock2(vector_mutex);
+                    auto itCli = this->um_Clientes.find(FilterSocket(tc.strCliente));
+                    if (itCli != this->um_Clientes.end()) {
+                        //Iterar y buscar
+                        for (auto item2 : itCli->second.um_Archivos_Descarga2) {
+                            if (item2.second.strNombre == tc.strNombre) {
+                                double percentage = item2.second.uDescargado / (item2.second.uTamarchivo / 100);
+                                wxString strPro = std::to_string(percentage);
+                                strPro.append(1, '%');
+                                
+                                list_transfer->SetItem(iCount, 3, strPro);
+                                break;
+                            }
+                        }
+                    }
+                    //lock2.unlock();
+                }
+                lock.unlock();
+            }
+            else {
+                std::cout << "No se pudo encontrar el panel abierto" << std::endl;
+            }
+        }
+        Sleep(1000);
+    }
+    
+}
+
 void Servidor::m_Escucha(){
     this->m_txtLog->LogThis("Thread LISTENER iniciada", LogType::LogMessage);
     
@@ -345,7 +392,6 @@ void Servidor::m_Escucha(){
                         continue;
                     }
 
-                    //Temporary fix, cambiarlo despues dependiendo el comando
                     vcDatos = strSplit(std::string(cBuffer), '\\', 4);
 
                     //Paquete inicial user,so,cpu
@@ -433,7 +479,7 @@ void Servidor::m_Escucha(){
                                 ListCtrlManager* temp_list = (ListCtrlManager*)wxWindow::FindWindowById(EnumIDS::ID_Panel_FM_List, temp);
                                 if (temp_list) {
                                     for (int iCount = 0; iCount<int(vDrives.size()); iCount++) {
-                                        std::vector<std::string> vDrive = strSplit(vDrives[iCount], '|', 5); //maximo 100 por ahora, pero se deberia de incrementar en un futuro
+                                        std::vector<std::string> vDrive = strSplit(vDrives[iCount], '|', 5); 
 
                                         temp_list->InsertItem(iCount, wxString(vDrive[0]));
                                         temp_list->SetItem(iCount, 1, wxString(vDrive[2]));
@@ -511,6 +557,8 @@ void Servidor::m_Escucha(){
                         }
                         std::cout << "[!] Descarga completa" << std::endl;
                         wxMessageBox("Descarga completa", "Completo", wxOK);
+
+
                         continue;
                     }
 

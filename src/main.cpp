@@ -5,12 +5,26 @@
 
 extern Servidor* p_Servidor;
 
+class TransferFrame : public wxFrame {
+    public:
+        TransferFrame();
+ 
+        void OnClose(wxCloseEvent& event);
+    private:
+        wxDECLARE_EVENT_TABLE();
+};
+
+wxBEGIN_EVENT_TABLE(TransferFrame, wxFrame)
+    EVT_CLOSE(TransferFrame::OnClose)
+wxEND_EVENT_TABLE()
+
 class MyFrame : public wxFrame{
     public:
         MyFrame();
     private:
         wxPanel *m_RPanel, *m_LPanel, *m_BPanel;
         wxMenu *menuFile, *menuHelp;
+        wxButton* btn_Transfers;
         wxToggleButton* btn_toggle;
         
         wxSize p_BotonS = wxSize(100, 30);
@@ -18,6 +32,7 @@ class MyFrame : public wxFrame{
         //Eventos
         void OnLimpiar(wxCommandEvent& event);
         void OnToggle(wxCommandEvent& event); //Iniciar/detener servidor
+        void OnMostrarTransferencias(wxCommandEvent& event);
 
         void CrearLista(long flags, bool withText = true);
         void CrearControlesPanelIzquierdo();
@@ -31,9 +46,9 @@ class MyFrame : public wxFrame{
 wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
     EVT_BUTTON(EnumIDS::ID_LimpiarLog, MyFrame::OnLimpiar)
     EVT_TOGGLEBUTTON(EnumIDS::ID_Toggle, MyFrame::OnToggle)
+    EVT_BUTTON(EnumIDS::ID_Mostrar_Transfers, MyFrame::OnMostrarTransferencias)
     EVT_CLOSE(MyFrame::OnClose)
 wxEND_EVENT_TABLE()
-
 
 class MyApp : public wxApp {
 public:
@@ -114,6 +129,52 @@ MyFrame::MyFrame()
     SetStatusText("IDLE");
 }
 
+TransferFrame::TransferFrame() 
+    :wxFrame(nullptr, EnumIDS::ID_Panel_Transferencias, wxT("Transferencias"), wxDefaultPosition, wxSize(FRAME_CLIENT_SIZE_WIDTH, 450))
+{
+    wxListCtrl* listView = new wxListCtrl(this, EnumIDS::ID_Panel_Transferencias_List, wxDefaultPosition, wxSize(FRAME_CLIENT_SIZE_WIDTH, 450), wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES | wxEXPAND);
+
+    wxListItem itemCol;
+    itemCol.SetText("Cliente");
+    itemCol.SetWidth(100);
+    itemCol.SetAlign(wxLIST_FORMAT_CENTRE);
+    listView->InsertColumn(0, itemCol);
+
+    itemCol.SetText("Nombre");
+    itemCol.SetWidth(160);
+    listView->InsertColumn(1, itemCol);
+
+    itemCol.SetText("Estado");
+    itemCol.SetWidth(120);
+    listView->InsertColumn(2, itemCol);
+
+    itemCol.SetText("Progreso");
+    itemCol.SetWidth(140);
+    listView->InsertColumn(3, itemCol);
+}
+
+void TransferFrame::OnClose(wxCloseEvent& event){
+    std::unique_lock<std::mutex> lock(p_Servidor->p_transfers);
+    p_Servidor->p_Transferencias = false;
+    lock.unlock();
+    Sleep(500);
+    if (p_Servidor->thTransfers.joinable()) {
+        p_Servidor->thTransfers.join();
+    }
+    event.Skip();
+}
+
+void MyFrame::OnMostrarTransferencias(wxCommandEvent& event){
+    
+    p_Servidor->p_Transferencias = true;
+
+    p_Servidor->thTransfers = std::thread(&Servidor::m_MonitorTransferencias, p_Servidor);
+    
+    //Crear form y mostrar
+    TransferFrame* wxTransfers = new TransferFrame();
+    wxTransfers->Show();
+}
+
 void MyFrame::OnToggle(wxCommandEvent& event) {
 
     bool isSel = this->btn_toggle->GetValue();
@@ -150,9 +211,12 @@ void MyFrame::OnToggle(wxCommandEvent& event) {
 void MyFrame::CrearControlesPanelIzquierdo(){
     
     this->btn_toggle = new wxToggleButton(this->m_LPanel, EnumIDS::ID_Toggle, "Iniciar Servidor");
+    this->btn_Transfers = new wxButton(this->m_LPanel, EnumIDS::ID_Mostrar_Transfers, "Transferencias");
     wxBoxSizer *m_paneSizer = new wxBoxSizer(wxVERTICAL);
     m_paneSizer->AddSpacer(20);    
     m_paneSizer->Add(this->btn_toggle, 0, wxALIGN_CENTER | wxALL, 3);
+    m_paneSizer->AddSpacer(20);
+    m_paneSizer->Add(this->btn_Transfers, 0, wxALIGN_CENTER | wxALL, 3);
     
     this->m_LPanel->SetSizerAndFit(m_paneSizer);
 
@@ -197,8 +261,8 @@ void MyFrame::OnClose(wxCloseEvent& event){
     
     std::unique_lock<std::mutex> lock(p_Servidor->p_mutex);
     p_Servidor->p_Escuchando = false;
-    for (auto it : p_Servidor->vc_Clientes) {
-        FrameCliente* temp = (FrameCliente*)wxWindow::FindWindowByName(it._id);
+    for (auto it : p_Servidor->um_Clientes) {
+        FrameCliente* temp = (FrameCliente*)wxWindow::FindWindowByName(it.second._id);
         if (temp) {
             temp->Close(true);
         }
