@@ -1,3 +1,5 @@
+//Vamo acete multi-thread :v
+
 #include "server.hpp"
 #include "misc.hpp"
 #include "frame_client.hpp"
