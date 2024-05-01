@@ -34,6 +34,8 @@ FrameCliente::FrameCliente(std::string strID, SOCKET sckID)
     SetTransparent(245);
 
     this->sckCliente = sckID;
+    int npos = strID.find('/', 0);
+    this->strClienteID = strID.substr(0, npos);
 
     wxString strTitle = "[";
     strTitle.append(strID.c_str());
@@ -177,7 +179,7 @@ panelReverseShell::panelReverseShell(wxWindow* pParent) :
             }
         }
     }
-    this->txtConsole = new wxTextCtrl(this, EnumIDS::ID_Panel_Reverse_Shell_TxtConsole, "Reverse Shell v0.1\n", wxDefaultPosition, wxSize(600-5, 410), wxTE_MULTILINE);
+    this->txtConsole = new wxTextCtrl(this, EnumIDS::ID_Panel_Reverse_Shell_TxtConsole, "Reverse Shell v0.1\n", wxDefaultPosition, wxSize(600-5, 410), wxTE_MULTILINE | wxTE_RICH);
     this->txtConsole->SetForegroundColour(*wxWHITE);
     this->txtConsole->SetBackgroundColour(*wxBLACK);
 

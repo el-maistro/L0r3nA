@@ -74,7 +74,12 @@ class Cliente_Handler {
         std::thread p_thHilo;
         
     public:
+
+        std::mutex mt_Archivos;
+
         FrameCliente* n_Frame = nullptr;
+
+        std::unordered_map<std::string, struct Archivo_Descarga2> um_Archivos_Descarga2;
         
         struct Cliente p_Cliente;
         bool isRunning = false;

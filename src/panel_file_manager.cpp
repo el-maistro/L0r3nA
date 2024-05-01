@@ -31,6 +31,7 @@ panelFileManager::panelFileManager(wxWindow* pParent) :
 		if (panel_cliente) {
 			FrameCliente* frame_cliente = (FrameCliente*)panel_cliente->GetParent();
 			if (frame_cliente) {
+				this->sckCliente = frame_cliente->sckCliente;
 				this->strID = frame_cliente->strClienteID;
 			}
 		}
@@ -196,11 +197,7 @@ void panelFileManager::CrearLista() {
 }
 
 void panelFileManager::EnviarComando(std::string pComando) {
-	int iTempID = atoi(this->strID.substr(this->strID.size() - 3, 3).c_str());
-	auto cliIT = p_Servidor->um_Clientes.find(iTempID);
-	if (cliIT != p_Servidor->um_Clientes.end()) {
-		p_Servidor->cSend(cliIT->second._sckCliente, pComando.c_str(), pComando.size() + 1, 0, false);
-	}
+	p_Servidor->cSend(this->sckCliente, pComando.c_str(), pComando.size() + 1, 0, false);
 }
 
 void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath, int iIdCliente) {
@@ -219,13 +216,6 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 	u64 uTamArchivo = GetFileSize(lPath.c_str());
 	u64 uBytesEnviados = 0;
 
-	auto cliIT = p_Servidor->um_Clientes.find(iIdCliente);
-	if (cliIT == p_Servidor->um_Clientes.end()) {
-		std::cout << "[X] No se puedo encontrar cliente con socket " << iIdCliente << std::endl;
-		lock.unlock();
-		return;
-	}
-
 	//AGREGAR TRANSFER AL VECTOR DEL SERVIDOR
 
 	lock.unlock();
@@ -237,7 +227,7 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 	strComando.append(1, '~');
 	strComando += std::to_string(uTamArchivo);
 	//Enviar ruta remota y tamaño de archivo
-	p_Servidor->cSend(cliIT->second._sckCliente, strComando.c_str(), strComando.size(), 0, true);
+	p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, true);
 	Sleep(100);
 
 	//Calcular tamaño header
@@ -258,7 +248,7 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 			memcpy(nTempBuffer + strHeader.size(), cBufferArchivo, iBytesLeidos);
 
 			//Implementar otro metodo para verificar el id antes de enviar
-			uBytesEnviados += p_Servidor->cSend(cliIT->second._sckCliente, nTempBuffer, iTotal, 0, true);
+			uBytesEnviados += p_Servidor->cSend(this->sckCliente, nTempBuffer, iTotal, 0, true);
 			
 			if (nTempBuffer) {
 				delete[] nTempBuffer;
@@ -276,7 +266,7 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 	Sleep(500);
 	std::string strComandoCerrar = std::to_string(EnumComandos::FM_Descargar_Archivo_End);
 	strComandoCerrar.append(1, '~');
-	p_Servidor->cSend(cliIT->second._sckCliente, strComandoCerrar.c_str(), strComandoCerrar.size(), 0, true);
+	p_Servidor->cSend(this->sckCliente, strComandoCerrar.c_str(), strComandoCerrar.size(), 0, true);
 	
 	if (cBufferArchivo) {
 		delete[] cBufferArchivo;
@@ -356,20 +346,25 @@ void ListCtrlManager::OnDescargarArchivo(wxCommandEvent& event) {
 		p_Servidor->m_txtLog->LogThis("[X] No se pudo abrir el archivo" + strNombre, LogType::LogError);
 		return;
 	}
-	
-	std::unique_lock<std::mutex> lock1(vector_mutex);
 
-	int iTempID = atoi(this->itemp->strID.substr(this->itemp->strID.size() - 3, 3).c_str());
-	auto itArchivo = p_Servidor->um_Clientes.find(iTempID);
-	if (itArchivo == p_Servidor->um_Clientes.end()) {
-		lock1.unlock();
-		std::cout << "No se pudo encontrar el cliente " << iTempID << std::endl;
-		return;
+	std::unique_lock<std::mutex> lock(vector_mutex);
+
+	for (auto itCli = p_Servidor->vc_Clientes.begin(); itCli != p_Servidor->vc_Clientes.end(); itCli++) {
+		if ((*itCli)->p_Cliente._id == this->itemp->strID) {
+			lock.unlock();
+
+			std::unique_lock<std::mutex> lock2((*itCli)->mt_Archivos);
+			(*itCli)->um_Archivos_Descarga2.insert({ strID, nuevo_archivo });
+			lock2.unlock();
+
+			lock.lock();
+			break;
+		}
 	}
-		
-	itArchivo->second.um_Archivos_Descarga2.insert({ strID , nuevo_archivo });
 
-	struct TransferStatus nueva_transfer;
+	lock.unlock();
+	
+	/*struct TransferStatus nueva_transfer;
 	nueva_transfer.isUpload = false;
 	nueva_transfer.strCliente = this->itemp->strID;
 	nueva_transfer.strNombre = this->GetItemText(item, 1);
@@ -378,7 +373,7 @@ void ListCtrlManager::OnDescargarArchivo(wxCommandEvent& event) {
 	//Agregar nueva transfer al vector del server
 	p_Servidor->vcTransferencias.push_back(nueva_transfer);
 
-	lock1.unlock();
+	lock1.unlock();*/
 
 	this->itemp->EnviarComando(strComando);
 }

