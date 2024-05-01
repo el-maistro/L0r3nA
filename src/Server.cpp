@@ -49,14 +49,13 @@ void Cliente_Handler::Spawn_Handler(){
             if (archivoIter != this->um_Archivos_Descarga2.end() && archivoIter->second.iFP != nullptr) {
                 fwrite(cBytes, sizeof(char), iRecibido - iHeader, archivoIter->second.iFP);
                 archivoIter->second.uDescargado += (iRecibido - iHeader);
-                //this->Log(std::to_string(archivoIter->second.uDescargado));
             }
             
             lock.unlock();
             continue;
         }
 
-        vcDatos = strSplit(std::string(cBuffer), '\\', 4);
+        vcDatos = strSplit(std::string(cBuffer), '\\', 5);
         //Pquete inicial
         if (vcDatos[0] == "01") {
             if (vcDatos.size() < 4) {
@@ -67,7 +66,8 @@ void Cliente_Handler::Spawn_Handler(){
 
             structTmp._strSo = this->p_Cliente._strSo = vcDatos[1];
             structTmp._strUser = this->p_Cliente._strUser = vcDatos[2];
-            structTmp._strCpu = this->p_Cliente._strCpu = vcDatos[3];
+            structTmp._strPID = this->p_Cliente._strPID = vcDatos[3];
+            structTmp._strCpu = this->p_Cliente._strCpu = vcDatos[4];
             structTmp._id = this->p_Cliente._id;
             structTmp._strIp = this->p_Cliente._strIp;
 
@@ -197,7 +197,7 @@ void Cliente_Handler::Spawn_Handler(){
             continue;
         }
     }
-    std::cout << "[" << this->p_thHilo.get_id() << "] funado\n";
+    this->Log("Funado");
 }
 
 void Cliente_Handler::EscribirSalidShell(std::string strSalida) {
@@ -770,7 +770,8 @@ void Servidor::m_InsertarCliente(struct Cliente& p_Cliente){
     m_listCtrl->SetItem(this->iCount, 1, wxString(p_Cliente._strUser));
     m_listCtrl->SetItem(this->iCount, 2, wxString(p_Cliente._strIp));
     m_listCtrl->SetItem(this->iCount, 3, wxString(p_Cliente._strSo));
-    m_listCtrl->SetItem(this->iCount, 4, wxString(p_Cliente._strCpu));
+    m_listCtrl->SetItem(this->iCount, 4, wxString(p_Cliente._strPID));
+    m_listCtrl->SetItem(this->iCount, 5, wxString(p_Cliente._strCpu));
 }
 
 void Servidor::m_RemoverClienteLista(std::string p_ID){

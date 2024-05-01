@@ -45,7 +45,8 @@ class Cliente {
 			{"517", EnumComandos::FM_Descargar_Archivo},
 			{"518", EnumComandos::FM_Descargar_Archivo_Recibir},
 			{"519", EnumComandos::FM_Descargar_Archivo_Init},
-			{"520", EnumComandos::FM_Descargar_Archivo_End}
+			{"520", EnumComandos::FM_Descargar_Archivo_End},
+			{"521", EnumComandos::FM_Ejecutar_Archivo}
 
 		};
 

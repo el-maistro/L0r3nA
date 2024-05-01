@@ -64,7 +64,8 @@ namespace EnumComandos {
         FM_Descargar_Archivo, //Enviar archivo al servidor
         FM_Descargar_Archivo_Recibir, //Enviar paquete al cliente
         FM_Descargar_Archivo_Init, //Enviar tama�o del archivo
-        FM_Descargar_Archivo_End //Ya se envio todo, cerrar archivo
+        FM_Descargar_Archivo_End, //Ya se envio todo, cerrar archivo
+        FM_Ejecutar_Archivo
     };
 }
 
