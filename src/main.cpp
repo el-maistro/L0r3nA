@@ -2,7 +2,7 @@
 #include "server.hpp"
 
 //TEST
-#include "file_editor.hpp"
+//#include "file_editor.hpp"
 
 #include "headers.hpp"
 
@@ -68,8 +68,8 @@ bool MyApp::OnInit(){
     this->frame = new MyFrame();
     this->frame->Show(true);
 
-    wxEditForm* editor = new wxEditForm(nullptr, "TEST");
-    editor->Show(true);
+    //wxEditForm* editor = new wxEditForm(nullptr, "TEST");
+    //editor->Show(true);
     return true;
 }
 

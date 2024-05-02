@@ -4,6 +4,7 @@
 #include "misc.hpp"
 #include "frame_client.hpp"
 #include "panel_file_manager.hpp"
+#include "file_editor.hpp"
 
 //Definir el servidor globalmente
 Servidor* p_Servidor;
@@ -177,6 +178,19 @@ void Cliente_Handler::Spawn_Handler(){
             std::cout << "[!] Descarga completa" << std::endl;
             wxMessageBox("Descarga completa", "Completo", wxOK);
             continue;
+        }
+
+        if (vcDatos[0] == std::to_string(EnumComandos::FM_Editar_Archivo_Paquete)) {
+            //Tamaño del id del comando, id del archivo y dos back slashes
+            int iHeadSize = 2 + vcDatos[0].size() + vcDatos[1].size();
+            char* cBytes = cBuffer + iHeadSize;
+    
+            wxEditForm* temp_edit_form = (wxEditForm*)wxWindow::FindWindowByName(vcDatos[1], this->n_Frame);
+            if (temp_edit_form) {
+                temp_edit_form->p_txtEditor->AppendText(wxString(cBytes));
+;            }else {
+                this->Log("No se pudo encontrar la ventana con id " + vcDatos[1]);
+            }
         }
 
         if (vcDatos[0] == std::to_string(EnumComandos::FM_CPATH)) {

@@ -1,9 +1,10 @@
 #include "file_editor.hpp"
+#include "panel_file_manager.hpp"
 
-wxEditForm::wxEditForm(wxWindow* pParent, wxString strNombre)
-	: wxFrame(pParent, wxID_ANY, strNombre, wxDefaultPosition, wxDefaultSize, wxDD_DEFAULT_STYLE)
+wxEditForm::wxEditForm(wxWindow* pParent, wxString strNombre, std::string strID)
+	: wxFrame(pParent, wxID_ANY, "[REMOTO]" + strNombre, wxDefaultPosition, wxDefaultSize, wxDD_DEFAULT_STYLE, strID)
 {
-	this->p_txtEditor = new wxTextCtrl(this, EnumIDS::ID_Panel_FM_Editar_TXT, "...", wxDefaultPosition, wxSize(400, 400), wxTE_MULTILINE | wxTE_RICH);
+	this->p_txtEditor = new wxTextCtrl(this, EnumIDS::ID_Panel_FM_Editar_TXT, wxEmptyString, wxDefaultPosition, wxSize(400, 400), wxTE_MULTILINE | wxTE_RICH);
 
 	wxBoxSizer* nsizer = new wxBoxSizer(wxHORIZONTAL);
 
@@ -35,4 +36,14 @@ wxEditForm::wxEditForm(wxWindow* pParent, wxString strNombre)
 
 	this->SetSizer(nsizer);
 	this->SetMenuBar(p_menu);
+
+	ListCtrlManager* temp = (ListCtrlManager*)this->GetParent();
+
+	std::string strComando = std::to_string(EnumComandos::FM_Editar_Archivo);
+	strComando.append(1, '~');
+	strComando += strNombre;
+	strComando.append(1, '~');
+	strComando += strID;
+
+	temp->itemp->EnviarComando(strComando);
 }

@@ -117,7 +117,9 @@ namespace EnumComandos {
         FM_Descargar_Archivo_Recibir, //Recibir paquete del cliente
         FM_Descargar_Archivo_Init, //Recibir el tamaño del archivo
         FM_Descargar_Archivo_End, //Ya se recibio todo, cerrar archivo
-        FM_Ejecutar_Archivo
+        FM_Ejecutar_Archivo,
+        FM_Editar_Archivo,
+        FM_Editar_Archivo_Paquete
     };
 }
 

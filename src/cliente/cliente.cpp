@@ -257,13 +257,11 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
         return;
     }
 
-    //Crear archivo
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Crear_Archivo) {
         CrearArchivo(strIn[1].c_str());
         return;
     }
 
-    //Borrar archivo
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Borrar_Archivo) {
         BorrarArchivo(strIn[1].c_str());
         return;
@@ -288,6 +286,11 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
             error();
         }
 #endif
+        return;
+    }
+
+    if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Editar_Archivo){
+        EditarArchivo(strIn[1], strIn[2], this);
         return;
     }
     //#####################################################

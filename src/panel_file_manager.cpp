@@ -235,6 +235,8 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 	//Calcular tamaño header
 	std::string strHeader = std::to_string(EnumComandos::FM_Descargar_Archivo_Recibir);
 	strHeader.append(1, '~');
+
+	int iHeaderSize = strHeader.size();
 		
 	char* cBufferArchivo = new char[uiTamBloque];
 	int iBytesLeidos = 0;
@@ -243,11 +245,11 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 		localFile.read(cBufferArchivo, uiTamBloque);
 		iBytesLeidos = localFile.gcount();
 		if (iBytesLeidos > 0) {
-			int iTotal = iBytesLeidos + strHeader.size();
+			int iTotal = iBytesLeidos + iHeaderSize;
 			char* nTempBuffer = new char[iTotal];
 
-			memcpy(nTempBuffer, strHeader.c_str(), strHeader.size());
-			memcpy(nTempBuffer + strHeader.size(), cBufferArchivo, iBytesLeidos);
+			memcpy(nTempBuffer, strHeader.c_str(), iHeaderSize);
+			memcpy(nTempBuffer + iHeaderSize, cBufferArchivo, iBytesLeidos);
 
 			//Implementar otro metodo para verificar el id antes de enviar
 			uBytesEnviados += p_Servidor->cSend(this->sckCliente, nTempBuffer, iTotal, 0, true);
@@ -393,7 +395,7 @@ void ListCtrlManager::OnEjecutarArchivo_Oculto(wxCommandEvent& event) {
 
 void ListCtrlManager::OnEditarArchivo(wxCommandEvent& event) {
 	wxString strFile = this->ArchivoSeleccionado();
-	wxEditForm* editor_txt = new wxEditForm(this, "[REMOTO]" + strFile);
+	wxEditForm* editor_txt = new wxEditForm(this, strFile, RandomID(4));
 	editor_txt->Show(true);
 }
 
