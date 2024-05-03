@@ -1,6 +1,9 @@
 #include "frame_client.hpp"
 #include "server.hpp"
 
+//TEST
+//#include "file_editor.hpp"
+
 #include "headers.hpp"
 
 extern Servidor* p_Servidor;
@@ -64,6 +67,9 @@ bool MyApp::OnInit(){
     freopen("CONOUT$", "w", stderr);
     this->frame = new MyFrame();
     this->frame->Show(true);
+
+    //wxEditForm* editor = new wxEditForm(nullptr, "TEST");
+    //editor->Show(true);
     return true;
 }
 
@@ -243,9 +249,13 @@ void MyFrame::CrearLista(long flags, bool withText){
     itemCol.SetWidth(140);
     p_Servidor->m_listCtrl->InsertColumn(3, itemCol);
 
+    itemCol.SetText("PID");
+    itemCol.SetWidth(60);
+    p_Servidor->m_listCtrl->InsertColumn(4, itemCol);
+
     itemCol.SetText("CPU");
     itemCol.SetWidth(200);
-    p_Servidor->m_listCtrl->InsertColumn(4, itemCol);
+    p_Servidor->m_listCtrl->InsertColumn(5, itemCol);
 }
 
 void MyFrame::OnClose(wxCloseEvent& event){
@@ -268,15 +278,13 @@ void MyFrame::OnClose(wxCloseEvent& event){
         }
     }
     lock.unlock();
-    if (p_Servidor->thListener.joinable()) {
-        p_Servidor->thListener.join();
-    }
-    if (p_Servidor->thPing.joinable()) {
-        p_Servidor->thPing.join();
-    }
     
-    Sleep(500);
+    p_Servidor->m_JoinThreads();
+    
+    p_Servidor->m_CerrarConexiones();
 
+    Sleep(500);
+    
     delete p_Servidor;
     p_Servidor = nullptr;
     

@@ -71,6 +71,9 @@ namespace EnumIDS {
         ID_Panel_FM_Subir,
         ID_Panel_FM_List,
         ID_Panel_FM_LblRuta,
+        ID_Panel_FM_Editar_TXT,
+        ID_Panel_FM_Editar_Save_Remoto,
+        ID_Panel_FM_Editar_Save_Local,
         ID_Panel_Transferencias,
         ID_Panel_Transferencias_List,
         ID_Toggle,
@@ -115,7 +118,11 @@ namespace EnumComandos {
         FM_Descargar_Archivo,
         FM_Descargar_Archivo_Recibir, //Recibir paquete del cliente
         FM_Descargar_Archivo_Init, //Recibir el tamaño del archivo
-        FM_Descargar_Archivo_End //Ya se recibio todo, cerrar archivo
+        FM_Descargar_Archivo_End, //Ya se recibio todo, cerrar archivo
+        FM_Ejecutar_Archivo,
+        FM_Editar_Archivo,
+        FM_Editar_Archivo_Paquete,
+        FM_Editar_Archivo_Guardar_Remoto
     };
 }
 

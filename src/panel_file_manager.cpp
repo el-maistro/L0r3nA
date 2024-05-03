@@ -16,6 +16,8 @@ wxBEGIN_EVENT_TABLE(ListCtrlManager, wxListCtrl)
 	EVT_MENU(EnumMenuFM::ID_New_Archivo, ListCtrlManager::OnCrearArchivo)
 	EVT_MENU(EnumMenuFM::ID_Eliminar, ListCtrlManager::OnBorrarArchivo)
 	EVT_MENU(EnumMenuFM::ID_Editar, ListCtrlManager::OnEditarArchivo)
+	EVT_MENU(EnumMenuFM::ID_Exec_Visible, ListCtrlManager::OnEjecutarArchivo_Visible)
+	EVT_MENU(EnumMenuFM::ID_Exec_Oculto, ListCtrlManager::OnEjecutarArchivo_Oculto)
 	EVT_MENU(EnumMenuFM::ID_Descargar, ListCtrlManager::OnDescargarArchivo)
 	EVT_CONTEXT_MENU(ListCtrlManager::OnContextMenu)
 	EVT_LIST_ITEM_ACTIVATED(EnumIDS::ID_Panel_FM_List, ListCtrlManager::OnActivated)
@@ -31,6 +33,7 @@ panelFileManager::panelFileManager(wxWindow* pParent) :
 		if (panel_cliente) {
 			FrameCliente* frame_cliente = (FrameCliente*)panel_cliente->GetParent();
 			if (frame_cliente) {
+				this->sckCliente = frame_cliente->sckCliente;
 				this->strID = frame_cliente->strClienteID;
 			}
 		}
@@ -173,7 +176,7 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 			this->EnviarComando(strComando);
 			break;
 		case EnumIDS::ID_Panel_FM_Subir:
-			wxFileDialog dialog(this, "Seleccionar archivo a enviar", wxEmptyString, wxEmptyString, wxFileSelectorDefaultWildcardStr);
+			wxFileDialog dialog(this, "Seleccionar archivo a enviar", wxEmptyString, wxEmptyString, wxFileSelectorDefaultWildcardStr, wxFD_OPEN | wxFD_FILE_MUST_EXIST);
 			if (dialog.ShowModal() == wxID_OK) {
 				//dialog.GetPath() ruta al archivo seleccionado
 				int iTempID = atoi(this->strID.substr(this->strID.size() - 3, 3).c_str());
@@ -196,11 +199,7 @@ void panelFileManager::CrearLista() {
 }
 
 void panelFileManager::EnviarComando(std::string pComando) {
-	int iTempID = atoi(this->strID.substr(this->strID.size() - 3, 3).c_str());
-	auto cliIT = p_Servidor->um_Clientes.find(iTempID);
-	if (cliIT != p_Servidor->um_Clientes.end()) {
-		p_Servidor->cSend(cliIT->second._sckCliente, pComando.c_str(), pComando.size() + 1, 0, false);
-	}
+	p_Servidor->cSend(this->sckCliente, pComando.c_str(), pComando.size() + 1, 0, false);
 }
 
 void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath, int iIdCliente) {
@@ -219,13 +218,6 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 	u64 uTamArchivo = GetFileSize(lPath.c_str());
 	u64 uBytesEnviados = 0;
 
-	auto cliIT = p_Servidor->um_Clientes.find(iIdCliente);
-	if (cliIT == p_Servidor->um_Clientes.end()) {
-		std::cout << "[X] No se puedo encontrar cliente con socket " << iIdCliente << std::endl;
-		lock.unlock();
-		return;
-	}
-
 	//AGREGAR TRANSFER AL VECTOR DEL SERVIDOR
 
 	lock.unlock();
@@ -237,12 +229,14 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 	strComando.append(1, '~');
 	strComando += std::to_string(uTamArchivo);
 	//Enviar ruta remota y tamaño de archivo
-	p_Servidor->cSend(cliIT->second._sckCliente, strComando.c_str(), strComando.size(), 0, true);
+	p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, true);
 	Sleep(100);
 
 	//Calcular tamaño header
 	std::string strHeader = std::to_string(EnumComandos::FM_Descargar_Archivo_Recibir);
 	strHeader.append(1, '~');
+
+	int iHeaderSize = strHeader.size();
 		
 	char* cBufferArchivo = new char[uiTamBloque];
 	int iBytesLeidos = 0;
@@ -251,14 +245,14 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 		localFile.read(cBufferArchivo, uiTamBloque);
 		iBytesLeidos = localFile.gcount();
 		if (iBytesLeidos > 0) {
-			int iTotal = iBytesLeidos + strHeader.size();
+			int iTotal = iBytesLeidos + iHeaderSize;
 			char* nTempBuffer = new char[iTotal];
 
-			memcpy(nTempBuffer, strHeader.c_str(), strHeader.size());
-			memcpy(nTempBuffer + strHeader.size(), cBufferArchivo, iBytesLeidos);
+			memcpy(nTempBuffer, strHeader.c_str(), iHeaderSize);
+			memcpy(nTempBuffer + iHeaderSize, cBufferArchivo, iBytesLeidos);
 
 			//Implementar otro metodo para verificar el id antes de enviar
-			uBytesEnviados += p_Servidor->cSend(cliIT->second._sckCliente, nTempBuffer, iTotal, 0, true);
+			uBytesEnviados += p_Servidor->cSend(this->sckCliente, nTempBuffer, iTotal, 0, true);
 			
 			if (nTempBuffer) {
 				delete[] nTempBuffer;
@@ -276,12 +270,14 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 	Sleep(500);
 	std::string strComandoCerrar = std::to_string(EnumComandos::FM_Descargar_Archivo_End);
 	strComandoCerrar.append(1, '~');
-	p_Servidor->cSend(cliIT->second._sckCliente, strComandoCerrar.c_str(), strComandoCerrar.size(), 0, true);
+	p_Servidor->cSend(this->sckCliente, strComandoCerrar.c_str(), strComandoCerrar.size(), 0, true);
 	
 	if (cBufferArchivo) {
 		delete[] cBufferArchivo;
 		cBufferArchivo = nullptr;
 	}
+	
+	wxMessageBox("Archivo enviado!", "Upload", wxOK);
 }
 
 wxString panelFileManager::RutaActual() {
@@ -300,7 +296,7 @@ void ListCtrlManager::OnCrearFolder(wxCommandEvent& event) {
 	if (dialog.ShowModal() == wxID_OK){
 		std::string strComando = std::to_string(EnumComandos::FM_Crear_Folder);
 		strComando.append(1, '~');
-		strComando += this->itemp->p_RutaActual->GetLabelText();
+		strComando += this->CarpetaActual();
 		strComando += dialog.GetValue();
 		this->itemp->EnviarComando(strComando);
 	}
@@ -311,7 +307,7 @@ void ListCtrlManager::OnCrearArchivo(wxCommandEvent& event) {
 	if (dialog.ShowModal() == wxID_OK) {
 		std::string strComando = std::to_string(EnumComandos::FM_Crear_Archivo);
 		strComando.append(1, '~');
-		strComando += this->itemp->p_RutaActual->GetLabelText();
+		strComando += this->CarpetaActual();
 		strComando += dialog.GetValue();
 		this->itemp->EnviarComando(strComando);
 	}
@@ -321,12 +317,12 @@ void ListCtrlManager::OnBorrarArchivo(wxCommandEvent& event) {
 	long item = this->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
 	wxString strFile = this->GetItemText(item, 1);
 	//wxDialog dialog(this, 10000, "Borrar arhivo", wxDefaultPosition, wxDefaultSize, wxYES_NO, "Seguro que quieres borrar el archivo: " + strFile);
-	wxMessageDialog dialog(this, "Seguro que quieres borrar el archivo: ", strFile, wxCENTER | wxNO_DEFAULT | wxYES_NO | wxICON_QUESTION);
+	wxMessageDialog dialog(this, "Seguro que quieres borrar el archivo: " + strFile + "?", "Borrar archivo", wxCENTER | wxNO_DEFAULT | wxYES_NO | wxICON_QUESTION);
 	if (dialog.ShowModal() == wxID_YES) {
 		//Borrar archivo
 		std::string strComando = std::to_string(EnumComandos::FM_Borrar_Archivo);
 		strComando.append(1, '~');
-		strComando += this->itemp->p_RutaActual->GetLabelText();
+		strComando += this->CarpetaActual();
 		strComando += strFile;
 		this->itemp->EnviarComando(strComando);
 	}
@@ -347,8 +343,14 @@ void ListCtrlManager::OnDescargarArchivo(wxCommandEvent& event) {
 	strNombre.append(1, '-');
 	strNombre += this->GetItemText(item, 1);
 	
+	wxFileDialog dialog(this, "Guardar archivo", wxEmptyString, strNombre, wxFileSelectorDefaultWildcardStr, wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+
+	if (dialog.ShowModal() != wxID_OK) {
+		return;
+	}
+
 	struct Archivo_Descarga2 nuevo_archivo;
-	nuevo_archivo.iFP = fopen(strNombre.c_str(), "wb");
+	nuevo_archivo.iFP = fopen(dialog.GetPath().c_str(), "wb");
 	nuevo_archivo.uTamarchivo = nuevo_archivo.uDescargado = 0;
 	nuevo_archivo.strNombre = this->GetItemText(item, 1);
 	if (nuevo_archivo.iFP == nullptr) {
@@ -356,35 +358,48 @@ void ListCtrlManager::OnDescargarArchivo(wxCommandEvent& event) {
 		p_Servidor->m_txtLog->LogThis("[X] No se pudo abrir el archivo" + strNombre, LogType::LogError);
 		return;
 	}
-	
-	std::unique_lock<std::mutex> lock1(vector_mutex);
 
-	int iTempID = atoi(this->itemp->strID.substr(this->itemp->strID.size() - 3, 3).c_str());
-	auto itArchivo = p_Servidor->um_Clientes.find(iTempID);
-	if (itArchivo == p_Servidor->um_Clientes.end()) {
-		lock1.unlock();
-		std::cout << "No se pudo encontrar el cliente " << iTempID << std::endl;
-		return;
+	std::unique_lock<std::mutex> lock(vector_mutex);
+
+	for (auto itCli = p_Servidor->vc_Clientes.begin(); itCli != p_Servidor->vc_Clientes.end(); itCli++) {
+		if ((*itCli)->p_Cliente._id == this->itemp->strID) {
+			lock.unlock();
+
+			std::unique_lock<std::mutex> lock2((*itCli)->mt_Archivos);
+			(*itCli)->um_Archivos_Descarga2.insert({ strID, nuevo_archivo });
+			lock2.unlock();
+
+			lock.lock();
+			break;
+		}
 	}
-		
-	itArchivo->second.um_Archivos_Descarga2.insert({ strID , nuevo_archivo });
 
-	struct TransferStatus nueva_transfer;
-	nueva_transfer.isUpload = false;
-	nueva_transfer.strCliente = this->itemp->strID;
-	nueva_transfer.strNombre = this->GetItemText(item, 1);
-	nueva_transfer.uDescargado = nueva_transfer.uTamano = 0;
-		
-	//Agregar nueva transfer al vector del server
-	p_Servidor->vcTransferencias.push_back(nueva_transfer);
-
-	lock1.unlock();
+	lock.unlock();
 
 	this->itemp->EnviarComando(strComando);
 }
 
+void ListCtrlManager::OnEjecutarArchivo_Visible(wxCommandEvent& event) {
+	std::string strComando = std::to_string(EnumComandos::FM_Ejecutar_Archivo);
+	strComando.append(1, '~');
+	strComando += this->ArchivoSeleccionado();
+	strComando.append(1, '~');
+	strComando.append(1, '1');
+	this->itemp->EnviarComando(strComando);
+}
+
+void ListCtrlManager::OnEjecutarArchivo_Oculto(wxCommandEvent& event) {
+	std::string strComando = std::to_string(EnumComandos::FM_Ejecutar_Archivo);
+	strComando.append(1, '~');
+	strComando += this->ArchivoSeleccionado();
+	strComando.append(1, '~');
+	strComando.append(1, '0');
+	this->itemp->EnviarComando(strComando);
+}
+
 void ListCtrlManager::OnEditarArchivo(wxCommandEvent& event) {
-	wxEditForm* editor_txt = new wxEditForm(this, "random.txt");
+	wxString strFile = this->ArchivoSeleccionado();
+	wxEditForm* editor_txt = new wxEditForm(this, strFile, RandomID(4));
 	editor_txt->Show(true);
 }
 
@@ -392,9 +407,14 @@ void ListCtrlManager::OnEditarArchivo(wxCommandEvent& event) {
 
 std::string ListCtrlManager::ArchivoSeleccionado() {
 	long item = this->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
-	std::string strFile = this->itemp->p_RutaActual->GetLabelText(); 
+	std::string strFile = this->CarpetaActual();
 	strFile += this->GetItemText(item, 1);
 	return strFile;
+}
+
+std::string ListCtrlManager::CarpetaActual() {
+	std::string strCarpeta = this->itemp->p_RutaActual->GetLabelText();
+	return strCarpeta;
 }
 
 void ListCtrlManager::OnActivated(wxListEvent& event) {

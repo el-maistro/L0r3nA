@@ -158,6 +158,54 @@ u64 GetFileSize(c_char* cPath) {
 	return uTmp;
 }
 
+bool Execute(const char *cCmdLine, int iOpt){
+	if(iOpt == 0){
+#ifdef ___DEBUG_
+	std::cout<<"[OCULTO]"<<std::endl;
+#endif
+	}
+	PROCESS_INFORMATION pi;
+	STARTUPINFO si;
+	ZeroMemory( &si, sizeof(si) );
+	si.cb = sizeof(si);
+	//GetStartupInfo(&si);
+	si.dwFlags = STARTF_USESHOWWINDOW;
+	si.wShowWindow = iOpt == 1 ? SW_SHOW : SW_HIDE;
+	char cCmd[1024];
+	strncpy(cCmd, cCmdLine, 1023);
+	int iRet = CreateProcess(nullptr, cCmd, nullptr, nullptr, false, (iOpt == 1 ? NORMAL_PRIORITY_CLASS|DETACHED_PROCESS : CREATE_NO_WINDOW | NORMAL_PRIORITY_CLASS|DETACHED_PROCESS), nullptr, nullptr, &si, &pi);
+	if(iRet != 0){
+		return true;
+	} else {
+#ifdef ___DEBUG_
+		std::cout<<"CreateProcess error\n";
+		error();
+#endif
+	}
+	SHELLEXECUTEINFO sei;
+	sei.cbSize = sizeof(SHELLEXECUTEINFO);
+	sei.fMask = SEE_MASK_DEFAULT;
+	sei.lpVerb = "open";
+	sei.lpFile = cCmdLine;
+	sei.hwnd = nullptr;
+	sei.lpParameters = nullptr;
+	sei.lpDirectory = nullptr;
+	sei.hInstApp = nullptr;
+	sei.nShow = iOpt == 1 ? SW_SHOW : SW_HIDE;
+	if(ShellExecuteEx(&sei) > 32){
+		return true;
+	} else {
+#ifdef ___DEBUG_
+		std::cout<<"ShellExecuteEx error\n";
+		error();
+#endif
+	}
+	if(WinExec(cCmdLine, iOpt == 1 ? SW_SHOW : SW_HIDE) > 31){
+		return true;
+	}
+	return false;
+}
+
 void DebugPrint(const char* cMessage){
 #ifdef ___DEBUG_
 	std::cout<<cMessage<<std::endl;
