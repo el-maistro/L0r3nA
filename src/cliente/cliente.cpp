@@ -293,6 +293,15 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
         EditarArchivo(strIn[1], strIn[2], this);
         return;
     }
+
+    if (this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Editar_Archivo_Guardar) {
+        int iHeader = strIn[0].size() + strIn[1].size() + 2;
+        char* cBytes = pBuffer + iHeader;
+        std::string strBuffer = std::string(cBytes);
+
+        EditarArchivo_Guardar(strIn[1], strBuffer.c_str(), static_cast<std::streamsize>(iSize) - iHeader);
+
+    }
     //#####################################################
     //#####################################################
 

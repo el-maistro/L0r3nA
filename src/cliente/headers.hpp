@@ -4,9 +4,10 @@
 #include<ws2tcpip.h>
 #include<windows.h>
 #include<lmcons.h>
-#include <intrin.h>
+#include<intrin.h>
 #include<iostream>
 #include<mutex>
+#include<iomanip>
 #include<atomic>
 #include<memory>
 #include<map>
@@ -24,7 +25,6 @@
 #include<shlobj.h>
 
 
-#include <iomanip>
 
 #include "aes256/aes256.hpp"
 
@@ -67,7 +67,8 @@ namespace EnumComandos {
         FM_Descargar_Archivo_End, //Ya se envio todo, cerrar archivo
         FM_Ejecutar_Archivo,
         FM_Editar_Archivo,
-        FM_Editar_Archivo_Paquete
+        FM_Editar_Archivo_Paquete,
+        FM_Editar_Archivo_Guardar
     };
 }
 

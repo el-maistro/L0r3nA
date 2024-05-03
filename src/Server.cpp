@@ -188,6 +188,7 @@ void Cliente_Handler::Spawn_Handler(){
             wxEditForm* temp_edit_form = (wxEditForm*)wxWindow::FindWindowByName(vcDatos[1], this->n_Frame);
             if (temp_edit_form) {
                 temp_edit_form->p_txtEditor->AppendText(wxString(cBytes));
+                temp_edit_form->p_txtEditor->SetInsertionPoint(0);
 ;            }else {
                 this->Log("No se pudo encontrar la ventana con id " + vcDatos[1]);
             }

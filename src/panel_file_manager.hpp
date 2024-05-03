@@ -48,6 +48,7 @@ class ListCtrlManager : public wxListCtrl {
 		void OnContextMenu(wxContextMenuEvent& event);
 
 		std::string ArchivoSeleccionado();
+		std::string CarpetaActual();
 
 		//Eventos acciones menu contextual
 		void OnCrearFolder(wxCommandEvent& event);

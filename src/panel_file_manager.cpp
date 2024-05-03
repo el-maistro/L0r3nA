@@ -176,7 +176,7 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 			this->EnviarComando(strComando);
 			break;
 		case EnumIDS::ID_Panel_FM_Subir:
-			wxFileDialog dialog(this, "Seleccionar archivo a enviar", wxEmptyString, wxEmptyString, wxFileSelectorDefaultWildcardStr);
+			wxFileDialog dialog(this, "Seleccionar archivo a enviar", wxEmptyString, wxEmptyString, wxFileSelectorDefaultWildcardStr, wxFD_OPEN | wxFD_FILE_MUST_EXIST);
 			if (dialog.ShowModal() == wxID_OK) {
 				//dialog.GetPath() ruta al archivo seleccionado
 				int iTempID = atoi(this->strID.substr(this->strID.size() - 3, 3).c_str());
@@ -296,7 +296,7 @@ void ListCtrlManager::OnCrearFolder(wxCommandEvent& event) {
 	if (dialog.ShowModal() == wxID_OK){
 		std::string strComando = std::to_string(EnumComandos::FM_Crear_Folder);
 		strComando.append(1, '~');
-		strComando += this->itemp->p_RutaActual->GetLabelText();
+		strComando += this->CarpetaActual();
 		strComando += dialog.GetValue();
 		this->itemp->EnviarComando(strComando);
 	}
@@ -307,7 +307,7 @@ void ListCtrlManager::OnCrearArchivo(wxCommandEvent& event) {
 	if (dialog.ShowModal() == wxID_OK) {
 		std::string strComando = std::to_string(EnumComandos::FM_Crear_Archivo);
 		strComando.append(1, '~');
-		strComando += this->itemp->p_RutaActual->GetLabelText();
+		strComando += this->CarpetaActual();
 		strComando += dialog.GetValue();
 		this->itemp->EnviarComando(strComando);
 	}
@@ -317,12 +317,12 @@ void ListCtrlManager::OnBorrarArchivo(wxCommandEvent& event) {
 	long item = this->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
 	wxString strFile = this->GetItemText(item, 1);
 	//wxDialog dialog(this, 10000, "Borrar arhivo", wxDefaultPosition, wxDefaultSize, wxYES_NO, "Seguro que quieres borrar el archivo: " + strFile);
-	wxMessageDialog dialog(this, "Seguro que quieres borrar el archivo: ", strFile, wxCENTER | wxNO_DEFAULT | wxYES_NO | wxICON_QUESTION);
+	wxMessageDialog dialog(this, "Seguro que quieres borrar el archivo: " + strFile + "?", "Borrar archivo", wxCENTER | wxNO_DEFAULT | wxYES_NO | wxICON_QUESTION);
 	if (dialog.ShowModal() == wxID_YES) {
 		//Borrar archivo
 		std::string strComando = std::to_string(EnumComandos::FM_Borrar_Archivo);
 		strComando.append(1, '~');
-		strComando += this->itemp->p_RutaActual->GetLabelText();
+		strComando += this->CarpetaActual();
 		strComando += strFile;
 		this->itemp->EnviarComando(strComando);
 	}
@@ -343,8 +343,14 @@ void ListCtrlManager::OnDescargarArchivo(wxCommandEvent& event) {
 	strNombre.append(1, '-');
 	strNombre += this->GetItemText(item, 1);
 	
+	wxFileDialog dialog(this, "Guardar archivo", wxEmptyString, strNombre, wxFileSelectorDefaultWildcardStr, wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+
+	if (dialog.ShowModal() != wxID_OK) {
+		return;
+	}
+
 	struct Archivo_Descarga2 nuevo_archivo;
-	nuevo_archivo.iFP = fopen(strNombre.c_str(), "wb");
+	nuevo_archivo.iFP = fopen(dialog.GetPath().c_str(), "wb");
 	nuevo_archivo.uTamarchivo = nuevo_archivo.uDescargado = 0;
 	nuevo_archivo.strNombre = this->GetItemText(item, 1);
 	if (nuevo_archivo.iFP == nullptr) {
@@ -376,7 +382,6 @@ void ListCtrlManager::OnDescargarArchivo(wxCommandEvent& event) {
 void ListCtrlManager::OnEjecutarArchivo_Visible(wxCommandEvent& event) {
 	std::string strComando = std::to_string(EnumComandos::FM_Ejecutar_Archivo);
 	strComando.append(1, '~');
-	strComando += this->itemp->p_RutaActual->GetLabelText();
 	strComando += this->ArchivoSeleccionado();
 	strComando.append(1, '~');
 	strComando.append(1, '1');
@@ -386,7 +391,6 @@ void ListCtrlManager::OnEjecutarArchivo_Visible(wxCommandEvent& event) {
 void ListCtrlManager::OnEjecutarArchivo_Oculto(wxCommandEvent& event) {
 	std::string strComando = std::to_string(EnumComandos::FM_Ejecutar_Archivo);
 	strComando.append(1, '~');
-	strComando += this->itemp->p_RutaActual->GetLabelText();
 	strComando += this->ArchivoSeleccionado();
 	strComando.append(1, '~');
 	strComando.append(1, '0');
@@ -403,9 +407,14 @@ void ListCtrlManager::OnEditarArchivo(wxCommandEvent& event) {
 
 std::string ListCtrlManager::ArchivoSeleccionado() {
 	long item = this->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
-	std::string strFile = this->itemp->p_RutaActual->GetLabelText(); 
+	std::string strFile = this->CarpetaActual();
 	strFile += this->GetItemText(item, 1);
 	return strFile;
+}
+
+std::string ListCtrlManager::CarpetaActual() {
+	std::string strCarpeta = this->itemp->p_RutaActual->GetLabelText();
+	return strCarpeta;
 }
 
 void ListCtrlManager::OnActivated(wxListEvent& event) {
