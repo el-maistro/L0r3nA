@@ -68,10 +68,12 @@ namespace EnumComandos {
         FM_Ejecutar_Archivo,
         FM_Editar_Archivo,
         FM_Editar_Archivo_Paquete,
-        FM_Editar_Archivo_Guardar
+        FM_Editar_Archivo_Guardar,
+        FM_Crypt_Archivo
     };
 }
 
 
  
 #endif
+

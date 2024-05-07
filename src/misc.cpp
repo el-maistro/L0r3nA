@@ -12,23 +12,6 @@ void printHex(const char* data, int length) {
 	std::cout << std::dec << std::endl; // Restablece la base decimal
 }
 
-std::string RandomTestLen() {
-	const char* Map = "abcdefghijklmnopqrstuvwxyz1234567890-@";
-	std::string strSalida = "";
-
-	std::random_device rd;
-	std::mt19937 gen(rd());
-
-	std::uniform_int_distribution<> dis(0, 37);
-	std::uniform_int_distribution<> dis2(10, 40);
-
-	for (int i = 0; i < dis2(gen); i++) {
-		int random_number = dis(gen);
-		strSalida += Map[random_number];
-	}
-	return strSalida;
-}
-
 std::string RandomID(int iLongitud){
     const char *Map = "abcdefghijklmnopqrstuvwxyz1234567890_";
     std::string strSalida = "";
@@ -43,6 +26,22 @@ std::string RandomID(int iLongitud){
         strSalida += Map[random_number];
     }
     return strSalida;
+}
+
+std::string RandomPass(int iLongitud) {
+	const char* Map = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ{'[]'}/<>-!@$%^&*(.:;)abcdefghijklmnñopqrstuvwxyz1234567890_";
+	std::string strSalida = "";
+
+	std::random_device rd;
+	std::mt19937 gen(rd());
+
+	std::uniform_int_distribution<> dis(0, 86);
+
+	for (int i = 0; i < iLongitud; i++) {
+		int random_number = dis(gen);
+		strSalida += Map[random_number];
+	}
+	return strSalida;
 }
 
 std::vector<std::string> strSplit(const std::string& strString, char cDelimiter, int iMax) {

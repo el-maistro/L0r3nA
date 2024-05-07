@@ -48,8 +48,8 @@ class Cliente {
 			{"520", EnumComandos::FM_Descargar_Archivo_End},
 			{"521", EnumComandos::FM_Ejecutar_Archivo},
 			{"522", EnumComandos::FM_Editar_Archivo},
-			{"524", EnumComandos::FM_Editar_Archivo_Guardar}
-
+			{"524", EnumComandos::FM_Editar_Archivo_Guardar},
+			{"525", EnumComandos::FM_Crypt_Archivo}
 		};
 
 		Cliente();

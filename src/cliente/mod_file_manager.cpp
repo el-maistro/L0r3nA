@@ -323,3 +323,11 @@ void EditarArchivo(const std::string strPath, const std::string strID, Cliente* 
 		cBufferArchivo = nullptr;
 	}
 }
+
+void Crypt_Archivo(std::string strPath, const char cOption, std::string strPass) {
+	if (cOption == '0') {
+		//Cifrar
+	}else if (cOption == '1') {
+		//Descifrar
+	}
+}

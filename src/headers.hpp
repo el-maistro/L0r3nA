@@ -7,6 +7,8 @@
 #include<wx/tglbtn.h >
 #include<wx/toolbar.h>
 #include<wx/treectrl.h>
+#include<wx/stattext.h>
+#include<wx/radiobox.h>
 #include<wx/sizer.h>
 #include<wx/wxhtml.h>
 #include<wx/aui/aui.h>
@@ -77,7 +79,11 @@ namespace EnumIDS {
         ID_Panel_Transferencias,
         ID_Panel_Transferencias_List,
         ID_Toggle,
-        ID_Mostrar_Transfers
+        ID_Mostrar_Transfers,
+        ID_FM_Radio_Encriptar,
+        ID_FM_BTN_Random,
+        ID_FM_BTN_Crypt_Exec,
+        ID_FM_Text_Password
     };
 }
 
@@ -122,7 +128,8 @@ namespace EnumComandos {
         FM_Ejecutar_Archivo,
         FM_Editar_Archivo,
         FM_Editar_Archivo_Paquete,
-        FM_Editar_Archivo_Guardar_Remoto
+        FM_Editar_Archivo_Guardar_Remoto,
+        FM_Crypt_Archivo
     };
 }
 

@@ -1,6 +1,7 @@
 ﻿#include "panel_file_manager.hpp"
 #include "frame_client.hpp"
 #include "file_editor.hpp"
+#include "file_encryption.hpp"
 #include "server.hpp"
 #include "misc.hpp"
 
@@ -19,6 +20,7 @@ wxBEGIN_EVENT_TABLE(ListCtrlManager, wxListCtrl)
 	EVT_MENU(EnumMenuFM::ID_Exec_Visible, ListCtrlManager::OnEjecutarArchivo_Visible)
 	EVT_MENU(EnumMenuFM::ID_Exec_Oculto, ListCtrlManager::OnEjecutarArchivo_Oculto)
 	EVT_MENU(EnumMenuFM::ID_Descargar, ListCtrlManager::OnDescargarArchivo)
+	EVT_MENU(EnumMenuFM::ID_Crypt, ListCtrlManager::OnEncriptarArchivo)
 	EVT_CONTEXT_MENU(ListCtrlManager::OnContextMenu)
 	EVT_LIST_ITEM_ACTIVATED(EnumIDS::ID_Panel_FM_List, ListCtrlManager::OnActivated)
 wxEND_EVENT_TABLE()
@@ -403,6 +405,11 @@ void ListCtrlManager::OnEditarArchivo(wxCommandEvent& event) {
 	editor_txt->Show(true);
 }
 
+void ListCtrlManager::OnEncriptarArchivo(wxCommandEvent& event) {
+	frameEncryption* frm_crypt = new frameEncryption(this, this->ArchivoSeleccionado());
+	frm_crypt->Show(true);
+}
+
 //#####################################################
 
 std::string ListCtrlManager::ArchivoSeleccionado() {
@@ -497,9 +504,9 @@ void ListCtrlManager::ShowContextMenu(const wxPoint& pos, bool isFolder) {
 		exec_Menu->Append(EnumMenuFM::ID_Exec_Visible, "Normal");
 		exec_Menu->Append(EnumMenuFM::ID_Exec_Oculto, "Oculto");
 
-		wxMenu* crypt_Menu = new wxMenu;
-		crypt_Menu->Append(EnumMenuFM::ID_Crypt, "Encriptar");
-		crypt_Menu->Append(EnumMenuFM::ID_Decrypt, "Desencriptar");
+		//wxMenu* crypt_Menu = new wxMenu;
+		//crypt_Menu->Append(EnumMenuFM::ID_Crypt, "Encriptar");
+		//crypt_Menu->Append(EnumMenuFM::ID_Decrypt, "Desencriptar");
 
 		wxMenu* new_menu = new wxMenu;
 		new_menu->Append(EnumMenuFM::ID_New_Folder, "Folder/Carpeta");
@@ -510,7 +517,8 @@ void ListCtrlManager::ShowContextMenu(const wxPoint& pos, bool isFolder) {
 		menu.Append(EnumMenuFM::ID_Descargar, "Descargar");
 		menu.Append(EnumMenuFM::ID_Editar, "Editar");
 		menu.AppendSeparator();
-		menu.AppendSubMenu(crypt_Menu, "Crypt");
+		//menu.AppendSubMenu(crypt_Menu, "Crypt");
+		menu.Append(EnumMenuFM::ID_Crypt, "Crypt");
 		menu.Append(EnumMenuFM::ID_Eliminar, "Eliminar");
 
 		PopupMenu(&menu, pos.x, pos.y);

@@ -252,22 +252,22 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
     }
 
     //crear folder
-    if (this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Crear_Folder) {
+    if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Crear_Folder) {
         CrearFolder(strIn[1].c_str());
         return;
     }
 
-    if (this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Crear_Archivo) {
+    if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Crear_Archivo) {
         CrearArchivo(strIn[1].c_str());
         return;
     }
 
-    if (this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Borrar_Archivo) {
+    if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Borrar_Archivo) {
         BorrarArchivo(strIn[1].c_str());
         return;
     }
 
-    if (this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Descargar_Archivo) {
+    if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Descargar_Archivo) {
         std::string param1 = strIn[1];
         std::string param2 = strIn[2];
         //auto ptr = std::shared_ptr<Cliente>(this);
@@ -294,13 +294,17 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
         return;
     }
 
-    if (this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Editar_Archivo_Guardar) {
+    if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Editar_Archivo_Guardar) {
         int iHeader = strIn[0].size() + strIn[1].size() + 2;
         char* cBytes = pBuffer + iHeader;
         std::string strBuffer = std::string(cBytes);
 
         EditarArchivo_Guardar(strIn[1], strBuffer.c_str(), static_cast<std::streamsize>(iSize) - iHeader);
 
+    }
+
+    if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Crypt_Archivo) {
+        Crypt_Archivo(strIn[2], strIn[1][0], strIn[3]);
     }
     //#####################################################
     //#####################################################
