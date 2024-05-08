@@ -11,17 +11,20 @@ frameEncryption::frameEncryption(wxWindow* pParent, std::string strPath) :
 	wxFrame(pParent, wxID_ANY, "Encriptar/Desencriptar Archivo", wxDefaultPosition, wxDefaultSize, wxDD_DEFAULT_STYLE) {
 	this->p_strPath = strPath;
 	
-	wxArrayString* selection = new wxArrayString;
-	selection->Add("Encriptar");
-	selection->Add("Desencriptar");
+	wxArrayString selection;
+	selection.Insert("Encriptar", 0);
+	selection.Insert("Desencriptar", 1);
+	//selection->Add("Encriptar");
+	//selection->Add("Desencriptar");
 
 	this->rdio_Options = new wxRadioBox(this, EnumIDS::ID_FM_Radio_Encriptar, wxEmptyString, wxDefaultPosition,
-		wxDefaultSize, *selection, 0, wxRA_SPECIFY_COLS);
+		wxDefaultSize, selection, 0, wxRA_SPECIFY_COLS);
 
 	wxStaticText* lbl_File = new wxStaticText(this, wxID_ANY, "Archivo: " + this->p_strPath);
 	wxStaticText* lbl_Pass = new wxStaticText(this, wxID_ANY, "Contraseña");
 	wxButton* btn_Random_Pass = new wxButton(this, EnumIDS::ID_FM_BTN_Random, "Generar contraseña");
 	wxButton* btn_Exec = new wxButton(this, EnumIDS::ID_FM_BTN_Crypt_Exec, ">>>");
+	this->chk_del = new wxCheckBox(this, EnumIDS::ID_FM_Del_Check_Crypt, "Eliminar una vez sea cifrado/descifrado");
 
 	this->txt_Pass = new wxTextCtrl(this, EnumIDS::ID_FM_Text_Password);
 
@@ -29,9 +32,14 @@ frameEncryption::frameEncryption(wxWindow* pParent, std::string strPath) :
 	
 	sizer->Add(lbl_File, 0, wxEXPAND, 1);
 	sizer->Add(this->rdio_Options, 0, wxEXPAND, 1);
+	sizer->AddSpacer(10);
+	sizer->Add(this->chk_del, 0, wxEXPAND, 1);
+	sizer->AddSpacer(10);
 	sizer->Add(lbl_Pass, 0, wxEXPAND, 1);
 	sizer->Add(this->txt_Pass, 0, wxEXPAND, 1);
+	sizer->AddSpacer(10);
 	sizer->Add(btn_Random_Pass, 0, wxEXPAND, 1);
+	sizer->AddSpacer(20);
 	sizer->Add(btn_Exec, 0, wxEXPAND, 1);
 
 	this->SetSizerAndFit(sizer);
@@ -48,6 +56,7 @@ void frameEncryption::OnExecCrypt(wxCommandEvent& event) {
 	std::string strComando = std::to_string(EnumComandos::FM_Crypt_Archivo);
 	strComando.append(1, '~');
 	strComando += (this->rdio_Options->GetSelection() == 0) ? "0" : "1";
+	strComando += this->chk_del->IsChecked() ? "1" : "0";
 	strComando.append(1, '~');
 	strComando += this->p_strPath;
 	strComando.append(1, '~');

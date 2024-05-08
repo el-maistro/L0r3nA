@@ -324,10 +324,64 @@ void EditarArchivo(const std::string strPath, const std::string strID, Cliente* 
 	}
 }
 
-void Crypt_Archivo(std::string strPath, const char cOption, std::string strPass) {
-	if (cOption == '0') {
+void Crypt_Archivo(std::string strPath, const char cCryptOption, const char cDelOption, std::string strPass) {
+	ByteArray bKey;
+	ByteArray bOutput;
+	ByteArray::size_type out_len;
+	for (auto cChar : strPass) {
+		bKey.push_back(cChar);
+	}
+
+	//Read file buffer
+	u64 uFileSize = GetFileSize(strPath.c_str());
+
+	std::ifstream archivo(strPath, std::ios::binary);
+	if (!archivo.is_open()) {
+#ifdef ___DEBUG_
+		error();
+		std::cout << "Error abriendo el archivo " << strPath << std::endl;
+#endif
+		return;
+	}
+
+	char* cBuffer = new char[uFileSize];
+	archivo.read(cBuffer, uFileSize);
+
+	if (cCryptOption == '0') {
 		//Cifrar
-	}else if (cOption == '1') {
+		out_len = Aes256::encrypt(bKey, reinterpret_cast<unsigned const char*>(cBuffer), uFileSize, bOutput);
+	}else if (cCryptOption == '1') {
 		//Descifrar
+		out_len = Aes256::decrypt(bKey, reinterpret_cast<unsigned char*>(cBuffer), uFileSize, bOutput);
+	}
+
+#ifdef ___DEBUG_
+	std::cout << "[CRYPT] Out: " << out_len << std::endl;
+#endif
+
+	archivo.close();
+
+	std::string strOut = (cCryptOption == '0') ? strPath + ".l0r3" : strPath.substr(0, strPath.size() - 5);
+
+	std::ofstream archivo_out(strOut, std::ios::binary);
+
+	if (archivo_out.is_open()) {
+		//archivo_out.write(cBuffer, out_len);
+		archivo_out.write(reinterpret_cast<const char*>(bOutput.data()), out_len);
+		archivo_out.close();
+	}else {
+#ifdef ___DEBUG_
+		error();
+		std::cout << "Error abriendo el archivo " << strOut << std::endl;
+#endif
+	}
+
+	if (cBuffer) {
+		delete[] cBuffer;
+		cBuffer = nullptr;
+	}
+
+	if (cDelOption == '1') {
+		BorrarArchivo(strPath.c_str());
 	}
 }

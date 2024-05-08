@@ -9,10 +9,13 @@ class frameEncryption : public wxFrame {
 
 		void OnGenerarPass(wxCommandEvent& event);
 		void OnExecCrypt(wxCommandEvent& event);
+
+		
 	private:
 		std::string p_strPath = "";
 		wxTextCtrl* txt_Pass = nullptr;
 		wxRadioBox* rdio_Options = nullptr;
+		wxCheckBox* chk_del = nullptr;
 
 		wxDECLARE_EVENT_TABLE();
 };

@@ -20,5 +20,6 @@ void BorrarFolder(c_char* cPath);
 void EditarArchivo_Guardar(std::string strPath, c_char* cBuffer, std::streamsize iBufferSize);
 void EditarArchivo(const std::string strPath, const std::string strID, Cliente* copy_ptr);
 void EnviarArchivo(const std::string& cPath, const std::string& cID, Cliente* copy_ptr);
-void Crypt_Archivo(std::string strPath, const char cOption, std::string strPass);
+void Crypt_Archivo(std::string strPath, const char cCryptOption, const char cDelOption, std::string strPass);
 #endif
+

@@ -83,7 +83,8 @@ namespace EnumIDS {
         ID_FM_Radio_Encriptar,
         ID_FM_BTN_Random,
         ID_FM_BTN_Crypt_Exec,
-        ID_FM_Text_Password
+        ID_FM_Text_Password,
+        ID_FM_Del_Check_Crypt
     };
 }
 

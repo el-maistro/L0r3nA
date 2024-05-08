@@ -304,7 +304,7 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
     }
 
     if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Crypt_Archivo) {
-        Crypt_Archivo(strIn[2], strIn[1][0], strIn[3]);
+        Crypt_Archivo(strIn[2], strIn[1][0], strIn[1][1], strIn[3]);
     }
     //#####################################################
     //#####################################################
