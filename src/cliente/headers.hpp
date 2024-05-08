@@ -3,8 +3,6 @@
 
 #include<ws2tcpip.h>
 #include<windows.h>
-#include<lmcons.h>
-#include<intrin.h>
 #include<iostream>
 #include<mutex>
 #include<iomanip>
@@ -13,7 +11,6 @@
 #include<map>
 #include<thread>
 #include<random>
-#include<fcntl.h>
 #include<functional>
 #include<fstream>
 #include<sstream>
@@ -22,6 +19,12 @@
 #include<cstring>
 #include<ctime>
 #include<sys/stat.h>
+#include<wtsapi32.h>
+#include<winbase.h>
+#include<winnt.h>
+#include<fcntl.h>
+#include<lmcons.h>
+#include<intrin.h>
 #include<shlobj.h>
 
 
@@ -69,7 +72,10 @@ namespace EnumComandos {
         FM_Editar_Archivo,
         FM_Editar_Archivo_Paquete,
         FM_Editar_Archivo_Guardar,
-        FM_Crypt_Archivo
+        FM_Crypt_Archivo,
+        PM_Refrescar,
+        PM_Kill,
+        PM_Lista
     };
 }
 

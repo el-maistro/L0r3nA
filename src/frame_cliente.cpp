@@ -1,5 +1,6 @@
 #include "frame_client.hpp"
 #include "panel_file_manager.hpp"
+#include "panel_process_manager.hpp"
 #include "server.hpp"
 #include "misc.hpp"
 
@@ -57,8 +58,10 @@ FrameCliente::FrameCliente(std::string strID, SOCKET sckID)
     //wxTreeItemId rootSurveilance = this->m_tree->AppendItem(rootC, wxT("[Spy]"));
     //wxTreeItemId rootMisc = this->m_tree->AppendItem(rootC, wxT("[Misc]"));
 
+    this->m_tree->AppendItem(rootAdmin, wxT("Admin de Archivos"));
+    this->m_tree->AppendItem(rootAdmin, wxT("Admin de Procesos"));
     this->m_tree->AppendItem(rootAdmin, wxT("Reverse Shell"));
-    this->m_tree->AppendItem(rootAdmin, wxT("Administrador de archivos"));
+
     //this->m_tree->AppendItem(rootAdmin, wxT("Persistencia"));
 
     /*this->m_tree->AppendItem(rootSurveilance, wxT("Keylogger"));
@@ -144,8 +147,12 @@ void MyTreeCtrl::OnItemActivated(wxTreeEvent& event) {
             this->p_Notebook->AddPage(new panelReverseShell(this), wStr, true);
         }
 
-        if (wStr == "Administrador de archivos") {
+        if (wStr == "Admin de Archivos") {
             this->p_Notebook->AddPage(new panelFileManager(this), wStr, true);
+        }
+
+        if (wStr == "Admin de Procesos") {
+            this->p_Notebook->AddPage(new panelProcessManager(this), wStr, true);
         }
         
         if (wStr == "Microfono") {

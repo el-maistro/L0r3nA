@@ -27,6 +27,7 @@ set(SRCS main.cpp
          panel_file_manager.cpp
          file_editor.cpp
          file_encryption.cpp
+         panel_process_manager.cpp
          aes256/aes256.cpp)
 
 add_executable(main WIN32 ${SRCS})

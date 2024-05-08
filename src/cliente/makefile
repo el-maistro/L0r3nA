@@ -1,5 +1,5 @@
 LINK2=-lws2_32 -lwinmm -Wl,-Bstatic -s -w -ffunction-sections -fdata-sections -Wno-write-strings -fno-exceptions -fmerge-all-constants -static-libgcc -Wl,-Bstatic
-LINK=-lws2_32 -lwinmm
+LINK=-lws2_32 -lwinmm -lwtsapi32
 CFLAG=-Wall -Wextra -std=c++11 -pedantic -g
 OBJ=main.o misc.o cliente.o mod_mic.o mod_file_manager.o
 BIN=cliente.exe

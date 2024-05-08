@@ -211,6 +211,12 @@ void Cliente_Handler::Spawn_Handler(){
             }
             continue;
         }
+
+        //Lista de procesos
+        if (vcDatos[0] == std::to_string(EnumComandos::PM_Lista)) {
+            std::cout << vcDatos[1] << std::endl;
+            continue;
+        }
     }
     this->Log("Funado");
 }

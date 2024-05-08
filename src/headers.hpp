@@ -84,7 +84,10 @@ namespace EnumIDS {
         ID_FM_BTN_Random,
         ID_FM_BTN_Crypt_Exec,
         ID_FM_Text_Password,
-        ID_FM_Del_Check_Crypt
+        ID_FM_Del_Check_Crypt,
+        ID_PM_Panel,
+        ID_PM_Refrescar,
+        ID_PM_Kill
     };
 }
 
@@ -130,7 +133,10 @@ namespace EnumComandos {
         FM_Editar_Archivo,
         FM_Editar_Archivo_Paquete,
         FM_Editar_Archivo_Guardar_Remoto,
-        FM_Crypt_Archivo
+        FM_Crypt_Archivo,
+        PM_Refrescar,
+        PM_Kill,
+        PM_Lista
     };
 }
 

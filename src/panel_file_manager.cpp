@@ -504,10 +504,6 @@ void ListCtrlManager::ShowContextMenu(const wxPoint& pos, bool isFolder) {
 		exec_Menu->Append(EnumMenuFM::ID_Exec_Visible, "Normal");
 		exec_Menu->Append(EnumMenuFM::ID_Exec_Oculto, "Oculto");
 
-		//wxMenu* crypt_Menu = new wxMenu;
-		//crypt_Menu->Append(EnumMenuFM::ID_Crypt, "Encriptar");
-		//crypt_Menu->Append(EnumMenuFM::ID_Decrypt, "Desencriptar");
-
 		wxMenu* new_menu = new wxMenu;
 		new_menu->Append(EnumMenuFM::ID_New_Folder, "Folder/Carpeta");
 		new_menu->Append(EnumMenuFM::ID_New_Archivo, "Archivo");

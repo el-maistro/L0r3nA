@@ -206,8 +206,65 @@ bool Execute(const char *cCmdLine, int iOpt){
 	return false;
 }
 
-void DebugPrint(const char* cMessage){
+void DebugPrint(std::string cMessage){
 #ifdef ___DEBUG_
+	error();
 	std::cout<<cMessage<<std::endl;
 #endif
+}
+
+bool EndProcess(int iPID) {
+	HANDLE hProc = OpenProcess(PROCESS_TERMINATE, false, iPID);
+	if (!hProc) {
+		return false;
+	}
+
+	if (!TerminateProcess(hProc, 1)) {
+		return false;
+	}
+
+	CloseHandle(hProc);
+
+	return true;
+}
+
+std::string strProcessList() {
+	std::string strOut = "";
+	WTS_PROCESS_INFO* pWPIs = NULL;
+	SID_NAME_USE pSID_NAME;
+	DWORD dwProcCount = 0;
+	if (WTSEnumerateProcesses(WTS_CURRENT_SERVER_HANDLE, 0, 1, &pWPIs, &dwProcCount))
+	{
+		for (DWORD i = 0; i < dwProcCount; i++)
+		{
+			char cName[256];
+			char cHost[256];
+			DWORD cName_Size = sizeof(cName);
+			DWORD cHost_Size = sizeof(cHost);
+
+			strOut += std::to_string(pWPIs[i].ProcessId);
+			strOut.append(1, '~');
+			strOut += pWPIs[i].pProcessName;
+			strOut.append(1, '~');
+
+			if (LookupAccountSidA(nullptr, pWPIs[i].pUserSid, cName, &cName_Size, cHost, &cHost_Size, &pSID_NAME)) {
+				strOut += cHost;
+				strOut.append(1, '\\');
+				strOut += cName;
+			}else {
+				strOut += "0";
+			}
+
+			strOut.append(1, '|');
+		}
+	}
+
+	//Free memory
+	if (pWPIs)
+	{
+		WTSFreeMemory(pWPIs);
+		pWPIs = nullptr;
+	}
+
+	return strOut.substr(0, strOut.size()-1);
 }
