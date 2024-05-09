@@ -249,7 +249,7 @@ std::string strProcessList() {
 
 			if (LookupAccountSidA(nullptr, pWPIs[i].pUserSid, cName, &cName_Size, cHost, &cHost_Size, &pSID_NAME)) {
 				strOut += cHost;
-				strOut.append(1, '\\');
+				strOut.append(1, '/');
 				strOut += cName;
 			}else {
 				strOut += "0";

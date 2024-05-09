@@ -10,6 +10,8 @@ class ListCtrlManager2 : public wxListCtrl {
 			: wxListCtrl(parent, id, pos, size, style) {}
 
 		SOCKET sckCliente = INVALID_SOCKET;
+
+		void AgregarData(std::string strBuffer, std::string _strPID);
 	private:
 
 		void OnRefrescar(wxCommandEvent& event);
@@ -30,10 +32,11 @@ class panelProcessManager : public wxPanel {
 
 		void CrearListview();
 
+		ListCtrlManager2* listManager = nullptr;
 		SOCKET sckCliente = INVALID_SOCKET;
 
 	private:
-		ListCtrlManager2* listManager = nullptr;
+		
 };
 
 #endif

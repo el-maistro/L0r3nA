@@ -5,10 +5,11 @@
 class MyTreeCtrl : public wxTreeCtrl {
 public:
     //Eventos
-    void OnItemActivated(wxTreeEvent& event);
     MyTreeCtrl(wxWindow* parent, const wxWindowID id,
         const wxPoint& pos, const wxSize& size) : wxTreeCtrl(parent, id, pos, size) {};
     virtual ~MyTreeCtrl() {}
+
+    void OnItemActivated(wxTreeEvent& event);
 
     //void CrearNotebook();
     wxAuiNotebook* p_Notebook;
@@ -40,9 +41,6 @@ class FrameCliente : public wxFrame {
         wxDECLARE_EVENT_TABLE();
 
 };
-
-
-//classes para cada modulo reverse shell/admin archivos etc...
 
 class panelTest : public wxPanel {
     public:

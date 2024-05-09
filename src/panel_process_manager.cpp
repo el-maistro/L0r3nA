@@ -1,5 +1,6 @@
 #include "panel_process_manager.hpp"
 #include "frame_client.hpp"
+#include "misc.hpp"
 #include "server.hpp"
 
 extern Servidor* p_Servidor;
@@ -50,6 +51,7 @@ void panelProcessManager::CrearListview() {
 }
 
 void ListCtrlManager2::OnRefrescar(wxCommandEvent& event) {
+	this->DeleteAllItems();
 	std::string strComando = std::to_string(EnumComandos::PM_Refrescar);
 	strComando.append(1, '~');
 	p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
@@ -63,6 +65,24 @@ void ListCtrlManager2::OnTerminarPID(wxCommandEvent& event) {
 	strComando += this->GetItemText(item, 0);
 	p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
 	return;
+}
+
+void ListCtrlManager2::AgregarData(std::string strBuffer, std::string _strPID){
+	// PID ~ pNAME ~ HOST/USER |
+	std::vector<std::string> vc_Proc = strSplit(strBuffer, '|', 1000);
+	int iCount = 0;
+	for (auto aProceso : vc_Proc) {
+		std::vector<std::string> vc_Detail = strSplit(aProceso, '~', 3);
+		if (vc_Detail.size() == 3) {
+			this->InsertItem(iCount, vc_Detail[0]);
+			this->SetItem(iCount, 1, vc_Detail[1]);
+			this->SetItem(iCount, 2, vc_Detail[2]);
+			if (vc_Detail[0] == _strPID) { //PID del cliente
+				this->SetItemTextColour(iCount, *wxRED);
+			}
+			iCount++;
+		}
+	}
 }
 
 void ListCtrlManager2::ShowContextMenu(const wxPoint& pos, bool isEmpty) {
