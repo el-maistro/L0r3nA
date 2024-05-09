@@ -29,13 +29,13 @@ std::string RandomID(int iLongitud){
 }
 
 std::string RandomPass(int iLongitud) {
-	const char* Map = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ{'[]'}/<>-!@$%^&*(.:;)abcdefghijklmnñopqrstuvwxyz1234567890_";
+	const char* Map = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ{[]}/<>-!@$%^&*(.:;)abcdefghijklmnñopqrstuvwxyz1234567890_";
 	std::string strSalida = "";
 
 	std::random_device rd;
 	std::mt19937 gen(rd());
 
-	std::uniform_int_distribution<> dis(0, 86);
+	std::uniform_int_distribution<> dis(0, 84);
 
 	for (int i = 0; i < iLongitud; i++) {
 		int random_number = dis(gen);

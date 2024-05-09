@@ -1,4 +1,5 @@
-Mod Process Manager
+CRYPT_MOD
+-Base de datos que registre contraseñas usadas para cifrar archivos
 Mod Keylogger
 Mod Camara
 Mod Live Mic

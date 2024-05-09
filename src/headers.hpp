@@ -12,6 +12,7 @@
 #include<wx/sizer.h>
 #include<wx/wxhtml.h>
 #include<wx/aui/aui.h>
+#include<winsqlite/winsqlite3.h>
 
 #include<ws2tcpip.h>
 #include<windows.h>
@@ -80,6 +81,10 @@ namespace EnumIDS {
         ID_Panel_Transferencias_List,
         ID_Toggle,
         ID_Mostrar_Transfers,
+        ID_Mostrar_CryptDB,
+        ID_CryptDB_Refrescar,
+        ID_CryptDB_Copiar,
+        ID_CryptDB_Eliminar,
         ID_FM_Radio_Encriptar,
         ID_FM_BTN_Random,
         ID_FM_BTN_Crypt_Exec,

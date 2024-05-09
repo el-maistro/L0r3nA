@@ -1,4 +1,5 @@
 #include "frame_client.hpp"
+#include "frame_crypt_db.hpp"
 #include "server.hpp"
 
 //TEST
@@ -27,7 +28,7 @@ class MyFrame : public wxFrame{
     private:
         wxPanel *m_RPanel, *m_LPanel, *m_BPanel;
         wxMenu *menuFile, *menuHelp;
-        wxButton* btn_Transfers;
+        wxButton* btn_Transfers, *btn_CryptDB;
         wxToggleButton* btn_toggle;
         
         wxSize p_BotonS = wxSize(100, 30);
@@ -35,6 +36,7 @@ class MyFrame : public wxFrame{
         //Eventos
         void OnLimpiar(wxCommandEvent& event);
         void OnToggle(wxCommandEvent& event); //Iniciar/detener servidor
+        void OnCryptDB(wxCommandEvent& event);
         void OnMostrarTransferencias(wxCommandEvent& event);
 
         void CrearLista(long flags, bool withText = true);
@@ -49,6 +51,7 @@ class MyFrame : public wxFrame{
 wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
     EVT_BUTTON(EnumIDS::ID_LimpiarLog, MyFrame::OnLimpiar)
     EVT_TOGGLEBUTTON(EnumIDS::ID_Toggle, MyFrame::OnToggle)
+    EVT_BUTTON(EnumIDS::ID_Mostrar_CryptDB, MyFrame::OnCryptDB)
     EVT_BUTTON(EnumIDS::ID_Mostrar_Transfers, MyFrame::OnMostrarTransferencias)
     EVT_CLOSE(MyFrame::OnClose)
 wxEND_EVENT_TABLE()
@@ -170,6 +173,13 @@ void TransferFrame::OnClose(wxCloseEvent& event){
     event.Skip();
 }
 
+void MyFrame::OnCryptDB(wxCommandEvent& event) {
+    //OnCryptDB
+    frameCryptDB* frame_crypt = new frameCryptDB();
+
+    frame_crypt->Show();
+}
+
 void MyFrame::OnMostrarTransferencias(wxCommandEvent& event){
     
     p_Servidor->p_Transferencias = true;
@@ -215,14 +225,21 @@ void MyFrame::OnToggle(wxCommandEvent& event) {
 }
 
 void MyFrame::CrearControlesPanelIzquierdo(){
-    
+    wxSize btn_size;
     this->btn_toggle = new wxToggleButton(this->m_LPanel, EnumIDS::ID_Toggle, "Iniciar Servidor");
-    this->btn_Transfers = new wxButton(this->m_LPanel, EnumIDS::ID_Mostrar_Transfers, "Transferencias");
+
+    btn_size = this->btn_toggle->GetSize();
+
+    this->btn_Transfers = new wxButton(this->m_LPanel, EnumIDS::ID_Mostrar_Transfers, "Transferencias", wxDefaultPosition, btn_size);
+    this->btn_CryptDB = new wxButton(this->m_LPanel, EnumIDS::ID_Mostrar_CryptDB, "Crypt DB", wxDefaultPosition, btn_size);
+    
     wxBoxSizer *m_paneSizer = new wxBoxSizer(wxVERTICAL);
     m_paneSizer->AddSpacer(20);    
     m_paneSizer->Add(this->btn_toggle, 0, wxALIGN_CENTER | wxALL, 3);
-    m_paneSizer->AddSpacer(20);
+    m_paneSizer->AddSpacer(10);
     m_paneSizer->Add(this->btn_Transfers, 0, wxALIGN_CENTER | wxALL, 3);
+    m_paneSizer->AddSpacer(10);
+    m_paneSizer->Add(this->btn_CryptDB, 0, wxALIGN_CENTER | wxALL, 3);
     
     this->m_LPanel->SetSizerAndFit(m_paneSizer);
 

@@ -7,6 +7,7 @@ include(FetchContent)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+
 set(wxBUILD_SHARED OFF)
 
 add_subdirectory(cliente)
@@ -20,6 +21,13 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(wxWidgets)
 
+FetchContent_Declare(
+    sqlite3
+    #GIT_REPOSITORY https://github.com/sqlite/sqlite.git
+)
+FetchContent_MakeAvailable(sqlite3)
+
+
 set(SRCS main.cpp
          misc.cpp
          server.cpp
@@ -28,7 +36,8 @@ set(SRCS main.cpp
          file_editor.cpp
          file_encryption.cpp
          panel_process_manager.cpp
+         frame_crypt_db.cpp
          aes256/aes256.cpp)
 
 add_executable(main WIN32 ${SRCS})
-target_link_libraries(main PRIVATE wxcore wxpng wxnet wxaui wxhtml winmm)
+target_link_libraries(main PRIVATE wxcore wxpng wxnet wxaui wxhtml winmm winsqlite3)
