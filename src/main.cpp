@@ -2,9 +2,6 @@
 #include "frame_crypt_db.hpp"
 #include "server.hpp"
 
-//TEST
-//#include "file_editor.hpp"
-
 #include "headers.hpp"
 
 extern Servidor* p_Servidor;
@@ -71,8 +68,6 @@ bool MyApp::OnInit(){
     this->frame = new MyFrame();
     this->frame->Show(true);
 
-    //wxEditForm* editor = new wxEditForm(nullptr, "TEST");
-    //editor->Show(true);
     return true;
 }
 
