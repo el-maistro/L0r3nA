@@ -24,6 +24,7 @@ class panelFileManager: public wxPanel{
 		wxStaticText* p_RutaActual = nullptr;
 		std::vector<wxString> c_RutaActual;
 		std::string strID = "";  //ID del cliente
+		std::string strIP = "";  //IP del cliente
 		SOCKET sckCliente = INVALID_SOCKET;
 
 	private:

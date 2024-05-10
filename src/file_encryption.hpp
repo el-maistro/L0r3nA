@@ -9,7 +9,7 @@ class frameEncryption : public wxFrame {
 
 		void OnGenerarPass(wxCommandEvent& event);
 		void OnExecCrypt(wxCommandEvent& event);
-
+		void Exec_SQL(const char* cCMD);
 		
 	private:
 		std::string p_strPath = "";

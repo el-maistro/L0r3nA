@@ -37,6 +37,7 @@ panelFileManager::panelFileManager(wxWindow* pParent) :
 			if (frame_cliente) {
 				this->sckCliente = frame_cliente->sckCliente;
 				this->strID = frame_cliente->strClienteID;
+				this->strIP = frame_cliente->strIP;
 			}
 		}
 	}

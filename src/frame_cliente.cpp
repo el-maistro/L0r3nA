@@ -28,7 +28,7 @@ wxBEGIN_EVENT_TABLE(panelMicrophone, wxPanel)
     EVT_BUTTON(EnumIDS::ID_Panel_Mic_BTN_Detener, panelMicrophone::OnDetener)
 wxEND_EVENT_TABLE()
 
-FrameCliente::FrameCliente(std::string strID, SOCKET sckID)
+FrameCliente::FrameCliente(std::string strID, SOCKET sckID, std::string strIP)
     : wxFrame(nullptr, EnumIDS::ID_Panel_Cliente, ":v", wxDefaultPosition, wxDefaultSize, wxDD_DEFAULT_STYLE)
 {
     SetBackgroundColour(wxColour(255, 255, 255, 128)); // Establecer el color de fondo con transparencia
@@ -37,6 +37,7 @@ FrameCliente::FrameCliente(std::string strID, SOCKET sckID)
     this->sckCliente = sckID;
     int npos = strID.find('/', 0);
     this->strClienteID = strID.substr(0, npos);
+    this->strIP = strIP;
 
     wxString strTitle = "[";
     strTitle.append(strID.c_str());

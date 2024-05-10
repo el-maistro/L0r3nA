@@ -20,9 +20,10 @@ private:
 class FrameCliente : public wxFrame {
     public:
         std::string strClienteID = "";
+        std::string strIP = "";
         SOCKET sckCliente = INVALID_SOCKET;
 
-        FrameCliente(std::string pstrID, SOCKET sckID);
+        FrameCliente(std::string pstrID, SOCKET sckID, std::string strIP);
 
         MyTreeCtrl* m_tree;
 

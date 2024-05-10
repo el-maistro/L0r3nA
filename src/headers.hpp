@@ -38,6 +38,7 @@
 #define PING_TIME 5 * 1
 #define AES_KEY_LEN 32
 #define FRAME_CLIENT_SIZE_WIDTH 600
+#define DB_FILE "./crypt_.db"
 
 //FM Modos
 #define FM_EQUIPO    500

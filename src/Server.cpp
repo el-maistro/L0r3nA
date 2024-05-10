@@ -85,7 +85,7 @@ void Cliente_Handler::Spawn_Handler(){
 
         //Termino la shell
         if (vcDatos[0] == std::to_string(EnumComandos::Reverse_Shell_Finish)) { 
-            this->EscribirSalidShell(vcDatos[1]);
+            //this->EscribirSalidShell(vcDatos[1]);
             continue;
         }
 
@@ -240,11 +240,11 @@ void Cliente_Handler::Spawn_Thread() {
     this->p_thHilo = std::thread(&Cliente_Handler::Spawn_Handler, this);
 }
 
+//funcion que crea el frame principal para interactuar con el cliente
 void Cliente_Handler::CrearFrame(std::string strTitle, std::string strID) {
-    this->n_Frame = new FrameCliente(strTitle, this->p_Cliente._sckCliente);
+    this->n_Frame = new FrameCliente(strTitle, this->p_Cliente._sckCliente, this->p_Cliente._strIp);
     this->n_Frame->Show(true);
 }
-
 
 void MyLogClass::LogThis(std::string strInput, int iType){
     time_t temp = time(0);

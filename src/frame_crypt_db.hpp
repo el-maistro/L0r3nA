@@ -45,19 +45,25 @@ class frameCryptDB : public wxFrame {
 					this->iCount++;
 				}
 			}
+			
 			return 0;
 		}
 
 		void ObtenerData() {
+			sqlite3* db;
+			this->iCount = 0;
 			this->p_listctrl->DeleteAllItems();
 			char* zErrMsg = 0;
-			int rc = sqlite3_exec(this->db, "SELECT * FROM keys;", static_callback, this, &zErrMsg);
+			if (sqlite3_open(DB_FILE, &db) == SQLITE_OK) {
+				sqlite3_exec(db, "SELECT * FROM keys;", static_callback, this, &zErrMsg);
+			}
+			sqlite3_free(zErrMsg);
+			sqlite3_close(db);
 		}
-		
-		sqlite3* db;
 
+		void Exec_SQL(const char* cCMD);
+		
 		frameCryptDB();
-		~frameCryptDB();
 	private:
 		int iCount = 0;
 		ListCtrlManager3* p_listctrl = nullptr;

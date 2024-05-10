@@ -61,13 +61,7 @@ void ListCtrlManager3::OnEliminar(wxCommandEvent& event) {
 	char* zErrMsg = 0;
 	frameCryptDB* frame = (frameCryptDB*)this->GetParent();
 
-	if (sqlite3_exec(frame->db, strCMD.c_str(), NULL, 0, &zErrMsg) != SQLITE_OK) {
-		std::cout << "Error borrando el registro" << std::endl;
-		std::cout << strCMD << std::endl;
-		sqlite3_free(zErrMsg);
-		return;
-	}
-	sqlite3_free(zErrMsg);
+	frame->Exec_SQL(strCMD.c_str());
 
 	frame->ObtenerData();
 }
@@ -118,15 +112,7 @@ void ListCtrlManager3::OnContextMenu(wxContextMenuEvent& event) {
 frameCryptDB::frameCryptDB():
 	wxFrame(nullptr, wxID_ANY, "Crypt DB"){
 
-	char* zErrMsg = 0;
 	
-	if (sqlite3_open("./crypt_.db", &this->db) != SQLITE_OK) {
-		std::cout << "[DBCRYPT] No se pudo abrir la bd :" << sqlite3_errmsg(this->db) << std::endl;
-		wxMessageBox("No se pudo abrir la base de datos");
-		sqlite3_close(this->db);
-		return;
-	}
-
 	const char* cQuery = "CREATE TABLE IF NOT EXISTS \"keys\" (\
 			\"id\"	TEXT,\
 			\"ip\"	TEXT,\
@@ -134,12 +120,8 @@ frameCryptDB::frameCryptDB():
 			\"fecha\"	TEXT,\
 			\"pass\"	TEXT\
 			);";
-	if (sqlite3_exec(this->db, cQuery, NULL, 0, &zErrMsg) != SQLITE_OK) {
-		wxMessageBox("Error: " + std::string(zErrMsg));
-		sqlite3_free(zErrMsg);
-		sqlite3_close(this->db);
-		return;
-	}
+	
+	this->Exec_SQL(cQuery);
 
 	this->p_listctrl = new ListCtrlManager3(this, wxID_ANY, wxDefaultPosition, wxSize(600, 400), wxBORDER_THEME | wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES | wxEXPAND);
 	
@@ -167,9 +149,6 @@ frameCryptDB::frameCryptDB():
 	this->p_listctrl->InsertColumn(4, itemCol);
 
 	this->ObtenerData();
-	
-	sqlite3_free(zErrMsg);
-	sqlite3_close(this->db);
 
 	wxBoxSizer* nsizer = new wxBoxSizer(wxHORIZONTAL);
 	nsizer->Add(this->p_listctrl, 1, wxEXPAND, 1);
@@ -177,7 +156,24 @@ frameCryptDB::frameCryptDB():
 	this->SetSizerAndFit(nsizer);
 }
 
-frameCryptDB::~frameCryptDB() {
-	sqlite3_close(this->db);
-	return;
+void frameCryptDB::Exec_SQL(const char* cCMD) {
+	sqlite3* db;
+	char* zErrMsg = 0;
+
+	if (sqlite3_open(DB_FILE, &db) != SQLITE_OK) {
+		std::cout << "[DBCRYPT] No se pudo abrir la bd :" << sqlite3_errmsg(db) << std::endl;
+		wxMessageBox("No se pudo abrir la base de datos");
+		sqlite3_close(db);
+		return;
+	}
+
+	if (sqlite3_exec(db, cCMD, NULL, 0, &zErrMsg) != SQLITE_OK) {
+		wxMessageBox("Error: " + std::string(zErrMsg));
+		sqlite3_free(zErrMsg);
+		sqlite3_close(db);
+		return;
+	}
+
+	sqlite3_free(zErrMsg);
+	sqlite3_close(db);
 }

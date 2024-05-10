@@ -84,7 +84,7 @@ class Cliente_Handler {
         
         struct Cliente p_Cliente;
         bool isRunning = false;
-
+        
         Cliente_Handler(struct Cliente s_cliente) : p_Cliente(s_cliente) {}
 
         void Spawn_Handler();
