@@ -93,7 +93,9 @@ namespace EnumIDS {
         ID_FM_Del_Check_Crypt,
         ID_PM_Panel,
         ID_PM_Refrescar,
-        ID_PM_Kill
+        ID_PM_Kill,
+        ID_KL_Panel,
+        ID_KL_BTN_Toggle
     };
 }
 

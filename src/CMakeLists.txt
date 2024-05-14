@@ -36,6 +36,7 @@ set(SRCS main.cpp
          file_editor.cpp
          file_encryption.cpp
          panel_process_manager.cpp
+         panel_keylogger.cpp
          frame_crypt_db.cpp
          aes256/aes256.cpp)
 
