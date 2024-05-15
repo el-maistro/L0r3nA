@@ -75,7 +75,9 @@ namespace EnumComandos {
         FM_Crypt_Archivo,
         PM_Refrescar,
         PM_Kill,
-        PM_Lista
+        PM_Lista,
+        KL_Iniciar,
+        KL_Detener
     };
 }
 

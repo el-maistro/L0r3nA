@@ -1,3 +1,4 @@
+-Refactor way of how frames, panels and everything send the commands to the client, use the send method from class frame_cliente
 Mod Keylogger
 Mod Camara
 Mod Live Mic

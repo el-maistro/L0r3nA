@@ -224,7 +224,9 @@ void Cliente_Handler::Spawn_Handler(){
     }
     this->Log("Funado");
 
-    this->n_Frame->SetTitle(this->p_Cliente._id + " [DESCONECTADO]");
+    if (this->n_Frame) {
+        this->n_Frame->SetTitle(this->p_Cliente._id + " [DESCONECTADO]");
+    }
 }
 
 void Cliente_Handler::EscribirSalidShell(std::string strSalida) {

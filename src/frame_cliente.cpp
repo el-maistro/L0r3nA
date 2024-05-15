@@ -100,6 +100,10 @@ FrameCliente::FrameCliente(std::string strID, SOCKET sckID, std::string strIP)
 
 }
 
+int FrameCliente::EnviarComando(std::string strComando, bool isBlock) {
+    return p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, isBlock);
+}
+
 void FrameCliente::OnClosePage(wxAuiNotebookEvent& event) {
     int closedPage = event.GetSelection();
     wxString pageTitle = this->m_tree->p_Notebook->GetPageText(closedPage);

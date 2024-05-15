@@ -2,6 +2,7 @@
 #define _FRAME_CLIENTE
 #include "headers.hpp"
 
+//Clase para las funciones a ejecutar con el cliente, admin archivos, procesos, etc...
 class MyTreeCtrl : public wxTreeCtrl {
 public:
     //Eventos
@@ -11,7 +12,6 @@ public:
 
     void OnItemActivated(wxTreeEvent& event);
 
-    //void CrearNotebook();
     wxAuiNotebook* p_Notebook;
 private:
     wxDECLARE_EVENT_TABLE();
@@ -27,7 +27,8 @@ class FrameCliente : public wxFrame {
 
         MyTreeCtrl* m_tree;
 
-        //wxAuiNotebook* p_Notebook;
+        int EnviarComando(std::string strComando, bool isBlock);
+
     private:
         wxButton* btn_Test;
         

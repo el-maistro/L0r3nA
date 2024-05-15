@@ -95,7 +95,10 @@ namespace EnumIDS {
         ID_PM_Refrescar,
         ID_PM_Kill,
         ID_KL_Panel,
-        ID_KL_BTN_Toggle
+        ID_KL_BTN_Toggle,
+        ID_KL_BTN_Save,
+        ID_KL_BTN_Clear,
+        ID_KL_Text_Out
     };
 }
 
@@ -144,7 +147,9 @@ namespace EnumComandos {
         FM_Crypt_Archivo,
         PM_Refrescar,
         PM_Kill,
-        PM_Lista
+        PM_Lista,
+        KL_Iniciar,
+        KL_Detener
     };
 }
 
