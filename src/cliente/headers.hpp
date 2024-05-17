@@ -77,10 +77,10 @@ namespace EnumComandos {
         PM_Kill,
         PM_Lista,
         KL_Iniciar,
-        KL_Detener
+        KL_Detener,
+        KL_Salida
     };
 }
-
 
  
 #endif

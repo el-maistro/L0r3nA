@@ -125,6 +125,7 @@ void FrameCliente::OnClose(wxCloseEvent& event) {
     std::string strComando = std::to_string(EnumComandos::Reverse_Shell_Command);
     strComando += "~exit\r\n";
     p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
+    //setear estado en cliente para evitar error al tratar de cerrar el frame
     event.Skip();
 }
 

