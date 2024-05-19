@@ -232,8 +232,10 @@ void Cliente_Handler::Spawn_Handler(){
     }
     this->Log("Funado");
 
-    if (this->n_Frame) {
-        this->n_Frame->SetTitle(this->p_Cliente._id + " [DESCONECTADO]");
+    //Si la ventana sigue abierta
+    FrameCliente* temp_cli = (FrameCliente*)wxWindow::FindWindowByName(this->p_Cliente._id);
+    if (temp_cli) {
+        temp_cli->SetTitle(this->p_Cliente._id + " [DESCONECTADO]");
     }
 }
 

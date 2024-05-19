@@ -1,6 +1,8 @@
 #include "headers.hpp"
 #include "cliente.hpp"
 
+Cliente* cCliente;
+
 int main() {
 	WSADATA wsa;
 	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
@@ -8,7 +10,7 @@ int main() {
 		return -1;
 	}
 
-	Cliente* cCliente = new Cliente();
+	cCliente = new Cliente();
 	
 	while (cCliente->isRunning) {
 		if (cCliente->bConectar("127.0.0.1", "31000")) {
