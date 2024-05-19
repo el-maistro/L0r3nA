@@ -8,8 +8,8 @@ class panelKeylogger : public wxPanel {
 		panelKeylogger(wxWindow* pParent);
 		wxToggleButton* btn_Iniciar = nullptr;
 		wxTextCtrl* txt_Data = nullptr;
+		SOCKET sckCliente = INVALID_SOCKET;
 
-		void EnviarComando(std::string strComando, bool isBlock);
 	private:
 
 		void OnToggle(wxCommandEvent& event); 

