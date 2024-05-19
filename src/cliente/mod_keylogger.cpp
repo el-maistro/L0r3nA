@@ -19,7 +19,7 @@ std::string GetActiveWindow_Title() {
 
 std::string Add_Terminator(const char* cBuffer) {
     char cTmpBuff[20] = "[/";
-    for (int i = 1; i < strlen(cBuffer); i++) {
+    for (u_int i = 1; i < strlen(cBuffer); i++) {
         cTmpBuff[i + 1] = cBuffer[i];
     }
     return std::string(cTmpBuff);

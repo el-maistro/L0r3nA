@@ -1,6 +1,8 @@
 #include "mod_file_manager.hpp"
 #include "misc.hpp"
 
+extern Cliente* cCliente;
+
 std::vector<struct sDrives> Drives() {
 	std::vector<struct sDrives> vcOutput;
 	char cDrives[512];
@@ -189,17 +191,12 @@ void EditarArchivo_Guardar(std::string strPath, c_char* cBuffer, std::streamsize
 
 }
 
-void EnviarArchivo(const std::string& cPath, const std::string& cID, Cliente* copy_ptr) {
-#ifdef ___DEBUG_
-	std::cout << "[ID-"<<cID<<"]Enviando " << cPath << std::endl;
-#endif
+void EnviarArchivo(const std::string& cPath, const std::string& cID) {
+	DebugPrint("[ID-" + cID + "]Enviando " + cPath);
 	
 	std::ifstream localFile(cPath, std::ios::binary);
 	if (!localFile.is_open()) {
-#ifdef ___DEBUG_
-		error();
-		std::cout << "No se pudo abrir el archivo " <<cPath<< std::endl;
-#endif
+		DebugPrint("No se pudo abrir el archivo " + cPath);
 		return;
 	}
 
@@ -213,7 +210,7 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID, Cliente* co
 	strComando.append(1, '\\');
 	strComando += std::to_string(uTamArchivo);
 	//Enviar confirmacion y tama�o de archivo
-	copy_ptr->cSend(copy_ptr->sckSocket, strComando.c_str(), strComando.size(), 0, true);
+	cCliente->cSend(cCliente->sckSocket, strComando.c_str(), strComando.size(), 0, true);
 	Sleep(100);
 
 	//Calcular tama�o header
@@ -237,7 +234,7 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID, Cliente* co
 			memcpy(nTempBuffer, strHeader.c_str(), iHeaderSize);
 			memcpy(nTempBuffer + iHeaderSize, cBufferArchivo, iBytesLeidos);
 
-			uBytesEnviados += copy_ptr->cSend(copy_ptr->sckSocket, nTempBuffer, iTotal, 0, true);
+			uBytesEnviados += cCliente->cSend(cCliente->sckSocket, nTempBuffer, iTotal, 0, true);
 			Sleep(30);
 #ifdef ___DEBUG_
 			std::cout << "\r[FM] Enviados " << uBytesEnviados;
@@ -259,7 +256,7 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID, Cliente* co
 	std::string strComandoCerrar = std::to_string(EnumComandos::FM_Descargar_Archivo_End);
 	strComandoCerrar.append(1, '\\');
 	strComandoCerrar += cID;
-	copy_ptr->cSend(copy_ptr->sckSocket, strComandoCerrar.c_str(), strComandoCerrar.size(), 0, true);
+	cCliente->cSend(cCliente->sckSocket, strComandoCerrar.c_str(), strComandoCerrar.size(), 0, true);
 
 
 	if (cBufferArchivo) {
@@ -269,13 +266,10 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID, Cliente* co
 }
 
 //Enviar bytes de archivo a editar
-void EditarArchivo(const std::string strPath, const std::string strID, Cliente* copy_ptr){
+void EditarArchivo(const std::string strPath, const std::string strID){
 	std::ifstream localFile(strPath, std::ios::binary);
 	if (!localFile.is_open()) {
-#ifdef ___DEBUG_
-		error();
-		std::cout << "No se pudo abrir el archivo " <<strPath<< std::endl;
-#endif
+		DebugPrint("No se pudo abrir el archivo " + strPath);
 		return;
 	}
 
@@ -299,7 +293,7 @@ void EditarArchivo(const std::string strPath, const std::string strID, Cliente* 
 			memcpy(nTempBuffer, strHeader.c_str(), iHeaderSize);
 			memcpy(nTempBuffer + iHeaderSize, cBufferArchivo, iBytesLeidos);
 
-			int iEnviado = copy_ptr->cSend(copy_ptr->sckSocket, nTempBuffer, iTotal, 0, true);
+			int iEnviado = cCliente->cSend(cCliente->sckSocket, nTempBuffer, iTotal, 0, true);
 			Sleep(30);
 
 			if (nTempBuffer) {

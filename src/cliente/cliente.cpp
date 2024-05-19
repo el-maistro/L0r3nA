@@ -174,13 +174,11 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
         return;
     }
 
-    if (strIn[0] == "CUSTOM_TEST") {
-        std::string strTest = "03\\";
-        strTest += RandomID(7);
-        iEnviado = this->cSend(this->sckSocket, strTest.c_str(), strTest.size(), 0, false);
-        return;
-    }
-
+    
+    //#####################################################
+    //#####################################################
+    //#        COMANDOS SUBMENU ADMIN ARCHIVOS           #
+    
     //Listar drives
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Discos) {
         std::vector<struct sDrives> vDrives = Drives();
@@ -204,16 +202,11 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
             strDipositivos += strTemp;
         }
         strDipositivos = strDipositivos.substr(0, strDipositivos.length() - 1);
-        
+
         this->cSend(this->sckSocket, strDipositivos.c_str(), strDipositivos.size() + 1, 0, false);
         return;
     }
 
-
-    //#####################################################
-    //#####################################################
-    //#        COMANDOS SUBMENU ADMIN ARCHIVOS           #
-    
     //Lista directorio
     if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Dir_Folder){
         std::string strPath = "";
@@ -265,8 +258,7 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
     if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Descargar_Archivo) {
         std::string param1 = strIn[1];
         std::string param2 = strIn[2];
-        //auto ptr = std::shared_ptr<Cliente>(this);
-        std::thread th(&EnviarArchivo, param1, param2, this);
+        std::thread th(&EnviarArchivo, param1, param2);
         th.detach();
         return;
     }
@@ -283,7 +275,7 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
     }
 
     if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Editar_Archivo){
-        EditarArchivo(strIn[1], strIn[2], this);
+        EditarArchivo(strIn[1], strIn[2]);
         return;
     }
 
