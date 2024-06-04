@@ -1,5 +1,6 @@
 #include "headers.hpp"
 #include "cliente.hpp"
+#include "misc.hpp"
 
 Cliente* cCliente;
 
@@ -18,11 +19,9 @@ int main() {
 			cCliente->MainLoop();
 		} else {
 			//no se pudo conectar
-#ifdef ___DEBUG_
-			std::cout<<"No se pudo conectar el host\n";
-#endif
+			DebugPrint("No se pudo conectar el host");
 		}
-		Sleep(6000); //Esperar cinco segundos para volver a intentar
+		Sleep(6000); //Esperar 6 segundos para volver a intentar
 	}
 
 	delete cCliente;

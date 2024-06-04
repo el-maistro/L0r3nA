@@ -20,23 +20,42 @@ template <class T> void SafeRelease(T** ppT)
     }
 }
 
-struct EncodingParameters
-{
-    GUID    subtype;
-    UINT32  bitrate;
+struct CamRes {
+    UINT32 width = 0;
+    UINT32 height = 0;
 };
 
 class mod_Camera {
 	public:
         mod_Camera() { CoInitialize(nullptr);}
-        ~mod_Camera() { CoUninitialize();}
+        ~mod_Camera() { 
+            CoUninitialize();
+            CoTaskMemFree(m_pwszSymbolicLink);
+        }
 
-        std::vector<std::string> ListCaptureDevices();
+        struct CamRes Resolution() {
+            struct CamRes tmp;
+            tmp.height = this->height;
+            tmp.width = this->width;
+            return tmp;
+        }
+
+        HRESULT ListCaptureDevices(std::vector<IMFActivate*>& devices);
+        std::vector<char*> ListNameCaptureDevices();
+
         HRESULT Init(IMFActivate*& pDevice);
+        HRESULT OpenMediaSource(IMFMediaSource* pSource);
+        HRESULT ConfigureCapture();
+        HRESULT ConfigureSourceReader(IMFSourceReader* pReader);
+        
         BYTE* GetFrame();
 
 	private:
-
+        IMFSourceReader* m_pReader = NULL;
+        IMFMediaSource* pSource = NULL;
+        WCHAR* m_pwszSymbolicLink;
+        UINT32 width = 0;
+        UINT32 height = 0;
 };
 
 
