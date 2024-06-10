@@ -4,6 +4,7 @@
 #include<wx/wx.h> 
 #include<wx/thread.h>
 #include<wx/listctrl.h>
+#include<wx/dcbuffer.h>
 #include<wx/tglbtn.h >
 #include<wx/toolbar.h>
 #include<wx/treectrl.h>
@@ -98,7 +99,9 @@ namespace EnumIDS {
         ID_KL_BTN_Toggle,
         ID_KL_BTN_Save,
         ID_KL_BTN_Clear,
-        ID_KL_Text_Out
+        ID_KL_Text_Out,
+        ID_CM_Test,
+        ID_CM_PictureBox
     };
 }
 
