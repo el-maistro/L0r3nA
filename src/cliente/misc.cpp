@@ -243,9 +243,9 @@ std::string strProcessList() {
 			DWORD cHost_Size = sizeof(cHost);
 
 			strOut += std::to_string(pWPIs[i].ProcessId);
-			strOut.append(1, '~');
+			strOut.append(1, '>');
 			strOut += pWPIs[i].pProcessName;
-			strOut.append(1, '~');
+			strOut.append(1, '>');
 
 			if (LookupAccountSidA(nullptr, pWPIs[i].pUserSid, cName, &cName_Size, cHost, &cHost_Size, &pSID_NAME)) {
 				strOut += cHost;

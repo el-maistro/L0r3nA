@@ -3,27 +3,46 @@
 
 #include "headers.hpp"
 
-//Hacer que el frame tenga menu para tomar single-shot o hacer captura en vivo, ademas de opciones para grabar y guardar
+namespace EnumCamMenu {
+	enum Enum {
+		ID_SingleShot = 10000,
+		ID_StartLive,
+		ID_Close,
+		ID_Combo_Devices,
+		ID_Refrescar_Lista,
+		ID_Spawn_Frame
+	};
+}
+
 class panelPictureBox : public wxFrame {
 	public:
-		panelPictureBox(wxWindow* parent) : wxFrame(parent, wxID_ANY, "Camara") {}
+		panelPictureBox(wxWindow* parent, wxString cTitle);
 
+		char* cPictureBuffer = nullptr;
 		bool isCalled = false;
-		wxBitmap bmp_Obj;
-		
+		u_int uiWidth = 0;
+		u_int uiHeight = 0;
+		SOCKET sckCliente = INVALID_SOCKET;
+
 		void OnPaint(wxPaintEvent& event);
+
+
 	private:
 		
 		wxDECLARE_EVENT_TABLE();
 };
 
+
 class panelCamara : public wxPanel{
 	public:
 		panelCamara(wxWindow* pParent);
 
-		void TestBtn(wxCommandEvent& event);
+		void OnRefrescarLista(wxCommandEvent& event);
+		void OnManageCam(wxCommandEvent& event);
 
+		SOCKET sckCliente = INVALID_SOCKET;
 	private:
+		wxComboBox* cam_Devices = nullptr;
 		panelPictureBox* pictureBox = nullptr;
 		wxDECLARE_EVENT_TABLE();
 

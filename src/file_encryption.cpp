@@ -76,12 +76,12 @@ void frameEncryption::OnGenerarPass(wxCommandEvent& event) {
 
 void frameEncryption::OnExecCrypt(wxCommandEvent& event) {
 	std::string strComando = std::to_string(EnumComandos::FM_Crypt_Archivo);
-	strComando.append(1, '~');
+	strComando.append(1, CMD_DEL);
 	strComando += (this->rdio_Options->GetSelection() == 0) ? "0" : "1";
 	strComando += this->chk_del->IsChecked() ? "1" : "0";
-	strComando.append(1, '~');
+	strComando.append(1, CMD_DEL);
 	strComando += this->p_strPath;
-	strComando.append(1, '~');
+	strComando.append(1, CMD_DEL);
 	strComando += this->txt_Pass->GetValue();
 
 	ListCtrlManager* list_parent = (ListCtrlManager*)this->GetParent();

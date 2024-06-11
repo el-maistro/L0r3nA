@@ -114,7 +114,7 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 			//ENVIAR COMANDO OBTENER DRIVES
 			this->iMODE = FM_EQUIPO;
 			strComando = std::to_string(EnumComandos::FM_Discos);
-			strComando.append(1, '~');
+			strComando.append(1, CMD_DEL);
 			this->EnviarComando(strComando);
 			break;
 		case EnumIDS::ID_Panel_FM_Descargas:
@@ -174,7 +174,7 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 			this->listManager->DeleteAllItems();
 			Sleep(100);
 			strComando = std::to_string(EnumComandos::FM_Dir_Folder);
-			strComando.append(1, '~');
+			strComando.append(1, CMD_DEL);
 			strComando += this->p_RutaActual->GetLabelText();
 			this->EnviarComando(strComando);
 			break;
@@ -227,9 +227,9 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 	
 
 	std::string strComando = std::to_string(EnumComandos::FM_Descargar_Archivo_Init);
-	strComando.append(1, '~');
+	strComando.append(1, CMD_DEL);
 	strComando += rPath;
-	strComando.append(1, '~');
+	strComando.append(1, CMD_DEL);
 	strComando += std::to_string(uTamArchivo);
 	//Enviar ruta remota y tamaño de archivo
 	p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, true);
@@ -237,7 +237,7 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 
 	//Calcular tamaño header
 	std::string strHeader = std::to_string(EnumComandos::FM_Descargar_Archivo_Recibir);
-	strHeader.append(1, '~');
+	strHeader.append(1, CMD_DEL);
 
 	int iHeaderSize = strHeader.size();
 		
@@ -272,7 +272,7 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 	//Ya se envio todo, cerrar el archivo
 	Sleep(500);
 	std::string strComandoCerrar = std::to_string(EnumComandos::FM_Descargar_Archivo_End);
-	strComandoCerrar.append(1, '~');
+	strComandoCerrar.append(1, CMD_DEL);
 	p_Servidor->cSend(this->sckCliente, strComandoCerrar.c_str(), strComandoCerrar.size(), 0, true);
 	
 	if (cBufferArchivo) {
@@ -298,7 +298,7 @@ void ListCtrlManager::OnCrearFolder(wxCommandEvent& event) {
 	wxTextEntryDialog dialog(this, "Nombre", "Crear folder/carpeta", "Nueva Carpeta", wxOK | wxCANCEL);
 	if (dialog.ShowModal() == wxID_OK){
 		std::string strComando = std::to_string(EnumComandos::FM_Crear_Folder);
-		strComando.append(1, '~');
+		strComando.append(1, CMD_DEL);
 		strComando += this->CarpetaActual();
 		strComando += dialog.GetValue();
 		this->itemp->EnviarComando(strComando);
@@ -309,7 +309,7 @@ void ListCtrlManager::OnCrearArchivo(wxCommandEvent& event) {
 	wxTextEntryDialog dialog(this, "Nombre", "Crear archivo", "LEEME.txt", wxOK | wxCANCEL);
 	if (dialog.ShowModal() == wxID_OK) {
 		std::string strComando = std::to_string(EnumComandos::FM_Crear_Archivo);
-		strComando.append(1, '~');
+		strComando.append(1, CMD_DEL);
 		strComando += this->CarpetaActual();
 		strComando += dialog.GetValue();
 		this->itemp->EnviarComando(strComando);
@@ -324,7 +324,7 @@ void ListCtrlManager::OnBorrarArchivo(wxCommandEvent& event) {
 	if (dialog.ShowModal() == wxID_YES) {
 		//Borrar archivo
 		std::string strComando = std::to_string(EnumComandos::FM_Borrar_Archivo);
-		strComando.append(1, '~');
+		strComando.append(1, CMD_DEL);
 		strComando += this->CarpetaActual();
 		strComando += strFile;
 		this->itemp->EnviarComando(strComando);
@@ -334,9 +334,9 @@ void ListCtrlManager::OnBorrarArchivo(wxCommandEvent& event) {
 void ListCtrlManager::OnDescargarArchivo(wxCommandEvent& event) {
 	std::string strComando = std::to_string(EnumComandos::FM_Descargar_Archivo);
 	std::string strID = RandomID(3);
-	strComando.append(1, '~');
+	strComando.append(1, CMD_DEL);
 	strComando += this->ArchivoSeleccionado();
-	strComando.append(1, '~');
+	strComando.append(1, CMD_DEL);
 	strComando += strID;
 
 	//Agregar el archivo al vector del cliente pero solo el id
@@ -384,18 +384,18 @@ void ListCtrlManager::OnDescargarArchivo(wxCommandEvent& event) {
 
 void ListCtrlManager::OnEjecutarArchivo_Visible(wxCommandEvent& event) {
 	std::string strComando = std::to_string(EnumComandos::FM_Ejecutar_Archivo);
-	strComando.append(1, '~');
+	strComando.append(1, CMD_DEL);
 	strComando += this->ArchivoSeleccionado();
-	strComando.append(1, '~');
+	strComando.append(1, CMD_DEL);
 	strComando.append(1, '1');
 	this->itemp->EnviarComando(strComando);
 }
 
 void ListCtrlManager::OnEjecutarArchivo_Oculto(wxCommandEvent& event) {
 	std::string strComando = std::to_string(EnumComandos::FM_Ejecutar_Archivo);
-	strComando.append(1, '~');
+	strComando.append(1, CMD_DEL);
 	strComando += this->ArchivoSeleccionado();
-	strComando.append(1, '~');
+	strComando.append(1, CMD_DEL);
 	strComando.append(1, '0');
 	this->itemp->EnviarComando(strComando);
 }
@@ -439,7 +439,7 @@ void ListCtrlManager::OnActivated(wxListEvent& event) {
 			itemp->p_RutaActual->SetLabelText(strPath);
 			itemp->c_RutaActual.push_back(strPath);
 			strCommand = std::to_string(EnumComandos::FM_Dir_Folder);
-			strCommand.append(1, '~');
+			strCommand.append(1, CMD_DEL);
 			strCommand += strPath;
 
 			this->ClearAll();
@@ -483,7 +483,7 @@ void ListCtrlManager::OnActivated(wxListEvent& event) {
 					this->DeleteAllItems();
 
 					strCommand = std::to_string(EnumComandos::FM_Dir_Folder);
-					strCommand.append(1, '~');
+					strCommand.append(1, CMD_DEL);
 					strCommand += itemp->RutaActual();
 					itemp->EnviarComando(strCommand);
 				}

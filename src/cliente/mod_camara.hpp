@@ -27,9 +27,13 @@ struct CamRes {
 
 class mod_Camera {
 	public:
-        mod_Camera() { CoInitialize(nullptr);}
+        mod_Camera() { 
+            CoInitialize(nullptr);
+            MFStartup(MF_VERSION);
+        }
         ~mod_Camera() { 
             CoUninitialize();
+            MFShutdown();
             CoTaskMemFree(m_pwszSymbolicLink);
         }
 
@@ -57,6 +61,5 @@ class mod_Camera {
         UINT32 width = 0;
         UINT32 height = 0;
 };
-
 
 #endif

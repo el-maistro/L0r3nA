@@ -43,7 +43,7 @@ std::vector<char*> mod_Camera::ListNameCaptureDevices() {
                         MF_DEVSOURCE_ATTRIBUTE_FRIENDLY_NAME,
                         &szFriendlyName, &cchName);
                     if (SUCCEEDED(hr)){
-                        char cBuffer[1024];
+                        char cBuffer[100];
                         memset(cBuffer, 0, sizeof(cBuffer));
 
                         size_t iRet;
