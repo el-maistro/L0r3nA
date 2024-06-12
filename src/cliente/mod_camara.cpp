@@ -1,4 +1,166 @@
 #include "mod_camara.hpp"
+#include "misc.hpp"
+
+//Conversion functions
+int mod_Camera::GetEncoderClsid(const WCHAR* format, CLSID* pClsid)
+{
+    UINT  num = 0;          // number of image encoders
+    UINT  size = 0;         // size of the image encoder array in bytes
+
+    Gdiplus::ImageCodecInfo* pImageCodecInfo = NULL;
+
+    Gdiplus::GetImageEncodersSize(&num, &size);
+    if (size == 0)
+        return -1;  // Failure
+
+    pImageCodecInfo = (Gdiplus::ImageCodecInfo*)(malloc(size));
+    if (pImageCodecInfo == NULL)
+        return -1;  // Failure
+
+    GetImageEncoders(num, size, pImageCodecInfo);
+
+    for (UINT j = 0; j < num; ++j)
+    {
+        if (wcscmp(pImageCodecInfo[j].MimeType, format) == 0)
+        {
+            *pClsid = pImageCodecInfo[j].Clsid;
+            free(pImageCodecInfo);
+            return j;  // Success
+        }
+    }
+
+    free(pImageCodecInfo);
+    return -1;  // Failure
+}
+
+BYTE* mod_Camera::bmpHeader(LONG lWidth, LONG lHeight, WORD wBitsPerPixel, const unsigned long& padding_size, DWORD iBuffersize, unsigned int& iBuffsizeOut) {
+    //Liberar buffer retornado
+    unsigned long headers_size = sizeof(BITMAPFILEHEADER) +
+        sizeof(BITMAPINFOHEADER);
+
+    unsigned long pixel_data_size = lHeight * ((lWidth * (wBitsPerPixel / 8)) + padding_size);
+
+    BITMAPINFOHEADER bmpInfoHeader = { 0 };
+
+    bmpInfoHeader.biSize = sizeof(BITMAPINFOHEADER);
+    bmpInfoHeader.biBitCount = wBitsPerPixel;
+    bmpInfoHeader.biClrImportant = 0;
+    bmpInfoHeader.biClrUsed = 0;
+    bmpInfoHeader.biCompression = BI_RGB;
+    bmpInfoHeader.biHeight = lHeight;
+    bmpInfoHeader.biWidth = lWidth;
+    bmpInfoHeader.biPlanes = 1;
+    bmpInfoHeader.biSizeImage = pixel_data_size;
+
+    BITMAPFILEHEADER bfh;
+    ZeroMemory(&bfh, sizeof(bfh));
+    bfh.bfType = 'MB';
+
+    bfh.bfOffBits = headers_size;
+
+    bfh.bfSize = headers_size + pixel_data_size;
+
+    unsigned int uiHeadsize = sizeof(bfh) + sizeof(bmpInfoHeader);
+    iBuffsizeOut = uiHeadsize;
+    BYTE* nBuffer = new BYTE[uiHeadsize];
+    memcpy(nBuffer, &bfh, sizeof(bfh));
+    memcpy(nBuffer + sizeof(bfh), &bmpInfoHeader, sizeof(bmpInfoHeader));
+
+    return nBuffer;
+}
+
+BYTE* mod_Camera::toJPEG(BYTE*& bmpBuffer, u_int uiBuffersize, u_int& uiOutBufferSize) {
+    //Liberar buffer despues de haberse usado
+    HGLOBAL hGlobalMem = GlobalAlloc(GHND | GMEM_DDESHARE, 0);
+
+    Gdiplus::GdiplusStartupInput gdiplusStartupInput;
+    ULONG_PTR gdiplusToken;
+    Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
+
+    Gdiplus::Image* nImage;
+    Gdiplus::Status  stat;
+    STATSTG statstg;
+    IStream* oStream;
+    IStream* nStream;
+    CLSID   encoderClsid;
+    BYTE* bJPEGbuffer = nullptr;
+    ULONG bytesRead;
+    u_int uiBuffS = 0;
+    int iRet = 0;
+
+    HRESULT hr;
+
+    nStream = SHCreateMemStream(bmpBuffer, uiBuffersize);
+    if (!nStream) {
+        DebugPrint("[X] SHCreateMemStream error");
+        goto release;
+    }
+
+    hr = CreateStreamOnHGlobal(hGlobalMem, TRUE, &oStream);
+    if (hr != S_OK) {
+        DebugPrint("[X] CreateStreamOnHGlobal error");
+        goto release;
+    }
+
+    nStream->Seek({ 0 }, STREAM_SEEK_SET, NULL);
+
+    nImage = Gdiplus::Image::FromStream(nStream);
+    if (nImage == nullptr || nImage->GetLastStatus() != Gdiplus::Ok) {
+        DebugPrint("[X] Gdiplus::Image::FromStream error");
+        goto release;
+    }
+
+    
+    iRet = this->GetEncoderClsid(L"image/jpeg", &encoderClsid);
+    if (iRet == -1) {
+        DebugPrint("[X] image/jpeg not found trying PNG...");
+        iRet = this->GetEncoderClsid(L"image/png", &encoderClsid);
+        if (iRet == -1) {
+            DebugPrint("[X] image/png not found bye...");
+            goto release;
+        }
+    }
+
+    stat = nImage->Save(oStream, &encoderClsid, NULL);
+    if (stat != Gdiplus::Ok) {
+        DebugPrint("[X] nImage->Save");
+        goto release;
+    }
+
+    hr = oStream->Stat(&statstg, STATFLAG_NONAME);
+    if (hr != S_OK) {
+        DebugPrint("[X] oStream->Stat");
+        goto release;
+    }
+
+    uiBuffS = statstg.cbSize.LowPart; //Asuming is lower than 4G duuuh
+    bJPEGbuffer = new BYTE[uiBuffS];
+
+    oStream->Seek({ 0 }, STREAM_SEEK_SET, NULL);
+
+    hr = oStream->Read(bJPEGbuffer, uiBuffS, &bytesRead);
+    if (hr != S_OK) {
+        DebugPrint("[X] oStream->Read");
+    }else {
+        uiOutBufferSize = bytesRead;
+    }
+
+
+    release:
+
+    oStream->Release();
+    nStream->Release();
+
+
+    if (nImage) {
+        delete nImage;
+        nImage = nullptr;
+    }
+    Gdiplus::GdiplusShutdown(gdiplusToken);
+    GlobalFree(hGlobalMem);
+
+    return bJPEGbuffer;
+}
 
 HRESULT mod_Camera::ListCaptureDevices(std::vector<IMFActivate*>& devices)
 {
@@ -220,6 +382,7 @@ BYTE* mod_Camera::GetFrame(int& iBytesOut) {
     LONGLONG llTimeStamp;
     IMFSample* pSample = NULL;
     HRESULT hr;
+    int iCount = 0;
     //Hay que hacer un loop hasta que tome el frame
     while (1) {
         hr = this->m_pReader->ReadSample(
@@ -244,7 +407,10 @@ BYTE* mod_Camera::GetFrame(int& iBytesOut) {
         }
 
         //We got a sample
-        break;
+        //Agarrar el 3 frame
+        if (iCount++ == 3) {
+            break;
+        }
     }
 
     if (SUCCEEDED(hr) && pSample != NULL){
@@ -258,11 +424,25 @@ BYTE* mod_Camera::GetFrame(int& iBytesOut) {
             if (SUCCEEDED(hr))
             {
                 // Unlock the buffer when done.
-                cBufferOut = new BYTE[currentLength];
-                memcpy(cBufferOut, pData, currentLength);
 
-                iBytesOut = currentLength;
+                unsigned int iOutSize = 0;
+                BYTE* bmpHeadBuff = this->bmpHeader(width, height, 24, 0, currentLength, iOutSize);
 
+                cBufferOut = new BYTE[currentLength + iOutSize];
+                if (bmpHeadBuff) {
+                    memcpy(cBufferOut, bmpHeadBuff, iOutSize);
+                    memcpy(cBufferOut + iOutSize, pData, currentLength);
+                    delete[] bmpHeadBuff;
+                    bmpHeadBuff = nullptr;
+                } else {
+                    DebugPrint("[X] No se pudo crear la cabecera bmp");
+                    delete[] cBufferOut;
+                    cBufferOut = nullptr;
+                }
+                            
+                iBytesOut = currentLength + iOutSize;
+
+                
                 pBuffer->Unlock();
             }
             pBuffer->Release();

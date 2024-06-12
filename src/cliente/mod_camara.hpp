@@ -10,6 +10,7 @@
 #include<Wmcodecdsp.h>
 #include<propvarutil.h>
 #include<shlwapi.h>
+#include<gdiplus.h>
 
 template <class T> void SafeRelease(T** ppT)
 {
@@ -51,7 +52,11 @@ class mod_Camera {
         HRESULT OpenMediaSource(IMFMediaSource* pSource);
         HRESULT ConfigureCapture();
         HRESULT ConfigureSourceReader(IMFSourceReader* pReader);
-        
+
+        //Conversion to JPEG
+        int GetEncoderClsid(const WCHAR* format, CLSID* pClsid);
+        BYTE* bmpHeader(LONG lWidth, LONG lHeight, WORD wBitsPerPixel, const unsigned long& padding_size, DWORD iBuffersize, unsigned int& iBuffsizeOut);
+        BYTE* toJPEG(BYTE*& bmpBuffer, u_int uiBuffersize, u_int& uiOutBufferSize);
         BYTE* GetFrame(int& iBytesOut);
 
 	private:
