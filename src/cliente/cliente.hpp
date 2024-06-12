@@ -60,7 +60,8 @@ class Cliente {
 			{"529", EnumComandos::KL_Iniciar},
 			{"530", EnumComandos::KL_Detener},
 			{"531", EnumComandos::KL_Salida},
-			{"532", EnumComandos::CM_Lista}
+			{"532", EnumComandos::CM_Lista},
+			{"534", EnumComandos::CM_Single}
 
 		};
 

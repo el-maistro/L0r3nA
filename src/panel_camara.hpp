@@ -17,7 +17,6 @@ namespace EnumCamMenu {
 class panelPictureBox : public wxFrame {
 	public:
 		panelPictureBox(wxWindow* parent, wxString cTitle, int iCamIndex);
-		~panelPictureBox();
 
 		char* cPictureBuffer = nullptr;
 		bool isCalled = false;
@@ -26,6 +25,8 @@ class panelPictureBox : public wxFrame {
 		SOCKET sckCliente = INVALID_SOCKET;
 
 		void OnPaint(wxPaintEvent& event);
+		void OnSingleShot(wxCommandEvent& event);
+		void OnLive(wxCommandEvent& event);
 		
 	private:
 		void OnClose(wxCloseEvent& event);

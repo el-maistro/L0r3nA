@@ -156,7 +156,9 @@ namespace EnumComandos {
         KL_Detener,
         KL_Salida,
         CM_Lista,
-        CM_Lista_Salida
+        CM_Lista_Salida,
+        CM_Single,
+        CM_Single_Salida
     };
 }
 

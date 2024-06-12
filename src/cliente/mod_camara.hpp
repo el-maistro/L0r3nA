@@ -52,7 +52,7 @@ class mod_Camera {
         HRESULT ConfigureCapture();
         HRESULT ConfigureSourceReader(IMFSourceReader* pReader);
         
-        BYTE* GetFrame();
+        BYTE* GetFrame(int& iBytesOut);
 
 	private:
         IMFSourceReader* m_pReader = NULL;

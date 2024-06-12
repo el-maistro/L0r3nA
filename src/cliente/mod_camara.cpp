@@ -212,7 +212,7 @@ HRESULT mod_Camera::Init(IMFActivate*& pDevice) {
     return hr;
 }
 
-BYTE* mod_Camera::GetFrame() {
+BYTE* mod_Camera::GetFrame(int& iBytesOut) {
     //Liberar buffer retornado despues de haberse usado
     
     BYTE* cBufferOut = NULL;
@@ -261,7 +261,7 @@ BYTE* mod_Camera::GetFrame() {
                 cBufferOut = new BYTE[currentLength];
                 memcpy(cBufferOut, pData, currentLength);
 
-                //SaveBitmapToFile(cBuffern, width, height, 24, 0, L"captura.bmp", currentLength);
+                iBytesOut = currentLength;
 
                 pBuffer->Unlock();
             }
