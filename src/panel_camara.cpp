@@ -10,19 +10,19 @@ wxBEGIN_EVENT_TABLE(panelCamara, wxPanel)
 wxEND_EVENT_TABLE()
 
 wxBEGIN_EVENT_TABLE(panelPictureBox, wxPanel)
+	//EVT_MENU(wxID_EXIT, panelPictureBox::OnExit)
+	EVT_CLOSE(panelPictureBox::OnClose)
 	EVT_PAINT(panelPictureBox::OnPaint)
 wxEND_EVENT_TABLE()
 
-panelPictureBox::panelPictureBox(wxWindow* pParent, wxString strTitle) :
-	wxFrame(pParent, wxID_ANY, strTitle) {
+panelPictureBox::panelPictureBox(wxWindow* pParent, wxString strTitle, int iCamIndex) :
+	wxFrame(pParent, wxID_ANY, strTitle + " - Index " + std::to_string(iCamIndex)) {
 	wxMenuBar* menuBar = new wxMenuBar();
 
 	wxMenu* camMenu = new wxMenu();
 
 	camMenu->Append(EnumCamMenu::ID_SingleShot, "Captura unica");
 	camMenu->Append(EnumCamMenu::ID_StartLive, "Live");
-	camMenu->AppendSeparator();
-	camMenu->Append(EnumCamMenu::ID_Close, "Salir");
 
 	menuBar->Append(camMenu, "Camara");
 
@@ -48,6 +48,13 @@ void panelPictureBox::OnPaint(wxPaintEvent& event) {
 	}
 }
 
+void panelPictureBox::OnClose(wxCloseEvent& event) {
+	Destroy();
+}
+
+panelPictureBox::~panelPictureBox() {
+	return;
+}
 
 panelCamara::panelCamara(wxWindow* pParent):
 	wxPanel(pParent, wxID_ANY){
@@ -87,7 +94,7 @@ void panelCamara::OnRefrescarLista(wxCommandEvent& event) {
 void panelCamara::OnManageCam(wxCommandEvent& event) {
 	//Abrir nueva frame para administrar la camara seleccionada en el combo box
 	if (this->cam_Devices->GetStringSelection() != "") {
-		this->pictureBox = new panelPictureBox(nullptr, "Camara 1");
+		this->pictureBox = new panelPictureBox(this, this->cam_Devices->GetStringSelection(), this->cam_Devices->GetSelection());
 		this->pictureBox->sckCliente = this->sckCliente;
 		this->pictureBox->Show(true);
 	}

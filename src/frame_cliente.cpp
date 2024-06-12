@@ -31,8 +31,7 @@ wxBEGIN_EVENT_TABLE(panelMicrophone, wxPanel)
 wxEND_EVENT_TABLE()
 
 FrameCliente::FrameCliente(std::string strID, SOCKET sckID, std::string strIP)
-    : wxFrame(nullptr, EnumIDS::ID_Panel_Cliente, ":v", wxDefaultPosition, wxDefaultSize, wxDD_DEFAULT_STYLE, strID.substr(0, strID.find('/')))
-{
+    : wxFrame(nullptr, EnumIDS::ID_Panel_Cliente, ":v", wxDefaultPosition, wxDefaultSize, wxDD_DEFAULT_STYLE, strID.substr(0, strID.find('/'))){
     SetBackgroundColour(wxColour(255, 255, 255, 128)); // Establecer el color de fondo con transparencia
     SetTransparent(245);
 
