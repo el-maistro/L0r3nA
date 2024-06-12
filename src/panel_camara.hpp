@@ -2,6 +2,7 @@
 #define __CAM_
 
 #include "headers.hpp"
+#include <wx/mstream.h>
 
 namespace EnumCamMenu {
 	enum Enum {
@@ -10,7 +11,8 @@ namespace EnumCamMenu {
 		ID_Close,
 		ID_Combo_Devices,
 		ID_Refrescar_Lista,
-		ID_Spawn_Frame
+		ID_Spawn_Frame,
+		ID_Picture_Frame
 	};
 }
 
@@ -19,16 +21,18 @@ class panelPictureBox : public wxFrame {
 		panelPictureBox(wxWindow* parent, wxString cTitle, int iCamIndex);
 
 		char* cPictureBuffer = nullptr;
+		u_int iBufferSize = 0;
 		bool isCalled = false;
-		u_int uiWidth = 0;
-		u_int uiHeight = 0;
+		u_int uiWidth = 600;
+		u_int uiHeight = 300;
 		SOCKET sckCliente = INVALID_SOCKET;
 
-		void OnPaint(wxPaintEvent& event);
+		void OnDrawBuffer();
 		void OnSingleShot(wxCommandEvent& event);
 		void OnLive(wxCommandEvent& event);
 		
 	private:
+		wxStaticBitmap* imageCtrl;
 		void OnClose(wxCloseEvent& event);
 
 		wxDECLARE_EVENT_TABLE();

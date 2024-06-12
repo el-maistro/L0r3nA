@@ -11,17 +11,15 @@ wxBEGIN_EVENT_TABLE(panelCamara, wxPanel)
 wxEND_EVENT_TABLE()
 
 wxBEGIN_EVENT_TABLE(panelPictureBox, wxPanel)
-	//EVT_MENU(wxID_EXIT, panelPictureBox::OnExit)
 	EVT_CLOSE(panelPictureBox::OnClose)
-	EVT_PAINT(panelPictureBox::OnPaint)
 	EVT_MENU(EnumCamMenu::ID_SingleShot, panelPictureBox::OnSingleShot)
 	EVT_MENU(EnumCamMenu::ID_StartLive, panelPictureBox::OnLive)
 wxEND_EVENT_TABLE()
 
 panelPictureBox::panelPictureBox(wxWindow* pParent, wxString strTitle, int iCamIndex) :
-	wxFrame(pParent, wxID_ANY, strTitle + " - Index " + std::to_string(iCamIndex)) {
+	wxFrame(pParent, EnumCamMenu::ID_Picture_Frame, strTitle + " - Index " + std::to_string(iCamIndex)) {
 	wxMenuBar* menuBar = new wxMenuBar();
-
+	
 	wxMenu* camMenu = new wxMenu();
 
 	camMenu->Append(EnumCamMenu::ID_SingleShot, "Captura unica");
@@ -29,27 +27,42 @@ panelPictureBox::panelPictureBox(wxWindow* pParent, wxString strTitle, int iCamI
 
 	menuBar->Append(camMenu, "Camara");
 
+	wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
+	this->SetSizer(sizer);
+	this->imageCtrl = nullptr;
+
 	this->SetMenuBar(menuBar);
 }
 
-void panelPictureBox::OnPaint(wxPaintEvent& event) {
-	if (this->isCalled && this->cPictureBuffer != nullptr) {
-		wxBufferedPaintDC dc(this);
-		dc.Clear();
-		
-		wxBitmap bmp_Obj(this->cPictureBuffer, this->uiWidth, this->uiHeight);
-		
-		if (bmp_Obj.IsOk()) {
-			dc.DrawBitmap(bmp_Obj, 0, 0, false);
-		} else {
-			dc.DrawText("Error cargando al bana :v", 50, 50);
-		}
+void panelPictureBox::OnDrawBuffer() {
+	if (this->cPictureBuffer) {
+		wxMemoryInputStream imgStream(this->cPictureBuffer, this->iBufferSize);
+		wxImage::AddHandler(new wxJPEGHandler);
 
-		this->isCalled = false;
-		delete[] this->cPictureBuffer;
-		this->cPictureBuffer = nullptr;
+		wxImage img(imgStream, wxBITMAP_TYPE_JPEG);
+
+		if (img.IsOk()) {
+			wxBitmap bmp_Obj(img);
+			
+			if (this->imageCtrl) {
+				this->GetSizer()->Detach(imageCtrl);
+				this->imageCtrl->Destroy();
+				this->imageCtrl = nullptr;
+			}
+
+			this->imageCtrl = new wxStaticBitmap(this, wxID_ANY, bmp_Obj, wxDefaultPosition, wxSize(img.GetWidth(), img.GetHeight()));
+			this->GetSizer()->Add(this->imageCtrl, 1, wxEXPAND | wxALL, 5);
+			this->GetSizer()->Layout();
+			this->GetSizer()->Fit(this);
+			this->Refresh();
+			this->Update();
+		}
+		//wxBitmap bmp_Obj(this->cPictureBuffer, this->uiWidth, this->uiHeight);
+		
 	}
 }
+
+
 
 void panelPictureBox::OnClose(wxCloseEvent& event) {
 	Destroy();

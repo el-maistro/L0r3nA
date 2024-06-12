@@ -10,7 +10,7 @@ RM=rm
 	$(CC) $(CFLAG) -c -o $@ $<
 
 $(BIN): aes256.o $(OBJ) 
-	$(CC) -o $(BIN) $(OBJ) aes256.o $(LINK2)
+	$(CC) -o $(BIN) $(OBJ) aes256.o $(LINK)
 
 aes256.o: aes256/aes256.cpp
 	$(CC) $(CFLAG) -c -o $@ $<

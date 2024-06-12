@@ -252,6 +252,29 @@ void Cliente_Handler::Spawn_Handler(){
             continue;
         }
 
+        if (vcDatos[0] == std::to_string(EnumComandos::CM_Single_Salida)){
+            int iHeadSize = (std::to_string(EnumComandos::CM_Single_Salida).size() + 1); //CMD + len del delimitador
+            int iBuffSize = iRecibido - iHeadSize;
+            char* cBytes = cBuffer + iHeadSize;
+            panelPictureBox* panel_picture = (panelPictureBox*)wxWindow::FindWindowById(EnumCamMenu::ID_Picture_Frame, this->n_Frame);
+            if (panel_picture) {
+                if (panel_picture->iBufferSize > 0) {
+                    delete[] panel_picture->cPictureBuffer;
+                } 
+                panel_picture->cPictureBuffer = new char[iBuffSize];
+                if (panel_picture->cPictureBuffer) {
+                    memcpy(panel_picture->cPictureBuffer, cBytes, iBuffSize);
+                    panel_picture->iBufferSize = iBuffSize;
+                    panel_picture->OnDrawBuffer();
+                } else {
+                    this->Log("[X][MOD-CAM] No se pudo allocar memoria para copiar los bytes");
+                }
+
+            }else {
+                this->Log("[X] No se pudo encontrar el panel de camara");
+            }
+;        }
+
     }
 
     if (cBuffer) {

