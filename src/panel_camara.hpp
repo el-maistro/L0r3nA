@@ -18,7 +18,13 @@ namespace EnumCamMenu {
 
 class panelPictureBox : public wxFrame {
 	public:
-		panelPictureBox(wxWindow* parent, wxString cTitle, int iCamIndex);
+		panelPictureBox(wxWindow* parent, wxString cTitle, int iCamIndex, wxString strName);
+		~panelPictureBox() {
+			if (this->cPictureBuffer) {
+				delete[] cPictureBuffer;
+				cPictureBuffer = nullptr;
+			}
+		};
 
 		char* cPictureBuffer = nullptr;
 		u_int iBufferSize = 0;
@@ -30,9 +36,10 @@ class panelPictureBox : public wxFrame {
 		void OnDrawBuffer();
 		void OnSingleShot(wxCommandEvent& event);
 		void OnLive(wxCommandEvent& event);
-		
+
+		wxStaticBitmap* imageCtrl = nullptr;
+
 	private:
-		wxStaticBitmap* imageCtrl;
 		void OnClose(wxCloseEvent& event);
 
 		wxDECLARE_EVENT_TABLE();
@@ -51,6 +58,7 @@ class panelCamara : public wxPanel{
 		panelPictureBox* pictureBox = nullptr;
 
 	private:
+		std::string strID = "";
 		wxDECLARE_EVENT_TABLE();
 
 };

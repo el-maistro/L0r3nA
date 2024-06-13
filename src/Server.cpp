@@ -257,6 +257,7 @@ void Cliente_Handler::Spawn_Handler(){
             int iBuffSize = iRecibido - iHeadSize;
             char* cBytes = cBuffer + iHeadSize;
             panelPictureBox* panel_picture = (panelPictureBox*)wxWindow::FindWindowById(EnumCamMenu::ID_Picture_Frame, this->n_Frame);
+            //panelPictureBox* panel_picture = (panelPictureBox*)wxWindow::FindWindowByName(this->p_Cliente._id);
             if (panel_picture) {
                 if (panel_picture->iBufferSize > 0) {
                     delete[] panel_picture->cPictureBuffer;

@@ -16,8 +16,11 @@ wxBEGIN_EVENT_TABLE(panelPictureBox, wxPanel)
 	EVT_MENU(EnumCamMenu::ID_StartLive, panelPictureBox::OnLive)
 wxEND_EVENT_TABLE()
 
-panelPictureBox::panelPictureBox(wxWindow* pParent, wxString strTitle, int iCamIndex) :
-	wxFrame(pParent, EnumCamMenu::ID_Picture_Frame, strTitle + " - Index " + std::to_string(iCamIndex)) {
+panelPictureBox::panelPictureBox(wxWindow* pParent, wxString strTitle, int iCamIndex, wxString strName) :
+	wxFrame(pParent, EnumCamMenu::ID_Picture_Frame, strTitle + " - Index " + std::to_string(iCamIndex), wxDefaultPosition, wxDefaultSize, wxDD_DEFAULT_STYLE, strName) {
+	
+	this->imageCtrl = new wxStaticBitmap(this, wxID_ANY, wxBitmap(600, 300));
+
 	wxMenuBar* menuBar = new wxMenuBar();
 	
 	wxMenu* camMenu = new wxMenu();
@@ -28,8 +31,9 @@ panelPictureBox::panelPictureBox(wxWindow* pParent, wxString strTitle, int iCamI
 	menuBar->Append(camMenu, "Camara");
 
 	wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
+	sizer->Add(this->imageCtrl, 1, wxEXPAND | wxALL, 5);
 	this->SetSizer(sizer);
-	this->imageCtrl = nullptr;
+	this->Layout();
 
 	this->SetMenuBar(menuBar);
 }
@@ -45,20 +49,27 @@ void panelPictureBox::OnDrawBuffer() {
 			wxBitmap bmp_Obj(img);
 			
 			if (this->imageCtrl) {
-				this->GetSizer()->Detach(imageCtrl);
-				this->imageCtrl->Destroy();
-				this->imageCtrl = nullptr;
+				this->imageCtrl->SetBitmap(bmp_Obj);
+				this->GetSizer()->Layout();
+				this->Refresh();
+				this->Update();
+			} else {
+				error();
+				std::cout << "[X] imageCtrl no esta inicializado\n";
 			}
+			//if (this->imageCtrl) {
+			//	this->GetSizer()->Detach(imageCtrl);
+			//	this->imageCtrl->Destroy();
+			//	this->imageCtrl = nullptr;
+			//}
 
-			this->imageCtrl = new wxStaticBitmap(this, wxID_ANY, bmp_Obj, wxDefaultPosition, wxSize(img.GetWidth(), img.GetHeight()));
-			this->GetSizer()->Add(this->imageCtrl, 1, wxEXPAND | wxALL, 5);
+			//this->imageCtrl = new wxStaticBitmap(this, wxID_ANY, bmp_Obj, wxPoint(0,0), wxSize(img.GetWidth(), img.GetHeight()));
+			/*this->GetSizer()->Add(this->imageCtrl, 1, wxEXPAND | wxALL, 5);
 			this->GetSizer()->Layout();
 			this->GetSizer()->Fit(this);
 			this->Refresh();
-			this->Update();
+			this->Update();*/
 		}
-		//wxBitmap bmp_Obj(this->cPictureBuffer, this->uiWidth, this->uiHeight);
-		
 	}
 }
 
@@ -92,6 +103,7 @@ panelCamara::panelCamara(wxWindow* pParent):
 			FrameCliente* frame_cliente = (FrameCliente*)panel_cliente->GetParent();
 			if (frame_cliente) {
 				this->sckCliente = frame_cliente->sckCliente;
+				this->strID = frame_cliente->strClienteID;
 			}
 		}
 	}
@@ -120,7 +132,7 @@ void panelCamara::OnRefrescarLista(wxCommandEvent& event) {
 void panelCamara::OnManageCam(wxCommandEvent& event) {
 	//Abrir nueva frame para administrar la camara seleccionada en el combo box
 	if (this->cam_Devices->GetStringSelection() != "") {
-		this->pictureBox = new panelPictureBox(this, this->cam_Devices->GetStringSelection(), this->cam_Devices->GetSelection());
+		this->pictureBox = new panelPictureBox(this, this->cam_Devices->GetStringSelection(), this->cam_Devices->GetSelection(), this->strID);
 		this->pictureBox->sckCliente = this->sckCliente;
 		this->pictureBox->Show(true);
 	}
