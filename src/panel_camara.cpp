@@ -51,6 +51,7 @@ void panelPictureBox::OnDrawBuffer() {
 			if (this->imageCtrl) {
 				this->imageCtrl->SetBitmap(bmp_Obj);
 				this->GetSizer()->Layout();
+				this->GetSizer()->Fit(this);
 				this->Refresh();
 				this->Update();
 			} else {

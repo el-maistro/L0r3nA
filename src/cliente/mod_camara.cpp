@@ -201,6 +201,7 @@ std::vector<char*> mod_Camera::ListNameCaptureDevices() {
                 for (UINT32 i = 0; i < count; i++){
                     WCHAR* szFriendlyName = NULL;
                     UINT32 cchName;
+
                     hr = ppDevices[i]->GetAllocatedString(
                         MF_DEVSOURCE_ATTRIBUTE_FRIENDLY_NAME,
                         &szFriendlyName, &cchName);
@@ -212,8 +213,18 @@ std::vector<char*> mod_Camera::ListNameCaptureDevices() {
                         wcstombs_s(&iRet, cBuffer, sizeof(cBuffer), szFriendlyName, sizeof(cBuffer) - 1);
                         vcDevices.push_back(cBuffer);
                     }
+
+                    //Agregar el dev a la lista interna tambien
+                    this->vcCams.push_back(ppDevices[i]);
+                    this->vcActivated.push_back(false);
+
+                    //Agregar el source y reader por defecto                    
+                    IMFSourceReader* dummyReader = nullptr;
+                    IMFMediaSource* dummySource = nullptr;
+                    this->vc_pReader.push_back(dummyReader);
+                    this->vc_pSource.push_back(dummySource);
+
                     CoTaskMemFree(szFriendlyName);
-                    ppDevices[i]->Release();
                 }
 
                 CoTaskMemFree(ppDevices);
@@ -224,7 +235,7 @@ std::vector<char*> mod_Camera::ListNameCaptureDevices() {
     return vcDevices;
 }
 
-HRESULT mod_Camera::ConfigureSourceReader(IMFSourceReader* pReader)
+HRESULT mod_Camera::ConfigureSourceReader(IMFSourceReader*& pReader)
 {
     // The list of acceptable types.
     GUID subtypes[] = {
@@ -309,15 +320,14 @@ done:
     return hr;
 }
 
-HRESULT mod_Camera::ConfigureCapture(){
+HRESULT mod_Camera::ConfigureCapture(IMFSourceReader*& pReader){
     HRESULT hr = S_OK;
-
     IMFMediaType* pType = NULL;
 
-    hr = ConfigureSourceReader(this->m_pReader);
+    hr = ConfigureSourceReader(pReader);
 
     if (SUCCEEDED(hr)){
-        hr = this->m_pReader->GetCurrentMediaType(
+        hr = pReader->GetCurrentMediaType(
             (DWORD)MF_SOURCE_READER_FIRST_VIDEO_STREAM,
             &pType
         );
@@ -327,11 +337,11 @@ HRESULT mod_Camera::ConfigureCapture(){
     return hr;
 }
 
-HRESULT mod_Camera::OpenMediaSource(IMFMediaSource* pSource){
+HRESULT mod_Camera::OpenMediaSource(IMFMediaSource*& pSource, int pIndexDev){
     HRESULT hr = S_OK;
 
     IMFAttributes* pAttributes = NULL;
-
+    
     hr = MFCreateAttributes(&pAttributes, 2);
 
     if (SUCCEEDED(hr)){
@@ -342,39 +352,39 @@ HRESULT mod_Camera::OpenMediaSource(IMFMediaSource* pSource){
         hr = MFCreateSourceReaderFromMediaSource(
             pSource,
             pAttributes,
-            &this->m_pReader
-        );
+            &this->vc_pReader[pIndexDev]
+        );    
     }
-
-
+    
     SafeRelease(&pAttributes);
     return hr;
 }
 
-HRESULT mod_Camera::Init(IMFActivate*& pDevice) {
+HRESULT mod_Camera::Init(IMFActivate*& pDevice, int pIndexDev) {
+    if (this->vc_pSource.size() < pIndexDev) {
+        //Ya esta inicializado
+        if (this->vc_pSource[pIndexDev] && this->vc_pReader[pIndexDev]) {
+            return S_OK;
+        }
+    }
+
     HRESULT hr = S_OK;
-    hr = pDevice->ActivateObject(__uuidof(IMFMediaSource), (void**)&pSource);
     
-    //Obtener link simbolico para administrar el dispositivo
-    if (SUCCEEDED(hr)) {
-        hr = pDevice->GetAllocatedString(
-            MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_SYMBOLIC_LINK,
-            &this->m_pwszSymbolicLink,
-            NULL);
+    hr = pDevice->ActivateObject(__uuidof(IMFMediaSource), (void**)&this->vc_pSource[pIndexDev]);
+
+    if (SUCCEEDED(hr)){
+        hr = OpenMediaSource(this->vc_pSource[pIndexDev], pIndexDev);
     }
 
     if (SUCCEEDED(hr)){
-        hr = OpenMediaSource(pSource);
+        hr = ConfigureCapture(this->vc_pReader[pIndexDev]);
     }
 
-    if (SUCCEEDED(hr)){
-        hr = ConfigureCapture();
-    }
 
     return hr;
 }
 
-BYTE* mod_Camera::GetFrame(int& iBytesOut) {
+BYTE* mod_Camera::GetFrame(int& iBytesOut, int pIndexDev) {
     //Liberar buffer retornado despues de haberse usado
     
     BYTE* cBufferOut = NULL;
@@ -385,7 +395,7 @@ BYTE* mod_Camera::GetFrame(int& iBytesOut) {
     int iCount = 0;
     //Hay que hacer un loop hasta que tome el frame
     while (1) {
-        hr = this->m_pReader->ReadSample(
+        hr = this->vc_pReader[pIndexDev]->ReadSample(
             (DWORD)MF_SOURCE_READER_FIRST_VIDEO_STREAM,
             0,
             &streamIndex, // Receives the actual stream index.
@@ -408,9 +418,9 @@ BYTE* mod_Camera::GetFrame(int& iBytesOut) {
 
         //We got a sample
         //Agarrar el 3 frame
-        if (iCount++ == 3) {
+        //if (iCount++ == 3) {
             break;
-        }
+        //}
     }
 
     if (SUCCEEDED(hr) && pSample != NULL){

