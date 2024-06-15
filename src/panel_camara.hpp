@@ -13,7 +13,8 @@ namespace EnumCamMenu {
 		ID_Spawn_Frame,
 		ID_Picture_Frame,
 		ID_Iniciar_Live,
-		ID_Detener_Live
+		ID_Detener_Live,
+		ID_Guardar_Frame
 	};
 }
 
@@ -38,6 +39,7 @@ class panelPictureBox : public wxFrame {
 		void OnSingleShot(wxCommandEvent& event);
 		void OnLive(wxCommandEvent& event);
 		void OnStopLive(wxCommandEvent& event);
+		void OnGuardarFrame(wxCommandEvent& event);
 
 		wxStaticBitmap* imageCtrl = nullptr;
 
