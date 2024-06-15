@@ -7,12 +7,13 @@
 namespace EnumCamMenu {
 	enum Enum {
 		ID_SingleShot = 10000,
-		ID_StartLive,
 		ID_Close,
 		ID_Combo_Devices,
 		ID_Refrescar_Lista,
 		ID_Spawn_Frame,
-		ID_Picture_Frame
+		ID_Picture_Frame,
+		ID_Iniciar_Live,
+		ID_Detener_Live
 	};
 }
 
@@ -36,6 +37,7 @@ class panelPictureBox : public wxFrame {
 		void OnDrawBuffer();
 		void OnSingleShot(wxCommandEvent& event);
 		void OnLive(wxCommandEvent& event);
+		void OnStopLive(wxCommandEvent& event);
 
 		wxStaticBitmap* imageCtrl = nullptr;
 

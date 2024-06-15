@@ -84,7 +84,9 @@ namespace EnumComandos {
         CM_Lista,
         CM_Lista_Salida,
         CM_Single,
-        CM_Single_Salida
+        CM_Single_Salida,
+        CM_Live_Start,
+        CM_Live_Stop
     };
 }
 

