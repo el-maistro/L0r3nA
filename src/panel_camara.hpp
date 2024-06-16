@@ -20,7 +20,7 @@ namespace EnumCamMenu {
 
 class panelPictureBox : public wxFrame {
 	public:
-		panelPictureBox(wxWindow* parent, wxString cTitle, int iCamIndex, wxString strName);
+		panelPictureBox(wxWindow* parent, wxString cTitle, int iCamIndex);
 		~panelPictureBox() {
 			if (this->cPictureBuffer) {
 				delete[] cPictureBuffer;

@@ -18,8 +18,8 @@ wxBEGIN_EVENT_TABLE(panelPictureBox, wxPanel)
 	EVT_MENU(EnumCamMenu::ID_Guardar_Frame, panelPictureBox::OnGuardarFrame)
 wxEND_EVENT_TABLE()
 
-panelPictureBox::panelPictureBox(wxWindow* pParent, wxString strTitle, int iCamIndex, wxString strName) :
-	wxFrame(pParent, EnumCamMenu::ID_Picture_Frame, strTitle + " - Index " + std::to_string(iCamIndex), wxDefaultPosition, wxDefaultSize, wxDD_DEFAULT_STYLE, strName) {
+panelPictureBox::panelPictureBox(wxWindow* pParent, wxString strTitle, int iCamIndex ) :
+	wxFrame(pParent, EnumCamMenu::ID_Picture_Frame, strTitle + " - Index " + std::to_string(iCamIndex), wxDefaultPosition, wxDefaultSize, wxDD_DEFAULT_STYLE, "CAM" + std::to_string(iCamIndex)) {
 	
 	this->imageCtrl = new wxStaticBitmap(this, wxID_ANY, wxBitmap(600, 300));
 
@@ -162,7 +162,7 @@ void panelCamara::OnRefrescarLista(wxCommandEvent& event) {
 void panelCamara::OnManageCam(wxCommandEvent& event) {
 	//Abrir nueva frame para administrar la camara seleccionada en el combo box
 	if (this->cam_Devices->GetStringSelection() != "") {
-		this->pictureBox = new panelPictureBox(this, this->cam_Devices->GetStringSelection(), this->cam_Devices->GetSelection(), this->strID);
+		this->pictureBox = new panelPictureBox(this, this->cam_Devices->GetStringSelection(), this->cam_Devices->GetSelection());
 		this->pictureBox->sckCliente = this->sckCliente;
 		this->pictureBox->Show(true);
 	}

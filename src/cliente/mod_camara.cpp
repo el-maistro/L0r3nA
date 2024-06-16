@@ -218,16 +218,24 @@ std::vector<std::string> mod_Camera::ListNameCaptureDevices() {
                     }
 
                     //Agregar el dev a la lista interna tambien
-                    this->vcCams.push_back(ppDevices[i]);
-                    this->vcActivated.push_back(false);
-                    this->vcIsLive.push_back(false);
+                    //this->vcCams.push_back(ppDevices[i]);
+                    //this->vcActivated.push_back(false);
+                    //this->vcIsLive.push_back(false);
 
                     //Agregar el source y reader por defecto                    
                     IMFSourceReader* dummyReader = nullptr;
                     IMFMediaSource* dummySource = nullptr;
-                    this->vc_pReader.push_back(dummyReader);
-                    this->vc_pSource.push_back(dummySource);
+                    //this->vc_pReader.push_back(dummyReader);
+                    //this->vc_pSource.push_back(dummySource);
 
+                    struct camOBJ cam_Temp;
+                    cam_Temp.isActivated = cam_Temp.isLive = false;
+                    cam_Temp.sActivate = ppDevices[i];
+                    cam_Temp.sReader = dummyReader;
+                    cam_Temp.sSource = dummySource;
+
+                    this->vcCamObjs.push_back(cam_Temp);
+                    
                     CoTaskMemFree(szFriendlyName);
                 }
 
@@ -239,7 +247,7 @@ std::vector<std::string> mod_Camera::ListNameCaptureDevices() {
     return vcDevices;
 }
 
-HRESULT mod_Camera::ConfigureSourceReader(IMFSourceReader*& pReader)
+HRESULT mod_Camera::ConfigureSourceReader(IMFSourceReader*& pReader, int pIndexDev)
 {
     // The list of acceptable types.
     GUID subtypes[] = {
@@ -316,7 +324,8 @@ HRESULT mod_Camera::ConfigureSourceReader(IMFSourceReader*& pReader)
         }
     }
 
-    hr = MFGetAttributeSize(pType, MF_MT_FRAME_SIZE, &this->width, &this->height);
+    //Obtener resolution de buffer capturado
+    hr = MFGetAttributeSize(pType, MF_MT_FRAME_SIZE, &this->vcCamObjs[pIndexDev].width, &this->vcCamObjs[pIndexDev].height);
 
 done:
 
@@ -324,11 +333,11 @@ done:
     return hr;
 }
 
-HRESULT mod_Camera::ConfigureCapture(IMFSourceReader*& pReader){
+HRESULT mod_Camera::ConfigureCapture(IMFSourceReader*& pReader, int pIndexDev){
     HRESULT hr = S_OK;
     IMFMediaType* pType = NULL;
 
-    hr = ConfigureSourceReader(pReader);
+    hr = ConfigureSourceReader(pReader, pIndexDev);
 
     if (SUCCEEDED(hr)){
         hr = pReader->GetCurrentMediaType(
@@ -341,7 +350,7 @@ HRESULT mod_Camera::ConfigureCapture(IMFSourceReader*& pReader){
     return hr;
 }
 
-HRESULT mod_Camera::OpenMediaSource(IMFMediaSource*& pSource, int pIndexDev){
+HRESULT mod_Camera::OpenMediaSource(IMFMediaSource*& pSource, IMFSourceReader*& pReader){
     HRESULT hr = S_OK;
 
     IMFAttributes* pAttributes = NULL;
@@ -356,7 +365,7 @@ HRESULT mod_Camera::OpenMediaSource(IMFMediaSource*& pSource, int pIndexDev){
         hr = MFCreateSourceReaderFromMediaSource(
             pSource,
             pAttributes,
-            &this->vc_pReader[pIndexDev]
+            &pReader
         );    
     }
     
@@ -365,25 +374,22 @@ HRESULT mod_Camera::OpenMediaSource(IMFMediaSource*& pSource, int pIndexDev){
 }
 
 HRESULT mod_Camera::Init(IMFActivate*& pDevice, int pIndexDev) {
-    if (int(this->vc_pSource.size()) < pIndexDev) {
-        //Ya esta inicializado
-        if (this->vc_pSource[pIndexDev] && this->vc_pReader[pIndexDev]) {
-            return S_OK;
-        }
+    if (this->vcCamObjs[pIndexDev].isActivated) {
+        return S_OK;
     }
 
     HRESULT hr = S_OK;
     
-    hr = pDevice->ActivateObject(__uuidof(IMFMediaSource), (void**)&this->vc_pSource[pIndexDev]);
+    //hr = pDevice->ActivateObject(__uuidof(IMFMediaSource), (void**)&this->vc_pSource[pIndexDev]);
+    hr = pDevice->ActivateObject(__uuidof(IMFMediaSource), (void**)&this->vcCamObjs[pIndexDev].sSource);
 
     if (SUCCEEDED(hr)){
-        hr = OpenMediaSource(this->vc_pSource[pIndexDev], pIndexDev);
+        hr = OpenMediaSource(this->vcCamObjs[pIndexDev].sSource, this->vcCamObjs[pIndexDev].sReader);
     }
 
     if (SUCCEEDED(hr)){
-        hr = ConfigureCapture(this->vc_pReader[pIndexDev]);
+        hr = ConfigureCapture(this->vcCamObjs[pIndexDev].sReader, pIndexDev);
     }
-
 
     return hr;
 }
@@ -398,7 +404,8 @@ BYTE* mod_Camera::GetFrame(int& iBytesOut, int pIndexDev) {
     HRESULT hr;
     //Hay que hacer un loop hasta que tome el frame
     while (1) {
-        hr = this->vc_pReader[pIndexDev]->ReadSample(
+        //hr = this->vc_pReader[pIndexDev]->ReadSample(
+        hr = this->vcCamObjs[pIndexDev].sReader->ReadSample(
             (DWORD)MF_SOURCE_READER_FIRST_VIDEO_STREAM,
             0,
             &streamIndex, // Receives the actual stream index.
@@ -436,7 +443,7 @@ BYTE* mod_Camera::GetFrame(int& iBytesOut, int pIndexDev) {
                 // Unlock the buffer when done.
 
                 unsigned int iOutSize = 0;
-                BYTE* bmpHeadBuff = this->bmpHeader(width, height, 24, 0, currentLength, iOutSize);
+                BYTE* bmpHeadBuff = this->bmpHeader(this->vcCamObjs[pIndexDev].width, this->vcCamObjs[pIndexDev].height, 24, 0, currentLength, iOutSize);
 
                 cBufferOut = new BYTE[currentLength + iOutSize];
                 if (bmpHeadBuff) {
@@ -452,7 +459,6 @@ BYTE* mod_Camera::GetFrame(int& iBytesOut, int pIndexDev) {
                             
                 iBytesOut = currentLength + iOutSize;
 
-                
                 pBuffer->Unlock();
             }
             pBuffer->Release();
@@ -464,34 +470,42 @@ BYTE* mod_Camera::GetFrame(int& iBytesOut, int pIndexDev) {
 }
 
 void mod_Camera::SpawnLive(int pIndexDev) {
+    //this->vcCamObjs[pIndexDev].thLive = std::thread(&mod_Camera::LiveCam, this, pIndexDev);
     this->thLive = std::thread(&mod_Camera::LiveCam, this, pIndexDev);
 }
 
 void mod_Camera::JoinLiveThread(int pIndexDev) {
-    this->vcIsLive[pIndexDev] = false;
+    //this->vcIsLive[pIndexDev] = false;
+    this->vcCamObjs[pIndexDev].isLive = false;
+    /*if (this->vcCamObjs[pIndexDev].thLive.joinable()) {
+        this->vcCamObjs[pIndexDev].thLive.join();
+    }*/
     if (this->thLive.joinable()) {
         this->thLive.join();
     }
 }
 
 void mod_Camera::LiveCam(int pIndexDev) {
-    HRESULT hr;
-    if (!this->vcActivated[pIndexDev]) {
-        hr = this->Init(this->vcCams[pIndexDev], pIndexDev);
+    HRESULT hr = S_OK;
+
+    if (!this->vcCamObjs[pIndexDev].isActivated) {
+        hr = this->Init(this->vcCamObjs[pIndexDev].sActivate, pIndexDev);
     }
 
-
     if (SUCCEEDED(hr)) {
-        this->vcActivated[pIndexDev] = true;
-        this->vcIsLive[pIndexDev] = true;
+        this->vcCamObjs[pIndexDev].isActivated = true;
+        this->vcCamObjs[pIndexDev].isLive = true;
 
         DebugPrint("[!]Live iniciado");
 
         std::string strHeader = std::to_string(EnumComandos::CM_Single_Salida);
         strHeader.append(1, CMD_DEL);
+        strHeader += std::to_string(pIndexDev);
+        strHeader.append(1, CMD_DEL);
+
         int iHeaderSize = strHeader.size();
 
-        while (this->vcIsLive[pIndexDev]) {
+        while (this->vcCamObjs[pIndexDev].isLive) {
             int iBufferSize = 0;
             u_int iJPGBufferSize = 0;
             u_int uiPacketSize = 0;

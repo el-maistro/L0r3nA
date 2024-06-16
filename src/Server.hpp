@@ -152,7 +152,7 @@ class Servidor{
         //Manipular listview
         MyListCtrl *m_listCtrl;
         MyLogClass *m_txtLog;
-        void m_InsertarCliente(struct Cliente& p_Cliente);
+        void m_InsertarCliente(struct Cliente& p_Cliente, int iIndex);
         void m_RemoverClienteLista(std::string p_ID);
 
         //Mic en tiempo real

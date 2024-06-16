@@ -21,10 +21,20 @@ template <class T> void SafeRelease(T** ppT)
     }
 }
 
-struct CamRes {
+struct camOBJ {
+    bool isActivated;
+    bool isLive;
+    IMFSourceReader* sReader;
+    IMFMediaSource* sSource;
+    IMFActivate* sActivate;
     UINT32 width = 0;
     UINT32 height = 0;
 };
+
+//reader
+//source
+//bool activated
+//bool islive
 
 class mod_Camera {
 	public:
@@ -35,19 +45,14 @@ class mod_Camera {
 
         ~mod_Camera() { 
             int iCount = 0;
-            for (; iCount<int(this->vcCams.size()); iCount++) {
-                this->vcCams[iCount]->Release();
-            }
+            for (; iCount<int(this->vcCamObjs.size()); iCount++) {
+                this->vcCamObjs[iCount].sActivate->Release();
 
-            for (iCount = 0; iCount<int(this->vc_pSource.size()); iCount++) {
-                if (this->vc_pSource[iCount]) {
-                    this->vc_pSource[iCount]->Release();
+                if ( this->vcCamObjs[iCount].sReader) {
+                    this->vcCamObjs[iCount].sReader->Release();
                 }
-            }
-
-            for (iCount = 0; iCount<int(this->vc_pReader.size()); iCount++) {
-                if (this->vc_pReader[iCount]) {
-                    this->vc_pReader[iCount]->Release();
+                if (this->vcCamObjs[iCount].sSource) {
+                    this->vcCamObjs[iCount].sSource->Release();
                 }
             }
 
@@ -55,24 +60,14 @@ class mod_Camera {
             MFShutdown();
         }
 
-        struct CamRes Resolution() {
-            struct CamRes tmp;
-            tmp.height = this->height;
-            tmp.width = this->width;
-            return tmp;
-        }
-
         HRESULT ListCaptureDevices(std::vector<IMFActivate*>& devices);
         std::vector<std::string> ListNameCaptureDevices();
-        std::vector<IMFActivate*> vcCams;
-        std::vector<bool> vcActivated;
-        std::vector<bool> vcIsLive;
-
+        std::vector<struct camOBJ> vcCamObjs;
 
         HRESULT Init(IMFActivate*& pDevice, int pIndexDev);
-        HRESULT OpenMediaSource(IMFMediaSource*& pSource, int pIndexDev);
-        HRESULT ConfigureCapture(IMFSourceReader*& pReader);
-        HRESULT ConfigureSourceReader(IMFSourceReader*& pReader);
+        HRESULT OpenMediaSource(IMFMediaSource*& pSource, IMFSourceReader*& pReader);
+        HRESULT ConfigureCapture(IMFSourceReader*& pReader, int pIndexDev);
+        HRESULT ConfigureSourceReader(IMFSourceReader*& pReader, int pIndexDev);
         BYTE* GetFrame(int& iBytesOut, int pIndexDev);
         void LiveCam(int pIndexDev);
         void SpawnLive(int pIndexDev);
@@ -83,17 +78,9 @@ class mod_Camera {
         BYTE* bmpHeader(LONG lWidth, LONG lHeight, WORD wBitsPerPixel, const unsigned long& padding_size, DWORD iBuffersize, unsigned int& iBuffsizeOut);
         BYTE* toJPEG(BYTE*& bmpBuffer, u_int uiBuffersize, u_int& uiOutBufferSize);
         
-
         
 	private:
         std::thread thLive;
-        std::vector<IMFSourceReader*> vc_pReader;
-        std::vector<IMFMediaSource*>  vc_pSource;
-
-        IMFSourceReader* m_pReader = NULL;
-        IMFMediaSource* pSource = NULL;
-        UINT32 width = 0;
-        UINT32 height = 0;
 };
 
 #endif

