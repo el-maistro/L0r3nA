@@ -223,16 +223,16 @@ std::vector<std::string> mod_Camera::ListNameCaptureDevices() {
                     //this->vcIsLive.push_back(false);
 
                     //Agregar el source y reader por defecto                    
-                    IMFSourceReader* dummyReader = nullptr;
-                    IMFMediaSource* dummySource = nullptr;
+                    //IMFSourceReader* dummyReader = nullptr;
+                    //IMFMediaSource* dummySource = nullptr;
                     //this->vc_pReader.push_back(dummyReader);
                     //this->vc_pSource.push_back(dummySource);
 
                     struct camOBJ cam_Temp;
-                    cam_Temp.isActivated = cam_Temp.isLive = false;
+                    cam_Temp.isActivated = cam_Temp.isLive = cam_Temp.isConvert = false;
                     cam_Temp.sActivate = ppDevices[i];
-                    cam_Temp.sReader = dummyReader;
-                    cam_Temp.sSource = dummySource;
+                    cam_Temp.sReader = nullptr;
+                    cam_Temp.sSource = nullptr;
 
                     this->vcCamObjs.push_back(cam_Temp);
                     
@@ -250,9 +250,17 @@ std::vector<std::string> mod_Camera::ListNameCaptureDevices() {
 HRESULT mod_Camera::ConfigureSourceReader(IMFSourceReader*& pReader, int pIndexDev)
 {
     // The list of acceptable types.
-    GUID subtypes[] = {
+    /*GUID subtypes[] = {
         MFVideoFormat_NV12, MFVideoFormat_YUY2, MFVideoFormat_UYVY,
         MFVideoFormat_RGB32, MFVideoFormat_RGB24, MFVideoFormat_IYUV
+    };*/
+    GUID subtypes[] = {
+         MFVideoFormat_RGB32, MFVideoFormat_RGB24
+    };
+
+    GUID subtypes2[] = {
+        MFVideoFormat_NV12, MFVideoFormat_YUY2, MFVideoFormat_UYVY,
+        MFVideoFormat_IYUV, MFVideoFormat_MJPG, MFVideoFormat_H264
     };
 
     HRESULT hr = S_OK;
@@ -305,9 +313,9 @@ HRESULT mod_Camera::ConfigureSourceReader(IMFSourceReader*& pReader, int pIndexD
 
         // Try adding a decoder.
 
-        for (UINT32 i = 0; i < ARRAYSIZE(subtypes); i++)
+        for (UINT32 i = 0; i < ARRAYSIZE(subtypes2); i++)
         {
-            hr = pType->SetGUID(MF_MT_SUBTYPE, subtypes[i]);
+            hr = pType->SetGUID(MF_MT_SUBTYPE, subtypes2[i]);
 
             if (FAILED(hr)) { goto done; }
 
@@ -319,6 +327,8 @@ HRESULT mod_Camera::ConfigureSourceReader(IMFSourceReader*& pReader, int pIndexD
 
             if (SUCCEEDED(hr))
             {
+                this->vcCamObjs[pIndexDev].isConvert = true; //No esta en formato RG32 o RGB24
+                this->vcCamObjs[pIndexDev].mediaType = subtypes2[i];
                 break;
             }
         }
@@ -326,6 +336,7 @@ HRESULT mod_Camera::ConfigureSourceReader(IMFSourceReader*& pReader, int pIndexD
 
     //Obtener resolution de buffer capturado
     hr = MFGetAttributeSize(pType, MF_MT_FRAME_SIZE, &this->vcCamObjs[pIndexDev].width, &this->vcCamObjs[pIndexDev].height);
+    hr = MFGetAttributeRatio(pType, MF_MT_FRAME_RATE, &this->vcCamObjs[pIndexDev].numerator, &this->vcCamObjs[pIndexDev].denominator);
 
 done:
 
@@ -374,9 +385,12 @@ HRESULT mod_Camera::OpenMediaSource(IMFMediaSource*& pSource, IMFSourceReader*& 
 }
 
 HRESULT mod_Camera::Init(IMFActivate*& pDevice, int pIndexDev) {
-    if (this->vcCamObjs[pIndexDev].isActivated) {
-        return S_OK;
-    }
+    //if (this->vcCamObjs[pIndexDev].isActivated) {
+    //    return S_OK;
+    //}
+    
+    //Liberar en dado caso este previamente iniciada
+    this->vcCamObjs[pIndexDev].ReleaseCam();
 
     HRESULT hr = S_OK;
     
@@ -432,7 +446,99 @@ BYTE* mod_Camera::GetFrame(int& iBytesOut, int pIndexDev) {
 
     if (SUCCEEDED(hr) && pSample != NULL){
         IMFMediaBuffer* pBuffer = NULL;
-        hr = pSample->ConvertToContiguousBuffer(&pBuffer);
+        IMFMediaBuffer* npBuffer = nullptr;
+        IMFSample* pOutSample = nullptr;
+
+        //El formato de la camara no esta en los soportados (probados)
+        if (this->vcCamObjs[pIndexDev].isConvert) {
+            IMFTransform* pTransform = nullptr;
+            IMFMediaType* pInputType = nullptr;
+            IMFMediaType* pOutputType = nullptr;
+            
+            DWORD pcInputStreams = 0;
+            DWORD pcOutputStreams = 0;
+            DWORD m_dwInputID = 0;
+            DWORD m_dwOutputID = 0;
+            DWORD outputStatus = 0;
+            DWORD dwProcessOutputStatus = 0;
+            MFT_OUTPUT_STREAM_INFO StreamInfo;
+
+            HRESULT ttRES = S_OK;
+            //pTransform
+            MFTRegisterLocalByCLSID(CLSID_CColorConvertDMO, MFT_CATEGORY_VIDEO_PROCESSOR, L"", MFT_ENUM_FLAG_SYNCMFT, 0, NULL, 0, NULL);
+            ttRES = CoCreateInstance(CLSID_CColorConvertDMO, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pTransform));
+
+            ttRES = pTransform->GetStreamIDs(1, &m_dwInputID, 1, &m_dwOutputID);
+
+            if (ttRES == E_NOTIMPL)
+            {
+                // The stream identifiers are zero-based.
+                m_dwInputID = 0;
+                m_dwOutputID = 0;
+                ttRES = S_OK;
+            }
+
+            //pInputType
+            ttRES = MFCreateMediaType(&pInputType);
+            ttRES = pInputType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video);
+            ttRES = pInputType->SetGUID(MF_MT_SUBTYPE, this->vcCamObjs[pIndexDev].mediaType);
+            ttRES = MFSetAttributeSize(pInputType, MF_MT_FRAME_SIZE, this->vcCamObjs[pIndexDev].width, this->vcCamObjs[pIndexDev].height);
+            ttRES = MFSetAttributeRatio(pInputType, MF_MT_FRAME_RATE, this->vcCamObjs[pIndexDev].numerator, this->vcCamObjs[pIndexDev].denominator);
+            ttRES = MFSetAttributeRatio(pInputType, MF_MT_PIXEL_ASPECT_RATIO, 1, 1);
+            ttRES = pTransform->SetInputType(m_dwInputID, pInputType, 0);
+
+            //pOutputType
+            ttRES = MFCreateMediaType(&pOutputType);
+            ttRES = pOutputType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video);
+            ttRES = pOutputType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_RGB24);
+            ttRES = pOutputType->SetUINT32(MF_MT_FIXED_SIZE_SAMPLES, 1);
+            ttRES = pOutputType->SetUINT32(MF_MT_INTERLACE_MODE, MFVideoInterlace_Progressive);
+            ttRES = pOutputType->SetUINT32(MF_MT_ALL_SAMPLES_INDEPENDENT, TRUE);
+            ttRES = MFSetAttributeSize(pOutputType, MF_MT_FRAME_SIZE, this->vcCamObjs[pIndexDev].width, this->vcCamObjs[pIndexDev].height);
+            ttRES = MFSetAttributeRatio(pOutputType, MF_MT_FRAME_RATE, this->vcCamObjs[pIndexDev].numerator, this->vcCamObjs[pIndexDev].denominator);
+            ttRES = MFSetAttributeRatio(pOutputType, MF_MT_PIXEL_ASPECT_RATIO, 1, 1);
+
+
+            ttRES = pTransform->SetOutputType(m_dwOutputID, pOutputType, 0);
+            ttRES = pTransform->ProcessMessage(MFT_MESSAGE_NOTIFY_BEGIN_STREAMING, 0);
+            
+            ttRES = pTransform->GetOutputStreamInfo(m_dwOutputID, &StreamInfo);
+
+            MFCreateSample(&pOutSample);
+
+            MFCreateMemoryBuffer(StreamInfo.cbSize, &npBuffer);
+            pOutSample->AddBuffer(npBuffer);
+
+            MFT_OUTPUT_DATA_BUFFER outputDataBuffer;
+            outputDataBuffer.dwStreamID = m_dwOutputID;
+            outputDataBuffer.pSample = pOutSample;
+            outputDataBuffer.dwStatus = 0;
+            outputDataBuffer.pEvents = nullptr;
+
+            HRESULT hInput = S_OK;
+        processInputAgain:
+            while (1) {
+                hInput = pTransform->ProcessInput(m_dwInputID, pSample, 0);
+                if (hInput == MF_E_NOTACCEPTING) {
+                    break;
+                }
+            }
+
+            ttRES = pTransform->GetOutputStatus(&outputStatus);
+
+            if (ttRES != S_OK && ttRES != E_NOTIMPL) {
+                goto processInputAgain;
+            }
+
+            ttRES = pTransform->ProcessOutput(0, 1, &outputDataBuffer, &dwProcessOutputStatus);
+            ttRES = pTransform->ProcessMessage(MFT_MESSAGE_NOTIFY_END_OF_STREAM, 0);
+            ttRES = pTransform->ProcessMessage(MFT_MESSAGE_COMMAND_DRAIN, 0);
+
+            hr = pOutSample->ConvertToContiguousBuffer(&pBuffer);
+        }else {
+            hr = pSample->ConvertToContiguousBuffer(&pBuffer);
+        }
+
         if (SUCCEEDED(hr)){
             BYTE* pData = NULL;
             DWORD maxLength = 0, currentLength = 0;
@@ -463,6 +569,16 @@ BYTE* mod_Camera::GetFrame(int& iBytesOut, int pIndexDev) {
             }
             pBuffer->Release();
         }
+        if (this->vcCamObjs[pIndexDev].isConvert) {
+            if (npBuffer) {
+                npBuffer->Release();
+                npBuffer = nullptr;
+            }
+            if (pOutSample) {
+                pOutSample->Release();
+                pOutSample = nullptr;
+            }
+        }
         pSample->Release();
     }
 
@@ -475,23 +591,19 @@ void mod_Camera::SpawnLive(int pIndexDev) {
 }
 
 void mod_Camera::JoinLiveThread(int pIndexDev) {
-    //this->vcIsLive[pIndexDev] = false;
     this->vcCamObjs[pIndexDev].isLive = false;
-    /*if (this->vcCamObjs[pIndexDev].thLive.joinable()) {
-        this->vcCamObjs[pIndexDev].thLive.join();
-    }*/
     if (this->thLive.joinable()) {
         this->thLive.join();
     }
+
+    this->vcCamObjs[pIndexDev].ReleaseCam();
 }
 
 void mod_Camera::LiveCam(int pIndexDev) {
     HRESULT hr = S_OK;
 
-    if (!this->vcCamObjs[pIndexDev].isActivated) {
-        hr = this->Init(this->vcCamObjs[pIndexDev].sActivate, pIndexDev);
-    }
-
+    hr = this->Init(this->vcCamObjs[pIndexDev].sActivate, pIndexDev);
+    
     if (SUCCEEDED(hr)) {
         this->vcCamObjs[pIndexDev].isActivated = true;
         this->vcCamObjs[pIndexDev].isLive = true;

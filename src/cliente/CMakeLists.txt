@@ -23,4 +23,4 @@ set(SRCS main.cpp
 #set_target_properties(cliente PROPERTIES LINK_FLAGS "/SUBSYSTEM:CONSOLE")
 
 add_executable(cliente ${SRCS})
-target_link_libraries(cliente PRIVATE netapi32 wsock32 ws2_32 mfplat mfreadwrite mfuuid ole32 mf strmiids uuid winmm wtsapi32 gdi32 gdiplus shlwapi)
+target_link_libraries(cliente PRIVATE netapi32 wsock32 ws2_32 mf mfplat mfreadwrite mfuuid wmcodecdspuuid ole32 strmiids uuid winmm wtsapi32 gdi32 gdiplus shlwapi)

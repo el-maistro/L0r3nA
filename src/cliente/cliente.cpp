@@ -386,9 +386,7 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
             }
         }
 
-        if (!this->mod_Cam->vcCamObjs[iDeviceIndex].isActivated) {
-            hr = this->mod_Cam->Init(this->mod_Cam->vcCamObjs[iDeviceIndex].sActivate, iDeviceIndex);
-        }
+        hr = this->mod_Cam->Init(this->mod_Cam->vcCamObjs[iDeviceIndex].sActivate, iDeviceIndex);
         
         if (SUCCEEDED(hr)) {
             this->mod_Cam->vcCamObjs[iDeviceIndex].isActivated = true;
@@ -434,6 +432,8 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
                 cBuffer = nullptr;
             }
         }
+
+        this->mod_Cam->vcCamObjs[iDeviceIndex].ReleaseCam();
 
         return;
     }

@@ -7,6 +7,7 @@
 #include<mfobjects.h>
 #include<mfreadwrite.h>
 #include<mferror.h>
+#include<mftransform.h>
 #include<Wmcodecdsp.h>
 #include<propvarutil.h>
 #include<shlwapi.h>
@@ -24,11 +25,23 @@ template <class T> void SafeRelease(T** ppT)
 struct camOBJ {
     bool isActivated;
     bool isLive;
+    bool isConvert;
     IMFSourceReader* sReader;
     IMFMediaSource* sSource;
     IMFActivate* sActivate;
     UINT32 width = 0;
     UINT32 height = 0;
+    UINT32 numerator = 0;
+    UINT32 denominator = 0;
+    GUID mediaType = { 0 };
+
+    void ReleaseCam() {
+        if (sActivate) {
+            sActivate->ShutdownObject();
+        }
+        SafeRelease(&sReader);
+        SafeRelease(&sSource);    
+    }
 };
 
 //reader
@@ -46,14 +59,7 @@ class mod_Camera {
         ~mod_Camera() { 
             int iCount = 0;
             for (; iCount<int(this->vcCamObjs.size()); iCount++) {
-                this->vcCamObjs[iCount].sActivate->Release();
-
-                if ( this->vcCamObjs[iCount].sReader) {
-                    this->vcCamObjs[iCount].sReader->Release();
-                }
-                if (this->vcCamObjs[iCount].sSource) {
-                    this->vcCamObjs[iCount].sSource->Release();
-                }
+                this->vcCamObjs[iCount].ReleaseCam();
             }
 
             CoUninitialize();
