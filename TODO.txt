@@ -1,2 +1,8 @@
-Mod Live Mic
-Mod Remote Desktop
+[SPY] Mod Live Mic
+[SPY] Mod Remote Desktop
+[SPY] Administrador de ventanas (Lista, Minimizar, Maximizar, Cerrar)
+[PERSISTENCE] Instalacion, evasion
+[INFORMATION] OS, Users, Passwords 
+[NETWORK] Reverse proxy
+[NETWORK] LAN/WAN scanner
+[FUN] Obvio :v
