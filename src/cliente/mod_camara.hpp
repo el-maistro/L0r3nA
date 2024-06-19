@@ -36,6 +36,7 @@ struct camOBJ {
     GUID mediaType = { 0 };
 
     void ReleaseCam() {
+        isActivated = isLive = isConvert = false;
         if (sActivate) {
             sActivate->ShutdownObject();
         }
@@ -43,11 +44,6 @@ struct camOBJ {
         SafeRelease(&sSource);    
     }
 };
-
-//reader
-//source
-//bool activated
-//bool islive
 
 class mod_Camera {
 	public:
@@ -57,8 +53,12 @@ class mod_Camera {
         }
 
         ~mod_Camera() { 
-            int iCount = 0;
-            for (; iCount<int(this->vcCamObjs.size()); iCount++) {
+            for (int iThNum = 0; iThNum < MAX_CAMS; iThNum++) {
+                if (this->thLive[iThNum].joinable()) {
+                    this->thLive[iThNum].join();
+                }
+            }
+            for (int iCount = 0; iCount<int(this->vcCamObjs.size()); iCount++) {
                 this->vcCamObjs[iCount].ReleaseCam();
             }
 
@@ -86,7 +86,7 @@ class mod_Camera {
         
         
 	private:
-        std::thread thLive;
+        std::thread thLive[MAX_CAMS];
 };
 
 #endif

@@ -193,6 +193,7 @@ HRESULT mod_Camera::ListCaptureDevices(std::vector<IMFActivate*>& devices)
 std::vector<std::string> mod_Camera::ListNameCaptureDevices() {
     std::vector<std::string> vcDevices;
     IMFAttributes* pAttributes = NULL;
+    bool vcFlag = this->vcCamObjs.size() > 0 ? true : false;
     HRESULT hr = MFCreateAttributes(&pAttributes, 1);
     if (SUCCEEDED(hr)){
         hr = pAttributes->SetGUID(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE, MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_GUID);
@@ -201,7 +202,7 @@ std::vector<std::string> mod_Camera::ListNameCaptureDevices() {
             IMFActivate** ppDevices = NULL;
             hr = MFEnumDeviceSources(pAttributes, &ppDevices, &count);
             if (SUCCEEDED(hr)){
-                for (UINT32 i = 0; i < count; i++){
+                for (UINT32 i = 0; (i < count && i < MAX_CAMS); i++){
                     WCHAR* szFriendlyName = NULL;
                     UINT32 cchName;
 
@@ -217,16 +218,10 @@ std::vector<std::string> mod_Camera::ListNameCaptureDevices() {
                         vcDevices.push_back(std::string(cBuffer));
                     }
 
-                    //Agregar el dev a la lista interna tambien
-                    //this->vcCams.push_back(ppDevices[i]);
-                    //this->vcActivated.push_back(false);
-                    //this->vcIsLive.push_back(false);
-
-                    //Agregar el source y reader por defecto                    
-                    //IMFSourceReader* dummyReader = nullptr;
-                    //IMFMediaSource* dummySource = nullptr;
-                    //this->vc_pReader.push_back(dummyReader);
-                    //this->vc_pSource.push_back(dummySource);
+                    //Ya se crearon los objetos, solo obtener los nombres de los dispositivos conectados
+                    if(vcFlag){
+                        continue;
+                    }
 
                     struct camOBJ cam_Temp;
                     cam_Temp.isActivated = cam_Temp.isLive = cam_Temp.isConvert = false;
@@ -238,7 +233,6 @@ std::vector<std::string> mod_Camera::ListNameCaptureDevices() {
                     
                     CoTaskMemFree(szFriendlyName);
                 }
-
                 CoTaskMemFree(ppDevices);
             }
         }
@@ -385,16 +379,11 @@ HRESULT mod_Camera::OpenMediaSource(IMFMediaSource*& pSource, IMFSourceReader*& 
 }
 
 HRESULT mod_Camera::Init(IMFActivate*& pDevice, int pIndexDev) {
-    //if (this->vcCamObjs[pIndexDev].isActivated) {
-    //    return S_OK;
-    //}
-    
     //Liberar en dado caso este previamente iniciada
     this->vcCamObjs[pIndexDev].ReleaseCam();
 
     HRESULT hr = S_OK;
     
-    //hr = pDevice->ActivateObject(__uuidof(IMFMediaSource), (void**)&this->vc_pSource[pIndexDev]);
     hr = pDevice->ActivateObject(__uuidof(IMFMediaSource), (void**)&this->vcCamObjs[pIndexDev].sSource);
 
     if (SUCCEEDED(hr)){
@@ -586,14 +575,13 @@ BYTE* mod_Camera::GetFrame(int& iBytesOut, int pIndexDev) {
 }
 
 void mod_Camera::SpawnLive(int pIndexDev) {
-    //this->vcCamObjs[pIndexDev].thLive = std::thread(&mod_Camera::LiveCam, this, pIndexDev);
-    this->thLive = std::thread(&mod_Camera::LiveCam, this, pIndexDev);
+    this->thLive[pIndexDev] = std::thread(&mod_Camera::LiveCam, this, pIndexDev);
 }
 
 void mod_Camera::JoinLiveThread(int pIndexDev) {
     this->vcCamObjs[pIndexDev].isLive = false;
-    if (this->thLive.joinable()) {
-        this->thLive.join();
+    if (this->thLive[pIndexDev].joinable()) {
+        this->thLive[pIndexDev].join();
     }
 
     this->vcCamObjs[pIndexDev].ReleaseCam();
@@ -605,8 +593,7 @@ void mod_Camera::LiveCam(int pIndexDev) {
     hr = this->Init(this->vcCamObjs[pIndexDev].sActivate, pIndexDev);
     
     if (SUCCEEDED(hr)) {
-        this->vcCamObjs[pIndexDev].isActivated = true;
-        this->vcCamObjs[pIndexDev].isLive = true;
+        this->vcCamObjs[pIndexDev].isActivated = this->vcCamObjs[pIndexDev].isLive = true;
 
         DebugPrint("[!]Live iniciado");
 

