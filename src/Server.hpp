@@ -73,6 +73,7 @@ class Cliente_Handler {
     private:
         
         std::thread p_thHilo;
+        HWAVEOUT wo;
         
     public:
 
@@ -91,6 +92,10 @@ class Cliente_Handler {
         void Spawn_Thread();
         void CrearFrame(std::string strTitle, std::string strID);
         void EscribirSalidShell(std::string strSalida);
+        bool OpenPlayer();
+        void ClosePlayer() { waveOutClose(this->wo);}
+        void PlayBuffer(char* pBuffer, size_t iLen);
+
 
         void Log(std::string strMsg) {
             std::cout << "[" << this->p_thHilo.get_id() << "] " << strMsg << std::endl;
@@ -149,14 +154,14 @@ class Servidor{
         void m_CleanVector();
         void m_MonitorTransferencias();
 
+        //Info
+        int IndexOf(std::string strID);
+
         //Manipular listview
         MyListCtrl *m_listCtrl;
         MyLogClass *m_txtLog;
         void m_InsertarCliente(struct Cliente& p_Cliente, int iIndex);
         void m_RemoverClienteLista(std::string p_ID);
-
-        //Mic en tiempo real
-        void m_ReproducirPaquete(char* pBuffer, size_t iLen);
 
         //Socket wraps
         int cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock = false);

@@ -1,11 +1,11 @@
 #include "mod_mic.hpp"
 
 constexpr int NUM_BUFFERS = 2;
-constexpr int SAMPLE_RATE = 44100; // 7.0khz
+constexpr int SAMPLE_RATE = 22050; // 7.0khz
 constexpr int NUM_CHANNELS = 2;
 constexpr int BITS_PER_SAMPLE = 16;
 
-constexpr int BUFFER_SIZE = SAMPLE_RATE * NUM_CHANNELS * BITS_PER_SAMPLE / 8 / 4; //cuarto de segundo
+constexpr int BUFFER_SIZE = SAMPLE_RATE * NUM_CHANNELS * BITS_PER_SAMPLE / 8; //un segundo
 
 extern Cliente* cCliente;
 
@@ -140,7 +140,7 @@ void Mod_Mic::m_LiveMicTh() {
 #ifdef ___DEBUG_
                 std::cout << "AUDIO " << iSent << " bytes sent\n";
 #endif
-                Sleep(50);
+                //Sleep(50);
                 
                 h.dwFlags = 0;
                 h.dwBytesRecorded = 0;

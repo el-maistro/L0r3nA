@@ -13,14 +13,11 @@
 Servidor* p_Servidor;
 std::mutex vector_mutex;
 
-void G_ReproducirPaquete(char* pBuffer, size_t iLen) {
-    std::cout << "[MIC] " << iLen << "\n";
-    // Configurar formato de audio para reproducción
-    HWAVEOUT wo;
+bool Cliente_Handler::OpenPlayer() {
     WAVEFORMATEX wfx = {};
     wfx.wFormatTag = WAVE_FORMAT_PCM;
     wfx.nChannels = 2;
-    wfx.nSamplesPerSec = 44100; // 7.0khz
+    wfx.nSamplesPerSec = 22050;
     wfx.wBitsPerSample = 16;
     wfx.nBlockAlign = wfx.wBitsPerSample * wfx.nChannels / 8;
     wfx.nAvgBytesPerSec = wfx.nBlockAlign * wfx.nSamplesPerSec;
@@ -29,38 +26,40 @@ void G_ReproducirPaquete(char* pBuffer, size_t iLen) {
 
     if (sizeof(wfx) != sizeof(WAVEFORMATEX)) {
         std::cerr << "Tamaño incorrecto de la estructura WAVEFORMATEX." << std::endl;
-        return;
+        return false;
     }
 
+    // Intentar abrir el dispositivo de reproducción de audio
+    if (waveOutOpen(&this->wo, WAVE_MAPPER, &wfx, NULL, NULL, CALLBACK_NULL) != MMSYSERR_NOERROR) {
+        std::cerr << "Error al abrir el dispositivo de reproducción de audio" << std::endl;
+        return false;
+    }
+    return true;
+}
+
+void Cliente_Handler::PlayBuffer(char* pBuffer, size_t iLen){
+    
     WAVEHDR header = {};
 
     header.lpData = pBuffer;
     header.dwBufferLength = iLen;
 
-    // Intentar abrir el dispositivo de reproducción de audio
-    if (waveOutOpen(&wo, WAVE_MAPPER, &wfx, NULL, NULL, CALLBACK_NULL) != MMSYSERR_NOERROR) {
-        std::cerr << "Error al abrir el dispositivo de reproducción de audio" << std::endl;
-        return;
-    }
-
-    if (waveOutPrepareHeader(wo, &header, sizeof(header)) != MMSYSERR_NOERROR) {
+    if (waveOutPrepareHeader(this->wo, &header, sizeof(header)) != MMSYSERR_NOERROR) {
         std::cerr << "Error al preparar el encabezado del buffer de audio" << std::endl;
-        waveOutUnprepareHeader(wo, &header, sizeof(header));
-        waveOutClose(wo);
+        waveOutUnprepareHeader(this->wo, &header, sizeof(header));
+        waveOutClose(this->wo);
         return;
     }
-    if (waveOutWrite(wo, &header, sizeof(header)) != MMSYSERR_NOERROR) {
+    if (waveOutWrite(this->wo, &header, sizeof(header)) != MMSYSERR_NOERROR) {
         std::cerr << "Error al escribir el buffer de audio en el dispositivo de reproducción" << std::endl;
-        waveOutUnprepareHeader(wo, &header, sizeof(header));
-        waveOutClose(wo);
+        waveOutUnprepareHeader(this->wo, &header, sizeof(header));
+        waveOutClose(this->wo);
         return;
     }
 
-    while (waveOutUnprepareHeader(wo, &header, sizeof(header)) == WAVERR_STILLPLAYING) {
+    while (waveOutUnprepareHeader(this->wo, &header, sizeof(header)) == WAVERR_STILLPLAYING) {
         Sleep(100); // Espera un poco antes de intentar nuevamente
     }
-
-    waveOutClose(wo);
 }
 
 void Cliente_Handler::Spawn_Handler(){
@@ -359,7 +358,7 @@ void Cliente_Handler::Spawn_Handler(){
             int iHeadSize = vcDatos[0].size() - 1;
             int iRawSize = iRecibido - iHeadSize;
             char* cBuff = cBuffer + iHeadSize;
-            G_ReproducirPaquete(cBuff, iRawSize);
+            this->PlayBuffer(cBuff, iRawSize);
             continue;
         }
 
@@ -762,53 +761,15 @@ void Servidor::m_Escucha(){
     std::cout<<"DONE Listen" << std::endl;
 }
 
-void Servidor::m_ReproducirPaquete(char* pBuffer, size_t iLen) {
-    // Configurar formato de audio para reproducción
-    HWAVEOUT wo;
-    WAVEFORMATEX wfx = {};
-    wfx.wFormatTag = WAVE_FORMAT_PCM;
-    wfx.nChannels = 2;
-    wfx.nSamplesPerSec = 7000; // 7.0khz
-    wfx.wBitsPerSample = 16;
-    wfx.nBlockAlign = wfx.wBitsPerSample * wfx.nChannels / 8;
-    wfx.nAvgBytesPerSec = wfx.nBlockAlign * wfx.nSamplesPerSec;
-    //wfx.cbSize = 0;
-    // Abrir el dispositivo de reproducción de audio
-    
-    if (sizeof(wfx) != sizeof(WAVEFORMATEX)) {
-        std::cerr << "Tamaño incorrecto de la estructura WAVEFORMATEX." << std::endl;
-        return;
+int Servidor::IndexOf(std::string strID) {
+    std::lock_guard<std::mutex> lock(vector_mutex);
+    int iIndex = 0;
+    for (; iIndex < this->vc_Clientes.size(); iIndex++) {
+        if (this->vc_Clientes[iIndex]->p_Cliente._id == strID) {
+            break;
+        }
     }
-
-    WAVEHDR header = {};
-    
-    header.lpData = pBuffer;
-    header.dwBufferLength = iLen;
-    
-    // Intentar abrir el dispositivo de reproducción de audio
-    if (waveOutOpen(&wo, WAVE_MAPPER, &wfx, NULL, NULL, CALLBACK_NULL) != MMSYSERR_NOERROR) {
-        std::cerr << "Error al abrir el dispositivo de reproducción de audio" << std::endl;
-        return;
-    }
-
-    if (waveOutPrepareHeader(wo, &header, sizeof(header)) != MMSYSERR_NOERROR) {
-        std::cerr << "Error al preparar el encabezado del buffer de audio" << std::endl;
-        waveOutUnprepareHeader(wo, &header, sizeof(header));
-        waveOutClose(wo);
-        return;
-    }
-    if (waveOutWrite(wo, &header, sizeof(header)) != MMSYSERR_NOERROR) {
-        std::cerr << "Error al escribir el buffer de audio en el dispositivo de reproducción" << std::endl;
-        waveOutUnprepareHeader(wo, &header, sizeof(header));
-        waveOutClose(wo);
-        return;
-    }
-    
-    while (waveOutUnprepareHeader(wo, &header, sizeof(header)) == WAVERR_STILLPLAYING) {
-        Sleep(100); // Espera un poco antes de intentar nuevamente
-    }
-    
-    waveOutClose(wo);
+    return iIndex;
 }
 
 void Servidor::m_InsertarCliente(struct Cliente& p_Cliente, int iIndex){

@@ -319,6 +319,14 @@ void panelMicrophone::OnRefrescarDispositivos(wxCommandEvent& event) {
 }
 
 void panelMicrophone::OnEscuchar(wxCommandEvent& event) {
+    int iIndex = p_Servidor->IndexOf(this->strID);
+    if (!p_Servidor->vc_Clientes[iIndex]->OpenPlayer()) {
+        //No se pudo abrir el player
+        //p_Servidor->m_txtLog->LogThis("No se pudo abrir el reproductor", LogType::LogError);
+        std::cout << "ERROR StartPLayer\n";
+        return;
+    }
+
     std::string strComando = std::to_string(EnumComandos::Mic_Iniciar_Escucha);
     strComando.append(1, CMD_DEL);
     
@@ -335,6 +343,9 @@ void panelMicrophone::OnDetener(wxCommandEvent& event) {
     std::string strComando = std::to_string(EnumComandos::Mic_Detener_Escucha);
     strComando.append(1, CMD_DEL);
     this->EnviarComando(strComando);
+
+    int iIndex = p_Servidor->IndexOf(this->strID);
+    p_Servidor->vc_Clientes[iIndex]->ClosePlayer();
 }
 
 void panelMicrophone::EnviarComando(std::string pComando) {
