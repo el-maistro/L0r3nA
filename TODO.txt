@@ -1,4 +1,3 @@
-[SPY] Mod Live Mic
 [SPY] Mod Remote Desktop
 [SPY] Administrador de ventanas (Lista, Minimizar, Maximizar, Cerrar)
 [PERSISTENCE] Instalacion, evasion
