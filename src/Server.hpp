@@ -1,7 +1,8 @@
-#include "headers.hpp"
-#include "frame_client.hpp"
 #ifndef _SERVER_H
 #define _SERVER_H
+#include "headers.hpp"
+#include "frame_client.hpp"
+
 
 struct TransferStatus {
     std::string strCliente;
@@ -72,12 +73,13 @@ class MyListCtrl: public wxListCtrl{
 class Cliente_Handler {
     private:
         
-        std::thread p_thHilo;
+        
         HWAVEOUT wo;
         
     public:
-
+        std::thread p_thHilo;
         std::mutex mt_Archivos;
+        std::mutex mt_Running;
 
         FrameCliente* n_Frame = nullptr;
 
@@ -86,8 +88,6 @@ class Cliente_Handler {
         struct Cliente p_Cliente;
         bool isRunning = false;
         
-        Cliente_Handler(struct Cliente s_cliente) : p_Cliente(s_cliente) {}
-
         void Spawn_Handler();
         void Spawn_Thread();
         void CrearFrame(std::string strTitle, std::string strID);
@@ -98,14 +98,16 @@ class Cliente_Handler {
 
 
         void Log(std::string strMsg) {
-            std::cout << "[" << this->p_thHilo.get_id() << "] " << strMsg << std::endl;
+            std::cout << "[" << this->p_Cliente._id << "] " << strMsg << std::endl;
         }
 
-        void Join_Thread() {
-            if (this->p_thHilo.joinable()) {
-                this->p_thHilo.join();
-            }
+        void Stop() {
+            std::unique_lock<std::mutex> lock(mt_Running);
+            isRunning = false;
         }
+
+        Cliente_Handler(struct Cliente s_cliente) : p_Cliente(s_cliente) {}
+        //~Cliente_Handler(){Join_Thread();}
 };
 
 class Servidor{
@@ -122,7 +124,6 @@ class Servidor{
         ByteArray bKey;
         void Init_Key();
         int p_PingTime = 1000 * 60; //60 segundos
-        
     public:
         Servidor();
 
@@ -143,6 +144,7 @@ class Servidor{
         std::thread thPing;
         std::thread thCleanVC;
         std::thread thTransfers;
+        std::thread thWait;
       
 
         //Hilos
@@ -160,7 +162,7 @@ class Servidor{
         //Manipular listview
         MyListCtrl *m_listCtrl;
         MyLogClass *m_txtLog;
-        void m_InsertarCliente(struct Cliente& p_Cliente, int iIndex);
+        void m_InsertarCliente(struct Cliente& p_Cliente);
         void m_RemoverClienteLista(std::string p_ID);
 
         //Socket wraps
@@ -176,6 +178,7 @@ class Servidor{
         ClientConInfo m_Aceptar();
         void m_CerrarConexiones();
         void m_CerrarConexion(SOCKET& pSocket);
+        
 
         u_int m_lPuerto(){
             return uiPuertoLocal;

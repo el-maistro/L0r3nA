@@ -206,16 +206,17 @@ void MyFrame::OnToggle(wxCommandEvent& event) {
     }else {
         //Detener escuchar
         p_Servidor->m_StopHandler();
+        p_Servidor->m_CerrarConexiones();
         p_Servidor->m_JoinThreads();
 
-        p_Servidor->m_CerrarConexiones();
-
+        
         std::cout <<"VECTOR SIZE: "<< p_Servidor->vc_Clientes.size() << std::endl;
 
         p_Servidor->m_listCtrl->DeleteAllItems();
         SetStatusText("IDLE");
         this->btn_toggle->SetLabelText("Iniciar Servidor");
     }
+    Sleep(500);
 }
 
 void MyFrame::CrearControlesPanelIzquierdo(){
@@ -290,11 +291,10 @@ void MyFrame::OnClose(wxCloseEvent& event){
     }
     lock.unlock();
     
-    p_Servidor->m_JoinThreads();
-    
     p_Servidor->m_CerrarConexiones();
+    p_Servidor->m_JoinThreads();
 
-    Sleep(500);
+    Sleep(2000);
     
     delete p_Servidor;
     p_Servidor = nullptr;

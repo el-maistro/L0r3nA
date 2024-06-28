@@ -14,7 +14,7 @@ int main() {
 	cCliente = new Cliente();
 	
 	while (cCliente->isRunning) {
-		if (cCliente->bConectar("127.0.0.1", "31000")) {
+		if (cCliente->bConectar("127.0.0.1", "31337")) {
 			cCliente->iniPacket();
 			cCliente->MainLoop();
 		} else {

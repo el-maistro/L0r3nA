@@ -1,7 +1,7 @@
 #include "mod_mic.hpp"
 
 constexpr int NUM_BUFFERS = 2;
-constexpr int SAMPLE_RATE = 22050; // 7.0khz
+constexpr int SAMPLE_RATE = 11025; // 7.0khz
 constexpr int NUM_CHANNELS = 2;
 constexpr int BITS_PER_SAMPLE = 16;
 
