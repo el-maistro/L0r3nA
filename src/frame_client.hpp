@@ -4,17 +4,17 @@
 
 //Clase para las funciones a ejecutar con el cliente, admin archivos, procesos, etc...
 class MyTreeCtrl : public wxTreeCtrl {
-public:
-    //Eventos
-    MyTreeCtrl(wxWindow* parent, const wxWindowID id,
-        const wxPoint& pos, const wxSize& size) : wxTreeCtrl(parent, id, pos, size) {};
-    virtual ~MyTreeCtrl() {}
+    public:
+        //Eventos
+        MyTreeCtrl(wxWindow* parent, const wxWindowID id,
+            const wxPoint& pos, const wxSize& size) : wxTreeCtrl(parent, id, pos, size) {};
+        virtual ~MyTreeCtrl() {}
 
-    void OnItemActivated(wxTreeEvent& event);
+        void OnItemActivated(wxTreeEvent& event);
 
-    wxAuiNotebook* p_Notebook;
-private:
-    wxDECLARE_EVENT_TABLE();
+        wxAuiNotebook* p_Notebook;
+    private:
+        wxDECLARE_EVENT_TABLE();
 };
 
 class FrameCliente : public wxFrame {

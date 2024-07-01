@@ -235,10 +235,7 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID) {
 			memcpy(nTempBuffer + iHeaderSize, cBufferArchivo, iBytesLeidos);
 
 			uBytesEnviados += cCliente->cSend(cCliente->sckSocket, nTempBuffer, iTotal, 0, true);
-			Sleep(30);
-#ifdef ___DEBUG_
-			std::cout << "\r[FM] Enviados " << uBytesEnviados;
-#endif
+			Sleep(20);
 
 			if (nTempBuffer) {
 				delete[] nTempBuffer;

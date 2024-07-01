@@ -74,7 +74,7 @@ class Cliente {
 
 		bool isRunning = true;
 		bool isShellRunning = false;
-		bool BLOCK_MODE = true;
+		bool BLOCK_MODE = false;
 
 		//Misc
 		std::string ObtenerDesk();

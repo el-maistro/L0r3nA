@@ -70,6 +70,11 @@ bool Cliente::bConectar(const char* cIP, const char* cPuerto) {
         return false;
 	}
 
+    unsigned long int iBlock = 1;
+    if (ioctlsocket(this->sckSocket, FIONBIO, &iBlock) != 0) {
+        DebugPrint("[X] No se pudo hacer block");
+    }
+
     freeaddrinfo(sServer);
     
 	return true;
@@ -87,7 +92,7 @@ void Cliente::MainLoop() {
         }
 
         //Espere el comando en modo block
-        DebugPrint("[!] Esperando comando");
+        //DebugPrint("[!] Esperando comando");
 
         int iRecibido = this->cRecv(this->sckSocket, cBuffer, sizeof(cBuffer), false);
 
@@ -165,8 +170,6 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
         }
         return;
     }
-
-    DebugPrint("[SERVIDOR] " + std::string(pBuffer));
 
     strIn = strSplit(std::string(pBuffer), CMD_DEL, 4);
 
@@ -562,7 +565,8 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
     
     // 1 non block
     // 0 block
-    
+    std::unique_lock<std::mutex> lock(this->sck_mutex);
+
     ByteArray cData = this->bEnc((const unsigned char*)pBuffer, pLen);
     int iDataSize = cData.size();
     char* newBuffer = new char[iDataSize];
@@ -578,9 +582,7 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
             DebugPrint("No se pudo hacer block");
         }
         
-        std::unique_lock<std::mutex> lock(this->sck_mutex);
         iEnviado = send(pSocket, newBuffer, iDataSize, pFlags);
-        lock.unlock();
         
         //Restaurar
         if (!this->BLOCK_MODE) {
@@ -589,12 +591,8 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
                 DebugPrint("No se pudo restaurar el block_mode del socket");
             }
         }
-        
     } else {
-        std::unique_lock<std::mutex> lock(this->sck_mutex);
         iEnviado = send(pSocket, newBuffer, iDataSize, pFlags);
-        lock.unlock();
-        
     }
 
     if (newBuffer != nullptr) {
@@ -609,6 +607,8 @@ int Cliente::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool is
     //Aqui el socket por defecto es block asi que si se pasa false es normal
     // 1 non block
     // 0 block
+    std::unique_lock<std::mutex> lock(this->sck_mutex);
+
     char* cTmpBuff = new char[pLen];
     ZeroMemory(cTmpBuff, pLen);
 

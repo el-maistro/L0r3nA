@@ -53,7 +53,7 @@ panelFileManager::panelFileManager(wxWindow* pParent) :
 
 
 	this->p_ToolBar->AddTool(EnumIDS::ID_Panel_FM_Equipo, wxT("Equipo"), pcBitmap, "Equipo");
-	this->p_ToolBar->AddSeparator(); // Separador entre grupos de botones
+	this->p_ToolBar->AddSeparator();
 	this->p_ToolBar->AddTool(EnumIDS::ID_Panel_FM_Escritorio, wxT("Escritorio"), desktopBitmap, "Escritorio");
 	this->p_ToolBar->AddSeparator();
 	this->p_ToolBar->AddTool(EnumIDS::ID_Panel_FM_Descargas, wxT("Descargas"), downloadBitmap, "Descargas");
@@ -77,7 +77,6 @@ panelFileManager::panelFileManager(wxWindow* pParent) :
 	sizer2->Add(this->p_RutaActual, 1, wxEXPAND, 1);
 
 	sizer->Add(sizer2);
-	//sizer->Add(new wxStaticText(this, wxID_ANY, "Testing"), 0, wxEXPAND);
 	SetSizer(sizer);
 
 }
@@ -182,13 +181,13 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 			wxFileDialog dialog(this, "Seleccionar archivo a enviar", wxEmptyString, wxEmptyString, wxFileSelectorDefaultWildcardStr, wxFD_OPEN | wxFD_FILE_MUST_EXIST);
 			if (dialog.ShowModal() == wxID_OK) {
 				//dialog.GetPath() ruta al archivo seleccionado
-				int iTempID = atoi(this->strID.substr(this->strID.size() - 3, 3).c_str());
+				std::string strTID = this->strID;
 				std::string strRutaLocal = dialog.GetPath();
 				std::string strRutaRemota = this->p_RutaActual->GetLabelText();
 				strRutaRemota += dialog.GetFilename();
 				//std::thread thEnviar(&panelFileManager::EnviarArchivo, this, dialog.GetPath(), strRutaRemota.c_str(), iTempID);
-				std::thread thEnviar([this, strRutaLocal, strRutaRemota, iTempID] {
-					this->EnviarArchivo(strRutaLocal, strRutaRemota.c_str(), iTempID);
+				std::thread thEnviar([this, strRutaLocal, strRutaRemota, strTID] {
+					this->EnviarArchivo(strRutaLocal, strRutaRemota.c_str(), strTID);
 				});
 				thEnviar.detach();
 			}
@@ -205,7 +204,7 @@ void panelFileManager::EnviarComando(std::string pComando) {
 	p_Servidor->cSend(this->sckCliente, pComando.c_str(), pComando.size() + 1, 0, false);
 }
 
-void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath, int iIdCliente) {
+void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath, std::string strCliente) {
 	std::cout << "Enviando " << lPath << std::endl;
 
 	std::ifstream localFile(lPath, std::ios::binary);
@@ -215,16 +214,21 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 		return;
 	}
 
-	std::unique_lock<std::mutex> lock(vector_mutex);
-
 	u_int uiTamBloque = 1024 * 70; //70 KB
 	u64 uTamArchivo = GetFileSize(lPath.c_str());
 	u64 uBytesEnviados = 0;
 
 	//AGREGAR TRANSFER AL VECTOR DEL SERVIDOR
-
+	struct TransferStatus nuevo_transfer;
+	nuevo_transfer.isUpload = true;
+	nuevo_transfer.uTamano = uTamArchivo;
+	nuevo_transfer.strCliente = strCliente;
+	nuevo_transfer.strNombre = lPath;
+	nuevo_transfer.uDescargado = 0;
+	std::unique_lock<std::mutex> lock(p_Servidor->p_transfers);
+	p_Servidor->vcTransferencias.insert({ strCliente, nuevo_transfer });
 	lock.unlock();
-	
+
 
 	std::string strComando = std::to_string(EnumComandos::FM_Descargar_Archivo_Init);
 	strComando.append(1, CMD_DEL);
@@ -256,13 +260,15 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 
 			//Implementar otro metodo para verificar el id antes de enviar
 			uBytesEnviados += p_Servidor->cSend(this->sckCliente, nTempBuffer, iTotal, 0, true);
+			std::unique_lock<std::mutex> lock(p_Servidor->p_transfers);
+			p_Servidor->vcTransferencias[strCliente].uDescargado += iBytesLeidos;
+			lock.unlock();
 			
 			if (nTempBuffer) {
 				delete[] nTempBuffer;
 				nTempBuffer = nullptr;
 			}
-		}
-		else {
+		}else {
 			break;
 		}
 	}
@@ -274,13 +280,12 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 	std::string strComandoCerrar = std::to_string(EnumComandos::FM_Descargar_Archivo_End);
 	strComandoCerrar.append(1, CMD_DEL);
 	p_Servidor->cSend(this->sckCliente, strComandoCerrar.c_str(), strComandoCerrar.size(), 0, true);
-	
+
 	if (cBufferArchivo) {
 		delete[] cBufferArchivo;
 		cBufferArchivo = nullptr;
 	}
 	
-	wxMessageBox("Archivo enviado!", "Upload", wxOK);
 }
 
 wxString panelFileManager::RutaActual() {
@@ -352,32 +357,33 @@ void ListCtrlManager::OnDescargarArchivo(wxCommandEvent& event) {
 		return;
 	}
 
-	struct Archivo_Descarga2 nuevo_archivo;
+	struct TransferStatus nuevo_transfer;
+	struct Archivo_Descarga nuevo_archivo;
 	nuevo_archivo.iFP = fopen(dialog.GetPath().c_str(), "wb");
-	nuevo_archivo.uTamarchivo = nuevo_archivo.uDescargado = 0;
-	nuevo_archivo.strNombre = this->GetItemText(item, 1);
+	nuevo_transfer.uDescargado = nuevo_transfer.uTamano = nuevo_archivo.uTamarchivo = nuevo_archivo.uDescargado = 0;
+	nuevo_transfer.strNombre = nuevo_archivo.strNombre = this->GetItemText(item, 1);
+	nuevo_transfer.strCliente = this->itemp->strID;
+	nuevo_transfer.isUpload = false;
 	if (nuevo_archivo.iFP == nullptr) {
 		error();
-		p_Servidor->m_txtLog->LogThis("[X] No se pudo abrir el archivo" + strNombre, LogType::LogError);
+		p_Servidor->m_txtLog->LogThis("[X] No se pudo abrir el archivo " + strNombre, LogType::LogError);
 		return;
 	}
 
-	std::unique_lock<std::mutex> lock(vector_mutex);
-
-	for (auto itCli = p_Servidor->vc_Clientes.begin(); itCli != p_Servidor->vc_Clientes.end(); itCli++) {
-		if ((*itCli)->p_Cliente._id == this->itemp->strID) {
-			lock.unlock();
-
-			std::unique_lock<std::mutex> lock2((*itCli)->mt_Archivos);
-			(*itCli)->um_Archivos_Descarga2.insert({ strID, nuevo_archivo });
-			lock2.unlock();
-
-			lock.lock();
-			break;
-		}
+	
+	int iClienteID = p_Servidor->IndexOf(this->itemp->strID);
+	if (iClienteID == -1) {
+		p_Servidor->m_txtLog->LogThis("[X] No se pudo encontrar el cliente " + this->itemp->strID, LogType::LogError);
+		return;
 	}
 
+	std::unique_lock<std::mutex> lock(p_Servidor->vc_Clientes[iClienteID]->mt_Archivos);
+	p_Servidor->vc_Clientes[iClienteID]->um_Archivos_Descarga.insert({ strID, nuevo_archivo });
 	lock.unlock();
+
+	std::unique_lock<std::mutex> lock2(p_Servidor->p_transfers);
+	p_Servidor->vcTransferencias.insert({ strID, nuevo_transfer });
+	lock2.unlock();
 
 	this->itemp->EnviarComando(strComando);
 }

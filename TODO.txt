@@ -1,7 +1,8 @@
+[FM] confirmacion de cifrado/descifrado de archivos
 [SPY] Mod Remote Desktop
 [SPY] Administrador de ventanas (Lista, Minimizar, Maximizar, Cerrar)
-[PERSISTENCE] Instalacion, evasion
 [INFORMATION] OS, Users, Passwords 
+[PERSISTENCE] Instalacion, evasion
 [NETWORK] Reverse proxy
 [NETWORK] LAN/WAN scanner
 [FUN] Obvio :v

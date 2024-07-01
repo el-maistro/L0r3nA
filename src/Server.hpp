@@ -8,15 +8,15 @@ struct TransferStatus {
     std::string strCliente;
     std::string strNombre;
     bool isUpload = false;
-    u64 uTamano = 0;
-    u64 uDescargado = 0;
+    double uTamano = 0;
+    double uDescargado = 0;
 };
 
-struct Archivo_Descarga2 {
+struct Archivo_Descarga {
     std::string strNombre;
     FILE* iFP;
-    u64 uTamarchivo;
-    u64 uDescargado;
+    double uTamarchivo;
+    double uDescargado;
 };
 
 struct Cliente{
@@ -30,7 +30,7 @@ struct Cliente{
     std::string _strPID;
     bool _isBusy = false;
     bool _isRunningShell = false;
-    std::unordered_map<std::string, struct Archivo_Descarga2> um_Archivos_Descarga2;
+    std::unordered_map<std::string, struct Archivo_Descarga> um_Archivos_Descarga2;
 };
 
 struct ClientConInfo{
@@ -83,7 +83,7 @@ class Cliente_Handler {
 
         FrameCliente* n_Frame = nullptr;
 
-        std::unordered_map<std::string, struct Archivo_Descarga2> um_Archivos_Descarga2;
+        std::map<std::string, struct Archivo_Descarga> um_Archivos_Descarga;
         
         struct Cliente p_Cliente;
         bool isRunning = false;
@@ -98,7 +98,7 @@ class Cliente_Handler {
 
 
         void Log(std::string strMsg) {
-            std::cout << "[" << this->p_Cliente._id << "] " << strMsg << std::endl;
+            std::cout << "[" << this->p_Cliente._id << "] " << strMsg << "\n";
         }
 
         void Stop() {
@@ -107,7 +107,6 @@ class Cliente_Handler {
         }
 
         Cliente_Handler(struct Cliente s_cliente) : p_Cliente(s_cliente) {}
-        //~Cliente_Handler(){Join_Thread();}
 };
 
 class Servidor{
@@ -131,9 +130,10 @@ class Servidor{
         std::mutex p_transfers;
         std::mutex count_mutex;
 
-        std::unordered_map<SOCKET, struct Cliente> um_Clientes;
+        //std::unordered_map<SOCKET, struct Cliente> um_Clientes;
 
-        std::vector<struct TransferStatus> vcTransferencias;
+        std::map<std::string, struct TransferStatus> vcTransferencias;
+
         std::vector<Cliente_Handler*> vc_Clientes;
         
         bool p_Escuchando = false;
@@ -144,7 +144,6 @@ class Servidor{
         std::thread thPing;
         std::thread thCleanVC;
         std::thread thTransfers;
-        std::thread thWait;
       
 
         //Hilos

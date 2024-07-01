@@ -21,16 +21,16 @@ bool Cliente_Handler::OpenPlayer() {
     wfx.nBlockAlign = wfx.wBitsPerSample * wfx.nChannels / 8;
     wfx.nAvgBytesPerSec = wfx.nBlockAlign * wfx.nSamplesPerSec;
     //wfx.cbSize = 0;
-    // Abrir el dispositivo de reproducción de audio
+    // Abrir el dispositivo de reproducciï¿½n de audio
 
     if (sizeof(wfx) != sizeof(WAVEFORMATEX)) {
-        std::cerr << "Tamaño incorrecto de la estructura WAVEFORMATEX." << std::endl;
+        std::cerr << "Tamaï¿½o incorrecto de la estructura WAVEFORMATEX." << std::endl;
         return false;
     }
 
-    // Intentar abrir el dispositivo de reproducción de audio
+    // Intentar abrir el dispositivo de reproducciï¿½n de audio
     if (waveOutOpen(&this->wo, WAVE_MAPPER, &wfx, NULL, NULL, CALLBACK_NULL) != MMSYSERR_NOERROR) {
-        std::cerr << "Error al abrir el dispositivo de reproducción de audio" << std::endl;
+        std::cerr << "Error al abrir el dispositivo de reproducciï¿½n de audio" << std::endl;
         return false;
     }
     return true;
@@ -50,7 +50,7 @@ void Cliente_Handler::PlayBuffer(char* pBuffer, size_t iLen){
         return;
     }
     if (waveOutWrite(this->wo, &header, sizeof(header)) != MMSYSERR_NOERROR) {
-        std::cerr << "Error al escribir el buffer de audio en el dispositivo de reproducción" << std::endl;
+        std::cerr << "Error al escribir el buffer de audio en el dispositivo de reproducciï¿½n" << std::endl;
         waveOutUnprepareHeader(this->wo, &header, sizeof(header));
         waveOutClose(this->wo);
         return;
@@ -76,7 +76,6 @@ void Cliente_Handler::Spawn_Handler(){
         
         //Esperar por datos y procesarlos
         ZeroMemory(cBuffer, iBufferSize);
-
         int iRecibido = p_Servidor->cRecv(this->p_Cliente._sckCliente, cBuffer, iBufferSize, 0, false);
 
         if (iRecibido == WSAECONNRESET) {
@@ -111,21 +110,23 @@ void Cliente_Handler::Spawn_Handler(){
             vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 2);
             // CMD + 2 slashs /  +len del id
             int iHeader = 5 + vcDatos[1].size();
+            int iBytesSize = iRecibido - iHeader;
             char* cBytes = cBuffer + iHeader;
-
-            std::unique_lock<std::mutex> lock(this->mt_Archivos);
-
-            auto archivoIter = this->um_Archivos_Descarga2.find(vcDatos[1]);
-            if (archivoIter != this->um_Archivos_Descarga2.end() && archivoIter->second.iFP != nullptr) {
-                fwrite(cBytes, sizeof(char), iRecibido - iHeader, archivoIter->second.iFP);
-                archivoIter->second.uDescargado += (iRecibido - iHeader);
-            }
             
-            lock.unlock();
+            FILE* fp = this->um_Archivos_Descarga[vcDatos[1]].iFP;
+            if (fp) {
+                fwrite(cBytes, sizeof(char), iBytesSize, fp);
+                //Por los momentos solo es necesario que el servidor almacene el progreso
+                //this->um_Archivos_Descarga[vcDatos[1]].uDescargado += iBytesSize;
+
+                std::unique_lock<std::mutex> lock(p_Servidor->p_transfers);
+                p_Servidor->vcTransferencias[vcDatos[1]].uDescargado += iBytesSize;
+            }else {
+                this->Log("El archivo no esta abierto");
+            }
             continue;
         }
 
-        
         //Pquete inicial
         if (vcDatos[0] == "01") {
             vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 5);
@@ -222,14 +223,14 @@ void Cliente_Handler::Spawn_Handler(){
 
         if (vcDatos[0] == std::to_string(EnumComandos::FM_Descargar_Archivo_Init)) {
             vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 3);
-            //Tamaño del archivo recibido
+            //Tamaï¿½o del archivo recibido
             u64 uTamArchivo = StrToUint(vcDatos[2].c_str());
 
-            auto archivo = this->um_Archivos_Descarga2.find(vcDatos[1]);
+            this->um_Archivos_Descarga[vcDatos[1]].uTamarchivo = uTamArchivo;
             
-            if (archivo != this->um_Archivos_Descarga2.end()) {
-                archivo->second.uTamarchivo = uTamArchivo;
-            }
+            std::unique_lock<std::mutex> lock(p_Servidor->p_transfers);
+            p_Servidor->vcTransferencias[vcDatos[1]].uTamano = uTamArchivo;
+            lock.unlock();
 
             std::cout << "[ID-" << vcDatos[1] << "]Tam archivo: " << uTamArchivo << std::endl;
             continue;
@@ -237,20 +238,18 @@ void Cliente_Handler::Spawn_Handler(){
 
         if (vcDatos[0] == std::to_string(EnumComandos::FM_Descargar_Archivo_End)) {
             vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 2);
-            auto archivo = this->um_Archivos_Descarga2.find(vcDatos[1]);
-            if (archivo != this->um_Archivos_Descarga2.end()) {
-                if (archivo->second.iFP != nullptr) {
-                    fclose(archivo->second.iFP);
-                }
+            
+            if(this->um_Archivos_Descarga[vcDatos[1]].iFP){
+                fclose(this->um_Archivos_Descarga[vcDatos[1]].iFP);
             }
-            std::cout << "[!] Descarga completa" << std::endl;
-            wxMessageBox("Descarga completa", "Completo", wxOK);
+
+            this->Log("[!] Descarga completa");
             continue;
         }
 
         if (vcDatos[0] == std::to_string(EnumComandos::FM_Editar_Archivo_Paquete)) {
             vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 2);
-            //Tamaño del id del comando, id del archivo y dos back slashes
+            //Tamaï¿½o del id del comando, id del archivo y dos back slashes
             int iHeadSize = 2 + vcDatos[0].size() + vcDatos[1].size();
             char* cBytes = cBuffer + iHeadSize;
     
@@ -615,6 +614,7 @@ void Servidor::m_CleanVector() {
     this->vc_Clientes.clear();
 }
 
+/*
 void Servidor::m_Ping(){
     this->m_txtLog->LogThis("Thread PING iniciada", LogType::LogMessage);
     
@@ -676,47 +676,39 @@ void Servidor::m_Ping(){
         lock2.unlock(); //desbloquear vector
     }
 }
+*/
 
 void Servidor::m_MonitorTransferencias() {
-    while (this->p_Transferencias) {
+    while (true){
+        std::unique_lock<std::mutex> lock(this->p_transfers);
+        if (!this->p_Transferencias) {
+            break;
+        }
+        lock.unlock();
+
         auto parent = (wxFrame*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Transferencias);
         if (parent) {
             auto list_transfer = (wxListCtrl*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Transferencias_List, parent);
             if (list_transfer) {
-                //Esta activo el listview
                 list_transfer->DeleteAllItems();
-                std::unique_lock<std::mutex> lock(vector_mutex);
-                //std::cout << "[VECTOR] " << this->vcTransferencias.size() << std::endl;
 
-                for (int iCount = 0; iCount < int(this->vcTransferencias.size()); iCount++) {
-                    auto tc = this->vcTransferencias[iCount];
+                std::unique_lock<std::mutex> lock2(this->p_transfers);
+                int iRowCount = 0;
+                for (auto& tc : this->vcTransferencias) {
+                    list_transfer->InsertItem(iRowCount, wxString(tc.second.strCliente));
+                    list_transfer->SetItem(iRowCount, 1, wxString(tc.second.strNombre));
+                    list_transfer->SetItem(iRowCount, 2, wxString(tc.second.uDescargado >= tc.second.uTamano ? "TRANSFERIDO" : (tc.second.isUpload ? "SUBIENDO" : "DESCARGANDO")));
 
-                    list_transfer->InsertItem(iCount, wxString(tc.strCliente));
-                    list_transfer->SetItem(iCount, 1, wxString(tc.strNombre));
-                    list_transfer->SetItem(iCount, 2, wxString((tc.isUpload ? "SUBIENDO" : "DESCARGANDO")));
-
-                    //std::unique_lock<std::mutex> lock2(vector_mutex);
-                    auto itCli = this->um_Clientes.find(FilterSocket(tc.strCliente));
-                    if (itCli != this->um_Clientes.end()) {
-                        //Iterar y buscar
-                        for (auto item2 : itCli->second.um_Archivos_Descarga2) {
-                            if (item2.second.strNombre == tc.strNombre) {
-                                double percentage = item2.second.uDescargado / (item2.second.uTamarchivo / 100);
-                                wxString strPro = std::to_string(percentage);
-                                strPro.append(1, '%');
-                                
-                                list_transfer->SetItem(iCount, 3, strPro);
-                                break;
-                            }
-                        }
-                    }
-                    //lock2.unlock();
+                    double dPercentage = (tc.second.uDescargado / tc.second.uTamano) * 100;
+                    wxString strPor = std::to_string(dPercentage);
+                    strPor.append(1, '%');
+                    list_transfer->SetItem(iRowCount++, 3, wxString(strPor));
                 }
-                lock.unlock();
+            } else {
+                std::cout << "No se pudo encontrar el list abierto" << std::endl;
             }
-            else {
-                std::cout << "No se pudo encontrar el panel abierto" << std::endl;
-            }
+        }else {
+            std::cout << "No se pudo encontrar el panel abierto" << std::endl;
         }
         Sleep(1000);
     }
@@ -780,12 +772,17 @@ void Servidor::m_Escucha(){
 
 int Servidor::IndexOf(std::string strID) {
     std::lock_guard<std::mutex> lock(vector_mutex);
+    bool isFound = false;
     int iIndex = 0;
     for (; iIndex < this->vc_Clientes.size(); iIndex++) {
         if (this->vc_Clientes[iIndex]->p_Cliente._id == strID) {
+            isFound = true;
             break;
         }
     }
+    
+    if (!isFound) { iIndex = -1; }
+
     return iIndex;
 }
 

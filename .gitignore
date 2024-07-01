@@ -9,3 +9,4 @@ src/out*
 *.json
 *.zip
 enc_temp_folder/*
+NOTES.txt
