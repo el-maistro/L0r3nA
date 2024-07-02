@@ -87,7 +87,8 @@ namespace EnumComandos {
         CM_Single,
         CM_Single_Salida,
         CM_Live_Start,
-        CM_Live_Stop
+        CM_Live_Stop,
+        FM_Crypt_Confirm
     };
 }
 
