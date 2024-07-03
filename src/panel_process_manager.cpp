@@ -42,12 +42,17 @@ void panelProcessManager::CrearListview() {
 
 	itemCol.SetText("Nombre");
 	itemCol.SetAlign(wxLIST_FORMAT_LEFT);
-	itemCol.SetWidth(250);
+	itemCol.SetWidth(200);
 	this->listManager->InsertColumn(1, itemCol);
 
 	itemCol.SetText("Usuario");
-	itemCol.SetWidth(250);
+	itemCol.SetWidth(150);
 	this->listManager->InsertColumn(2, itemCol);
+
+	itemCol.SetText("Ruta");
+	itemCol.SetWidth(900);
+	this->listManager->InsertColumn(3, itemCol);
+
 }
 
 void ListCtrlManager2::OnRefrescar(wxCommandEvent& event) {
@@ -68,15 +73,17 @@ void ListCtrlManager2::OnTerminarPID(wxCommandEvent& event) {
 }
 
 void ListCtrlManager2::AgregarData(std::string strBuffer, std::string _strPID){
-	// PID ~ pNAME ~ HOST/USER |
-	std::vector<std::string> vc_Proc = strSplit(strBuffer, '|', 1000);
+	// PID ~ pNAME ~ HOST/USER ~ PATH|
+	std::vector<std::string> vc_Proc = strSplit(strBuffer, '|', 2000);
 	int iCount = 0;
 	for (auto aProceso : vc_Proc) {
-		std::vector<std::string> vc_Detail = strSplit(aProceso, '>', 3);
-		if (vc_Detail.size() == 3) {
+		std::vector<std::string> vc_Detail = strSplit(aProceso, '>', 4);
+		if (vc_Detail.size() == 4) {
 			this->InsertItem(iCount, vc_Detail[0]);
 			this->SetItem(iCount, 1, vc_Detail[1]);
 			this->SetItem(iCount, 2, vc_Detail[2]);
+			this->SetItem(iCount, 3, vc_Detail[3]);
+
 			if (vc_Detail[0] == _strPID) { //PID del cliente
 				this->SetItemTextColour(iCount, *wxRED);
 			}

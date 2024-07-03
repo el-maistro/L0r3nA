@@ -18,6 +18,7 @@
 #include<vector>
 #include<cstring>
 #include<ctime>
+#include<psapi.h>
 #include<sys/stat.h>
 #include<wtsapi32.h>
 #include<winbase.h>
@@ -43,9 +44,6 @@
 typedef unsigned int u_int;
 typedef const char c_char;
 typedef unsigned long long int u64;
-
-
-
 
 namespace EnumComandos {
     enum Enum {

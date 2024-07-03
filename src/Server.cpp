@@ -297,10 +297,10 @@ void Cliente_Handler::Spawn_Handler(){
         }
 
         if (vcDatos[0] == std::to_string(EnumComandos::PM_Lista)) {
-            vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 2);
+            char* cData = cBuffer + vcDatos[0].size() + 1;
             panelProcessManager* panel_proc = (panelProcessManager*)wxWindow::FindWindowById(EnumIDS::ID_PM_Panel, this->n_Frame);
             if (panel_proc) {
-                panel_proc->listManager->AgregarData(vcDatos[1], this->p_Cliente._strPID);
+                panel_proc->listManager->AgregarData(std::string(cData), this->p_Cliente._strPID);
             }
             continue;
         }
@@ -610,7 +610,9 @@ void Servidor::m_CleanVector() {
                 it = this->vc_Clientes.erase(it);
                 {
                     std::unique_lock<std::mutex> lock2(this->count_mutex);
-                    this->iCount--;
+                    if (this->iCount > 0) {
+                        this->iCount--;
+                    }
                 }
             }else {
                 it++;
