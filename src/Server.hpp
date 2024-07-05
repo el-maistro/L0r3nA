@@ -86,7 +86,7 @@ class Cliente_Handler {
         std::map<std::string, struct Archivo_Descarga> um_Archivos_Descarga;
         
         struct Cliente p_Cliente;
-        bool isRunning = false;
+        bool isRunning = true;
         
         void Spawn_Handler();
         void Spawn_Thread();

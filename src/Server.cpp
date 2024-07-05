@@ -62,7 +62,6 @@ void Cliente_Handler::PlayBuffer(char* pBuffer, size_t iLen){
 }
 
 void Cliente_Handler::Spawn_Handler(){
-    this->isRunning = true;
     int iBufferSize = 1024 * 100;
     char *cBuffer = new char[iBufferSize];
     while (true) {

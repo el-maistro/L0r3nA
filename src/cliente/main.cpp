@@ -4,7 +4,7 @@
 
 Cliente* cCliente;
 
-int main() {
+int main(int argc, char** argv) {
 	WSADATA wsa;
 	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
 		error();
@@ -14,7 +14,7 @@ int main() {
 	cCliente = new Cliente();
 	
 	while (cCliente->isRunning) {
-		if (cCliente->bConectar("127.0.0.1", "31337")) {
+		if (cCliente->bConectar(argv[1], argv[2])) {
 			cCliente->iniPacket();
 			cCliente->MainLoop();
 		} else {
