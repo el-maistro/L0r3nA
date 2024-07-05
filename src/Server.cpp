@@ -72,24 +72,16 @@ void Cliente_Handler::Spawn_Handler(){
         }
         lock.unlock();
         
-        
-        //Esperar por datos y procesarlos
-        ZeroMemory(cBuffer, iBufferSize);
-        int iRecibido = p_Servidor->cRecv(this->p_Cliente._sckCliente, cBuffer, iBufferSize, 0, false);
+        int iRecibido = p_Servidor->cRecv(this->p_Cliente._sckCliente, cBuffer, iBufferSize-1, 0, false);
 
-        if (iRecibido == WSAECONNRESET) {
-            this->Log("WSAECONNRESET");
-            break;
-        }
-
+        //No hay datos todavia, esperar un poco mas
         if (WSAGetLastError() == WSAEWOULDBLOCK) {
-            //No hay datos todavia, esperar un poco mas
-            
             Sleep(10);
             continue;
         }
 
-        if (iRecibido <= 0 && GetLastError() != WSAEWOULDBLOCK) {
+        //Desconexion del cliente
+        if ((iRecibido <= 0 && GetLastError() != WSAEWOULDBLOCK) || iRecibido == WSAECONNRESET) {
             //Si la ventana sigue abierta
             FrameCliente* temp_cli = (FrameCliente*)wxWindow::FindWindowByName(this->p_Cliente._id);
             if (temp_cli) {
@@ -97,6 +89,12 @@ void Cliente_Handler::Spawn_Handler(){
             }
             break;
         }
+
+        if (iRecibido == 0) {
+            continue;
+        }
+
+        cBuffer[iRecibido] = '\0';
 
         std::vector<std::string> vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 1);
         if (vcDatos.size() == 0) {
@@ -172,12 +170,14 @@ void Cliente_Handler::Spawn_Handler(){
             else if (vcDatos[1][1] == '<') {
                 //file
                 vcFileEntry = strSplit(vcDatos[1], '<', 4);
-                u64 bytes = StrToUint(vcFileEntry[2].c_str());
-                char* cDEN = "BKMGTP";
-                double factor = floor((vcFileEntry[2].size() - 1) / 3);
-                char cBuf[20];
-                snprintf(cBuf, 19, "%.2f %c", bytes / pow(1024, factor), cDEN[int(factor)]);
-                strTama = cBuf;
+                if (vcFileEntry.size() == 4) {
+                    u64 bytes = StrToUint(vcFileEntry[2].c_str());
+                    char* cDEN = "BKMGTP";
+                    double factor = floor((vcFileEntry[2].size() - 1) / 3);
+                    char cBuf[20];
+                    snprintf(cBuf, 19, "%.2f %c", bytes / pow(1024, factor), cDEN[int(factor)]);
+                    strTama = cBuf;
+                }
             }
             else {
                 //unknown

