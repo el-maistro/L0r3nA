@@ -107,6 +107,13 @@ class Cliente_Handler {
         }
 
         Cliente_Handler(struct Cliente s_cliente) : p_Cliente(s_cliente) {}
+        ~Cliente_Handler() {
+            for (auto& archivo: um_Archivos_Descarga) {
+                if (archivo.second.iFP) {
+                    fclose(archivo.second.iFP);
+                }
+            }
+        }
 };
 
 class Servidor{
@@ -188,6 +195,7 @@ class Servidor{
         }
 
         ~Servidor(){
+
             if(sckSocket != INVALID_SOCKET){
                 closesocket(sckSocket);
                 sckSocket = INVALID_SOCKET;

