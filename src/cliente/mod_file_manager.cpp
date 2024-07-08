@@ -89,9 +89,8 @@ std::vector<std::string> vDir(c_char* cPath) {
 	hFind = FindFirstFileA(szDir, &win32Archivo);
 
 	if (!hFind) {
-#ifdef ___DEBUG_		
-		error();
-#endif
+		DebugPrint("No se pudo listar el directorio " + std::string(szDir));
+		return vcFolders;
 	}
 	do {
 		//cFecha tmpdir baia.cFileName win32Archivo.nFilesizeLow
@@ -216,24 +215,26 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID) {
 	char* cBufferArchivo = new char[uiTamBloque];
 	int iBytesLeidos = 0;
 
+	char* nSendbuffer = new char[uiTamBloque + iHeaderSize];
+	
+	memcpy(nSendbuffer, strHeader.c_str(), iHeaderSize);
+
 	while (1) {
 		localFile.read(cBufferArchivo, uiTamBloque);
 		iBytesLeidos = localFile.gcount();
 		if (iBytesLeidos > 0) {
 			int iTotal = iBytesLeidos + iHeaderSize;
-			char* nTempBuffer = new char[iTotal];
+			memcpy(nSendbuffer + iHeaderSize, cBufferArchivo, iBytesLeidos);
 
-			memcpy(nTempBuffer, strHeader.c_str(), iHeaderSize);
-			memcpy(nTempBuffer + iHeaderSize, cBufferArchivo, iBytesLeidos);
-
-			int iEnviado = cCliente->cSend(cCliente->sckSocket, nTempBuffer, iTotal, 0, true);
+			int iEnviado = cCliente->cSend(cCliente->sckSocket, nSendbuffer, iTotal, 0, true);
 			uBytesEnviados += iEnviado;
-			Sleep(20);
-
+			Sleep(10);
+			
+			/*Sleep(20);
 			if (nTempBuffer) {
 				delete[] nTempBuffer;
 				nTempBuffer = nullptr;
-			}
+			}*/
 
 			if (iEnviado == -1 || iEnviado == WSAECONNRESET) {
 				//No se pudo enviar el paquete
@@ -253,6 +254,10 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID) {
 	strComandoCerrar += cID;
 	cCliente->cSend(cCliente->sckSocket, strComandoCerrar.c_str(), strComandoCerrar.size(), 0, true);
 
+	if (nSendbuffer) {
+		delete[] nSendbuffer;
+		nSendbuffer = nullptr;
+	}
 
 	if (cBufferArchivo) {
 		delete[] cBufferArchivo;

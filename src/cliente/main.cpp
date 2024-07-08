@@ -5,6 +5,8 @@
 Cliente* cCliente;
 
 int main(int argc, char** argv) {
+	char* cHost = "127.0.0.1";
+	char* cPort = "31337";
 	WSADATA wsa;
 	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
 		error();
@@ -14,7 +16,7 @@ int main(int argc, char** argv) {
 	cCliente = new Cliente();
 	
 	while (cCliente->isRunning) {
-		if (cCliente->bConectar(argv[1], argv[2])) {
+		if (cCliente->bConectar(argc == 3 ? argv[1] : cHost, argc == 3 ? argv[2]: cPort)) {
 			cCliente->iniPacket();
 			cCliente->MainLoop();
 		} else {

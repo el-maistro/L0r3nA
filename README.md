@@ -6,7 +6,8 @@
 - Administrador de archivos
 - Administrador de procesos
 - Keylogger
-- Captura de camara y microfono
+- Captura de camara
+- Captura de microfono
 
 ### TODO
 - [ ] Escritorio Remoto

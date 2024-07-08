@@ -203,7 +203,7 @@ panelReverseShell::panelReverseShell(wxWindow* pParent) :
 
 void panelReverseShell::OnHook(wxKeyEvent& event) {
     //long last_position = this->txtConsole->GetLastPosition();
-    long current_pos = this->txtConsole->GetInsertionPoint();
+    unsigned long int current_pos = this->txtConsole->GetInsertionPoint();
     int iCode = event.GetKeyCode();
     if (iCode == WXK_LEFT || iCode == WXK_BACK) {
         //Si retrocedio hasta el ultimo regresarlo
@@ -319,14 +319,6 @@ void panelMicrophone::OnRefrescarDispositivos(wxCommandEvent& event) {
 }
 
 void panelMicrophone::OnEscuchar(wxCommandEvent& event) {
-    int iIndex = p_Servidor->IndexOf(this->strID);
-    if (!p_Servidor->vc_Clientes[iIndex]->OpenPlayer()) {
-        //No se pudo abrir el player
-        //p_Servidor->m_txtLog->LogThis("No se pudo abrir el reproductor", LogType::LogError);
-        std::cout << "ERROR StartPLayer\n";
-        return;
-    }
-
     std::string strComando = std::to_string(EnumComandos::Mic_Iniciar_Escucha);
     strComando.append(1, CMD_DEL);
     

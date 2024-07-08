@@ -67,7 +67,6 @@ class Cliente {
 			{"536", EnumComandos::CM_Live_Start},
 			{"537", EnumComandos::CM_Live_Stop},
 			{"538", EnumComandos::FM_Crypt_Confirm}
-
 		};
 
 		Cliente();

@@ -72,16 +72,22 @@ void Cliente_Handler::Spawn_Handler(){
         }
         lock.unlock();
         
-        int iRecibido = p_Servidor->cRecv(this->p_Cliente._sckCliente, cBuffer, iBufferSize-1, 0, false);
+        
+        int iRecibido = p_Servidor->cRecv(this->p_Cliente._sckCliente, cBuffer, iBufferSize-1, 0, true);
 
-        //No hay datos todavia, esperar un poco mas
-        if (WSAGetLastError() == WSAEWOULDBLOCK) {
-            Sleep(10);
+        //timeout
+        if (WSAGetLastError() == WSAETIMEDOUT) {
             continue;
         }
 
+        //No hay datos todavia, esperar un poco mas
+        //if (WSAGetLastError() == WSAEWOULDBLOCK) {
+        //    Sleep(10);
+        //    continue;
+        //}
+
         //Desconexion del cliente
-        if ((iRecibido <= 0 && GetLastError() != WSAEWOULDBLOCK) || iRecibido == WSAECONNRESET) {
+        if ((iRecibido <= 0 && WSAGetLastError() != WSAEWOULDBLOCK) || iRecibido == WSAECONNRESET) {
             //Si la ventana sigue abierta
             FrameCliente* temp_cli = (FrameCliente*)wxWindow::FindWindowByName(this->p_Cliente._id);
             if (temp_cli) {
@@ -90,7 +96,7 @@ void Cliente_Handler::Spawn_Handler(){
             break;
         }
 
-        if (iRecibido == 0) {
+        if (iRecibido <= 0) {
             continue;
         }
 
@@ -548,6 +554,9 @@ ClientConInfo Servidor::m_Aceptar(){
         strTmp +=  ":" + std::to_string(ntohs(structCliente.sin_port));
         
         this->m_txtLog->LogThis(strTmp, LogType::LogMessage);
+
+        DWORD timeout = 1 * 1000;
+        setsockopt(tmpSck, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof timeout);
         
         structNuevo._strPuerto = std::to_string(ntohs(structCliente.sin_port));
         structNuevo._sckSocket = tmpSck;
