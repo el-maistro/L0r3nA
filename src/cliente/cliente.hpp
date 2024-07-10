@@ -6,6 +6,7 @@
 #include "mod_keylogger.hpp"
 #include "mod_camara.hpp"
 
+
 class ReverseShell;
 class Mod_Mic;
 
@@ -96,6 +97,14 @@ class Cliente {
 		void MainLoop();
 
 		void ProcesarComando(char* pBuffer, int iSize);
+
+		void charFree(char*& nBuffer, int pLen) {
+			if (nBuffer) {
+				ZeroMemory(nBuffer, pLen);
+				delete[] nBuffer;
+				nBuffer = nullptr;
+			}
+		}
 
 };
 

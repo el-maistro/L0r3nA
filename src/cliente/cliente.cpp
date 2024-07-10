@@ -613,9 +613,7 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
     int iDataSize = cData.size();
     char* newBuffer = new char[iDataSize];
     std::memcpy(newBuffer, cData.data(), iDataSize);
-    //for (int iBytePos = 0; iBytePos < iDataSize; iBytePos++) {
-    //    std::memcpy(newBuffer + iBytePos, &cData[iBytePos], 1);
-    //}
+    
     int iEnviado = 0;
     if (isBlock) {
 
@@ -638,10 +636,7 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
         iEnviado = send(pSocket, newBuffer, iDataSize, pFlags);
     }
 
-    if (newBuffer != nullptr) {
-        delete[] newBuffer;
-    }
-
+    charFree(newBuffer, iDataSize);
 
     return iEnviado;
 }
@@ -667,10 +662,7 @@ int Cliente::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool is
         iRecibido = recv(pSocket, cTmpBuff, pLen, pFlags);
         
         if (iRecibido <= 0) {
-            if (cTmpBuff) {
-                ZeroMemory(cTmpBuff, pLen);
-                delete[] cTmpBuff;
-            }
+            charFree(cTmpBuff, pLen);
             return -1;
         }
         //Decrypt
@@ -678,10 +670,7 @@ int Cliente::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool is
         ByteArray bOut = this->bDec((const unsigned char*)cTmpBuff, iRecibido);
 
         iRecibido = bOut.size();
-        std::memcpy(pBuffer, bOut.data(), bOut.size());
-        //for (int iBytePos = 0; iBytePos < iRecibido; iBytePos++) {
-        //    std::memcpy(pBuffer + iBytePos, &bOut[iBytePos], 1);
-        //}
+        std::memcpy(pBuffer, bOut.data(), iRecibido);
 
         //Restaurar
         if (!this->BLOCK_MODE) {
@@ -690,32 +679,23 @@ int Cliente::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool is
                 DebugPrint("No se pudo restaurar el block_mode en el socket");
             }
         }
-        if (cTmpBuff) {
-            ZeroMemory(cTmpBuff, pLen);
-            delete[] cTmpBuff;
-        }
+        
+        charFree(cTmpBuff, pLen);
+
         return iRecibido;
     }else {
         iRecibido = recv(pSocket, cTmpBuff, pLen, pFlags);
         
         if (iRecibido <= 0) {
-            if (cTmpBuff) {
-                ZeroMemory(cTmpBuff, pLen);
-                delete[] cTmpBuff;
-            }
+            charFree(cTmpBuff, pLen);
             return -1;
         }
         ByteArray bOut = this->bDec((const unsigned char*)cTmpBuff, iRecibido);
 
         iRecibido = bOut.size();
-        for (int iBytePos = 0; iBytePos < iRecibido; iBytePos++) {
-            std::memcpy(pBuffer + iBytePos, &bOut[iBytePos], 1);
-        }
+        std::memcpy(pBuffer, bOut.data(), iRecibido);
 
-        if (cTmpBuff) {
-            ZeroMemory(cTmpBuff, pLen);
-            delete[] cTmpBuff;
-        }
+        charFree(cTmpBuff, pLen);
         return iRecibido;
     }
 }

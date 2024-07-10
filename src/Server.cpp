@@ -66,12 +66,9 @@ void Cliente_Handler::Spawn_Handler(){
     char *cBuffer = new char[iBufferSize];
     while (true) {
 
-        std::unique_lock<std::mutex> lock(this->mt_Running);
-        if (!this->isRunning || this->p_Cliente._sckCliente == INVALID_SOCKET) {
+        if (!this->isfRunning() || this->p_Cliente._sckCliente == INVALID_SOCKET) {
             break;
         }
-        lock.unlock();
-        
         
         int iRecibido = p_Servidor->cRecv(this->p_Cliente._sckCliente, cBuffer, iBufferSize-1, 0, true);
 
@@ -426,8 +423,6 @@ void Cliente_Handler::Spawn_Handler(){
         cBuffer = nullptr;
     }
 
-    this->Log("Funado");
-    this->isRunning = false;
 }
 
 void Cliente_Handler::EscribirSalidShell(std::string strSalida) {
@@ -595,7 +590,7 @@ void Servidor::m_StopHandler() {
     }
 }
 
-void Servidor::m_CerrarConexion(SOCKET& pSocket) {
+void Servidor::m_CerrarConexion(SOCKET pSocket) {
     if (pSocket != INVALID_SOCKET) {
         closesocket(pSocket);
         pSocket = INVALID_SOCKET;
@@ -615,45 +610,39 @@ void Servidor::m_CerrarConexiones() {
 
 void Servidor::m_CleanVector() {
     while (true) {
-        {
-            std::unique_lock<std::mutex> lock_1(this->p_mutex);
-            if (!this->p_Escuchando) {
-                break;
-            }
+        if (!this->m_Running()) {
+            break;
         }
-
+    
         Sleep(100);
-        std::unique_lock<std::mutex> lock(vector_mutex);
-        if (this->vc_Clientes.size() == 0) {
+        int iNumeroClientes = this->m_NumeroClientes(vector_mutex);
+        if (iNumeroClientes == 0) {
             continue;
         }
         
-        for (std::vector<Cliente_Handler*>::iterator it = this->vc_Clientes.begin(); it != this->vc_Clientes.end();) {
-            if (!(*it)->isRunning && this->p_Escuchando) {
-                this->m_CerrarConexion((*it)->p_Cliente._sckCliente);
-                std::string streTempID = (*it)->p_Cliente._id;
-                lock.unlock();
-
+        for(int iIndex = 0; iIndex < iNumeroClientes; iIndex++){
+            if(!this->m_IsRunning(vector_mutex, iIndex) && this->m_Running()){
+                this->m_CerrarConexion(this->m_SocketCliente(vector_mutex, iIndex));
+                std::string streTempID = this->m_ClienteID(vector_mutex, iIndex);
+                
                 this->m_RemoverClienteLista(streTempID);
                 
-                lock.lock();
-                std::string strTmp = "Cliente " + (*it)->p_Cliente._strIp + " - desconectado";
+                std::string strTmp = "Cliente " + this->m_ClienteIP(vector_mutex, iIndex) + " - desconectado";
                 this->m_txtLog->LogThis(strTmp, LogType::LogMessage);
 
-                delete *it;
-                *it = nullptr;
-                it = this->vc_Clientes.erase(it);
+                this->m_BorrarCliente(vector_mutex, iIndex);
+
                 {
                     std::unique_lock<std::mutex> lock2(this->count_mutex);
                     if (this->iCount > 0) {
                         this->iCount--;
                     }
                 }
-            }else {
-                it++;
+            }else if (!this->m_Running()) {
+                //Cerra el loop y no iterar por todos si ya no esta escuchando
+                break;
             }
         }
-        lock.unlock();
     }
     std::cout << "Thread CLEANER terminada\n";
     
@@ -840,10 +829,14 @@ int Servidor::IndexOf(std::string strID) {
 }
 
 void Servidor::m_InsertarCliente(struct Cliente& p_Cliente){
-    int iIndex = 0;
-    std::unique_lock<std::mutex> lock(this->count_mutex);
-    iIndex = this->iCount++;
-    lock.unlock();
+    int iIndex = this->m_listCtrl->GetItemCount();
+    //std::unique_lock<std::mutex> lock(this->count_mutex);
+    //iIndex = this->iCount++;
+    //lock.unlock();
+
+    //if (iIndex > this->m_listCtrl->GetItemCount()) {
+    //    iIndex = 0;
+    //}
 
     this->m_listCtrl->InsertItem(iIndex, wxString(p_Cliente._id));
     this->m_listCtrl->SetItem(iIndex, 1, wxString(p_Cliente._strUser));
@@ -869,11 +862,11 @@ int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, 
     // 0 block
     
     ByteArray cData = this->bEnc((const unsigned char*)pBuffer, pLen);
-    std::string strPaqueteFinal = "";
-    for (auto c : cData) {
-        strPaqueteFinal.append(1, c);
-    }
+    int iDataSize = cData.size();
+    char* newBuffer = new char[iDataSize];
+    std::memcpy(newBuffer, cData.data(), iDataSize);
 
+    int iEnviado = 0;
     if (isBlock) {
         //Hacer el socket block
         unsigned long int iBlock = 0;
@@ -881,7 +874,7 @@ int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, 
             this->m_txtLog->LogThis("Error configurando el socket NON_BLOCK", LogType::LogError);
         }
 
-        int iEnviado = send(pSocket, strPaqueteFinal.c_str(), cData.size(), pFlags);
+        iEnviado = send(pSocket, newBuffer, iDataSize, pFlags);
         
         //Restaurar
         iBlock = 1;
@@ -889,12 +882,13 @@ int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, 
             this->m_txtLog->LogThis("Error configurando el socket NON_BLOCK", LogType::LogError);
         }
 
-        return iEnviado;
-    }
-    else {
-        int iEnv = send(pSocket, strPaqueteFinal.c_str(), cData.size(), pFlags);
-        return iEnv;
+    }else {
+        iEnviado = send(pSocket, newBuffer, iDataSize, pFlags);
     } 
+
+    charFree(newBuffer, iDataSize);
+
+    return iEnviado;
 }
 
 int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool isBlock) {
@@ -917,28 +911,17 @@ int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool i
         
         if (GetLastError() == WSAECONNRESET) {
             //funado el cliente
-            if (cTmpBuff) {
-                ZeroMemory(cTmpBuff, pLen);
-                delete[] cTmpBuff;
-                cTmpBuff = nullptr;
-            }
+            charFree(cTmpBuff, pLen);
             return WSAECONNRESET;
-        }
-
-        if (iRecibido <= 0) {
-            if (cTmpBuff) {
-                delete[] cTmpBuff;
-                cTmpBuff = nullptr;
-            }
+        }else if (iRecibido <= 0) {
+            charFree(cTmpBuff, pLen);
             return -1;
         }
         //Decrypt
         ByteArray bOut = this->bDec((const unsigned char*)cTmpBuff, iRecibido);
 
         iRecibido = bOut.size();
-        for (int iBytePos = 0; iBytePos < iRecibido; iBytePos++) {
-            std::memcpy(pBuffer + iBytePos, &bOut[iBytePos], 1);
-        }
+        std::memcpy(pBuffer, bOut.data(), iRecibido);
         
         //Restaurar
         iBlock = 1;
@@ -946,27 +929,18 @@ int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool i
             this->m_txtLog->LogThis("Error configurando el socket NON_BLOCK", LogType::LogError);
         }
 
-        if (cTmpBuff) {
-            ZeroMemory(cTmpBuff, pLen);
-            delete[] cTmpBuff;
-        }
+        charFree(cTmpBuff, pLen);
+
         return iRecibido;
     }else {
         iRecibido = recv(pSocket, cTmpBuff, pLen, pFlags);
         
-        if (GetLastError() == WSAECONNRESET) {
+        if (WSAGetLastError() == WSAECONNRESET) {
             //funado el cliente
-            if (cTmpBuff) {
-                ZeroMemory(cTmpBuff, pLen);
-                delete[] cTmpBuff;
-            }
+            charFree(cTmpBuff, pLen);
             return WSAECONNRESET;
-        }
-        if (iRecibido <= 0) {
-            if (cTmpBuff) {
-                ZeroMemory(cTmpBuff, pLen);
-                delete[] cTmpBuff;
-            }
+        }else if (iRecibido <= 0) {
+            charFree(cTmpBuff, pLen);
             return -1;
         }
 
@@ -974,18 +948,12 @@ int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool i
         ByteArray bOut = this->bDec((const unsigned char*)cTmpBuff, iRecibido);
 
         iRecibido = bOut.size();
-        for (int iBytePos = 0; iBytePos < iRecibido; iBytePos++) {
-            std::memcpy(pBuffer + iBytePos, &bOut[iBytePos], 1);
-        }
+        std::memcpy(pBuffer, bOut.data(), iRecibido);
 
-        if (cTmpBuff) {
-            ZeroMemory(cTmpBuff, pLen);
-            delete[] cTmpBuff;
-        }
+        charFree(cTmpBuff, pLen);
         return iRecibido;
     }
 }
-
 
 //AES256
 ByteArray Servidor::bEnc(const unsigned char* pInput, size_t pLen) {

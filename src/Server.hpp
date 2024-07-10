@@ -3,7 +3,6 @@
 #include "headers.hpp"
 #include "frame_client.hpp"
 
-
 struct TransferStatus {
     std::string strCliente;
     std::string strNombre;
@@ -73,7 +72,6 @@ class MyListCtrl: public wxListCtrl{
 class Cliente_Handler {
     private:
         
-        
         HWAVEOUT wo;
         
     public:
@@ -93,14 +91,23 @@ class Cliente_Handler {
         void CrearFrame(std::string strTitle, std::string strID);
         void EscribirSalidShell(std::string strSalida);
         bool OpenPlayer();
-        void ClosePlayer() { waveOutClose(this->wo);}
+        void ClosePlayer() { waveOutClose(wo);}
         void PlayBuffer(char* pBuffer, size_t iLen);
 
 
-        void Log(std::string strMsg) {
-            std::cout << "[" << this->p_Cliente._id << "] " << strMsg << "\n";
+        void Log(const std::string strMsg) {
+            std::cout << "[" <<p_Cliente._id << "] " << strMsg << "\n";
         }
 
+        bool isfRunning() {
+            std::unique_lock<std::mutex> lock(mt_Running);
+            bool bFlag = isRunning;
+            //Si el socket se cerro
+            if (this->p_Cliente._sckCliente == INVALID_SOCKET) {
+                bFlag = false;
+            }
+            return bFlag;
+        }
         void Stop() {
             std::unique_lock<std::mutex> lock(mt_Running);
             isRunning = false;
@@ -183,8 +190,80 @@ class Servidor{
         bool   m_Iniciar();
         ClientConInfo m_Aceptar();
         void m_CerrarConexiones();
-        void m_CerrarConexion(SOCKET& pSocket);
+        void m_CerrarConexion(SOCKET pSocket);
         
+        void charFree(char*& nBuffer, int pLen) {
+            if (nBuffer) {
+                ZeroMemory(nBuffer, pLen);
+                delete[] nBuffer;
+                nBuffer = nullptr;
+            }
+        }
+
+        //thread "safe" para modificar y acceder al vector
+        int m_NumeroClientes(std::mutex& mtx) {
+            std::unique_lock<std::mutex> lock(mtx);
+            return static_cast<int>(this->vc_Clientes.size());
+        }
+
+        SOCKET m_SocketCliente(std::mutex& mtx, int iIndex) {
+            std::unique_lock<std::mutex> lock(mtx);
+            if (iIndex < static_cast<int>(this->vc_Clientes.size())) {
+                if (this->vc_Clientes[iIndex]) {
+                    return this->vc_Clientes[iIndex]->p_Cliente._sckCliente;
+                }
+            }
+            return INVALID_SOCKET;
+        }
+
+        void m_BorrarCliente(std::mutex& mtx, int iIndex) {
+            std::unique_lock<std::mutex> lock(mtx);
+            if (iIndex < static_cast<int>(this->vc_Clientes.size())) {
+                if (this->vc_Clientes[iIndex]) {
+                    delete this->vc_Clientes[iIndex];
+                    this->vc_Clientes[iIndex] = nullptr;
+                    this->vc_Clientes.erase(std::next(this->vc_Clientes.begin(), iIndex));
+                }
+            }
+
+        }
+
+        std::string m_ClienteID(std::mutex& mtx, int iIndex) {
+            std::unique_lock<std::mutex> lock(mtx);
+            if (iIndex < static_cast<int>(this->vc_Clientes.size())) {
+                if (this->vc_Clientes[iIndex]) {
+                    return this->vc_Clientes[iIndex]->p_Cliente._id;
+                }
+            }
+            return std::string("sofocante");
+        }
+
+        std::string m_ClienteIP(std::mutex& mtx, int iIndex) {
+            std::unique_lock<std::mutex> lock(mtx);
+            if (iIndex < static_cast<int>(this->vc_Clientes.size())) {
+                if (this->vc_Clientes[iIndex]) {
+                    return this->vc_Clientes[iIndex]->p_Cliente._strIp;
+                }
+            }
+            return std::string("sofocante");
+        }
+        
+        bool m_IsRunning(std::mutex& mtx, int iIndex) {
+            std::unique_lock<std::mutex> lock(mtx);
+            bool bFlag = false;
+            if (iIndex < static_cast<int>(this->vc_Clientes.size())) {
+                if (this->vc_Clientes[iIndex]) {
+                    bFlag = this->vc_Clientes[iIndex]->isfRunning();
+                }
+            }
+            return bFlag;
+        }
+
+        bool m_Running() {
+            std::unique_lock<std::mutex> lock(this->p_mutex);
+            return this->p_Escuchando;
+        }
+
 
         u_int m_lPuerto(){
             return uiPuertoLocal;
