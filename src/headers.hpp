@@ -38,6 +38,7 @@
 
 #define PING_TIME 5 * 1
 #define AES_KEY_LEN 32
+#define CLI_TIMEOUT_SECS 1
 #define FRAME_CLIENT_SIZE_WIDTH 600
 #define DB_FILE "./crypt_.db"
 #define CMD_DEL '~'
@@ -55,7 +56,8 @@ typedef unsigned long long int u64;
 
 namespace EnumIDS {
     enum Enum {
-        ID_LimpiarLog = 100,
+        ID_MAIN = 100,
+        ID_LimpiarLog,
         ID_Interactuar,
         ID_FrameClienteTest,
         TreeCtrl_ID,
