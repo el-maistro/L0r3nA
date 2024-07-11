@@ -63,6 +63,7 @@ public:
     void ShowContextMenu(const wxPoint& pos, long item);
     void OnContextMenu(wxContextMenuEvent& event);
     void OnInteractuar(wxCommandEvent& event);
+    void OnRefrescar(wxCommandEvent& event);
     void OnActivated(wxListEvent& event);
 
 private:
@@ -72,9 +73,9 @@ private:
 
 class Cliente_Handler {
     private:
-        
         HWAVEOUT wo;
-        
+        int iRecibido = 0;
+
     public:
         std::thread p_thHilo;
         std::mutex mt_Archivos;
@@ -95,16 +96,25 @@ class Cliente_Handler {
         void ClosePlayer() { waveOutClose(wo);}
         void PlayBuffer(char* pBuffer, size_t iLen);
 
-
         void Log(const std::string strMsg) {
             std::cout << "[" <<p_Cliente._id << "] " << strMsg << "\n";
+        }
+
+        void SetBytesRecibidos(int& iVal) {
+            std::unique_lock<std::mutex> lock(mt_Running);
+            iRecibido = iVal;
+        }
+
+        int BytesRecibidos() {
+            std::unique_lock<std::mutex> lock(mt_Running);
+            return iRecibido;
         }
 
         bool isfRunning() {
             std::unique_lock<std::mutex> lock(mt_Running);
             bool bFlag = isRunning;
             //Si el socket se cerro
-            if (this->p_Cliente._sckCliente == INVALID_SOCKET) {
+            if (iRecibido == WSA_FUNADO) {
                 bFlag = false;
             }
             return bFlag;
@@ -201,14 +211,14 @@ class Servidor{
         //thread "safe" para modificar y acceder al vector
         int m_NumeroClientes(std::mutex& mtx) {
             std::unique_lock<std::mutex> lock(mtx);
-            return static_cast<int>(this->vc_Clientes.size());
+            return static_cast<int>(vc_Clientes.size());
         }
 
         SOCKET m_SocketCliente(std::mutex& mtx, int iIndex) {
             std::unique_lock<std::mutex> lock(mtx);
-            if (iIndex < static_cast<int>(this->vc_Clientes.size())) {
-                if (this->vc_Clientes[iIndex]) {
-                    return this->vc_Clientes[iIndex]->p_Cliente._sckCliente;
+            if (iIndex < static_cast<int>(vc_Clientes.size())) {
+                if (vc_Clientes[iIndex]) {
+                    return vc_Clientes[iIndex]->p_Cliente._sckCliente;
                 }
             }
             return INVALID_SOCKET;
@@ -216,11 +226,11 @@ class Servidor{
 
         void m_BorrarCliente(std::mutex& mtx, int iIndex) {
             std::unique_lock<std::mutex> lock(mtx);
-            if (iIndex < static_cast<int>(this->vc_Clientes.size())) {
-                if (this->vc_Clientes[iIndex]) {
-                    delete this->vc_Clientes[iIndex];
-                    this->vc_Clientes[iIndex] = nullptr;
-                    this->vc_Clientes.erase(std::next(this->vc_Clientes.begin(), iIndex));
+            if (iIndex < static_cast<int>(vc_Clientes.size())) {
+                if (vc_Clientes[iIndex]) {
+                    delete vc_Clientes[iIndex];
+                    vc_Clientes[iIndex] = nullptr;
+                    vc_Clientes.erase(std::next(vc_Clientes.begin(), iIndex));
                 }
             }
 
@@ -228,9 +238,9 @@ class Servidor{
 
         std::string m_ClienteID(std::mutex& mtx, int iIndex) {
             std::unique_lock<std::mutex> lock(mtx);
-            if (iIndex < static_cast<int>(this->vc_Clientes.size())) {
-                if (this->vc_Clientes[iIndex]) {
-                    return this->vc_Clientes[iIndex]->p_Cliente._id;
+            if (iIndex < static_cast<int>(vc_Clientes.size())) {
+                if (vc_Clientes[iIndex]) {
+                    return vc_Clientes[iIndex]->p_Cliente._id;
                 }
             }
             return std::string("sofocante");
@@ -238,9 +248,9 @@ class Servidor{
 
         std::string m_ClienteIP(std::mutex& mtx, int iIndex) {
             std::unique_lock<std::mutex> lock(mtx);
-            if (iIndex < static_cast<int>(this->vc_Clientes.size())) {
-                if (this->vc_Clientes[iIndex]) {
-                    return this->vc_Clientes[iIndex]->p_Cliente._strIp;
+            if (iIndex < static_cast<int>(vc_Clientes.size())) {
+                if (vc_Clientes[iIndex]) {
+                    return vc_Clientes[iIndex]->p_Cliente._strIp;
                 }
             }
             return std::string("sofocante");
@@ -249,17 +259,18 @@ class Servidor{
         bool m_IsRunning(std::mutex& mtx, int iIndex) {
             std::unique_lock<std::mutex> lock(mtx);
             bool bFlag = false;
-            if (iIndex < static_cast<int>(this->vc_Clientes.size())) {
-                if (this->vc_Clientes[iIndex]) {
-                    bFlag = this->vc_Clientes[iIndex]->isfRunning();
+            if (iIndex < static_cast<int>(vc_Clientes.size())) {
+                if (vc_Clientes[iIndex]) {
+                    bFlag = vc_Clientes[iIndex]->isfRunning();
+
                 }
             }
             return bFlag;
         }
 
         bool m_Running() {
-            std::unique_lock<std::mutex> lock(this->p_mutex);
-            return this->p_Escuchando;
+            std::unique_lock<std::mutex> lock(p_mutex);
+            return p_Escuchando;
         }
 
 

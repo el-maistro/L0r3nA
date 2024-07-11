@@ -36,6 +36,7 @@
 
 #include "aes256/aes256.hpp"
 
+#define WSA_FUNADO -31337
 #define PING_TIME 5 * 1
 #define AES_KEY_LEN 32
 #define CLI_TIMEOUT_SECS 1
@@ -59,6 +60,7 @@ namespace EnumIDS {
         ID_MAIN = 100,
         ID_LimpiarLog,
         ID_Interactuar,
+        ID_Refrescar,
         ID_FrameClienteTest,
         ID_Main_List,
         TreeCtrl_ID,

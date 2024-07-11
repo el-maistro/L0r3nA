@@ -8,7 +8,7 @@ public:
 private:
     wxPanel* m_RPanel, * m_LPanel, * m_BPanel;
     wxMenu* menuFile, * menuHelp;
-    wxButton* btn_Transfers, * btn_CryptDB;
+    wxButton* btn_Transfers, *btn_CryptDB;
     wxToggleButton* btn_toggle;
 
     wxSize p_BotonS = wxSize(100, 30);
