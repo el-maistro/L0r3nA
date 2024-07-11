@@ -60,6 +60,7 @@ namespace EnumIDS {
         ID_LimpiarLog,
         ID_Interactuar,
         ID_FrameClienteTest,
+        ID_Main_List,
         TreeCtrl_ID,
         ID_Panel_Cliente,
         ID_Panel_Reverse_Shell,

@@ -585,10 +585,8 @@ void Servidor::m_JoinThreads() {
 
 void Servidor::m_StopHandler() {
     this->m_txtLog->LogThis("Apagando", LogType::LogError);
-    {
-        std::lock_guard<std::mutex> lock(this->p_mutex);
-        this->p_Escuchando = false;
-    }
+    std::lock_guard<std::mutex> lock(this->p_mutex);
+    this->p_Escuchando = false;
 }
 
 void Servidor::m_CerrarConexion(SOCKET pSocket) {
@@ -599,6 +597,7 @@ void Servidor::m_CerrarConexion(SOCKET pSocket) {
 }
 
 void Servidor::m_CerrarConexiones() {
+    std::unique_lock<std::mutex> lock(vector_mutex); //<------------------------------- NEW
     if (this->vc_Clientes.size() > 0) {
         for(int iIndex = 0; iIndex<int(this->vc_Clientes.size()); iIndex++){
             this->m_CerrarConexion(this->vc_Clientes[iIndex]->p_Cliente._sckCliente);
@@ -640,6 +639,7 @@ void Servidor::m_CleanVector() {
     }
     std::cout << "Thread CLEANER terminada\n";
     
+    std::unique_lock<std::mutex> lock(vector_mutex);
     for (auto& cliente : this->vc_Clientes) {
         cliente->Stop();
 
@@ -964,7 +964,7 @@ ByteArray Servidor::bDec(const unsigned char* pInput, size_t pLen) {
 
 //control list events
 void MyListCtrl::ShowContextMenu(const wxPoint& pos, long item) {
-    
+
     wxMenu menu;
     menu.Append(EnumIDS::ID_Interactuar, "Administrar");
     menu.AppendSeparator();
@@ -978,7 +978,7 @@ void MyListCtrl::OnContextMenu(wxContextMenuEvent& event)
     if (GetEditControl() == NULL)
     {
         wxPoint point = event.GetPosition();
-        
+
         // If from keyboard
         if ((point.x == -1) && (point.y == -1))
         {
@@ -990,7 +990,7 @@ void MyListCtrl::OnContextMenu(wxContextMenuEvent& event)
         {
             point = ScreenToClient(point);
         }
-        
+
         int flags;
         long iItem = HitTest(point, flags);
 
@@ -1015,23 +1015,41 @@ void MyListCtrl::OnContextMenu(wxContextMenuEvent& event)
 
 void MyListCtrl::OnInteractuar(wxCommandEvent& event) {
     std::vector<std::string> vcOut = strSplit(strTmp.ToStdString(), '/', 2);
-    
+
     std::unique_lock<std::mutex> lock(vector_mutex);
     for (std::vector<Cliente_Handler*>::iterator it = p_Servidor->vc_Clientes.begin(); it != p_Servidor->vc_Clientes.end(); it++) {
         if ((*it)->p_Cliente._id == vcOut[0]) {
             lock.unlock();
 
             (*it)->CrearFrame(this->strTmp.ToStdString(), vcOut[0]);
-            
+
             lock.lock();
             break;
         }
     }
 
     lock.unlock();
-    
+
     //FrameCliente* n_FrameCli = new FrameCliente(this->strTmp.ToStdString(), vcOut[0]);
     //n_FrameCli->Show(true);
 }
 
-
+void MyListCtrl::OnActivated(wxListEvent& event) {
+    if (this->GetItemCount() > 0) {
+        wxString strID = this->GetItemText(event.GetIndex(), 0);
+        std::unique_lock<std::mutex> lock(vector_mutex);
+        for (auto& cliente : p_Servidor->vc_Clientes) {
+            if (cliente->p_Cliente._id == strID.ToStdString()) {
+                lock.unlock();
+                
+                wxString st1 = this->GetItemText(event.GetIndex(), 0);
+                st1.append(1, '/');
+                st1 += this->GetItemText(event.GetIndex(), 1);
+                st1.append(1, '/');
+                st1 += this->GetItemText(event.GetIndex(), 2);
+                cliente->CrearFrame(st1.ToStdString(), strID.ToStdString());
+                break;
+            }
+        }
+    }
+}

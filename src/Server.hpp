@@ -52,21 +52,22 @@ class MyLogClass{
 
 };
 
-class MyListCtrl: public wxListCtrl{
-    public:
-        MyListCtrl(wxWindow *parent,
-               const wxWindowID id, const wxPoint& pos, const wxSize& size, long style)
-        : wxListCtrl(parent, id, pos, size, style){
-           
-        }
+class MyListCtrl : public wxListCtrl {
+public:
+    MyListCtrl(wxWindow* parent,
+        const wxWindowID id, const wxPoint& pos, const wxSize& size, long style)
+        : wxListCtrl(parent, id, pos, size, style) {
 
-        void ShowContextMenu(const wxPoint& pos, long item);
-        void OnContextMenu(wxContextMenuEvent& event);
-        void OnInteractuar(wxCommandEvent& event);
+    }
 
-    private:
-        wxString strTmp = "";
-        wxDECLARE_EVENT_TABLE();
+    void ShowContextMenu(const wxPoint& pos, long item);
+    void OnContextMenu(wxContextMenuEvent& event);
+    void OnInteractuar(wxCommandEvent& event);
+    void OnActivated(wxListEvent& event);
+
+private:
+    wxString strTmp = "";
+    wxDECLARE_EVENT_TABLE();
 };
 
 class Cliente_Handler {
@@ -143,8 +144,6 @@ class Servidor{
         std::mutex p_mutex;
         std::mutex p_transfers;
         std::mutex count_mutex;
-
-        //std::unordered_map<SOCKET, struct Cliente> um_Clientes;
 
         std::map<std::string, struct TransferStatus> vcTransferencias;
 

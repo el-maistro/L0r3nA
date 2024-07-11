@@ -27,6 +27,12 @@ wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
     EVT_CLOSE(MyFrame::OnClose)
 wxEND_EVENT_TABLE()
 
+wxBEGIN_EVENT_TABLE(MyListCtrl, wxListCtrl)
+    EVT_CONTEXT_MENU(MyListCtrl::OnContextMenu)
+    EVT_MENU(EnumIDS::ID_Interactuar, MyListCtrl::OnInteractuar)
+    EVT_LIST_ITEM_ACTIVATED(EnumIDS::ID_Main_List, MyListCtrl::OnActivated)
+wxEND_EVENT_TABLE()
+
 class MyApp : public wxApp {
 public:
     MyFrame* frame = nullptr;
@@ -215,7 +221,7 @@ void MyFrame::CrearControlesPanelIzquierdo(){
 }
 
 void MyFrame::CrearLista(long flags, bool withText){
-    p_Servidor->m_listCtrl = new MyListCtrl(this->m_RPanel, wxID_ANY, wxDefaultPosition, wxSize(600, 300), flags | wxBORDER_THEME);
+    p_Servidor->m_listCtrl = new MyListCtrl(this->m_RPanel, EnumIDS::ID_Main_List, wxDefaultPosition, wxSize(600, 300), flags | wxBORDER_THEME);
    
     wxListItem itemCol;
     itemCol.SetText("ID");
