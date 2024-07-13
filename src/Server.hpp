@@ -75,9 +75,9 @@ class Cliente_Handler {
     private:
         HWAVEOUT wo;
         int iRecibido = 0;
+        std::thread p_thHilo;
 
     public:
-        std::thread p_thHilo;
         std::mutex mt_Archivos;
         std::mutex mt_Running;
 
@@ -97,7 +97,7 @@ class Cliente_Handler {
         void PlayBuffer(char* pBuffer, size_t iLen);
 
         void Log(const std::string strMsg) {
-            std::cout << "[" <<p_Cliente._id << "] " << strMsg << "\n";
+            std::cout << "[" <<p_thHilo.get_id()<< "] " << strMsg << "\n";
         }
 
         void SetBytesRecibidos(int& iVal) {
@@ -118,6 +118,13 @@ class Cliente_Handler {
                 bFlag = false;
             }
             return bFlag;
+        }
+
+        void JoinThread() {
+            if (p_thHilo.joinable()) {
+                Stop();
+                p_thHilo.join();
+            }
         }
         void Stop() {
             std::unique_lock<std::mutex> lock(mt_Running);
@@ -228,6 +235,8 @@ class Servidor{
             std::unique_lock<std::mutex> lock(mtx);
             if (iIndex < static_cast<int>(vc_Clientes.size())) {
                 if (vc_Clientes[iIndex]) {
+                    vc_Clientes[iIndex]->JoinThread();
+                    m_CerrarConexion(vc_Clientes[iIndex]->p_Cliente._sckCliente);
                     delete vc_Clientes[iIndex];
                     vc_Clientes[iIndex] = nullptr;
                     vc_Clientes.erase(std::next(vc_Clientes.begin(), iIndex));
@@ -272,7 +281,6 @@ class Servidor{
             std::unique_lock<std::mutex> lock(p_mutex);
             return p_Escuchando;
         }
-
 
         u_int m_lPuerto(){
             return uiPuertoLocal;

@@ -57,7 +57,7 @@ MyFrame::MyFrame()
 {
     //Trace memory leak
     //_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-    //_CrtSetBreakAlloc(73502);
+    //_CrtSetBreakAlloc(61650);
     //_CrtSetBreakAlloc(71043);
     //_CrtSetBreakAlloc(71042);
     SetBackgroundColour(wxColour(255, 255, 255, 128)); // Establecer el color de fondo con transparencia
@@ -187,7 +187,6 @@ void MyFrame::OnToggle(wxCommandEvent& event) {
     }else {
         //Detener escuchar
         p_Servidor->m_StopHandler();
-        p_Servidor->m_CerrarConexiones();
         p_Servidor->m_JoinThreads();
 
         
@@ -262,15 +261,17 @@ void MyFrame::OnClose(wxCloseEvent& event){
         break;
     }  
     
-    std::unique_lock<std::mutex> lock(p_Servidor->p_mutex);
-    p_Servidor->p_Escuchando = false;
-    lock.unlock();
-    
-    p_Servidor->m_CerrarConexiones();
-    p_Servidor->m_JoinThreads();
 
-    Sleep(4000);
-    
+    p_Servidor->m_StopHandler();
+    p_Servidor->m_JoinThreads();
+    p_Servidor->m_CerrarConexiones();
+    p_Servidor->m_listCtrl->DeleteAllItems();
+    //std::unique_lock<std::mutex> lock(p_Servidor->p_mutex);
+    //p_Servidor->p_Escuchando = false;
+    //lock.unlock();
+    //p_Servidor->m_CerrarConexiones();
+    //p_Servidor->m_JoinThreads();
+
     delete p_Servidor;
     p_Servidor = nullptr;
     
