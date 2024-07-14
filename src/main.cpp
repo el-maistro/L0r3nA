@@ -43,10 +43,12 @@ public:
 wxIMPLEMENT_APP(MyApp);
 
 bool MyApp::OnInit(){
+    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+
     AllocConsole();
     freopen("CONOUT$", "w", stdout);
     freopen("CONOUT$", "w", stderr);
-    this->frame = new MyFrame();
+    this->frame = DBG_NEW MyFrame();
     this->frame->Show(true);
 
     return true;
@@ -62,22 +64,22 @@ MyFrame::MyFrame()
     //_CrtSetBreakAlloc(71042);
     SetBackgroundColour(wxColour(255, 255, 255, 128)); // Establecer el color de fondo con transparencia
     SetTransparent(245);
-    p_Servidor = new Servidor();
+    p_Servidor = DBG_NEW Servidor();
     p_Servidor->m_listCtrl = nullptr;
 
     
-    this->m_RPanel = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(700, 450));
+    this->m_RPanel = DBG_NEW wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(700, 450));
     
-    this->m_LPanel = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(110, 600));
+    this->m_LPanel = DBG_NEW wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(110, 600));
     this->m_LPanel->SetBackgroundColour(wxColor(255,0,0)); // REMOVE AT THE END
 
-    this->m_BPanel = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(100, 150));
+    this->m_BPanel = DBG_NEW wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(100, 150));
     this->m_BPanel->SetBackgroundColour(wxColor(0,255,0)); // REMOVE AT THE END
 
     
     //Crear lista
     this->CrearLista(wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES | wxEXPAND);
-    wxBoxSizer *sizerlist = new wxBoxSizer(wxHORIZONTAL);
+    wxBoxSizer *sizerlist = DBG_NEW wxBoxSizer(wxHORIZONTAL);
 
     sizerlist->Add(p_Servidor->m_listCtrl, 1, wxALL | wxEXPAND, 1);
 
@@ -88,18 +90,18 @@ MyFrame::MyFrame()
     this->CrearControlesPanelIzquierdo();
 
     //Crear txt para log
-    p_Servidor->m_txtLog->p_txtCtrl = new wxTextCtrl(this->m_BPanel, wxID_ANY, ":v\n", wxDefaultPosition, wxSize(100,150), wxTE_MULTILINE | wxTE_READONLY);
-    wxBoxSizer *sizertxt = new wxBoxSizer(wxVERTICAL);
+    p_Servidor->m_txtLog->p_txtCtrl = DBG_NEW wxTextCtrl(this->m_BPanel, wxID_ANY, ":v\n", wxDefaultPosition, wxSize(100,150), wxTE_MULTILINE | wxTE_READONLY);
+    wxBoxSizer *sizertxt = DBG_NEW wxBoxSizer(wxVERTICAL);
 
  
-    sizertxt->Add(new wxButton(this->m_BPanel, EnumIDS::ID_LimpiarLog, "Limpiar Log", wxDefaultPosition, wxSize(100, 20)), 0, wxALL, 1);
+    sizertxt->Add(DBG_NEW wxButton(this->m_BPanel, EnumIDS::ID_LimpiarLog, "Limpiar Log", wxDefaultPosition, wxSize(100, 20)), 0, wxALL, 1);
     sizertxt->Add(p_Servidor->m_txtLog->p_txtCtrl, 1, wxALL | wxEXPAND, 1);
     this->m_BPanel->SetSizer(sizertxt);
 
-    wxBoxSizer *sizer = new wxBoxSizer(wxHORIZONTAL);
+    wxBoxSizer *sizer = DBG_NEW wxBoxSizer(wxHORIZONTAL);
     sizer->Add(this->m_LPanel, 0, wxALL, 2);
 
-    wxBoxSizer *sizer2 = new wxBoxSizer(wxVERTICAL);
+    wxBoxSizer *sizer2 = DBG_NEW wxBoxSizer(wxVERTICAL);
     sizer2->Add(this->m_RPanel, 1, wxEXPAND | wxALL, 2);
     sizer2->Add(this->m_BPanel, 0, wxEXPAND | wxALL, 2);
 
@@ -117,7 +119,7 @@ MyFrame::MyFrame()
 TransferFrame::TransferFrame() 
     :wxFrame(nullptr, EnumIDS::ID_Panel_Transferencias, wxT("Transferencias"), wxDefaultPosition, wxSize(FRAME_CLIENT_SIZE_WIDTH, 450))
 {
-    wxListCtrl* listView = new wxListCtrl(this, EnumIDS::ID_Panel_Transferencias_List, wxDefaultPosition, wxSize(FRAME_CLIENT_SIZE_WIDTH, 450), wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES | wxEXPAND);
+    wxListCtrl* listView = DBG_NEW wxListCtrl(this, EnumIDS::ID_Panel_Transferencias_List, wxDefaultPosition, wxSize(FRAME_CLIENT_SIZE_WIDTH, 450), wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES | wxEXPAND);
 
     wxListItem itemCol;
     itemCol.SetText("Cliente");
@@ -151,7 +153,7 @@ void TransferFrame::OnClose(wxCloseEvent& event){
 
 void MyFrame::OnCryptDB(wxCommandEvent& event) {
     //OnCryptDB
-    frameCryptDB* frame_crypt = new frameCryptDB();
+    frameCryptDB* frame_crypt = DBG_NEW frameCryptDB();
 
     frame_crypt->Show();
 }
@@ -163,7 +165,7 @@ void MyFrame::OnMostrarTransferencias(wxCommandEvent& event){
     p_Servidor->thTransfers = std::thread(&Servidor::m_MonitorTransferencias, p_Servidor);
     
     //Crear form y mostrar
-    TransferFrame* wxTransfers = new TransferFrame();
+    TransferFrame* wxTransfers = DBG_NEW TransferFrame();
     wxTransfers->Show();
 }
 
@@ -201,14 +203,14 @@ void MyFrame::OnToggle(wxCommandEvent& event) {
 
 void MyFrame::CrearControlesPanelIzquierdo(){
     wxSize btn_size;
-    this->btn_toggle = new wxToggleButton(this->m_LPanel, EnumIDS::ID_Toggle, "Iniciar Servidor");
+    this->btn_toggle = DBG_NEW wxToggleButton(this->m_LPanel, EnumIDS::ID_Toggle, "Iniciar Servidor");
 
     btn_size = this->btn_toggle->GetSize();
-
-    this->btn_Transfers = new wxButton(this->m_LPanel, EnumIDS::ID_Mostrar_Transfers, "Transferencias", wxDefaultPosition, btn_size);
-    this->btn_CryptDB = new wxButton(this->m_LPanel, EnumIDS::ID_Mostrar_CryptDB, "Crypt DB", wxDefaultPosition, btn_size);
+     
+    this->btn_Transfers = DBG_NEW wxButton(this->m_LPanel, EnumIDS::ID_Mostrar_Transfers, "Transferencias", wxDefaultPosition, btn_size);
+    this->btn_CryptDB = DBG_NEW wxButton(this->m_LPanel, EnumIDS::ID_Mostrar_CryptDB, "Crypt DB", wxDefaultPosition, btn_size);
     
-    wxBoxSizer *m_paneSizer = new wxBoxSizer(wxVERTICAL);
+    wxBoxSizer *m_paneSizer = DBG_NEW wxBoxSizer(wxVERTICAL);
     m_paneSizer->AddSpacer(20);    
     m_paneSizer->Add(this->btn_toggle, 0, wxALIGN_CENTER | wxALL, 3);
     m_paneSizer->AddSpacer(10);
@@ -221,7 +223,7 @@ void MyFrame::CrearControlesPanelIzquierdo(){
 }
 
 void MyFrame::CrearLista(long flags, bool withText){
-    p_Servidor->m_listCtrl = new MyListCtrl(this->m_RPanel, EnumIDS::ID_Main_List, wxDefaultPosition, wxSize(600, 300), flags | wxBORDER_THEME);
+    p_Servidor->m_listCtrl = DBG_NEW MyListCtrl(this->m_RPanel, EnumIDS::ID_Main_List, wxDefaultPosition, wxSize(600, 300), flags | wxBORDER_THEME);
    
     wxListItem itemCol;
     itemCol.SetText("ID");
@@ -252,7 +254,7 @@ void MyFrame::CrearLista(long flags, bool withText){
 
 void MyFrame::OnClose(wxCloseEvent& event){
     wxMessageDialog dialog(this, "Seguro que quieres salir?", "Salir", wxCENTER | wxYES_NO | wxICON_QUESTION);
-
+    
     switch (dialog.ShowModal()) {
     case wxID_NO:
         event.Veto();
@@ -280,6 +282,7 @@ void MyFrame::OnClose(wxCloseEvent& event){
 
 void MyFrame::OnExit(wxCommandEvent& event) {
     Close(true);
+    _CrtDumpMemoryLeaks();
 }
 
 void MyFrame::OnLimpiar(wxCommandEvent& event) {
