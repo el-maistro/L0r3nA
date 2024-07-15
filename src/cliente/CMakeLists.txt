@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 
-project(cliente LANGUAGES CXX)
-
+project(cliente LANGUAGES CXX C)
+ 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #set(CMAKE_EXE_LINKER_FLAGS " -static")
@@ -18,7 +18,8 @@ set(SRCS main.cpp
          mod_file_manager.cpp
          mod_keylogger.cpp
          mod_mic.cpp
-         aes256/aes256.cpp)
+         ../aes256/aes256.cpp
+         ../lzo/minilzo.c)
 
 #set_target_properties(cliente PROPERTIES LINK_FLAGS "/SUBSYSTEM:CONSOLE")
 

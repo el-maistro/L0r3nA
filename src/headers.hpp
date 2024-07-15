@@ -1,13 +1,16 @@
 #ifndef _HEADERS
 #define _HEADERS 1
 
-#define _CRTDBG_MAP_ALLOC
-#include <stdlib.h>
-#include <crtdbg.h>
+//#define __MEM_LEAK_RAVDO ":v"
+
+#ifdef __MEM_LEAK_RAVDO
+    #define _CRTDBG_MAP_ALLOC
+    #include <stdlib.h>
+    #include <crtdbg.h>
+#endif
 
 #ifdef _DEBUG
-    #define DBG_NEW new
-    //#define DBG_NEW new ( _NORMAL_BLOCK , __FILE__ , __LINE__ ) //este para debug de leaks
+    #define DBG_NEW new ( _NORMAL_BLOCK , __FILE__ , __LINE__ ) //este para debug de leaks
     // Replace _NORMAL_BLOCK with _CLIENT_BLOCK if you want the
     // allocations to be of _CLIENT_BLOCK type
 #else
@@ -49,6 +52,12 @@
 
 
 #include "aes256/aes256.hpp"
+#include "lzo/minilzo.h"
+
+#define HEAP_ALLOC(var,size) \
+    lzo_align_t __LZO_MMODEL var [ ((size) + (sizeof(lzo_align_t) - 1)) / sizeof(lzo_align_t) ]
+
+static HEAP_ALLOC(wrkmem, LZO1X_1_MEM_COMPRESS);
 
 #define WSA_FUNADO -31337
 #define PING_TIME 5 * 1

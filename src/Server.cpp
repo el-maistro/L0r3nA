@@ -856,10 +856,29 @@ int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, 
     // 1 non block
     // 0 block
     
-    ByteArray cData = this->bEnc((const unsigned char*)pBuffer, pLen);
-    int iDataSize = cData.size();
-    char* DBG_NEWBuffer = DBG_NEW char[iDataSize];
-    std::memcpy(DBG_NEWBuffer, cData.data(), iDataSize);
+    ByteArray cData = this->bEnc(reinterpret_cast<const unsigned char*>(pBuffer), pLen);
+    //in_len + in_len / 16 / 64 + 3
+    int iDataSize = cData.size() + 1;
+    int iCompSize = iDataSize + iDataSize / 16 / 64 + 3;
+    
+    std::unique_ptr<char[]> new_Buffer = std::make_unique<char[]>(iDataSize);
+    new_Buffer[0] = 'D';
+    if (pLen > 1024) {
+        std::shared_ptr<unsigned char[]> compData(new unsigned char[iCompSize]);
+        lzo_uint out_len = 0;
+
+        int lzoRet = this->lzo_Compress(cData.data(), cData.size(), compData, out_len);
+        if (lzoRet == LZO_E_OK) {
+            new_Buffer[0] = 'C';
+            std::memcpy(new_Buffer.get()+1, compData.get(), out_len);
+            iDataSize = out_len;
+        }else {
+            //No se pudo, copiar el buffer cifrado
+            std::memcpy(new_Buffer.get()+1, cData.data(), iDataSize);
+        }
+    }else {
+        std::memcpy(new_Buffer.get()+1, cData.data(), iDataSize);
+    }
 
     int iEnviado = 0;
     if (isBlock) {
@@ -869,7 +888,7 @@ int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, 
             this->m_txtLog->LogThis("Error configurando el socket NON_BLOCK", LogType::LogError);
         }
 
-        iEnviado = send(pSocket, DBG_NEWBuffer, iDataSize, pFlags);
+        iEnviado = send(pSocket, new_Buffer.get(), iDataSize, pFlags);
         
         //Restaurar
         iBlock = 1;
@@ -878,11 +897,10 @@ int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, 
         }
 
     }else {
-        iEnviado = send(pSocket, DBG_NEWBuffer, iDataSize, pFlags);
+        iEnviado = send(pSocket, new_Buffer.get(), iDataSize, pFlags);
     } 
 
-    charFree(DBG_NEWBuffer, iDataSize);
-
+    
     return iEnviado;
 }
 
@@ -891,6 +909,12 @@ int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool i
     // 1 non block
     // 0 block
     //std::unique_ptr<char[]> cBuffer = std::make_unique<char[]>(iBufferSize);
+
+    if (!pBuffer) {
+        std::cout << "Buffer no reservado para recibir paquete\n";
+        return 0;
+    }
+
     std::unique_ptr<char[]> cTmpBuff = std::make_unique<char[]>(pLen);
     int iRecibido = 0;
     
@@ -908,8 +932,21 @@ int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool i
         }else if (iRecibido <= 0) {
             return -1;
         }
+        
+        //Descomprimir
+        std::shared_ptr<unsigned char[]> compBuffer(new unsigned char[iRecibido]);
+        if (compBuffer) {
+            lzo_uint out_len = 0;
+            int ilzoRet = this->lzo_Decompress(reinterpret_cast<const unsigned char*>(cTmpBuff.get()), iRecibido, compBuffer, out_len);
+            if (ilzoRet == LZO_E_OK) {
+                if (out_len <= pLen) {
+                    std::memcpy(cTmpBuff.get(), compBuffer.get(), out_len);
+                }
+            }
+        }
+
         //Decrypt
-        ByteArray bOut = this->bDec((const unsigned char*)cTmpBuff.get(), iRecibido);
+        ByteArray bOut = this->bDec(reinterpret_cast<const unsigned char*>(cTmpBuff.get()), iRecibido);
 
         iRecibido = bOut.size();
         std::memcpy(pBuffer, bOut.data(), iRecibido);
@@ -930,8 +967,20 @@ int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool i
             return -1;
         }
 
+        //Descomprimir
+        std::shared_ptr<unsigned char[]> compBuffer(new unsigned char[iRecibido]);
+        if (compBuffer) {
+            lzo_uint out_len = 0;
+            int ilzoRet = this->lzo_Decompress(reinterpret_cast<const unsigned char*>(cTmpBuff.get()), iRecibido, compBuffer, out_len);
+            if (ilzoRet == LZO_E_OK) {
+                if (out_len < pLen) {
+                    std::memcpy(cTmpBuff.get(), compBuffer.get(), out_len);
+                }
+            }
+        }
+
         //Desencriptar los datos
-        ByteArray bOut = this->bDec((const unsigned char*)cTmpBuff.get(), iRecibido);
+        ByteArray bOut = this->bDec(reinterpret_cast<const unsigned char*>(cTmpBuff.get()), iRecibido);
 
         iRecibido = bOut.size();
         std::memcpy(pBuffer, bOut.data(), iRecibido);
@@ -959,6 +1008,21 @@ ByteArray Servidor::bDec(const unsigned char* pInput, size_t pLen) {
         std::cout << "Error desencriptando " << pInput << "\n";
     }
     return bOutput;
+}
+
+//LZO
+int Servidor::lzo_Compress(const unsigned char* cInput, lzo_uint in_len, std::shared_ptr<unsigned char[]>& cOutput, lzo_uint& out_len) {
+    if (cOutput) {
+        return lzo1x_1_compress(cInput, in_len, cOutput.get(), &out_len, wrkmem);
+    }
+    return -1;
+}
+
+int Servidor::lzo_Decompress(const unsigned char* cInput, lzo_uint in_len, std::shared_ptr<unsigned char[]>& cOutput, lzo_uint& out_len) {
+    if (cOutput) {
+        return lzo1x_decompress(cInput, in_len, cOutput.get(), &out_len, NULL);
+    }
+    return -1;
 }
 
 //control list events

