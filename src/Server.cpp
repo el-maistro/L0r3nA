@@ -855,29 +855,59 @@ void Servidor::m_RemoverClienteLista(std::string p_ID){
 int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock) {
     // 1 non block
     // 0 block
-    
-    ByteArray cData = this->bEnc(reinterpret_cast<const unsigned char*>(pBuffer), pLen);
-    //in_len + in_len / 16 / 64 + 3
-    int iDataSize = cData.size() + 1;
-    int iCompSize = iDataSize + iDataSize / 16 / 64 + 3;
-    
-    std::unique_ptr<char[]> new_Buffer = std::make_unique<char[]>(iDataSize);
-    new_Buffer[0] = 'D';
-    if (pLen > 1024) {
-        std::shared_ptr<unsigned char[]> compData(new unsigned char[iCompSize]);
-        lzo_uint out_len = 0;
 
-        int lzoRet = this->lzo_Compress(cData.data(), cData.size(), compData, out_len);
-        if (lzoRet == LZO_E_OK) {
-            new_Buffer[0] = 'C';
-            std::memcpy(new_Buffer.get()+1, compData.get(), out_len);
-            iDataSize = out_len;
+    //Tamaño del buffer + cabecera
+    int iDataSize = pLen + 2;
+
+    std::unique_ptr<char[]> new_Buffer = std::make_unique<char[]>(iDataSize);
+    if (!new_Buffer) {
+        std::cout << "No se pudo reservar la memoria\n";
+        return -1;
+    }
+    
+    //Primero comprimir si el paquete es mayor a 512 bytes
+    lzo_uint out_len = 0;
+    std::shared_ptr<unsigned char[]> compData(new unsigned char[iDataSize + iDataSize / 16 / 64 + 3]);
+
+    if (pLen > 512) {
+        //Comprimir, por defecto la cabecera se seteara como descomprimido
+        // esto solo cambia si no hay ningun error durante el proceso de compresion
+        new_Buffer[0] = UNCOMP_HEADER_BYTE_1;
+        new_Buffer[1] = COMP_HEADER_BYTE_2;
+        
+        if (compData) {
+            if (this->lzo_Compress(reinterpret_cast<const unsigned char*>(pBuffer), pLen, compData, out_len) == LZO_E_OK) {
+                if (out_len+2 <= iDataSize) {
+                    std::memcpy(new_Buffer.get() + 2, compData.get(), out_len);
+                    iDataSize = out_len + 2; //Cantidad de bytes que fueron comprimidos + cabecera (2 bytes)
+                }else {
+                    std::cout << "Tamaño del buffer compreso es mayor al reservado originalmente\n";
+                    //Copiar buffer original y setear la cabecera como comprimido
+                    new_Buffer[0] = COMP_HEADER_BYTE_1;
+                    std::memcpy(new_Buffer.get() + 2, pBuffer, pLen);
+                }
+            }else {
+                std::cout << "No se pudo comprimir el buffer\n";
+                //Copiar buffer original
+                std::memcpy(new_Buffer.get() + 2, pBuffer, pLen);
+            }
         }else {
-            //No se pudo, copiar el buffer cifrado
-            std::memcpy(new_Buffer.get()+1, cData.data(), iDataSize);
+            std::cout << "No se pudo reservar memoria para el buffer de compression\n";
+            //Copiar buffer original
+            std::memcpy(new_Buffer.get() + 2, pBuffer, pLen);
         }
+
     }else {
-        std::memcpy(new_Buffer.get()+1, cData.data(), iDataSize);
+        std::memcpy(new_Buffer.get() + 2, pBuffer, pLen);
+    }
+
+    //Vector que aloja el buffer cifrado
+    ByteArray cData = this->bEnc(reinterpret_cast<const unsigned char*>(new_Buffer.get()), iDataSize);
+    iDataSize = cData.size();
+    if (iDataSize == 0) {
+        std::cout << "No se pudo cifrar el buffer\n";
+        error();
+        return -1;
     }
 
     int iEnviado = 0;
@@ -888,7 +918,7 @@ int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, 
             this->m_txtLog->LogThis("Error configurando el socket NON_BLOCK", LogType::LogError);
         }
 
-        iEnviado = send(pSocket, new_Buffer.get(), iDataSize, pFlags);
+        iEnviado = send(pSocket, reinterpret_cast<const char*>(cData.data()), iDataSize, pFlags);
         
         //Restaurar
         iBlock = 1;
@@ -897,7 +927,7 @@ int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, 
         }
 
     }else {
-        iEnviado = send(pSocket, new_Buffer.get(), iDataSize, pFlags);
+        iEnviado = send(pSocket, reinterpret_cast<const char*>(cData.data()), iDataSize, pFlags);
     } 
 
     

@@ -66,6 +66,11 @@ static HEAP_ALLOC(wrkmem, LZO1X_1_MEM_COMPRESS);
 #define FRAME_CLIENT_SIZE_WIDTH 600
 #define DB_FILE "./crypt_.db"
 #define CMD_DEL '~'
+#define COMP_HEADER_BYTE_1 'C'
+#define COMP_HEADER_BYTE_2 'B'
+#define UNCOMP_HEADER_BYTE_1 'D'
+#define UNCOMP_HEADER_BYTE_2 'B'
+
 
 //FM Modos
 #define FM_EQUIPO    500
