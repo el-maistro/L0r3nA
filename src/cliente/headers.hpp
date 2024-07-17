@@ -42,6 +42,10 @@ static HEAP_ALLOC(wrkmem, LZO1X_1_MEM_COMPRESS);
 #define ___DEBUG_
 #define MAX_CAMS 5
 #define CMD_DEL '~'
+#define COMP_HEADER_BYTE_1 'C'
+#define COMP_HEADER_BYTE_2 'B'
+#define UNCOMP_HEADER_BYTE_1 'D'
+#define BUFFER_COMP_REQ_LEN 512
 
 #define error() std::cout<<"Error["<<GetLastError()<<"]\n";
 #define error_2(x) std::cout<<"["<<x<<"]"<<"Error["<<GetLastError()<<"]\n";

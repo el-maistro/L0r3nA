@@ -864,26 +864,27 @@ int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, 
         std::cout << "No se pudo reservar la memoria\n";
         return -1;
     }
+
+    //por defecto la cabecera se seteara como descomprimido
+    // esto solo cambia si no hay ningun error durante el proceso de compresion
+    new_Buffer[0] = UNCOMP_HEADER_BYTE_1;
+    new_Buffer[1] = COMP_HEADER_BYTE_2;
     
     //Primero comprimir si el paquete es mayor a 512 bytes
     lzo_uint out_len = 0;
     std::shared_ptr<unsigned char[]> compData(new unsigned char[iDataSize + iDataSize / 16 / 64 + 3]);
 
-    if (pLen > 512) {
-        //Comprimir, por defecto la cabecera se seteara como descomprimido
-        // esto solo cambia si no hay ningun error durante el proceso de compresion
-        new_Buffer[0] = UNCOMP_HEADER_BYTE_1;
-        new_Buffer[1] = COMP_HEADER_BYTE_2;
-        
+    if (pLen > BUFFER_COMP_REQ_LEN) {
+        //Comprimir  buffer
         if (compData) {
             if (this->lzo_Compress(reinterpret_cast<const unsigned char*>(pBuffer), pLen, compData, out_len) == LZO_E_OK) {
                 if (out_len+2 <= iDataSize) {
+                    new_Buffer[0] = COMP_HEADER_BYTE_1;
                     std::memcpy(new_Buffer.get() + 2, compData.get(), out_len);
                     iDataSize = out_len + 2; //Cantidad de bytes que fueron comprimidos + cabecera (2 bytes)
                 }else {
                     std::cout << "Tamaño del buffer compreso es mayor al reservado originalmente\n";
-                    //Copiar buffer original y setear la cabecera como comprimido
-                    new_Buffer[0] = COMP_HEADER_BYTE_1;
+                    //Copiar buffer original
                     std::memcpy(new_Buffer.get() + 2, pBuffer, pLen);
                 }
             }else {
@@ -905,31 +906,29 @@ int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, 
     ByteArray cData = this->bEnc(reinterpret_cast<const unsigned char*>(new_Buffer.get()), iDataSize);
     iDataSize = cData.size();
     if (iDataSize == 0) {
-        std::cout << "No se pudo cifrar el buffer\n";
         error();
         return -1;
     }
 
     int iEnviado = 0;
+    unsigned long int iBlock = 0;
+
     if (isBlock) {
         //Hacer el socket block
-        unsigned long int iBlock = 0;
         if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
             this->m_txtLog->LogThis("Error configurando el socket NON_BLOCK", LogType::LogError);
         }
+    }
 
-        iEnviado = send(pSocket, reinterpret_cast<const char*>(cData.data()), iDataSize, pFlags);
+    iEnviado = send(pSocket, reinterpret_cast<const char*>(cData.data()), iDataSize, pFlags);
         
-        //Restaurar
+    //Restaurar
+    if (isBlock) {
         iBlock = 1;
         if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
             this->m_txtLog->LogThis("Error configurando el socket NON_BLOCK", LogType::LogError);
         }
-
-    }else {
-        iEnviado = send(pSocket, reinterpret_cast<const char*>(cData.data()), iDataSize, pFlags);
-    } 
-
+    }
     
     return iEnviado;
 }
@@ -938,90 +937,86 @@ int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool i
     
     // 1 non block
     // 0 block
-    //std::unique_ptr<char[]> cBuffer = std::make_unique<char[]>(iBufferSize);
-
+    
     if (!pBuffer) {
         std::cout << "Buffer no reservado para recibir paquete\n";
         return 0;
     }
 
     std::unique_ptr<char[]> cTmpBuff = std::make_unique<char[]>(pLen);
-    int iRecibido = 0;
     
-     if (isBlock) {
+    int iRecibido = 0;
+    unsigned long int iBlock = 0;
+    
+    //Hacer el socket block
+    if (isBlock) {
         //Hacer el socket block
-        unsigned long int iBlock = 0;
         if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
             this->m_txtLog->LogThis("Error configurando el socket NON_BLOCK", LogType::LogError);
         }
+    }
 
-        iRecibido = recv(pSocket, cTmpBuff.get(), pLen, pFlags);
+    //Recibir el buffer
+    iRecibido = recv(pSocket, cTmpBuff.get(), pLen, pFlags);
         
-        if (GetLastError() == WSAECONNRESET) {
-            return WSAECONNRESET;
-        }else if (iRecibido <= 0) {
-            return -1;
-        }
-        
-        //Descomprimir
-        std::shared_ptr<unsigned char[]> compBuffer(new unsigned char[iRecibido]);
-        if (compBuffer) {
-            lzo_uint out_len = 0;
-            int ilzoRet = this->lzo_Decompress(reinterpret_cast<const unsigned char*>(cTmpBuff.get()), iRecibido, compBuffer, out_len);
-            if (ilzoRet == LZO_E_OK) {
-                if (out_len <= pLen) {
-                    std::memcpy(cTmpBuff.get(), compBuffer.get(), out_len);
-                }
-            }
-        }
+    if (GetLastError() == WSAECONNRESET) {
+        return WSAECONNRESET;
+    }else if (iRecibido <= 0) {
+        return -1;
+    }
 
-        //Decrypt
-        ByteArray bOut = this->bDec(reinterpret_cast<const unsigned char*>(cTmpBuff.get()), iRecibido);
-
-        iRecibido = bOut.size();
-        std::memcpy(pBuffer, bOut.data(), iRecibido);
-        
-        //Restaurar
+    //Restaurar el socket
+    if (isBlock) {
         iBlock = 1;
         if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
             this->m_txtLog->LogThis("Error configurando el socket NON_BLOCK", LogType::LogError);
         }
-
-        return iRecibido;
-    }else {
-        iRecibido = recv(pSocket, cTmpBuff.get(), pLen, pFlags);
-        
-        if (WSAGetLastError() == WSAECONNRESET) {
-            return WSAECONNRESET;
-        }else if (iRecibido <= 0) {
-            return -1;
-        }
-
-        //Descomprimir
-        std::shared_ptr<unsigned char[]> compBuffer(new unsigned char[iRecibido]);
-        if (compBuffer) {
-            lzo_uint out_len = 0;
-            int ilzoRet = this->lzo_Decompress(reinterpret_cast<const unsigned char*>(cTmpBuff.get()), iRecibido, compBuffer, out_len);
-            if (ilzoRet == LZO_E_OK) {
-                if (out_len < pLen) {
-                    std::memcpy(cTmpBuff.get(), compBuffer.get(), out_len);
-                }
-            }
-        }
-
-        //Desencriptar los datos
-        ByteArray bOut = this->bDec(reinterpret_cast<const unsigned char*>(cTmpBuff.get()), iRecibido);
-
-        iRecibido = bOut.size();
-        std::memcpy(pBuffer, bOut.data(), iRecibido);
-
-        return iRecibido;
     }
+        
+    //Decrypt
+    ByteArray bOut = this->bDec(reinterpret_cast<const unsigned char*>(cTmpBuff.get()), iRecibido);
+    iRecibido = bOut.size();
+    if (iRecibido == 0) {
+        error();
+        return -1;
+    }
+        
+    //Comprobar si tiene la cabecera
+    if (iRecibido > 2) { //?
+        if (bOut[0] == COMP_HEADER_BYTE_1 && bOut[1] == COMP_HEADER_BYTE_2) {
+            std::shared_ptr<unsigned char[]> compBuffer(new unsigned char[iRecibido-2]);
+            if (compBuffer) {
+                lzo_uint out_len = 0;
+                //Descomprimir
+                int ilzoRet = this->lzo_Decompress(reinterpret_cast<const unsigned char*>(cTmpBuff.get()), iRecibido, compBuffer, out_len);
+                if (ilzoRet == LZO_E_OK) {
+                    if (out_len <= pLen) {
+                        std::memcpy(pBuffer, compBuffer.get(), out_len);
+                        iRecibido = out_len; //Cantidad final de bytes legibles
+                    }else {
+                        std::cout << "La cantidad de bytes descomprimidos es mayor al buffer\n";
+                        //Talvez reservar memoria extra aqui?
+                        return -1;
+                    }
+                }else {
+                    std::cout << "Error descomprimiendo el buffer\n";
+                    return -1;
+                }
+            }else {
+                std::cout << "No se pudo reservar memoria para descomprimir el paquete\n";
+                return -1;
+            }
+        }else {
+            //No tiene la cabecera de compreso, copiar buffer desencriptado
+            std::memcpy(pBuffer, bOut.data(), iRecibido);
+        }
+    }
+
+    return iRecibido;
 }
 
 //AES256
 ByteArray Servidor::bEnc(const unsigned char* pInput, size_t pLen) {
-    //this->Init_Key();
     ByteArray bOutput;
     ByteArray::size_type enc_len = Aes256::encrypt(this->bKey, pInput, pLen, bOutput);
     if (enc_len <= 0) {
@@ -1031,7 +1026,6 @@ ByteArray Servidor::bEnc(const unsigned char* pInput, size_t pLen) {
 }
 
 ByteArray Servidor::bDec(const unsigned char* pInput, size_t pLen) {
-    //this->Init_Key();
     ByteArray bOutput;
     ByteArray::size_type dec_len = Aes256::decrypt(this->bKey, pInput, pLen, bOutput);
     if (dec_len <= 0) {
