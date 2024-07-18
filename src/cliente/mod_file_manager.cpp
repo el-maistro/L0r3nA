@@ -191,7 +191,7 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID) {
 		return;
 	}
 
-	u_int uiTamBloque = 1024 * 70; //70 KB
+	u_int uiTamBloque = 1024 * 70; //10 KB
 	u64 uTamArchivo = GetFileSize(cPath.c_str());
 	u64 uBytesEnviados = 0;
 
@@ -211,30 +211,32 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID) {
 	strHeader.append(1, CMD_DEL);
 	
 	int iHeaderSize = strHeader.size();
-
-	char* cBufferArchivo = new char[uiTamBloque];
 	int iBytesLeidos = 0;
 
-	char* nSendbuffer = new char[uiTamBloque + iHeaderSize];
-	
-	memcpy(nSendbuffer, strHeader.c_str(), iHeaderSize);
+	std::shared_ptr<char[]> cBufferArchivo(new char[uiTamBloque]);
+	if (!cBufferArchivo) {
+		DebugPrint("[FM]No se pudo reservar memoria para enviar el archivo");
+		return;
+	}
+
+	std::unique_ptr<char[]> nSendbuffer = std::make_unique<char[]>(uiTamBloque + iHeaderSize);
+	if (!nSendbuffer) {
+		DebugPrint("[FM]No se pudo reservar memoria para enviar el archivo - 2");
+		return;
+	}
+
+	memcpy(nSendbuffer.get(), strHeader.c_str(), iHeaderSize);
 
 	while (1) {
-		localFile.read(cBufferArchivo, uiTamBloque);
+		localFile.read(cBufferArchivo.get(), uiTamBloque);
 		iBytesLeidos = localFile.gcount();
 		if (iBytesLeidos > 0) {
 			int iTotal = iBytesLeidos + iHeaderSize;
-			memcpy(nSendbuffer + iHeaderSize, cBufferArchivo, iBytesLeidos);
+			memcpy(nSendbuffer.get() + iHeaderSize, cBufferArchivo.get(), iBytesLeidos);
 
-			int iEnviado = cCliente->cSend(cCliente->sckSocket, nSendbuffer, iTotal, 0, true);
+			int iEnviado = cCliente->cSend(cCliente->sckSocket, nSendbuffer.get(), iTotal, 0, true);
 			uBytesEnviados += iEnviado;
-			Sleep(10);
-			
-			/*Sleep(20);
-			if (nTempBuffer) {
-				delete[] nTempBuffer;
-				nTempBuffer = nullptr;
-			}*/
+			Sleep(30);
 
 			if (iEnviado == -1 || iEnviado == WSAECONNRESET) {
 				//No se pudo enviar el paquete
@@ -253,16 +255,6 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID) {
 	strComandoCerrar.append(1, CMD_DEL);
 	strComandoCerrar += cID;
 	cCliente->cSend(cCliente->sckSocket, strComandoCerrar.c_str(), strComandoCerrar.size(), 0, true);
-
-	if (nSendbuffer) {
-		delete[] nSendbuffer;
-		nSendbuffer = nullptr;
-	}
-
-	if (cBufferArchivo) {
-		delete[] cBufferArchivo;
-		cBufferArchivo = nullptr;
-	}
 }
 
 //Enviar bytes de archivo a editar
