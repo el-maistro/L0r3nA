@@ -54,11 +54,6 @@
 #include "aes256/aes256.hpp"
 #include "lzo/minilzo.h"
 
-#define HEAP_ALLOC(var,size) \
-    lzo_align_t __LZO_MMODEL var [ ((size) + (sizeof(lzo_align_t) - 1)) / sizeof(lzo_align_t) ]
-
-static HEAP_ALLOC(wrkmem, LZO1X_1_MEM_COMPRESS);
-
 #define WSA_FUNADO -31337
 #define PING_TIME 5 * 1
 #define AES_KEY_LEN 32
@@ -69,6 +64,7 @@ static HEAP_ALLOC(wrkmem, LZO1X_1_MEM_COMPRESS);
 #define COMP_HEADER_BYTE_1 'C'
 #define COMP_HEADER_BYTE_2 'B'
 #define UNCOMP_HEADER_BYTE_1 'D'
+#define BUFFER_COMP_REQ_LEN 512
 
 
 //FM Modos

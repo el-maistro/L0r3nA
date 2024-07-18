@@ -64,7 +64,7 @@ void Cliente_Handler::PlayBuffer(char* pBuffer, size_t iLen){
 }
 
 void Cliente_Handler::Spawn_Handler(){
-    int iBufferSize = 1024 * 100;
+    int iBufferSize = 1024 * 100; //100 kb
     std::unique_ptr<char[]> cBuffer = std::make_unique<char[]>(iBufferSize);
     
     int iTempRecibido = 0;
@@ -108,6 +108,8 @@ void Cliente_Handler::Spawn_Handler(){
 
         cBuffer[this->BytesRecibidos()] = '\0';
 
+        this->Log(cBuffer.get());
+        
         std::vector<std::string> vcDatos = strSplit(std::string(cBuffer.get()), CMD_DEL, 1);
         if (vcDatos.size() == 0) {
             this->Log("No se pudo procesar el buffer");
@@ -497,6 +499,11 @@ Servidor::Servidor(){
     this->m_txtLog = DBG_NEW MyLogClass();
 
     this->Init_Key();
+
+    if (lzo_init() != LZO_E_OK) {
+        std::cout<<"internal error - lzo_init() failed !!!\n";
+        std::cout<<"(this usually indicates a compiler bug - try recompiling\nwithout optimizations, and enable '-DLZO_DEBUG' for diagnostics)\n";
+    }
     
 }
 
@@ -975,7 +982,8 @@ int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool i
         
     //Decrypt
     ByteArray bOut = this->bDec(reinterpret_cast<const unsigned char*>(cTmpBuff.get()), iRecibido);
-    iRecibido = bOut.size();
+    //Quitar 2 bytes por la cabecera
+    iRecibido = bOut.size() - 2;
     if (iRecibido == 0) {
         error();
         return -1;
@@ -984,31 +992,31 @@ int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool i
     //Comprobar si tiene la cabecera
     if (iRecibido > 2) { //?
         if (bOut[0] == COMP_HEADER_BYTE_1 && bOut[1] == COMP_HEADER_BYTE_2) {
-            std::shared_ptr<unsigned char[]> compBuffer(new unsigned char[iRecibido-2]);
+            std::shared_ptr<unsigned char[]> compBuffer(new unsigned char[pLen]);
             if (compBuffer) {
                 lzo_uint out_len = 0;
                 //Descomprimir
-                int ilzoRet = this->lzo_Decompress(reinterpret_cast<const unsigned char*>(cTmpBuff.get()), iRecibido, compBuffer, out_len);
-                if (ilzoRet == LZO_E_OK) {
+                //Mover 2 bytes hacia adelante del buffer para ignorar la cabecera
+                if(this->lzo_Decompress(bOut.data()+2, iRecibido, compBuffer, out_len) == LZO_E_OK) {
                     if (out_len <= pLen) {
                         std::memcpy(pBuffer, compBuffer.get(), out_len);
                         iRecibido = out_len; //Cantidad final de bytes legibles
                     }else {
                         std::cout << "La cantidad de bytes descomprimidos es mayor al buffer\n";
                         //Talvez reservar memoria extra aqui?
-                        return -1;
+                        iRecibido = -1;
                     }
                 }else {
                     std::cout << "Error descomprimiendo el buffer\n";
-                    return -1;
+                    iRecibido = -1;
                 }
             }else {
                 std::cout << "No se pudo reservar memoria para descomprimir el paquete\n";
-                return -1;
+                iRecibido = -1;
             }
         }else {
             //No tiene la cabecera de compreso, copiar buffer desencriptado
-            std::memcpy(pBuffer, bOut.data(), iRecibido);
+            std::memcpy(pBuffer, bOut.data()+2, iRecibido);
         }
     }
 
@@ -1036,17 +1044,11 @@ ByteArray Servidor::bDec(const unsigned char* pInput, size_t pLen) {
 
 //LZO
 int Servidor::lzo_Compress(const unsigned char* cInput, lzo_uint in_len, std::shared_ptr<unsigned char[]>& cOutput, lzo_uint& out_len) {
-    if (cOutput) {
-        return lzo1x_1_compress(cInput, in_len, cOutput.get(), &out_len, wrkmem);
-    }
-    return -1;
+    return lzo1x_1_compress(cInput, in_len, cOutput.get(), &out_len, wrkmem);
 }
 
 int Servidor::lzo_Decompress(const unsigned char* cInput, lzo_uint in_len, std::shared_ptr<unsigned char[]>& cOutput, lzo_uint& out_len) {
-    if (cOutput) {
-        return lzo1x_decompress(cInput, in_len, cOutput.get(), &out_len, NULL);
-    }
-    return -1;
+    return lzo1x_decompress(cInput, in_len, cOutput.get(), &out_len, NULL);
 }
 
 //control list events
