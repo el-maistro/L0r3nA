@@ -191,7 +191,7 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID) {
 		return;
 	}
 
-	u_int uiTamBloque = 1024 * 70; //10 KB
+	u_int uiTamBloque = 1024 * 50; //50 KB
 	u64 uTamArchivo = GetFileSize(cPath.c_str());
 	u64 uBytesEnviados = 0;
 

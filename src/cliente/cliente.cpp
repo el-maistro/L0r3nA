@@ -5,6 +5,9 @@
 #include "mod_camara.hpp"
 #include "misc.hpp"
 
+#define HEAP_ALLOC(var,size) \
+    lzo_align_t __LZO_MMODEL var [ ((size) + (sizeof(lzo_align_t) - 1)) / sizeof(lzo_align_t) ]
+static HEAP_ALLOC(wrkmem, LZO1X_1_MEM_COMPRESS);
 
 void Cliente::Init_Key() {
     for (unsigned char i = 0; i < AES_KEY_LEN; i++) {
@@ -146,7 +149,7 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
         return;
     }
 
-    DebugPrint(pBuffer);
+    DebugPrint(strIn[0]);
 
     if(this->Comandos[strIn[0].c_str()] == EnumComandos::FM_Descargar_Archivo_Recibir){
         // CMD + 1, resto son bytes
@@ -616,7 +619,6 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
 
     //Tamaño del buffer
     int iDataSize = pLen + 2;
-
     std::unique_ptr<char[]> new_Buffer = std::make_unique<char[]>(iDataSize);
     if (!new_Buffer) {
         DebugPrint("No se pudo reservar la memoria");
@@ -634,15 +636,16 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
         //Comprimir
         lzo_uint out_len = 0;
         std::shared_ptr<unsigned char[]> compData(new unsigned char[iDataSize + iDataSize / 16 / 64 + 3]);
+
         if (compData) { 
-            if (this->lzo_Compress(reinterpret_cast<const unsigned char*>(pBuffer), pLen, compData, out_len) == LZO_E_OK) {
+            if (this->lzo_Compress(reinterpret_cast<const unsigned char*>(pBuffer), static_cast<lzo_uint>(pLen), compData, out_len) == LZO_E_OK) {
                 if (out_len + 2 <= iDataSize) {
                     new_Buffer[0] = COMP_HEADER_BYTE_1;
                     std::memcpy(new_Buffer.get() + 2, compData.get(), out_len);
                     iDataSize = out_len + 2; //Cantidad de bytes que fueron comprimidos + cabecera (2 bytes)
                     //DebugPrint("[cSend] Compreso: " + std::to_string(iDataSize));
                 }else {
-                    DebugPrint("Tamaño del buffer compreso es mayor al reservado originalmente");
+                    DebugPrint("Tamaño del buffer compreso es mayor al reservado originalmente, datos no comprimibles");
                     //Copiar buffer original
                     std::memcpy(new_Buffer.get() + 2, pBuffer, pLen);
                 }
@@ -746,7 +749,7 @@ int Cliente::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool is
             if (compBuffer) {
                 lzo_uint out_len = 0;
                 //Descomprimir
-                int ilzoRet = this->lzo_Decompress(bOut.data()+2, iRecibido, compBuffer, out_len);
+                int ilzoRet = this->lzo_Decompress(bOut.data()+2, static_cast<lzo_uint>(iRecibido), compBuffer, out_len);
                 if (ilzoRet == LZO_E_OK) {
                     if (out_len <= pLen) {
                         std::memcpy(pBuffer, compBuffer.get(), out_len);
@@ -798,10 +801,7 @@ int Cliente::lzo_Compress(const unsigned char* cInput, lzo_uint in_len, std::sha
 }
 
 int Cliente::lzo_Decompress(const unsigned char* cInput, lzo_uint in_len, std::shared_ptr<unsigned char[]>& cOutput, lzo_uint& out_len) {
-    if (cOutput) {
-        return lzo1x_decompress(cInput, in_len, cOutput.get(), &out_len, NULL);
-    }
-    return -1;
+    return lzo1x_decompress(cInput, in_len, cOutput.get(), &out_len, NULL);
 }
 
 //Misc

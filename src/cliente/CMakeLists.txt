@@ -4,6 +4,7 @@ project(cliente LANGUAGES CXX C)
  
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_FLAGS "-fsanitize=address")
 #set(CMAKE_EXE_LINKER_FLAGS " -static")
 #set(CMAKE_CXX_COMPILER x86_64-w64-mingw32-gcc )
 #set(CMAKE_CXX_FLAGS "-Wl,-Bstatic -s -w -ffunction-sections -fdata-sections -Wno-write-strings -fno-exceptions -fmerge-all-constants -static-libgcc -Wl,-Bstatic " )
