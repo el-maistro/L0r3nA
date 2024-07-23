@@ -82,7 +82,7 @@ class mod_Camera {
         //Conversion to JPEG
         int GetEncoderClsid(const WCHAR* format, CLSID* pClsid);
         std::vector<BYTE> bmpHeader(LONG lWidth, LONG lHeight, WORD wBitsPerPixel, const unsigned long& padding_size, DWORD iBuffersize);
-        std::vector<BYTE> toJPEG(BYTE* bmpBuffer, u_int uiBuffersize);
+        std::vector<BYTE> toJPEG(const BYTE* bmpBuffer, u_int uiBuffersize);
         
         
 	private:

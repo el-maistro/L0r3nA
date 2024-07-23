@@ -310,7 +310,7 @@ void EditarArchivo(const std::string strPath, const std::string strID){
 	}
 }
 
-void Crypt_Archivo(std::string strPath, const char cCryptOption, const char cDelOption, std::string strPass) {
+void Crypt_Archivo(const std::string strPath, const char cCryptOption, const char cDelOption, const std::string strPass) {
 	std::string strComando = std::to_string(EnumComandos::FM_Crypt_Confirm);
 	strComando.append(1, CMD_DEL);
 	// 1 = No se pudo abrir archivo entrada

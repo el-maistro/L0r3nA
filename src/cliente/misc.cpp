@@ -189,7 +189,7 @@ bool Execute(const char *cCmdLine, int iOpt){
 	return false;
 }
 
-void DebugPrint(std::string cMessage){
+void DebugPrint(const std::string cMessage){
 #ifdef ___DEBUG_
 	error();
 	std::cout<<cMessage<<std::endl;

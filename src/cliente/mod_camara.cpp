@@ -72,7 +72,7 @@ std::vector<BYTE> mod_Camera::bmpHeader(LONG lWidth, LONG lHeight, WORD wBitsPer
     return nBuffer;
 }
 
-std::vector<BYTE> mod_Camera::toJPEG(BYTE* bmpBuffer, u_int uiBuffersize) {
+std::vector<BYTE> mod_Camera::toJPEG(const BYTE* bmpBuffer, u_int uiBuffersize) {
     //Liberar buffer despues de haberse usado
     HGLOBAL hGlobalMem = GlobalAlloc(GHND | GMEM_DDESHARE, 0);
 

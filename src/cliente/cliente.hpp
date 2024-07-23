@@ -102,7 +102,7 @@ class Cliente {
 
 		void MainLoop();
 
-		void ProcesarComando(char* pBuffer, int iSize);
+		void ProcesarComando(char* const& pBuffer, int iSize);
 
 		void charFree(char*& nBuffer, int pLen) {
 			if (nBuffer) {
