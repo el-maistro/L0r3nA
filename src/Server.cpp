@@ -66,7 +66,7 @@ void Cliente_Handler::PlayBuffer(char* pBuffer, size_t iLen){
 void Cliente_Handler::Spawn_Handler(){
     int iBufferSize = 1024 * 100; //100 kb
     std::unique_ptr<char[]> cBuffer = std::make_unique<char[]>(iBufferSize);
-    
+    DWORD error_code = 0;
     int iTempRecibido = 0;
     while (true) {
         if (!this->isfRunning() || this->p_Cliente._sckCliente == INVALID_SOCKET) {
@@ -76,11 +76,11 @@ void Cliente_Handler::Spawn_Handler(){
         }
         
         
-        iTempRecibido = p_Servidor->cRecv(this->p_Cliente._sckCliente, cBuffer.get(), iBufferSize - 1, 0, true);
+        iTempRecibido = p_Servidor->cRecv(this->p_Cliente._sckCliente, cBuffer.get(), iBufferSize - 1, 0, true, &error_code);
         this->SetBytesRecibidos(iTempRecibido);
 
         //timeout
-        if (WSAGetLastError() == WSAETIMEDOUT) {
+        if (error_code == WSAETIMEDOUT) {
             continue;
         }
 
@@ -90,9 +90,14 @@ void Cliente_Handler::Spawn_Handler(){
         //    continue;
         //}
 
-        //Desconexion del cliente
-        if ((this->BytesRecibidos() <= 0 && WSAGetLastError() != WSAETIMEDOUT) || this->BytesRecibidos() == WSAECONNRESET) {
-            //Si la ventana sigue abierta
+        /*Desconexion del cliente
+        Si no recibio nada y el error no es timeout*/
+        //if ((this->BytesRecibidos() <= 0 && error_code != WSAETIMEDOUT)
+            /*O si el cliente se desconecto*/
+            //|| this->BytesRecibidos() == WSAECONNRESET) {
+            if(this->BytesRecibidos() == WSAECONNRESET) {
+            
+            //Cambiar titulo de ventana si esta sigue abierta
             FrameCliente* temp_cli = (FrameCliente*)wxWindow::FindWindowByName(this->p_Cliente._id);
             if (temp_cli) {
                 temp_cli->SetTitle(this->p_Cliente._id + " [DESCONECTADO]");
@@ -938,7 +943,7 @@ int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, 
     return iEnviado;
 }
 
-int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool isBlock) {
+int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool isBlock, DWORD* error_code) {
     
     // 1 non block
     // 0 block
@@ -963,11 +968,14 @@ int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool i
 
     //Recibir el buffer
     iRecibido = recv(pSocket, cTmpBuff.get(), pLen, pFlags);
-        
-    if (GetLastError() == WSAECONNRESET) {
+    if (error_code != nullptr) {
+        *error_code = WSAGetLastError();
+    }
+
+    if (WSAGetLastError() == WSAECONNRESET || iRecibido < 0) {
         return WSAECONNRESET;
-    }else if (iRecibido <= 0) {
-        return -1;
+    }else if (iRecibido == 0) {
+        return iRecibido;
     }
 
     //Restaurar el socket
@@ -1002,7 +1010,7 @@ int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool i
                     }else {
                         std::cout << "La cantidad de bytes descomprimidos es mayor al buffer\n";
                         //Talvez reservar memoria extra aqui?
-                        iRecibido = -1;
+                        iRecibido = 0;
                     }
                 }else {
                     std::cout << "Error descomprimiendo el buffer\n";
