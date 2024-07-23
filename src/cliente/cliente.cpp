@@ -5,10 +5,6 @@
 #include "mod_camara.hpp"
 #include "misc.hpp"
 
-#define HEAP_ALLOC(var,size) \
-    lzo_align_t __LZO_MMODEL var [ ((size) + (sizeof(lzo_align_t) - 1)) / sizeof(lzo_align_t) ]
-static HEAP_ALLOC(wrkmem, LZO1X_1_MEM_COMPRESS);
-
 void Cliente::Init_Key() {
     for (unsigned char i = 0; i < AES_KEY_LEN; i++) {
         this->bKey.push_back(this->t_key[i]);
@@ -801,7 +797,20 @@ ByteArray Cliente::bDec(const unsigned char* pInput, size_t pLen) {
 
 //LZO
 int Cliente::lzo_Compress(const unsigned char* cInput, lzo_uint in_len, std::shared_ptr<unsigned char[]>& cOutput, lzo_uint& out_len) {
-    return lzo1x_1_compress(cInput, in_len, cOutput.get(), &out_len, wrkmem);
+    lzo_voidp wrkmem = (lzo_voidp)malloc(LZO1X_1_MEM_COMPRESS);
+    int iRet = -1;
+    if (wrkmem == NULL) {
+        return iRet;
+    }
+
+    iRet = lzo1x_1_compress(cInput, in_len, cOutput.get(), &out_len, wrkmem);
+
+    if (wrkmem) {
+        free(wrkmem);
+        wrkmem = NULL;
+    }
+
+    return iRet;
 }
 
 int Cliente::lzo_Decompress(const unsigned char* cInput, lzo_uint in_len, std::shared_ptr<unsigned char[]>& cOutput, lzo_uint& out_len) {
