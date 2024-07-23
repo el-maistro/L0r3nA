@@ -86,8 +86,9 @@ class Cliente {
 		void CerrarConexion();
 
 		//Socket wraps
-		int cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock = false);
-		int cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool isBlock = false);
+		int cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock, DWORD* err_code);
+		int cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool isBlock, DWORD* err_code);
+
 
 		//AES
 		ByteArray bDec(const unsigned char* pInput, size_t pLen);

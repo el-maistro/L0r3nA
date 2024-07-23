@@ -608,6 +608,7 @@ void Servidor::m_StopHandler() {
 
 void Servidor::m_CerrarConexion(SOCKET pSocket) {
     if (pSocket != INVALID_SOCKET) {
+        std::cout << "Cerrando socket " << pSocket << "\n";
         closesocket(pSocket);
         pSocket = INVALID_SOCKET;
     }
@@ -638,8 +639,6 @@ void Servidor::m_CleanVector() {
         
         for(int iIndex = 0; iIndex < iNumeroClientes; iIndex++){
             if(!this->m_IsRunning(vector_mutex, iIndex) && this->m_Running()){
-                //this->m_CerrarConexion(this->m_SocketCliente(vector_mutex, iIndex));
-
                 std::string streTempID = this->m_ClienteID(vector_mutex, iIndex);
                 
                 this->m_RemoverClienteLista(streTempID);
@@ -909,6 +908,7 @@ int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, 
         }
 
     }else {
+        //No comprimir ya que el buffer no es tan grande
         std::memcpy(new_Buffer.get() + 2, pBuffer, pLen);
     }
 
@@ -1011,11 +1011,11 @@ int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool i
                     }
                 }else {
                     std::cout << "Error descomprimiendo el buffer\n";
-                    iRecibido = -1;
+                    iRecibido = 0;
                 }
             }else {
                 std::cout << "No se pudo reservar memoria para descomprimir el paquete\n";
-                iRecibido = -1;
+                iRecibido = 0;
             }
         }else {
             //No tiene la cabecera de compreso, copiar buffer desencriptado

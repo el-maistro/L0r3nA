@@ -201,7 +201,7 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID) {
 	strComando.append(1, CMD_DEL);
 	strComando += std::to_string(uTamArchivo);
 	//Enviar confirmacion y tama�o de archivo
-	cCliente->cSend(cCliente->sckSocket, strComando.c_str(), strComando.size(), 0, true);
+	cCliente->cSend(cCliente->sckSocket, strComando.c_str(), strComando.size(), 0, true, nullptr);
 	Sleep(100);
 
 	//Calcular tama�o header
@@ -234,7 +234,7 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID) {
 			int iTotal = iBytesLeidos + iHeaderSize;
 			memcpy(nSendbuffer.get() + iHeaderSize, cBufferArchivo.get(), iBytesLeidos);
 
-			int iEnviado = cCliente->cSend(cCliente->sckSocket, nSendbuffer.get(), iTotal, 0, true);
+			int iEnviado = cCliente->cSend(cCliente->sckSocket, nSendbuffer.get(), iTotal, 0, true, nullptr);
 			uBytesEnviados += iEnviado;
 			Sleep(30);
 
@@ -254,7 +254,7 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID) {
 	std::string strComandoCerrar = std::to_string(EnumComandos::FM_Descargar_Archivo_End);
 	strComandoCerrar.append(1, CMD_DEL);
 	strComandoCerrar += cID;
-	cCliente->cSend(cCliente->sckSocket, strComandoCerrar.c_str(), strComandoCerrar.size(), 0, true);
+	cCliente->cSend(cCliente->sckSocket, strComandoCerrar.c_str(), strComandoCerrar.size(), 0, true, nullptr);
 }
 
 //Enviar bytes de archivo a editar
@@ -285,7 +285,7 @@ void EditarArchivo(const std::string strPath, const std::string strID){
 			memcpy(nTempBuffer, strHeader.c_str(), iHeaderSize);
 			memcpy(nTempBuffer + iHeaderSize, cBufferArchivo, iBytesLeidos);
 
-			int iEnviado = cCliente->cSend(cCliente->sckSocket, nTempBuffer, iTotal, 0, true);
+			int iEnviado = cCliente->cSend(cCliente->sckSocket, nTempBuffer, iTotal, 0, true, nullptr);
 			Sleep(30);
 
 			if (nTempBuffer) {
@@ -331,7 +331,7 @@ void Crypt_Archivo(std::string strPath, const char cCryptOption, const char cDel
 	if (!archivo.is_open()) {
 		DebugPrint("[CRYPT] ERR IN " + strPass);
 		strComando.append(1, '1');
-		cCliente->cSend(cCliente->sckSocket, strComando.c_str(), strComando.size(), 0, false);
+		cCliente->cSend(cCliente->sckSocket, strComando.c_str(), strComando.size(), 0, false, nullptr);
 		return;
 	}
 
@@ -370,5 +370,5 @@ void Crypt_Archivo(std::string strPath, const char cCryptOption, const char cDel
 		BorrarArchivo(strPath.c_str());
 	}
 
-	cCliente->cSend(cCliente->sckSocket, strComando.c_str(), strComando.size(), 0, false);
+	cCliente->cSend(cCliente->sckSocket, strComando.c_str(), strComando.size(), 0, false, nullptr);
 }

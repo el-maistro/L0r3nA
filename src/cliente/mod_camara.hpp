@@ -74,15 +74,15 @@ class mod_Camera {
         HRESULT OpenMediaSource(IMFMediaSource*& pSource, IMFSourceReader*& pReader);
         HRESULT ConfigureCapture(IMFSourceReader*& pReader, int pIndexDev);
         HRESULT ConfigureSourceReader(IMFSourceReader*& pReader, int pIndexDev);
-        BYTE* GetFrame(int& iBytesOut, int pIndexDev);
+        std::vector<BYTE> GetFrame(int pIndexDev);
         void LiveCam(int pIndexDev);
         void SpawnLive(int pIndexDev);
         void JoinLiveThread(int pIndexDev);
 
         //Conversion to JPEG
         int GetEncoderClsid(const WCHAR* format, CLSID* pClsid);
-        BYTE* bmpHeader(LONG lWidth, LONG lHeight, WORD wBitsPerPixel, const unsigned long& padding_size, DWORD iBuffersize, unsigned int& iBuffsizeOut);
-        BYTE* toJPEG(BYTE*& bmpBuffer, u_int uiBuffersize, u_int& uiOutBufferSize);
+        std::vector<BYTE> bmpHeader(LONG lWidth, LONG lHeight, WORD wBitsPerPixel, const unsigned long& padding_size, DWORD iBuffersize);
+        std::vector<BYTE> toJPEG(BYTE* bmpBuffer, u_int uiBuffersize);
         
         
 	private:

