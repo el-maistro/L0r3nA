@@ -31,7 +31,8 @@
 
 
 #include "../aes256/aes256.hpp"
-#include "../lzo/minilzo.h"
+#include "../lzo/include/lzo/lzoconf.h"
+#include "../lzo/include/lzo/lzo1x.h"
 
 #define AES_KEY_LEN 32
 #define ___DEBUG_

@@ -628,13 +628,13 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
     if (pLen > BUFFER_COMP_REQ_LEN) {
         //Comprimir
         lzo_uint out_len = 0;
-        std::shared_ptr<unsigned char[]> compData(new unsigned char[iDataSize + iDataSize / 16 / 64 + 3]);
-
-        if (compData) { 
+        //std::shared_ptr<unsigned char[]> compData(new unsigned char[iDataSize + iDataSize / 16 / 64 + 3]);
+        std::vector<unsigned char> compData(iDataSize + iDataSize / 16 / 64 + 3);
+        if (compData.size() > 0) {
             if (this->lzo_Compress(reinterpret_cast<const unsigned char*>(pBuffer), static_cast<lzo_uint>(pLen), compData, out_len) == LZO_E_OK) {
                 if (out_len + 2 <= iDataSize) {
                     new_Buffer[0] = COMP_HEADER_BYTE_1;
-                    std::memcpy(new_Buffer.get() + 2, compData.get(), out_len);
+                    std::memcpy(new_Buffer.get() + 2, compData.data(), out_len);
                     iDataSize = out_len + 2; //Cantidad de bytes que fueron comprimidos + cabecera (2 bytes)
                     //DebugPrint("[cSend] Compreso: " + std::to_string(iDataSize));
                 }else {
@@ -794,18 +794,17 @@ ByteArray Cliente::bDec(const unsigned char* pInput, size_t pLen) {
 }
 
 //LZO
-int Cliente::lzo_Compress(const unsigned char* cInput, lzo_uint in_len, std::shared_ptr<unsigned char[]>& cOutput, lzo_uint& out_len) {
+//int Cliente::lzo_Compress(const unsigned char* cInput, lzo_uint in_len, std::shared_ptr<unsigned char[]>& cOutput, lzo_uint& out_len) {
+int Cliente::lzo_Compress(const unsigned char* cInput, lzo_uint in_len, std::vector<unsigned char>& cOutput, lzo_uint& out_len) {
     lzo_voidp wrkmem = (lzo_voidp)malloc(LZO1X_1_MEM_COMPRESS);
     int iRet = -1;
     if (wrkmem == NULL) {
         return iRet;
     }
 
-    iRet = lzo1x_1_compress(cInput, in_len, cOutput.get(), &out_len, wrkmem);
+    iRet = lzo1x_1_compress(cInput, in_len, cOutput.data(), &out_len, wrkmem);
 
-    if (wrkmem != NULL) {
-        free(wrkmem);
-    }
+    free(wrkmem);
 
     return iRet;
 }

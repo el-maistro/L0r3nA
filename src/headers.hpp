@@ -48,11 +48,12 @@
 #include<ctime>
 #include<mmsystem.h>
 
-#include <iomanip>
-
+#include<iomanip>
+#include<exception>
 
 #include "aes256/aes256.hpp"
-#include "lzo/minilzo.h"
+#include "lzo/include/lzo/lzoconf.h"
+#include "lzo/include/lzo/lzo1x.h"
 
 #define WSA_FUNADO -31337
 #define PING_TIME 5 * 1

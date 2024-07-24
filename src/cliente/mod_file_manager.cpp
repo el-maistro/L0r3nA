@@ -191,7 +191,8 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID) {
 		return;
 	}
 
-	u_int uiTamBloque = 1024 * 50; //50 KB
+	//>15 kb LZO crashea en tiempo de ejecucion
+	u_int uiTamBloque = 1024 * 10; //10 KB
 	u64 uTamArchivo = GetFileSize(cPath.c_str());
 	u64 uBytesEnviados = 0;
 
@@ -219,24 +220,26 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID) {
 		return;
 	}
 
-	std::unique_ptr<char[]> nSendbuffer = std::make_unique<char[]>(uiTamBloque + iHeaderSize);
-	if (!nSendbuffer) {
+	std::vector<char> nSendBuffer(uiTamBloque + iHeaderSize);
+	//std::unique_ptr<char[]> nSendbuffer = std::make_unique<char[]>(uiTamBloque + iHeaderSize);
+	//if (!nSendbuffer) {
+	if (nSendBuffer.size() == 0) {
 		DebugPrint("[FM]No se pudo reservar memoria para enviar el archivo - 2");
 		return;
 	}
 
-	memcpy(nSendbuffer.get(), strHeader.c_str(), iHeaderSize);
+	memcpy(nSendBuffer.data(), strHeader.c_str(), iHeaderSize);
 
 	while (1) {
 		localFile.read(cBufferArchivo.get(), uiTamBloque);
 		iBytesLeidos = localFile.gcount();
 		if (iBytesLeidos > 0) {
 			int iTotal = iBytesLeidos + iHeaderSize;
-			memcpy(nSendbuffer.get() + iHeaderSize, cBufferArchivo.get(), iBytesLeidos);
+			memcpy(nSendBuffer.data() + iHeaderSize, cBufferArchivo.get(), iBytesLeidos);
 
-			int iEnviado = cCliente->cSend(cCliente->sckSocket, nSendbuffer.get(), iTotal, 0, true, nullptr);
+			int iEnviado = cCliente->cSend(cCliente->sckSocket, nSendBuffer.data(), iTotal, 0, true, nullptr);
 			uBytesEnviados += iEnviado;
-			Sleep(30);
+			Sleep(10);
 
 			if (iEnviado == -1 || iEnviado == WSAECONNRESET) {
 				//No se pudo enviar el paquete

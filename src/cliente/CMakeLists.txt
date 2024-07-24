@@ -8,8 +8,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #set(CMAKE_EXE_LINKER_FLAGS " -static")
 #set(CMAKE_CXX_COMPILER x86_64-w64-mingw32-gcc )
 #set(CMAKE_CXX_FLAGS "-Wl,-Bstatic -s -w -ffunction-sections -fdata-sections -Wno-write-strings -fno-exceptions -fmerge-all-constants -static-libgcc -Wl,-Bstatic " )
-
 #set(CMAKE_BUILD_TYPE Debug)
+
+include_directories("../lzo/include/")
 
 set(SRCS main.cpp
          misc.cpp
@@ -20,7 +21,9 @@ set(SRCS main.cpp
          mod_keylogger.cpp
          mod_mic.cpp
          ../aes256/aes256.cpp
-         ../lzo/minilzo.c)
+         ../lzo/src/lzo_init.c
+         ../lzo/src/lzo1x_1.c
+         ../lzo/src/lzo1x_d1.c)
 
 #set_target_properties(cliente PROPERTIES LINK_FLAGS "/SUBSYSTEM:CONSOLE")
 
