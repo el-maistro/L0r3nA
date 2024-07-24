@@ -268,12 +268,7 @@ void MyFrame::OnClose(wxCloseEvent& event){
     p_Servidor->m_JoinThreads();
     p_Servidor->m_CerrarConexiones();
     p_Servidor->m_listCtrl->DeleteAllItems();
-    //std::unique_lock<std::mutex> lock(p_Servidor->p_mutex);
-    //p_Servidor->p_Escuchando = false;
-    //lock.unlock();
-    //p_Servidor->m_CerrarConexiones();
-    //p_Servidor->m_JoinThreads();
-
+    
     delete p_Servidor;
     p_Servidor = nullptr;
     

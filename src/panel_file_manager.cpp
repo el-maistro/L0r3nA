@@ -114,6 +114,11 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 			this->iMODE = FM_EQUIPO;
 			strComando = std::to_string(EnumComandos::FM_Discos);
 			strComando.append(1, CMD_DEL);
+			
+			this->Enable(false);
+
+			Sleep(100); //Darle algo de tiempo al gui para crear la lista
+			
 			this->EnviarComando(strComando);
 			break;
 		case EnumIDS::ID_Panel_FM_Descargas:
@@ -140,6 +145,11 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 
 			strComando = std::to_string(EnumComandos::FM_Dir_Folder);
 			strComando += "~DESCAR-DOWN";
+
+			this->Enable(false);
+
+			Sleep(100); //Darle algo de tiempo al gui para crear la lista
+			
 			this->EnviarComando(strComando);
 			break;
 		case EnumIDS::ID_Panel_FM_Escritorio:
@@ -167,6 +177,11 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 
 			strComando = std::to_string(EnumComandos::FM_Dir_Folder);
 			strComando += "~ESCRI-DESK";
+
+			this->Enable(false);
+
+			Sleep(100); //Darle algo de tiempo al gui para crear la lista
+
 			this->EnviarComando(strComando);
 			break;
 		case EnumIDS::ID_Panel_FM_Refresh:
@@ -175,6 +190,11 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 			strComando = std::to_string(EnumComandos::FM_Dir_Folder);
 			strComando.append(1, CMD_DEL);
 			strComando += this->p_RutaActual->GetLabelText();
+			
+			this->Enable(false);
+			
+			Sleep(100);
+
 			this->EnviarComando(strComando);
 			break;
 		case EnumIDS::ID_Panel_FM_Subir:
@@ -466,6 +486,8 @@ void ListCtrlManager::OnActivated(wxListEvent& event) {
 			itemCol.SetText("Fecha Mod");
 			itemCol.SetWidth(100);
 			this->InsertColumn(3, itemCol);
+			
+			itemp->Enable(false);
 
 			Sleep(100);
 
@@ -491,15 +513,19 @@ void ListCtrlManager::OnActivated(wxListEvent& event) {
 					strCommand = std::to_string(EnumComandos::FM_Dir_Folder);
 					strCommand.append(1, CMD_DEL);
 					strCommand += itemp->RutaActual();
+
+					itemp->Enable(false); 
+
+					Sleep(100); 
+
 					itemp->EnviarComando(strCommand);
+					
 				}
 			}
 			break;
 		default:
-			//
 			break;
 	}
-	//std::cout << this->GetItemText(event.GetIndex(), 1) << std::endl;
 }
 
 void ListCtrlManager::ShowContextMenu(const wxPoint& pos, bool isFolder) {
@@ -570,4 +596,42 @@ void ListCtrlManager::OnContextMenu(wxContextMenuEvent& event)
 	}else {
 		event.Skip();
 	}
+}
+
+void ListCtrlManager::ListarDir(const std::vector<std::string> vcEntrys, const wxString strSize) {
+	//Listar directorio
+	//4 columnas para listar dir
+	std::unique_lock<std::mutex> lock(this->mtx_fm);
+	if (this->GetColumnCount() == 4) {
+		int iCount = this->GetItemCount() > 0 ? this->GetItemCount() - 1 : 0;
+		if (iCount == -1) { iCount = 0; }
+		this->InsertItem(iCount, wxString("-"));
+		this->SetItem(iCount, 1, wxString(vcEntrys[1]));
+		this->SetItem(iCount, 2, strSize); //tama
+		this->SetItem(iCount, 3, wxString(vcEntrys[3]));
+	}else {
+		std::cout << "No se han creado las columnas\n";
+	}
+	this->GetParent()->Enable(true);
+}
+
+void ListCtrlManager::ListarEquipo(const std::vector<std::string> vcDrives) {
+	//Listar discos y almacenamiento
+	//5 Columnas para drives
+	std::unique_lock<std::mutex> lock(this->mtx_fm);
+	if (this->GetColumnCount() == 5) {
+		for (int iCount = 0; iCount<int(vcDrives.size()); iCount++) {
+			std::vector<std::string> vDrive = strSplit(vcDrives[iCount], '|', 5);
+			if (vDrive.size() >= 5) {
+				this->InsertItem(iCount, wxString(vDrive[0]));
+				this->SetItem(iCount, 1, wxString(vDrive[2]));
+				this->SetItem(iCount, 2, wxString(vDrive[1]));
+				this->SetItem(iCount, 3, wxString(vDrive[3]));
+				this->SetItem(iCount, 4, wxString(vDrive[4]));
+			}
+		}
+	}else {
+		std::cout << "No se han creado las columnas\n";
+	}
+	this->GetParent()->Enable(true);
 }

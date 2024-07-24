@@ -803,9 +803,8 @@ int Cliente::lzo_Compress(const unsigned char* cInput, lzo_uint in_len, std::sha
 
     iRet = lzo1x_1_compress(cInput, in_len, cOutput.get(), &out_len, wrkmem);
 
-    if (wrkmem) {
+    if (wrkmem != NULL) {
         free(wrkmem);
-        wrkmem = NULL;
     }
 
     return iRet;

@@ -41,8 +41,13 @@ class ListCtrlManager : public wxListCtrl {
 		ListCtrlManager(wxWindow* parent, const wxWindowID id, 
 			            const wxPoint& pos, const wxSize& size, long style)
 			: wxListCtrl(parent, id, pos, size, style) {}
+
+		void ListarDir(const std::vector<std::string> vcEntrys, const wxString strSize);
+		void ListarEquipo(const std::vector<std::string> vcDrives);
+
 	private:
-		
+		std::mutex mtx_fm;
+
 		void OnActivated(wxListEvent& event);
 
 		void ShowContextMenu(const wxPoint& pos, bool isFolder);
@@ -50,7 +55,7 @@ class ListCtrlManager : public wxListCtrl {
 
 		std::string ArchivoSeleccionado();
 		std::string CarpetaActual();
-
+		
 		//Eventos acciones menu contextual
 		void OnCrearFolder(wxCommandEvent& event);
 		void OnCrearArchivo(wxCommandEvent& event);

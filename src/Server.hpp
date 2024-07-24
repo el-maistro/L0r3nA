@@ -239,7 +239,7 @@ class Servidor{
 
         void m_BorrarCliente(std::mutex& mtx, int iIndex) {
             std::unique_lock<std::mutex> lock(mtx);
-            if (iIndex < static_cast<int>(vc_Clientes.size())) {
+            if (iIndex <= static_cast<int>(vc_Clientes.size())) {
                 if (vc_Clientes[iIndex]) {
                     vc_Clientes[iIndex]->JoinThread();
                     m_CerrarConexion(vc_Clientes[iIndex]->p_Cliente._sckCliente);

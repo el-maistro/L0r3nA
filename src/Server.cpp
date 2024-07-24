@@ -208,15 +208,9 @@ void Cliente_Handler::Spawn_Handler(){
                 ListCtrlManager* temp_list = (ListCtrlManager*)wxWindow::FindWindowById(EnumIDS::ID_Panel_FM_List, this->n_Frame);
                 if (temp_list) {
                     if (vcFileEntry.size() >= 4) {
-                        //Hacer wrappers para manipular listview
-                        int iCount = temp_list->GetItemCount() > 0 ? temp_list->GetItemCount() - 1 : 0;
-                        temp_list->InsertItem(iCount, wxString("-"));
-                        temp_list->SetItem(iCount, 1, wxString(vcFileEntry[1]));
-                        temp_list->SetItem(iCount, 2, strTama); //tama
-                        temp_list->SetItem(iCount, 3, wxString(vcFileEntry[3]));
+                        temp_list->ListarDir(vcFileEntry, strTama);
                     }
                 }
-
             }
             continue;
         }
@@ -228,15 +222,7 @@ void Cliente_Handler::Spawn_Handler(){
             if (vDrives.size() > 0) {
                 ListCtrlManager* temp_list = (ListCtrlManager*)wxWindow::FindWindowById(EnumIDS::ID_Panel_FM_List, this->n_Frame);
                 if (temp_list) {
-                    for (int iCount = 0; iCount<int(vDrives.size()); iCount++) {
-                        std::vector<std::string> vDrive = strSplit(vDrives[iCount], '|', 5);
-                        //Hacer wrappers para manipular listview
-                        temp_list->InsertItem(iCount, wxString(vDrive[0]));
-                        temp_list->SetItem(iCount, 1, wxString(vDrive[2]));
-                        temp_list->SetItem(iCount, 2, wxString(vDrive[1]));
-                        temp_list->SetItem(iCount, 3, wxString(vDrive[3]));
-                        temp_list->SetItem(iCount, 4, wxString(vDrive[4]));
-                    }
+                    temp_list->ListarEquipo(vDrives);
                 }
                 
             }
@@ -787,7 +773,10 @@ void Servidor::m_Escucha(){
             if (iSock == this->sckSocket) {
                 //Nueva conexion
                 struct ClientConInfo sckNuevoCliente = this->m_Aceptar();
-                
+                if (sckNuevoCliente._sckSocket == INVALID_SOCKET) {
+                    //socket invalido
+                    continue;
+                }
                 //IP:PUERTO
                 std::string strtmpIP = sckNuevoCliente._strIp;
                 strtmpIP.append(1, ':');
@@ -807,12 +796,9 @@ void Servidor::m_Escucha(){
                 
                 //Agregar el cliente al vector global - se agrega a la list una vez se reciba la info
                 std::unique_lock<std::mutex> lock(vector_mutex);
-                
-                this->vc_Clientes.push_back(DBG_NEW Cliente_Handler(structNuevoCliente));
+                Cliente_Handler* nCliente = DBG_NEW Cliente_Handler(structNuevoCliente);
+                this->vc_Clientes.push_back(nCliente);
                 this->vc_Clientes[this->vc_Clientes.size() - 1]->Spawn_Thread();
-                //Cliente_Handler* nCliente = DBG_NEW Cliente_Handler(structNuevoCliente);  // <- Leak aqui
-                //nCliente->Spawn_Thread(); // llama a nCliente->Spawn_Handler que es el que controla el cliente
-                //this->vc_Clientes.push_back(nCliente);
 
             }
 
