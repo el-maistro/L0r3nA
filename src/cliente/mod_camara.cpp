@@ -599,11 +599,9 @@ void mod_Camera::LiveCam(int pIndexDev) {
 
         while (this->vcCamObjs[pIndexDev].isLive) {
             u_int uiPacketSize = 0;
-            DebugPrint("[LIVECAM] Leyendo frame...");
             std::vector<BYTE> cBuffer = this->GetFrame(pIndexDev);
             
             if (cBuffer.size() > 0) {
-                DebugPrint("[LIVECAM] Convirtiendo a jpg...");
                 std::vector<BYTE> cJPGBuffer = this->toJPEG(cBuffer.data(), cBuffer.size());
                 if (cJPGBuffer.size() > 0) {
                     uiPacketSize = iHeaderSize + cJPGBuffer.size();
@@ -613,7 +611,6 @@ void mod_Camera::LiveCam(int pIndexDev) {
                         memcpy(cPacket.get() + iHeaderSize, cJPGBuffer.data(), cJPGBuffer.size());
                         
                         int iSent = cCliente->cSend(cCliente->sckSocket, reinterpret_cast<const char*>(cPacket.get()), uiPacketSize, 0, true, nullptr);
-                        DebugPrint("[!] " + std::to_string(iSent) + " bytes sent");
                         if (iSent == -1) {
                             this->vcCamObjs[pIndexDev].isLive = false;
                             break;

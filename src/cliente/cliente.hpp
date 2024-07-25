@@ -94,11 +94,6 @@ class Cliente {
 		ByteArray bDec(const unsigned char* pInput, size_t pLen);
 		ByteArray bEnc(const unsigned char* pInput, size_t pLen);
 
-		//LZO
-		//int lzo_Compress(const unsigned char* cInput, lzo_uint in_len, std::shared_ptr<unsigned char[]>& cOutput, lzo_uint& out_len);
-		int lzo_Compress(const unsigned char* cInput, lzo_uint in_len, std::vector<unsigned char>& cOutput, lzo_uint& out_len);
-		int lzo_Decompress(const unsigned char* cInput, lzo_uint in_len, std::shared_ptr<unsigned char[]>& cOutput, lzo_uint& out_len);
-
 		void iniPacket();
 
 		void MainLoop();

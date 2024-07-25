@@ -14,10 +14,6 @@ void Cliente::Init_Key() {
 
 Cliente::Cliente() {
     this->Init_Key();
-    if (lzo_init() != LZO_E_OK){
-        DebugPrint("internal error - lzo_init() failed !!!");
-        DebugPrint("(this usually indicates a compiler bug - try recompiling\nwithout optimizations, and enable '-DLZO_DEBUG' for diagnostics)\n");
-    }
 }
 
 Cliente::~Cliente() {
@@ -625,26 +621,32 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
 
     //Primero comprimir si el paquete es mayor a 1024 bytes
     
+    //Primero comprimir si el paquete es mayor a 1024 bytes
     if (pLen > BUFFER_COMP_REQ_LEN) {
-        //Comprimir
-        lzo_uint out_len = 0;
-        //std::shared_ptr<unsigned char[]> compData(new unsigned char[iDataSize + iDataSize / 16 / 64 + 3]);
-        std::vector<unsigned char> compData(iDataSize + iDataSize / 16 / 64 + 3);
-        if (compData.size() > 0) {
-            if (this->lzo_Compress(reinterpret_cast<const unsigned char*>(pBuffer), static_cast<lzo_uint>(pLen), compData, out_len) == LZO_E_OK) {
-                if (out_len + 2 <= iDataSize) {
+        //Comprimir  buffer
+        std::shared_ptr<unsigned char[]> compData(new unsigned char[iDataSize * 3]);
+        if (compData) {
+            unsigned long out_len = iDataSize;
+            int iRet = compress(compData.get(), &out_len, reinterpret_cast<const unsigned char*>(pBuffer), pLen);
+            if (iRet == Z_OK) {
+                //Success
+                if (out_len < iDataSize) {
                     new_Buffer[0] = COMP_HEADER_BYTE_1;
-                    std::memcpy(new_Buffer.get() + 2, compData.data(), out_len);
+                    std::memcpy(new_Buffer.get() + 2, compData.get(), out_len);
                     iDataSize = out_len + 2; //Cantidad de bytes que fueron comprimidos + cabecera (2 bytes)
-                    //DebugPrint("[cSend] Compreso: " + std::to_string(iDataSize));
+                    DebugPrint("[ZLIB] Success " + std::to_string(iDataSize) + " - " + std::to_string(pLen));
                 }else {
-                    DebugPrint("Tamaño del buffer compreso es mayor al reservado originalmente, datos no comprimibles");
-                    //Copiar buffer original
+                    //El buffer compreso es mayor al original, copiar el mismo buffer
                     std::memcpy(new_Buffer.get() + 2, pBuffer, pLen);
                 }
+            }else if (iRet == Z_MEM_ERROR) {
+                DebugPrint("No hay memoria suficiente");
+                std::memcpy(new_Buffer.get() + 2, pBuffer, pLen);
+            }else if (iRet == Z_BUF_ERROR) {
+                DebugPrint("El output no tiene memoria suficiente");
+                std::memcpy(new_Buffer.get() + 2, pBuffer, pLen);
             }else {
-                DebugPrint("No se pudo comprimir el buffer");
-                //Copiar buffer original
+                DebugPrint("A jaber que pajo");
                 std::memcpy(new_Buffer.get() + 2, pBuffer, pLen);
             }
         }else {
@@ -652,7 +654,6 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
             //Copiar buffer original
             std::memcpy(new_Buffer.get() + 2, pBuffer, pLen);
         }
-
     }else {
         //No comprimir ya que el buffer no es tan grande
         std::memcpy(new_Buffer.get() + 2, pBuffer, pLen);
@@ -743,31 +744,42 @@ int Cliente::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool is
     //Comprobar si tiene la cabecera
     if (iRecibido > 2) { //?
         if (bOut[0] == COMP_HEADER_BYTE_1 && bOut[1] == COMP_HEADER_BYTE_2) {
-            std::shared_ptr<unsigned char[]> compBuffer(new unsigned char[pLen]);
-            if (compBuffer) {
-                lzo_uint out_len = 0;
-                //Descomprimir
-                int ilzoRet = this->lzo_Decompress(bOut.data()+2, static_cast<lzo_uint>(iRecibido), compBuffer, out_len);
-                if (ilzoRet == LZO_E_OK) {
-                    if (out_len <= pLen) {
-                        std::memcpy(pBuffer, compBuffer.get(), out_len);
-                        iRecibido = out_len; //Cantidad final de bytes legibles
-                    }else {
-                        DebugPrint("La cantidad de bytes descomprimidos es mayor al buffer");
-                        //Talvez reservar memoria extra aqui?
-                        return -1;
+            std::shared_ptr<unsigned char[]> uncompBuffer(new unsigned char[pLen]);
+            if (uncompBuffer) {
+                unsigned long out_len = pLen;
+                int iRet = uncompress(uncompBuffer.get(), &out_len, bOut.data() + 2, iRecibido);
+                if (iRet == Z_OK) {
+                    //Si el buffer final es menor al tamaño del buffer final proceder
+                    if (out_len < pLen) {
+                        std::memcpy(pBuffer, uncompBuffer.get(), out_len);
+                        iRecibido = out_len;
                     }
-                }else {
-                    DebugPrint("Error descomprimiendo el buffer");
+                    else {
+                        DebugPrint("El buffer descomprimido es mayor al buffer reservado (parametro)");
+                        iRecibido = 0;
+                    }
+                }
+                else if (iRet == Z_MEM_ERROR) {
+                    DebugPrint("No hay memoria suficiente");
                     iRecibido = 0;
                 }
-            }else {
+                else if (iRet == Z_BUF_ERROR) {
+                    DebugPrint("El output no tiene memoria suficiente");
+                    iRecibido = 0;
+                }
+                else {
+                    DebugPrint("A jaber que pajo");
+                    iRecibido = 0;
+                }
+            }
+            else {
                 DebugPrint("No se pudo reservar memoria para descomprimir el paquete");
                 iRecibido = 0;
             }
-        }else {
+        }
+        else {
             //No tiene la cabecera de compreso, copiar buffer desencriptado
-            std::memcpy(pBuffer, bOut.data()+2, iRecibido);
+            std::memcpy(pBuffer, bOut.data() + 2, iRecibido);
         }
     }
 
@@ -791,26 +803,6 @@ ByteArray Cliente::bDec(const unsigned char* pInput, size_t pLen) {
         DebugPrint("Error desencriptando " + std::string((const char*)pInput));
     }
     return bOutput;
-}
-
-//LZO
-//int Cliente::lzo_Compress(const unsigned char* cInput, lzo_uint in_len, std::shared_ptr<unsigned char[]>& cOutput, lzo_uint& out_len) {
-int Cliente::lzo_Compress(const unsigned char* cInput, lzo_uint in_len, std::vector<unsigned char>& cOutput, lzo_uint& out_len) {
-    lzo_voidp wrkmem = (lzo_voidp)malloc(LZO1X_1_MEM_COMPRESS);
-    int iRet = -1;
-    if (wrkmem == NULL) {
-        return iRet;
-    }
-
-    iRet = lzo1x_1_compress(cInput, in_len, cOutput.data(), &out_len, wrkmem);
-
-    free(wrkmem);
-
-    return iRet;
-}
-
-int Cliente::lzo_Decompress(const unsigned char* cInput, lzo_uint in_len, std::shared_ptr<unsigned char[]>& cOutput, lzo_uint& out_len) {
-    return lzo1x_decompress(cInput, in_len, cOutput.get(), &out_len, NULL);
 }
 
 //Misc

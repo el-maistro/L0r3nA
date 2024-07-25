@@ -192,7 +192,7 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID) {
 	}
 
 	//>15 kb LZO crashea en tiempo de ejecucion
-	u_int uiTamBloque = 1024 * 10; //10 KB
+	u_int uiTamBloque = 1024 * 90; //90 KB
 	u64 uTamArchivo = GetFileSize(cPath.c_str());
 	u64 uBytesEnviados = 0;
 

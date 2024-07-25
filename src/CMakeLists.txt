@@ -12,7 +12,7 @@ set(wxBUILD_SHARED OFF)
 
 add_subdirectory(cliente)
 
-include_directories("lzo/include")
+#include_directories("lzo/include")
 
 message(STATUS "Fetching wxWidgets...")
 
@@ -42,9 +42,18 @@ set(SRCS main.cpp
          panel_camara.cpp
          frame_crypt_db.cpp
          aes256/aes256.cpp
-         lzo/src/lzo_init.c
-         lzo/src/lzo1x_1.c
-         lzo/src/lzo1x_d1.c)
+         zlib/compress.c 
+         zlib/inflate.c 
+         zlib/infback.c 
+         zlib/inftrees.c 
+         zlib/trees.c 
+         zlib/inffast.c 
+         zlib/adler32.c 
+         zlib/deflate.c 
+         zlib/crc32.c 
+         zlib/zutil.c 
+         zlib/uncompr.c
+)
 
 add_executable(main WIN32 ${SRCS})
 target_link_libraries(main PRIVATE wxcore wxpng wxnet wxaui wxhtml winmm winsqlite3)
