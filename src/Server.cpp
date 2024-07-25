@@ -871,7 +871,7 @@ int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, 
         std::shared_ptr<unsigned char[]> compData(new unsigned char[iDataSize * 3]);
         if (compData) {
             unsigned long out_len = iDataSize;
-            int iRet = compress(compData.get(), &out_len, reinterpret_cast<const unsigned char*>(pBuffer), pLen);
+            int iRet = compress2(compData.get(), &out_len, reinterpret_cast<const unsigned char*>(pBuffer), pLen, Z_BEST_COMPRESSION);
             if (iRet == Z_OK) {
                 //Success
                 if (out_len < iDataSize) {
