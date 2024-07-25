@@ -41,7 +41,7 @@
 #define COMP_HEADER_BYTE_1 'C'
 #define COMP_HEADER_BYTE_2 'B'
 #define UNCOMP_HEADER_BYTE_1 'D'
-#define BUFFER_COMP_REQ_LEN 512
+#define BUFFER_COMP_REQ_LEN 1024
 
 #define error() std::cout<<"Error["<<GetLastError()<<"]\n";
 #define error_2(x) std::cout<<"["<<x<<"]"<<"Error["<<GetLastError()<<"]\n";

