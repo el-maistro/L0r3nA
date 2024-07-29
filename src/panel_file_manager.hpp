@@ -42,7 +42,7 @@ class ListCtrlManager : public wxListCtrl {
 			            const wxPoint& pos, const wxSize& size, long style)
 			: wxListCtrl(parent, id, pos, size, style) {}
 
-		void ListarDir(const std::vector<std::string> vcEntrys, const wxString strSize);
+		void ListarDir(const char* strData);
 		void ListarEquipo(const std::vector<std::string> vcDrives);
 
 	private:

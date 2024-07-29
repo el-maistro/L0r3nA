@@ -1,7 +1,8 @@
 #ifndef _HEADERS
 #define _HEADERS 1
 
-//#define __MEM_LEAK_RAVDO ":v"
+//#define __MEM_LEAK_RAVDO
+//#define _DEBUG
 
 #ifdef __MEM_LEAK_RAVDO
     #define _CRTDBG_MAP_ALLOC

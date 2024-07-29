@@ -88,7 +88,7 @@ class Cliente_Handler {
         struct Cliente p_Cliente;
         bool isRunning = true;
         
-        void Spawn_Handler();
+        void Command_Handler();
         void Spawn_Thread();
         void CrearFrame(std::string strTitle, std::string strID);
         void EscribirSalidShell(std::string strSalida);

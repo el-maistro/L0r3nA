@@ -238,25 +238,28 @@ void Cliente::ProcesarComando(char* const& pBuffer, int iSize) {
                 strPathBCDown += strPath;
                 this->cSend(this->sckSocket, strPathBCDown.c_str(), strPathBCDown.size(), 0, true, nullptr);
                 Sleep(10);
-            }
-            else if (strIn[1] == "ESCRI-DESK") {
+            }else if (strIn[1] == "ESCRI-DESK") {
                 strPath = this->ObtenerDesk();
                 std::string strPathBCDesk = std::to_string(EnumComandos::FM_CPATH);
                 strPathBCDesk.append(1, CMD_DEL);
                 strPathBCDesk += strPath;
                 this->cSend(this->sckSocket, strPathBCDesk.c_str(), strPathBCDesk.size(), 0, true, nullptr);
                 Sleep(10);
-            }
-            else {
+            }else {
                 strPath = strIn[1];
             }
+            
+            std::string strCommand = std::to_string(EnumComandos::FM_Dir_Folder);
+            strCommand.append(1, CMD_DEL);
+
             for (auto item : vDir(strPath.c_str())) {
-                std::string strCommand = std::to_string(EnumComandos::FM_Dir_Folder);
-                strCommand.append(1, CMD_DEL);
                 strCommand.append(item);
-                this->cSend(this->sckSocket, strCommand.c_str(), strCommand.size(), 0, true, nullptr);
-                Sleep(30);
+                strCommand.append(1, '|');
             }
+            
+            strCommand = strCommand.substr(0, strCommand.size() - 1);
+
+            this->cSend(this->sckSocket, strCommand.c_str(), strCommand.size(), 0, true, nullptr);
         }
         return;
     }
@@ -619,9 +622,7 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
     new_Buffer[0] = UNCOMP_HEADER_BYTE_1;
     new_Buffer[1] = COMP_HEADER_BYTE_2;
 
-    //Primero comprimir si el paquete es mayor a 1024 bytes
-    
-    //Primero comprimir si el paquete es mayor a 1024 bytes
+    //Primero comprimir si el paquete es mayor a BUFFER_COMP_REQ_LEN
     if (pLen > BUFFER_COMP_REQ_LEN) {
         //Comprimir  buffer
         std::shared_ptr<unsigned char[]> compData(new unsigned char[iDataSize * 3]);
