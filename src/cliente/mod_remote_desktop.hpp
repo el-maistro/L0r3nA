@@ -8,7 +8,7 @@ class mod_RemoteDesktop {
 		mod_RemoteDesktop();
 		~mod_RemoteDesktop();
 
-		BYTE* getFrameBytes();
+		std::vector<BYTE> getFrameBytes();
 
 	public:
 

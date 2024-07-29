@@ -1,7 +1,8 @@
 #ifndef _HEADERS
 #define _HEADERS 1
 
-//#define __MEM_LEAK_RAVDO ":v"
+//#define __MEM_LEAK_RAVDO
+//#define _DEBUG
 
 #ifdef __MEM_LEAK_RAVDO
     #define _CRTDBG_MAP_ALLOC
@@ -52,8 +53,7 @@
 #include<exception>
 
 #include "aes256/aes256.hpp"
-#include "lzo/include/lzo/lzoconf.h"
-#include "lzo/include/lzo/lzo1x.h"
+#include "zlib/zlib.h"
 
 #define WSA_FUNADO -31337
 #define PING_TIME 5 * 1
@@ -65,7 +65,7 @@
 #define COMP_HEADER_BYTE_1 'C'
 #define COMP_HEADER_BYTE_2 'B'
 #define UNCOMP_HEADER_BYTE_1 'D'
-#define BUFFER_COMP_REQ_LEN 512
+#define BUFFER_COMP_REQ_LEN 1024
 
 
 //FM Modos

@@ -65,8 +65,8 @@ void Cliente_Handler::PlayBuffer(char* pBuffer, size_t iLen){
     }
 }
 
-void Cliente_Handler::Spawn_Handler(){
-    int iBufferSize = 1024 * 100; //100 kb
+void Cliente_Handler::Command_Handler(){
+    int iBufferSize = 1024 * 1024; //1 MB
     std::unique_ptr<char[]> cBuffer = std::make_unique<char[]>(iBufferSize);
     DWORD error_code = 0;
     int iTempRecibido = 0;
@@ -180,35 +180,16 @@ void Cliente_Handler::Spawn_Handler(){
         if (vcDatos[0] == std::to_string(EnumComandos::FM_Dir_Folder)) {
             vcDatos = strSplit(std::string(cBuffer.get()), CMD_DEL, 2);
             if (vcDatos.size() == 2) {
-                std::vector<std::string> vcFileEntry;
-                wxString strTama = "-";
-                if (vcDatos[1][1] == '>') {
-                    //Dir
-                    vcFileEntry = strSplit(vcDatos[1], '>', 4);
-                }
-                else if (vcDatos[1][1] == '<') {
-                    //file
-                    vcFileEntry = strSplit(vcDatos[1], '<', 4);
-                    if (vcFileEntry.size() == 4) {
-                        u64 bytes = StrToUint(vcFileEntry[2].c_str());
-                        char* cDEN = "BKMGTP";
-                        double factor = floor((vcFileEntry[2].size() - 1) / 3);
-                        char cBuf[20];
-                        snprintf(cBuf, 19, "%.2f %c", bytes / pow(1024, factor), cDEN[int(factor)]);
-                        strTama = cBuf;
-                    }
-                }
-                else {
-                    //unknown
-                    std::cout << "DESCONOCIDO: " << cBuffer << std::endl;
+                ListCtrlManager* temp_list = (ListCtrlManager*)wxWindow::FindWindowById(EnumIDS::ID_Panel_FM_List, this->n_Frame);
+                //Comprobar que al movel el puntero no se pase del buffer
+                int iPos = vcDatos[0].size() + 1;
+                iPos = (iPos < iRecibido) ? iPos : 0;
+
+                char* cFilesBuffer = cBuffer.get() + iPos;
+                if (temp_list && cFilesBuffer) {
+                    temp_list->ListarDir(cFilesBuffer);
                 }
 
-                ListCtrlManager* temp_list = (ListCtrlManager*)wxWindow::FindWindowById(EnumIDS::ID_Panel_FM_List, this->n_Frame);
-                if (temp_list) {
-                    if (vcFileEntry.size() >= 4) {
-                        temp_list->ListarDir(vcFileEntry, strTama);
-                    }
-                }
             }
             continue;
         }
@@ -438,7 +419,7 @@ void Cliente_Handler::EscribirSalidShell(std::string strSalida) {
 }
 
 void Cliente_Handler::Spawn_Thread() {
-    this->p_thHilo = std::thread(&Cliente_Handler::Spawn_Handler, this);
+    this->p_thHilo = std::thread(&Cliente_Handler::Command_Handler, this);
 }
 
 //funcion que crea el frame principal para interactuar con el cliente
@@ -494,11 +475,6 @@ Servidor::Servidor(){
 
     this->Init_Key();
 
-    if (lzo_init() != LZO_E_OK) {
-        std::cout<<"internal error - lzo_init() failed !!!\n";
-        std::cout<<"(this usually indicates a compiler bug - try recompiling\nwithout optimizations, and enable '-DLZO_DEBUG' for diagnostics)\n";
-    }
-    
 }
 
 bool Servidor::m_Iniciar(){
@@ -870,25 +846,31 @@ int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, 
     new_Buffer[0] = UNCOMP_HEADER_BYTE_1;
     new_Buffer[1] = COMP_HEADER_BYTE_2;
     
-    //Primero comprimir si el paquete es mayor a 512 bytes
+    //Primero comprimir si el paquete es mayor a 1024 bytes
     if (pLen > BUFFER_COMP_REQ_LEN) {
         //Comprimir  buffer
-        lzo_uint out_len = 0;
-        std::shared_ptr<unsigned char[]> compData(new unsigned char[iDataSize + iDataSize / 16 / 64 + 3]);
+        std::shared_ptr<unsigned char[]> compData(new unsigned char[iDataSize * 3]);
         if (compData) {
-            if (this->lzo_Compress(reinterpret_cast<const unsigned char*>(pBuffer), pLen, compData, out_len) == LZO_E_OK) {
-                if (out_len+2 <= iDataSize) {
+            unsigned long out_len = iDataSize;
+            int iRet = compress2(compData.get(), &out_len, reinterpret_cast<const unsigned char*>(pBuffer), pLen, Z_BEST_COMPRESSION);
+            if (iRet == Z_OK) {
+                //Success
+                if (out_len < iDataSize) {
                     new_Buffer[0] = COMP_HEADER_BYTE_1;
                     std::memcpy(new_Buffer.get() + 2, compData.get(), out_len);
                     iDataSize = out_len + 2; //Cantidad de bytes que fueron comprimidos + cabecera (2 bytes)
                 }else {
-                    std::cout << "Tamaño del buffer compreso es mayor al reservado originalmente\n";
-                    //Copiar buffer original
+                    //El buffer compreso es mayor al original, copiar el mismo buffer
                     std::memcpy(new_Buffer.get() + 2, pBuffer, pLen);
                 }
+            }else if (iRet == Z_MEM_ERROR) {
+                std::cout << "No hay memoria suficiente\n";
+                std::memcpy(new_Buffer.get() + 2, pBuffer, pLen);
+            }else if (iRet == Z_BUF_ERROR) {
+                std::cout << "El output no tiene memoria suficiente\n";
+                std::memcpy(new_Buffer.get() + 2, pBuffer, pLen);
             }else {
-                std::cout << "No se pudo comprimir el buffer\n";
-                //Copiar buffer original
+                std::cout << "A jaber que pajo\n";
                 std::memcpy(new_Buffer.get() + 2, pBuffer, pLen);
             }
         }else {
@@ -988,22 +970,27 @@ int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool i
     //Comprobar si tiene la cabecera
     if (iRecibido > 2) { //?
         if (bOut[0] == COMP_HEADER_BYTE_1 && bOut[1] == COMP_HEADER_BYTE_2) {
-            std::shared_ptr<unsigned char[]> compBuffer(new unsigned char[pLen]);
-            if (compBuffer) {
-                lzo_uint out_len = 0;
-                //Descomprimir
-                //Mover 2 bytes hacia adelante del buffer para ignorar la cabecera
-                if(this->lzo_Decompress(bOut.data()+2, iRecibido, compBuffer, out_len) == LZO_E_OK) {
-                    if (out_len <= pLen) {
-                        std::memcpy(pBuffer, compBuffer.get(), out_len);
-                        iRecibido = out_len; //Cantidad final de bytes legibles
+            std::shared_ptr<unsigned char[]> uncompBuffer(new unsigned char[pLen]);
+            if (uncompBuffer) {
+                unsigned long out_len = pLen;
+                int iRet = uncompress(uncompBuffer.get(), &out_len, bOut.data() + 2, iRecibido);
+                if (iRet == Z_OK) {
+                    //Si el buffer final es menor al tamaño del buffer final proceder
+                    if (out_len < pLen) {
+                        std::memcpy(pBuffer, uncompBuffer.get(), out_len);
+                        iRecibido = out_len;
                     }else {
-                        std::cout << "La cantidad de bytes descomprimidos es mayor al buffer\n";
-                        //Talvez reservar memoria extra aqui?
+                        std::cout << "El buffer descomprimido es mayor al buffer reservado (parametro)\n";
                         iRecibido = 0;
                     }
+                }else if (iRet == Z_MEM_ERROR) {
+                    std::cout << "No hay memoria suficiente\n";
+                    iRecibido = 0;
+                }else if (iRet == Z_BUF_ERROR) {
+                    std::cout << "El output no tiene memoria suficiente\n";
+                    iRecibido = 0;
                 }else {
-                    std::cout << "Error descomprimiendo el buffer\n";
+                    std::cout << "A jaber que pajo\n";
                     iRecibido = 0;
                 }
             }else {
@@ -1036,28 +1023,6 @@ ByteArray Servidor::bDec(const unsigned char* pInput, size_t pLen) {
         std::cout << "Error desencriptando " << pInput << "\n";
     }
     return bOutput;
-}
-
-//LZO
-int Servidor::lzo_Compress(const unsigned char* cInput, lzo_uint in_len, std::shared_ptr<unsigned char[]>& cOutput, lzo_uint& out_len) {
-    lzo_voidp wrkmem = (lzo_voidp)malloc(LZO1X_1_MEM_COMPRESS);
-    int iRet = -1;
-    if (wrkmem == NULL) {
-        return iRet;
-    }
-
-    iRet = lzo1x_1_compress(cInput, in_len, cOutput.get(), &out_len, wrkmem);
-
-    if (wrkmem) {
-        free(wrkmem);
-        wrkmem = NULL;
-    }
-
-    return iRet;
-}
-
-int Servidor::lzo_Decompress(const unsigned char* cInput, lzo_uint in_len, std::shared_ptr<unsigned char[]>& cOutput, lzo_uint& out_len) {
-    return lzo1x_decompress(cInput, in_len, cOutput.get(), &out_len, NULL);
 }
 
 //control list events

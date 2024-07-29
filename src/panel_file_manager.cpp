@@ -598,19 +598,51 @@ void ListCtrlManager::OnContextMenu(wxContextMenuEvent& event)
 	}
 }
 
-void ListCtrlManager::ListarDir(const std::vector<std::string> vcEntrys, const wxString strSize) {
+//void ListCtrlManager::ListarDir(const std::vector<std::string> vcEntrys, const wxString strSize) {
+void ListCtrlManager::ListarDir(const char* strData) {
 	//Listar directorio
 	//4 columnas para listar dir
 	std::unique_lock<std::mutex> lock(this->mtx_fm);
-	if (this->GetColumnCount() == 4) {
-		int iCount = this->GetItemCount() > 0 ? this->GetItemCount() - 1 : 0;
-		if (iCount == -1) { iCount = 0; }
-		this->InsertItem(iCount, wxString("-"));
-		this->SetItem(iCount, 1, wxString(vcEntrys[1]));
-		this->SetItem(iCount, 2, strSize); //tama
-		this->SetItem(iCount, 3, wxString(vcEntrys[3]));
-	}else {
-		std::cout << "No se han creado las columnas\n";
+	
+	for (std::string vcEntry : strSplit(std::string(strData), '|', 10000)) {
+		std::vector<std::string> vcFileEntry;
+		wxString strTama = "-";
+		if (vcEntry[1] == '>') {
+			//Dir
+			vcFileEntry = strSplit(vcEntry, '>', 4);
+		}else if (vcEntry[1] == '<') {
+			//file
+			vcFileEntry = strSplit(vcEntry, '<', 4);
+			if (vcFileEntry.size() == 4) {
+				u64 bytes = StrToUint(vcFileEntry[2].c_str());
+				const char* cDEN = "BKMGTP";
+				double factor = floor((vcFileEntry[2].size() - 1) / 3);
+				char cBuf[20];
+				snprintf(cBuf, 19, "%.2f %c", bytes / pow(1024, factor), cDEN[int(factor)]);
+				strTama = cBuf;
+			}
+		}else {
+			//unknown
+			std::cout << "DESCONOCIDO: " << vcEntry << std::endl;
+		}
+		
+		if (vcFileEntry.size() == 4) {
+			if (this->GetColumnCount() == 4) {
+				int iCount = this->GetItemCount() > 0 ? this->GetItemCount() - 1 : 0;
+				if (iCount == -1) { iCount = 0; }
+				this->InsertItem(iCount, wxString("-"));
+				this->SetItem(iCount, 1, wxString(vcFileEntry[1]));
+				this->SetItem(iCount, 2, strTama); //tama
+				this->SetItem(iCount, 3, wxString(vcFileEntry[3]));
+			}
+			else {
+				std::cout << "No se han creado las columnas\n";
+			}
+		}
+		else {
+			std::cout << "La entrada no tiene los parametros requeridos\n" << vcEntry << '\n';
+		}
+
 	}
 	this->GetParent()->Enable(true);
 }

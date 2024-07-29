@@ -8,6 +8,6 @@ mod_RemoteDesktop::~mod_RemoteDesktop() {
 	return;
 }
 
-BYTE* mod_RemoteDesktop::getFrameBytes() {
+std::vector<BYTE> mod_RemoteDesktop::getFrameBytes() {
 	return nullptr;
 }
