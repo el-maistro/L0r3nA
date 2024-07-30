@@ -8,6 +8,7 @@ class frameRemoteDesktop : public wxFrame {
 		frameRemoteDesktop(wxWindow* pParent);
 
 	private:
+		SOCKET sckCliente = INVALID_SOCKET;
 		void Onclose(wxCloseEvent& event);
 
 		wxDECLARE_EVENT_TABLE();

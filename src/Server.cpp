@@ -402,6 +402,15 @@ void Cliente_Handler::Command_Handler(){
             continue;
         }
 
+        if (vcDatos[0] == std::to_string(EnumComandos::RD_Salida)) {
+            char* cPicBuffer = cBuffer.get() + 4;
+            FILE* fp = fopen("test.jpg", "wb");
+            fwrite(cPicBuffer, sizeof(BYTE), iTempRecibido - 4, fp);
+            fclose(fp);
+            this->Log(std::to_string(iTempRecibido - 4) + " bytes escritos - RD");
+            continue;
+        }
+
     }
 
     this->Log("Done");
