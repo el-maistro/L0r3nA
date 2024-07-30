@@ -611,7 +611,7 @@ void Cliente::ProcesarComando(char* const& pBuffer, int iSize) {
 
                 }
                 else {
-                    ;                DebugPrint("El buffer de remote_desk es 0");
+                    DebugPrint("El buffer de remote_desk es 0");
                 }
             } 
         }else {

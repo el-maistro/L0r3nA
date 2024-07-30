@@ -622,7 +622,7 @@ void Servidor::m_CleanVector() {
                 this->m_txtLog->LogThis(strTmp, LogType::LogMessage);
 
                 this->m_BorrarCliente(vector_mutex, iIndex);
-
+                
             }else if (!this->m_Running()) {
                 //Cerra el loop y no iterar por todos si ya no esta escuchando
                 break;
@@ -631,8 +631,8 @@ void Servidor::m_CleanVector() {
     }
     std::cout << "Thread CLEANER terminada\n";
     
-
-    for (int iIndex2 = 0; iIndex2 < this->m_NumeroClientes(vector_mutex); iIndex2++) {
+    int iNumeroClientes = this->m_NumeroClientes(vector_mutex);
+    for (int iIndex2 = 0; iIndex2 < iNumeroClientes; iIndex2++) {
         this->m_BorrarCliente(vector_mutex, iIndex2);
     }
 
@@ -785,10 +785,14 @@ void Servidor::m_Escucha(){
                 
                 //Agregar el cliente al vector global - se agrega a la list una vez se reciba la info
                 std::unique_lock<std::mutex> lock(vector_mutex);
-                Cliente_Handler* nCliente = DBG_NEW Cliente_Handler(structNuevoCliente);
-                this->vc_Clientes.push_back(nCliente);
+                this->vc_Clientes.push_back(DBG_NEW Cliente_Handler(structNuevoCliente));
                 this->vc_Clientes[this->vc_Clientes.size() - 1]->Spawn_Thread();
 
+                MyFrame* main = (MyFrame*)wxWindow::FindWindowById(EnumIDS::ID_MAIN);
+                if (main) {
+                    std::string strTitle = "[" + std::to_string(this->vc_Clientes.size()) + "] Online Lorena v0.1";
+                    main->SetTitle(strTitle);
+                }
             }
 
         }

@@ -6,6 +6,8 @@
 
 extern Servidor* p_Servidor;
 
+const wxString strTitle = "L0r3nA v0.1";
+
 class TransferFrame : public wxFrame {
     public:
         TransferFrame();
@@ -43,8 +45,9 @@ public:
 wxIMPLEMENT_APP(MyApp);
 
 bool MyApp::OnInit(){
+#ifdef __MEM_LEAK_RAVDO
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-
+#endif
     AllocConsole();
     freopen("CONOUT$", "w", stdout);
     freopen("CONOUT$", "w", stderr);
@@ -55,62 +58,60 @@ bool MyApp::OnInit(){
 }
 
 MyFrame::MyFrame()
-    : wxFrame(nullptr, EnumIDS::ID_MAIN, "L0r3nA")
+    : wxFrame(nullptr, EnumIDS::ID_MAIN, strTitle)
 {
     //Trace memory leak
     //_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
     //_CrtSetBreakAlloc(61650);
-    //_CrtSetBreakAlloc(71043);
-    //_CrtSetBreakAlloc(71042);
+
     SetBackgroundColour(wxColour(255, 255, 255, 128)); // Establecer el color de fondo con transparencia
     SetTransparent(245);
     p_Servidor = DBG_NEW Servidor();
     p_Servidor->m_listCtrl = nullptr;
 
     
-    this->m_RPanel = DBG_NEW wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(700, 450));
-    
-    this->m_LPanel = DBG_NEW wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(110, 600));
+    //Panel derecho ListCtrl
+    this->m_RPanel = DBG_NEW wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize); // wxSize(700, 450));
+    this->m_RPanel->SetBackgroundColour(wxColor(0, 0, 255)); // REMOVE AT THE END
+
+    //Panel izquierdo controles servidor
+    this->m_LPanel = DBG_NEW wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);//wxSize(110, 600));
     this->m_LPanel->SetBackgroundColour(wxColor(255,0,0)); // REMOVE AT THE END
 
-    this->m_BPanel = DBG_NEW wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(100, 150));
+    //Panel inferior log
+    this->m_BPanel = DBG_NEW wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
     this->m_BPanel->SetBackgroundColour(wxColor(0,255,0)); // REMOVE AT THE END
 
     
     //Crear lista
-    this->CrearLista(wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES | wxEXPAND);
-    wxBoxSizer *sizerlist = DBG_NEW wxBoxSizer(wxHORIZONTAL);
-
-    sizerlist->Add(p_Servidor->m_listCtrl, 1, wxALL | wxEXPAND, 1);
-
+    this->CrearLista(wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES);
+    wxBoxSizer *sizerlist = DBG_NEW wxBoxSizer(wxVERTICAL);
+    sizerlist->Add(p_Servidor->m_listCtrl, 1, wxEXPAND | wxALL, 2);
     this->m_RPanel->SetSizer(sizerlist);
 
-    
     //Crear controles panel izquierdo
     this->CrearControlesPanelIzquierdo();
 
     //Crear txt para log
-    p_Servidor->m_txtLog->p_txtCtrl = DBG_NEW wxTextCtrl(this->m_BPanel, wxID_ANY, ":v\n", wxDefaultPosition, wxSize(100,150), wxTE_MULTILINE | wxTE_READONLY);
+    p_Servidor->m_txtLog->p_txtCtrl = DBG_NEW wxTextCtrl(this->m_BPanel, wxID_ANY, ":v\n", wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE | wxTE_READONLY);
     wxBoxSizer *sizertxt = DBG_NEW wxBoxSizer(wxVERTICAL);
-
- 
-    sizertxt->Add(DBG_NEW wxButton(this->m_BPanel, EnumIDS::ID_LimpiarLog, "Limpiar Log", wxDefaultPosition, wxSize(100, 20)), 0, wxALL, 1);
-    sizertxt->Add(p_Servidor->m_txtLog->p_txtCtrl, 1, wxALL | wxEXPAND, 1);
+    sizertxt->Add(DBG_NEW wxButton(this->m_BPanel, EnumIDS::ID_LimpiarLog, "Limpiar Log", wxDefaultPosition, wxDefaultSize), 0, wxALL, 1);
+    sizertxt->Add(p_Servidor->m_txtLog->p_txtCtrl, 1, wxEXPAND | wxALL, 1);
     this->m_BPanel->SetSizer(sizertxt);
 
     wxBoxSizer *sizer = DBG_NEW wxBoxSizer(wxHORIZONTAL);
-    sizer->Add(this->m_LPanel, 0, wxALL, 2);
+    sizer->Add(this->m_LPanel, 0, wxEXPAND | wxALL, 2);
 
     wxBoxSizer *sizer2 = DBG_NEW wxBoxSizer(wxVERTICAL);
     sizer2->Add(this->m_RPanel, 1, wxEXPAND | wxALL, 2);
     sizer2->Add(this->m_BPanel, 0, wxEXPAND | wxALL, 2);
 
-    sizer->Add(sizer2, 1, wxALL, 1);
+    sizer->Add(sizer2, 1, wxEXPAND | wxALL, 1);
 
     this->SetSizerAndFit(sizer);
 
-    SetClientSize(900,600);
-    SetSizeHints(920, 635, 920, 635);
+    SetClientSize(800,300);
+    //SetSizeHints(920, 635, 920, 635);
     
     CreateStatusBar();
     SetStatusText("IDLE");
@@ -196,6 +197,7 @@ void MyFrame::OnToggle(wxCommandEvent& event) {
 
         p_Servidor->m_listCtrl->DeleteAllItems();
         SetStatusText("IDLE");
+        SetTitle(strTitle);
         this->btn_toggle->SetLabelText("Iniciar Servidor");
     }
     Sleep(500);
@@ -223,7 +225,7 @@ void MyFrame::CrearControlesPanelIzquierdo(){
 }
 
 void MyFrame::CrearLista(long flags, bool withText){
-    p_Servidor->m_listCtrl = DBG_NEW MyListCtrl(this->m_RPanel, EnumIDS::ID_Main_List, wxDefaultPosition, wxSize(600, 300), flags | wxBORDER_THEME);
+    p_Servidor->m_listCtrl = DBG_NEW MyListCtrl(this->m_RPanel, EnumIDS::ID_Main_List, wxDefaultPosition, wxDefaultSize, flags | wxBORDER_THEME);
    
     wxListItem itemCol;
     itemCol.SetText("ID");
@@ -277,7 +279,9 @@ void MyFrame::OnClose(wxCloseEvent& event){
 
 void MyFrame::OnExit(wxCommandEvent& event) {
     Close(true);
+#ifdef __MEM_LEAK_RAVDO
     _CrtDumpMemoryLeaks();
+#endif
 }
 
 void MyFrame::OnLimpiar(wxCommandEvent& event) {
