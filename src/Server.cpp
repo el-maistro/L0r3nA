@@ -1,6 +1,7 @@
 #include "server.hpp"
 #include "misc.hpp"
 #include "frame_client.hpp"
+#include "frame_remote_desktop.hpp"
 #include "frame_main.hpp"
 #include "panel_file_manager.hpp"
 #include "panel_process_manager.hpp"
@@ -339,24 +340,12 @@ void Cliente_Handler::Command_Handler(){
             if (vcDatos.size() == 2) {
                 //CMD DEL ID_DEV DEL BUFFER
                 this->Log(cBuffer.get());
-                int iHeadSize = (std::to_string(EnumComandos::CM_Single_Salida).size() + 2) + vcDatos[1].size(); //CMD + len de dos delimitador + len del id del dev
-                int iBuffSize = this->BytesRecibidos() - iHeadSize;
+                int iHeadSize = vcDatos[0].size() + vcDatos[1].size() + 2; //CMD + len de dos delimitador + len del id del dev
+                int iBuffSize = iTempRecibido - iHeadSize;
                 char* cBytes = cBuffer.get() + iHeadSize;
                 panelPictureBox* panel_picture = (panelPictureBox*)wxWindow::FindWindowByName("CAM" + vcDatos[1], this->n_Frame);
                 if (panel_picture) {
-                    if (panel_picture->iBufferSize > 0) {
-                        delete[] panel_picture->cPictureBuffer;
-                    }
-                    panel_picture->cPictureBuffer = DBG_NEW char[iBuffSize];
-                    if (panel_picture->cPictureBuffer) {
-                        memcpy(panel_picture->cPictureBuffer, cBytes, iBuffSize);
-                        panel_picture->iBufferSize = iBuffSize;
-                        panel_picture->OnDrawBuffer();
-                    }
-                    else {
-                        this->Log("[X][MOD-CAM] No se pudo allocar memoria para copiar los bytes");
-                    }
-
+                    panel_picture->OnDrawBuffer(cBytes, iBuffSize); 
                 }
                 else {
                     this->Log("[X] No se pudo encontrar el panel de camara");
@@ -403,11 +392,13 @@ void Cliente_Handler::Command_Handler(){
         }
 
         if (vcDatos[0] == std::to_string(EnumComandos::RD_Salida)) {
-            char* cPicBuffer = cBuffer.get() + 4;
-            FILE* fp = fopen("test.jpg", "wb");
-            fwrite(cPicBuffer, sizeof(BYTE), iTempRecibido - 4, fp);
-            fclose(fp);
-            this->Log(std::to_string(iTempRecibido - 4) + " bytes escritos - RD");
+            int iHeadSize = vcDatos[0].size() + 1;
+            char* cPicBuffer = cBuffer.get() + iHeadSize;
+            int iBufferSize = iTempRecibido - iHeadSize;
+            frameRemoteDesktop* temp_frame = (frameRemoteDesktop*)wxWindow::FindWindowById(EnumRemoteDesktop::ID_Main_Frame, this->n_Frame);
+            if (temp_frame) {
+                temp_frame->OnDrawBuffer(cPicBuffer, iBufferSize);
+            }
             continue;
         }
 

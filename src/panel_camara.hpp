@@ -21,21 +21,13 @@ namespace EnumCamMenu {
 class panelPictureBox : public wxFrame {
 	public:
 		panelPictureBox(wxWindow* parent, wxString cTitle, int iCamIndex);
-		~panelPictureBox() {
-			if (this->cPictureBuffer) {
-				delete[] cPictureBuffer;
-				cPictureBuffer = nullptr;
-			}
-		};
 
-		char* cPictureBuffer = nullptr;
-		u_int iBufferSize = 0;
 		bool isCalled = false;
 		u_int uiWidth = 600;
 		u_int uiHeight = 300;
 		SOCKET sckCliente = INVALID_SOCKET;
 
-		void OnDrawBuffer();
+		void OnDrawBuffer(const char* cBuffer, int iBufferSize);
 		void OnSingleShot(wxCommandEvent& event);
 		void OnLive(wxCommandEvent& event);
 		void OnStopLive(wxCommandEvent& event);

