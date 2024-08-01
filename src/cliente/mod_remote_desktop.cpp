@@ -247,13 +247,8 @@ void mod_RemoteDesktop::IniciarLive(ULONG quality) {
     strCommand.append(1, CMD_DEL);
     int iHeadSize = strCommand.size();
 
-    while (true) {
-        std::unique_lock<std::mutex> lock(this->mtx_RemoteDesktop);
-        if (!this->isRunning) {
-            break;
-        }
-        lock.unlock();
-
+    while (this->m_isRunning()) {
+        
         std::vector<BYTE> scrBuffer = this->getFrameBytes(quality);
         if (scrBuffer.size() > 0) {
             int iBufferSize = scrBuffer.size();
@@ -267,7 +262,6 @@ void mod_RemoteDesktop::IniciarLive(ULONG quality) {
             if (iSent == -1) {
                 break;
             }
-            Sleep(500);
         }else {
             DebugPrint("Hubo un error creando el buffer. Esperando...");
             Sleep(1000);

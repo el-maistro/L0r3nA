@@ -10,8 +10,7 @@ class mod_RemoteDesktop {
 		Gdiplus::GdiplusStartupInput gdiplusStartupInput;
 		ULONG_PTR gdiplusToken;
 		bool isGDIon = false;
-		bool isRunning = false;
-
+		
 		std::thread th_RemoteDesktop;
 		std::mutex mtx_RemoteDesktop;
 
@@ -26,6 +25,13 @@ class mod_RemoteDesktop {
 		}
 		
 	public:
+		bool isRunning = false;
+
+		bool m_isRunning() {
+			std::unique_lock<std::mutex> lock(mtx_RemoteDesktop);
+			return isRunning;
+		}
+		
 		mod_RemoteDesktop();
 		~mod_RemoteDesktop();
 

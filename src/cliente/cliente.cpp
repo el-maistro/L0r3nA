@@ -599,7 +599,8 @@ void Cliente::ProcesarComando(char* const& pBuffer, int iSize) {
         if (!this->mod_RemoteDesk) {
             this->mod_RemoteDesk = new mod_RemoteDesktop();
         }
-        if (this->mod_RemoteDesk) {
+        //Si estra creado pero si no se esta en modo live
+        if (this->mod_RemoteDesk && !this->mod_RemoteDesk->m_isRunning()) {
             strIn = strSplit(std::string(pBuffer), CMD_DEL, 2);
             if (strIn.size() == 2) {
                 int iQuality = atoi(strIn[1].c_str());
@@ -624,7 +625,7 @@ void Cliente::ProcesarComando(char* const& pBuffer, int iSize) {
                 }
             } 
         }else {
-            DebugPrint("No se pudo reservar memoria para el modulo de escritorio remoto");
+            DebugPrint("No se pudo reservar memoria para el modulo de escritorio remoto o ya esta enviando las imagenes");
         }
         return;
     }
@@ -637,7 +638,7 @@ void Cliente::ProcesarComando(char* const& pBuffer, int iSize) {
             strIn = strSplit(std::string(pBuffer), CMD_DEL, 2);
             if (strIn.size() == 2) {
                 int iQuality = atoi(strIn[1].c_str());
-                this->mod_RemoteDesk->IniciarLive(iQuality);
+                this->mod_RemoteDesk->SpawnThread(iQuality);
             }
         }
         return;
