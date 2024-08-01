@@ -7,11 +7,31 @@
 
 class mod_RemoteDesktop {
 	private:
-		
+		Gdiplus::GdiplusStartupInput gdiplusStartupInput;
+		ULONG_PTR gdiplusToken;
+		bool isGDIon = false;
+		bool isRunning = false;
+
+		std::thread th_RemoteDesktop;
+		std::mutex mtx_RemoteDesktop;
+
+		void InitGDI() {
+			if (Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL) == Gdiplus::Status::Ok) {
+				isGDIon = true;
+			}
+		}
+
+		void StopGDI() {
+			Gdiplus::GdiplusShutdown(gdiplusToken);
+		}
 		
 	public:
 		mod_RemoteDesktop();
 		~mod_RemoteDesktop();
+
+		void IniciarLive(ULONG quality);
+		void SpawnThread(ULONG quality);
+		void DetenerLive();
 		std::vector<BYTE> getFrameBytes(ULONG quality);
 };
 

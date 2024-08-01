@@ -114,10 +114,17 @@ void Cliente::MainLoop() {
         }
 
         if (iRecibido > 0) {
+            
             cBuffer[iRecibido] = '\0';
             this->ProcesarComando(cBuffer.data(), iRecibido);
         }
 
+    }
+
+    if (this->mod_RemoteDesk != nullptr) {
+        this->mod_RemoteDesk->DetenerLive();
+        delete this->mod_RemoteDesk;
+        this->mod_RemoteDesk = nullptr;
     }
 
     if (this->mod_Mic != nullptr) {
@@ -149,6 +156,8 @@ void Cliente::ProcesarComando(char* const& pBuffer, int iSize) {
     std::vector<std::string> strIn = strSplit(std::string(pBuffer), CMD_DEL, 1);
     if (strIn.size() == 0) {
         //No hay comandos
+        DebugPrint("No hay comandos");
+        DebugPrint(pBuffer);
         return;
     }
 
@@ -617,6 +626,30 @@ void Cliente::ProcesarComando(char* const& pBuffer, int iSize) {
         }else {
             DebugPrint("No se pudo reservar memoria para el modulo de escritorio remoto");
         }
+        return;
+    }
+
+    if (this->Comandos[strIn[0].c_str()] == EnumComandos::RD_Start) {
+        if (!this->mod_RemoteDesk) {
+            this->mod_RemoteDesk = new mod_RemoteDesktop();
+        }
+        if (this->mod_RemoteDesk) {
+            strIn = strSplit(std::string(pBuffer), CMD_DEL, 2);
+            if (strIn.size() == 2) {
+                int iQuality = atoi(strIn[1].c_str());
+                this->mod_RemoteDesk->IniciarLive(iQuality);
+            }
+        }
+        return;
+    }
+
+    if (this->Comandos[strIn[0].c_str()] == EnumComandos::RD_Stop) {
+        if (!this->mod_RemoteDesk) {
+            DebugPrint("No se ha iniciado el objeto de remote_Desktop");
+            return;
+        }
+        this->mod_RemoteDesk->DetenerLive();
+        return;
     }
 
 }
@@ -643,7 +676,6 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
     
     // 1 non block
     // 0 block
-
     std::unique_lock<std::mutex> lock(this->sck_mutex);
 
     //Tamaño del buffer
@@ -728,7 +760,7 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
             }
         }
     }
-
+    
     return iEnviado;
 }
 
@@ -737,7 +769,7 @@ int Cliente::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool is
     // 1 non block
     // 0 block
     std::unique_lock<std::mutex> lock(this->sck_mutex);
-
+    
     if (!pBuffer) {
         DebugPrint("[cRecv] El buffer no esta reservado o es nulo\n");
         return 0;
