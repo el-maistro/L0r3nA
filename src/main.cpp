@@ -63,8 +63,6 @@ MyFrame::MyFrame()
     //Trace memory leak
     //_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
     //_CrtSetBreakAlloc(61650);
-
-    SetBackgroundColour(wxColour(255, 255, 255, 128)); // Establecer el color de fondo con transparencia
     SetTransparent(245);
     p_Servidor = DBG_NEW Servidor();
     p_Servidor->m_listCtrl = nullptr;
@@ -72,16 +70,12 @@ MyFrame::MyFrame()
     
     //Panel derecho ListCtrl
     this->m_RPanel = DBG_NEW wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize); // wxSize(700, 450));
-    this->m_RPanel->SetBackgroundColour(wxColor(0, 0, 255)); // REMOVE AT THE END
 
     //Panel izquierdo controles servidor
     this->m_LPanel = DBG_NEW wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);//wxSize(110, 600));
-    this->m_LPanel->SetBackgroundColour(wxColor(255,0,0)); // REMOVE AT THE END
 
     //Panel inferior log
     this->m_BPanel = DBG_NEW wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
-    this->m_BPanel->SetBackgroundColour(wxColor(0,255,0)); // REMOVE AT THE END
-
     
     //Crear lista
     this->CrearLista(wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES);
@@ -111,10 +105,16 @@ MyFrame::MyFrame()
     this->SetSizerAndFit(sizer);
 
     SetClientSize(800,300);
-    //SetSizeHints(920, 635, 920, 635);
     
     CreateStatusBar();
     SetStatusText("IDLE");
+
+#ifdef DEBUG_DESIGN_LIMITS
+    SetBackgroundColour(wxColour(255, 255, 255, 128)); // Establecer el color de fondo con transparencia
+    this->m_BPanel->SetBackgroundColour(wxColor(0, 255, 0));
+    this->m_RPanel->SetBackgroundColour(wxColor(0, 0, 255));
+    this->m_LPanel->SetBackgroundColour(wxColor(255, 0, 0));
+#endif
 }
 
 TransferFrame::TransferFrame() 

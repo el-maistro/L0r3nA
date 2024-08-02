@@ -3,6 +3,7 @@
 
 //#define __MEM_LEAK_RAVDO
 //#define _DEBUG
+//#define DEBUG_DESIGN_LIMITS
 
 #ifdef __MEM_LEAK_RAVDO
     #define _CRTDBG_MAP_ALLOC

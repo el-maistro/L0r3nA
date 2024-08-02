@@ -70,11 +70,11 @@ panelFileManager::panelFileManager(wxWindow* pParent) :
 	this->p_RutaActual = new wxStaticText(this, EnumIDS::ID_Panel_FM_LblRuta, wxT("\\"), wxDefaultPosition, wxSize(FRAME_CLIENT_SIZE_WIDTH, 10));
 
 	wxBoxSizer* sizer = new wxBoxSizer(wxHORIZONTAL);
-	sizer->Add(this->p_ToolBar, 0, wxEXPAND);
+	sizer->Add(this->p_ToolBar, 0, wxEXPAND | wxALL);
 	
 	wxBoxSizer* sizer2 = new wxBoxSizer(wxVERTICAL);
-	sizer2->Add(this->listManager, 0, wxEXPAND, 1);
-	sizer2->Add(this->p_RutaActual, 1, wxEXPAND, 1);
+	sizer2->Add(this->listManager, 1, wxEXPAND | wxALL, 2);
+	sizer2->Add(this->p_RutaActual, 0, wxEXPAND | wxALL, 2);
 
 	sizer->Add(sizer2);
 	SetSizer(sizer);
@@ -117,7 +117,7 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 			
 			this->Enable(false);
 
-			Sleep(100); //Darle algo de tiempo al gui para crear la lista
+			Sleep(500); //Darle algo de tiempo al gui para crear la lista
 			
 			this->EnviarComando(strComando);
 			break;
@@ -148,7 +148,7 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 
 			this->Enable(false);
 
-			Sleep(100); //Darle algo de tiempo al gui para crear la lista
+			Sleep(500); //Darle algo de tiempo al gui para crear la lista
 			
 			this->EnviarComando(strComando);
 			break;
@@ -180,20 +180,20 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 
 			this->Enable(false);
 
-			Sleep(100); //Darle algo de tiempo al gui para crear la lista
+			Sleep(200); //Darle algo de tiempo al gui para crear la lista
 
 			this->EnviarComando(strComando);
 			break;
 		case EnumIDS::ID_Panel_FM_Refresh:
 			this->listManager->DeleteAllItems();
-			Sleep(100);
+			Sleep(500);
 			strComando = std::to_string(EnumComandos::FM_Dir_Folder);
 			strComando.append(1, CMD_DEL);
 			strComando += this->p_RutaActual->GetLabelText();
 			
 			this->Enable(false);
 			
-			Sleep(100);
+			Sleep(200);
 
 			this->EnviarComando(strComando);
 			break;
@@ -216,8 +216,7 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 }
 
 void panelFileManager::CrearLista() {
-	this->listManager = new ListCtrlManager(this, EnumIDS::ID_Panel_FM_List, wxDefaultPosition, wxSize(FRAME_CLIENT_SIZE_WIDTH, 400), wxBORDER_THEME | wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES | wxEXPAND);
-
+	this->listManager = new ListCtrlManager(this, EnumIDS::ID_Panel_FM_List, wxDefaultPosition,  wxSize(FRAME_CLIENT_SIZE_WIDTH*3, FRAME_CLIENT_SIZE_WIDTH*3), wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES);
 }
 
 void panelFileManager::EnviarComando(std::string pComando) {

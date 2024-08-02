@@ -31,7 +31,11 @@ panelProcessManager::panelProcessManager(wxWindow* pParent) :
 }
 
 void panelProcessManager::CrearListview() {
-	this->listManager = new ListCtrlManager2(this, EnumIDS::ID_Panel_FM_List, wxDefaultPosition, wxSize(FRAME_CLIENT_SIZE_WIDTH, 400), wxBORDER_THEME | wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES | wxEXPAND);
+	this->listManager = new ListCtrlManager2(this, EnumIDS::ID_Panel_FM_List, wxDefaultPosition, wxSize(FRAME_CLIENT_SIZE_WIDTH * 3, FRAME_CLIENT_SIZE_WIDTH * 3), wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES);
+	wxBoxSizer* sizer = new wxBoxSizer(wxHORIZONTAL);
+	sizer->Add(this->listManager, 1, wxEXPAND | wxALL, 2);
+	this->SetSizer(sizer);
+
 	this->listManager->sckCliente = this->sckCliente;
 
 	wxListItem itemCol;
