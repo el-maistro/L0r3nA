@@ -8,11 +8,12 @@
 - Keylogger
 - Captura de camara
 - Captura de microfono
+- Escritorio Remoto (solo vista)
 
 ### TODO
-- [ ] Escritorio Remoto
+- [ ] Escritorio Remoto (control de mouse y teclado)
 - [ ] Administrador de ventanas (Lista, Minimizar, Maximizar, Cerrar)
-- [ ] Recoleccion de informacion (OS, Users, Passwords)
+- [ ] Recoleccion de informacion (OS, Users, Passwords, Historial de navegacion)
 - [ ] Proxy inversa
 - [ ] LAN/WAN Escaner
 - [ ] Fun
