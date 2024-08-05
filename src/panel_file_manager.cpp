@@ -86,115 +86,46 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 	std::string strComando = "";
 	switch (event.GetId()) {
 		case EnumIDS::ID_Panel_FM_Equipo:
-			this->listManager->ClearAll();
-			
-			itemCol.SetText("-");
-			itemCol.SetWidth(20);
-			itemCol.SetAlign(wxLIST_FORMAT_CENTRE);
-			this->listManager->InsertColumn(0, itemCol);
-
-			itemCol.SetText("Nombre");
-			itemCol.SetAlign(wxLIST_FORMAT_LEFT);
-			itemCol.SetWidth(150);
-			this->listManager->InsertColumn(1, itemCol);
-
-			itemCol.SetText("Tipo");
-			itemCol.SetWidth(100);
-			this->listManager->InsertColumn(2, itemCol);
-
-			itemCol.SetText("Libre");
-			itemCol.SetWidth(50);
-			this->listManager->InsertColumn(3, itemCol);
-
-			itemCol.SetText("Total");
-			itemCol.SetWidth(50);
-			this->listManager->InsertColumn(4, itemCol);
-
 			//ENVIAR COMANDO OBTENER DRIVES
+			this->listManager->DeleteAllItems();
 			this->iMODE = FM_EQUIPO;
 			strComando = std::to_string(EnumComandos::FM_Discos);
 			strComando.append(1, CMD_DEL);
 			
 			this->Enable(false);
 
-			Sleep(500); //Darle algo de tiempo al gui para crear la lista
-			
 			this->EnviarComando(strComando);
 			break;
 		case EnumIDS::ID_Panel_FM_Descargas:
-			this->listManager->ClearAll();
-			itemCol.SetText("-");
-			itemCol.SetWidth(20);
-			itemCol.SetAlign(wxLIST_FORMAT_CENTRE);
-			this->listManager->InsertColumn(0, itemCol);
-
-			itemCol.SetText("Nombre");
-			itemCol.SetWidth(150);
-			itemCol.SetAlign(wxLIST_FORMAT_LEFT);
-			this->listManager->InsertColumn(1, itemCol);
-
-			itemCol.SetText("Tamaño");
-			itemCol.SetWidth(80);
-			this->listManager->InsertColumn(2, itemCol);
-
-			itemCol.SetText("Fecha Mod");
-			itemCol.SetWidth(100);
-			this->listManager->InsertColumn(3, itemCol);
 			//ENVIAR COMANDO OBTENER FOLDER DESCARGAS
+			this->listManager->DeleteAllItems();
 			this->iMODE = FM_NORMAL;
-
 			strComando = std::to_string(EnumComandos::FM_Dir_Folder);
 			strComando += "~DESCAR-DOWN";
 
 			this->Enable(false);
 
-			Sleep(500); //Darle algo de tiempo al gui para crear la lista
-			
 			this->EnviarComando(strComando);
 			break;
 		case EnumIDS::ID_Panel_FM_Escritorio:
-			this->listManager->ClearAll();
-			itemCol.SetText("-");
-			itemCol.SetWidth(20);
-			itemCol.SetAlign(wxLIST_FORMAT_CENTRE);
-			this->listManager->InsertColumn(0, itemCol);
-
-			itemCol.SetText("Nombre");
-			itemCol.SetWidth(150);
-			itemCol.SetAlign(wxLIST_FORMAT_LEFT);
-			this->listManager->InsertColumn(1, itemCol);
-
-			itemCol.SetText("Tamaño");
-			itemCol.SetWidth(80);
-			this->listManager->InsertColumn(2, itemCol);
-
-			itemCol.SetText("Fecha Mod");
-			itemCol.SetWidth(100);
-			this->listManager->InsertColumn(3, itemCol);
 			//ENVIAR COMANDO OBTENER FOLDER DE ESCRITORIO
-
+			this->listManager->DeleteAllItems();
 			this->iMODE = FM_NORMAL;
-
 			strComando = std::to_string(EnumComandos::FM_Dir_Folder);
 			strComando += "~ESCRI-DESK";
 
 			this->Enable(false);
 
-			Sleep(200); //Darle algo de tiempo al gui para crear la lista
-
 			this->EnviarComando(strComando);
 			break;
 		case EnumIDS::ID_Panel_FM_Refresh:
 			this->listManager->DeleteAllItems();
-			Sleep(500);
 			strComando = std::to_string(EnumComandos::FM_Dir_Folder);
 			strComando.append(1, CMD_DEL);
 			strComando += this->p_RutaActual->GetLabelText();
 			
 			this->Enable(false);
 			
-			Sleep(200);
-
 			this->EnviarComando(strComando);
 			break;
 		case EnumIDS::ID_Panel_FM_Subir:
@@ -602,6 +533,28 @@ void ListCtrlManager::ListarDir(const char* strData) {
 	//Listar directorio
 	//4 columnas para listar dir
 	std::unique_lock<std::mutex> lock(this->mtx_fm);
+
+	if (this->GetColumnCount() != 4) {
+		wxListItem itemCol;
+		this->ClearAll();
+		itemCol.SetText("-");
+		itemCol.SetWidth(20);
+		itemCol.SetAlign(wxLIST_FORMAT_CENTRE);
+		this->InsertColumn(0, itemCol);
+
+		itemCol.SetText("Nombre");
+		itemCol.SetWidth(150);
+		itemCol.SetAlign(wxLIST_FORMAT_LEFT);
+		this->InsertColumn(1, itemCol);
+
+		itemCol.SetText("Tamaño");
+		itemCol.SetWidth(80);
+		this->InsertColumn(2, itemCol);
+
+		itemCol.SetText("Fecha Mod");
+		itemCol.SetWidth(100);
+		this->InsertColumn(3, itemCol);
+	}
 	
 	for (std::string vcEntry : strSplit(std::string(strData), '|', 10000)) {
 		std::vector<std::string> vcFileEntry;
@@ -626,17 +579,12 @@ void ListCtrlManager::ListarDir(const char* strData) {
 		}
 		
 		if (vcFileEntry.size() == 4) {
-			if (this->GetColumnCount() == 4) {
-				int iCount = this->GetItemCount() > 0 ? this->GetItemCount() - 1 : 0;
-				if (iCount == -1) { iCount = 0; }
-				this->InsertItem(iCount, wxString("-"));
-				this->SetItem(iCount, 1, wxString(vcFileEntry[1]));
-				this->SetItem(iCount, 2, strTama); //tama
-				this->SetItem(iCount, 3, wxString(vcFileEntry[3]));
-			}
-			else {
-				std::cout << "No se han creado las columnas\n";
-			}
+			int iCount = this->GetItemCount() > 0 ? this->GetItemCount() - 1 : 0;
+			if (iCount == -1) { iCount = 0; }
+			this->InsertItem(iCount, wxString("-"));
+			this->SetItem(iCount, 1, wxString(vcFileEntry[1]));
+			this->SetItem(iCount, 2, strTama); //tama
+			this->SetItem(iCount, 3, wxString(vcFileEntry[3]));
 		}
 		else {
 			std::cout << "La entrada no tiene los parametros requeridos\n" << vcEntry << '\n';
@@ -650,19 +598,43 @@ void ListCtrlManager::ListarEquipo(const std::vector<std::string> vcDrives) {
 	//Listar discos y almacenamiento
 	//5 Columnas para drives
 	std::unique_lock<std::mutex> lock(this->mtx_fm);
-	if (this->GetColumnCount() == 5) {
-		for (int iCount = 0; iCount<int(vcDrives.size()); iCount++) {
-			std::vector<std::string> vDrive = strSplit(vcDrives[iCount], '|', 5);
-			if (vDrive.size() >= 5) {
-				this->InsertItem(iCount, wxString(vDrive[0]));
-				this->SetItem(iCount, 1, wxString(vDrive[2]));
-				this->SetItem(iCount, 2, wxString(vDrive[1]));
-				this->SetItem(iCount, 3, wxString(vDrive[3]));
-				this->SetItem(iCount, 4, wxString(vDrive[4]));
-			}
-		}
-	}else {
-		std::cout << "No se han creado las columnas\n";
+	if (this->GetColumnCount() != 5) {
+		wxListItem itemCol;
+		this->ClearAll();
+
+		itemCol.SetText("-");
+		itemCol.SetWidth(20);
+		itemCol.SetAlign(wxLIST_FORMAT_CENTRE);
+		this->InsertColumn(0, itemCol);
+
+		itemCol.SetText("Nombre");
+		itemCol.SetAlign(wxLIST_FORMAT_LEFT);
+		itemCol.SetWidth(150);
+		this->InsertColumn(1, itemCol);
+
+		itemCol.SetText("Tipo");
+		itemCol.SetWidth(100);
+		this->InsertColumn(2, itemCol);
+
+		itemCol.SetText("Libre");
+		itemCol.SetWidth(50);
+		this->InsertColumn(3, itemCol);
+
+		itemCol.SetText("Total");
+		itemCol.SetWidth(50);
+		this->InsertColumn(4, itemCol);
 	}
+
+	for (int iCount = 0; iCount<int(vcDrives.size()); iCount++) {
+		std::vector<std::string> vDrive = strSplit(vcDrives[iCount], '|', 5);
+		if (vDrive.size() >= 5) {
+			this->InsertItem(iCount, wxString(vDrive[0]));
+			this->SetItem(iCount, 1, wxString(vDrive[2]));
+			this->SetItem(iCount, 2, wxString(vDrive[1]));
+			this->SetItem(iCount, 3, wxString(vDrive[3]));
+			this->SetItem(iCount, 4, wxString(vDrive[4]));
+		}
+	}
+
 	this->GetParent()->Enable(true);
 }
