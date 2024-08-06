@@ -196,7 +196,8 @@ namespace EnumComandos {
         RD_Single,
         RD_Start,
         RD_Stop,
-        RD_Salida
+        RD_Salida,
+        RD_Update_Q
     };
 }
 

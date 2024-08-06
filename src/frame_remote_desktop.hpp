@@ -12,7 +12,8 @@ namespace EnumRemoteDesktop {
 		ID_BTN_Start,
 		ID_BTN_Stop,
 		ID_BTN_Save,
-		ID_CHK_Control
+		ID_CHK_Control,
+		ID_CMB_Qoptions
 	};
 }
 
@@ -20,11 +21,13 @@ class frameRemoteDesktop : public wxFrame {
 	public:
 		frameRemoteDesktop(wxWindow* pParent);
 		wxStaticBitmap* imageCtrl = nullptr;
+		wxComboBox* quality_options = nullptr;
 
 		void OnDrawBuffer(const char* cBuffer, int iBuffersize);
 	private:
 		SOCKET sckCliente = INVALID_SOCKET;
 
+		void OnComboChange(wxCommandEvent&);
 		void OnSingle(wxCommandEvent&);
 		void OnStart(wxCommandEvent&);
 		void OnStop(wxCommandEvent&);

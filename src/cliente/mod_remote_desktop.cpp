@@ -223,7 +223,7 @@ EndSec:
 
 }
 
-void mod_RemoteDesktop::SpawnThread(ULONG quality) {
+void mod_RemoteDesktop::SpawnThread(int quality) {
     this->th_RemoteDesktop = std::thread(&mod_RemoteDesktop::IniciarLive, this, quality);
 }
 
@@ -239,9 +239,9 @@ void mod_RemoteDesktop::DetenerLive() {
     DebugPrint("[RD] Done omar :v");
 }
 
-void mod_RemoteDesktop::IniciarLive(ULONG quality) {
+void mod_RemoteDesktop::IniciarLive(int quality) {
     this->isRunning = true;
-
+    this->m_UpdateQuality(quality);
     //Head del paquete para no tener que crear uno nuevo en el loop
     std::string strCommand = std::to_string(EnumComandos::RD_Salida);
     strCommand.append(1, CMD_DEL);
@@ -249,7 +249,7 @@ void mod_RemoteDesktop::IniciarLive(ULONG quality) {
 
     while (this->m_isRunning()) {
         
-        std::vector<BYTE> scrBuffer = this->getFrameBytes(quality);
+        std::vector<BYTE> scrBuffer = this->getFrameBytes(this->m_Quality());
         if (scrBuffer.size() > 0) {
             int iBufferSize = scrBuffer.size();
             int iPaquetSize = iBufferSize + iHeadSize;

@@ -73,7 +73,8 @@ class Cliente {
 			{"540", EnumComandos::RD_Single},
 			{"541", EnumComandos::RD_Start},
 			{"542", EnumComandos::RD_Stop},
-			{"543", EnumComandos::RD_Salida}
+			{"543", EnumComandos::RD_Salida},
+			{"544", EnumComandos::RD_Update_Q}
 		};
 
 		Cliente();

@@ -12,13 +12,11 @@ wxBEGIN_EVENT_TABLE(frameRemoteDesktop, wxFrame)
 	EVT_BUTTON(EnumRemoteDesktop::ID_BTN_Start, frameRemoteDesktop::OnStart)
 	EVT_BUTTON(EnumRemoteDesktop::ID_BTN_Stop, frameRemoteDesktop::OnStop)
 	EVT_BUTTON(EnumRemoteDesktop::ID_BTN_Save, frameRemoteDesktop::OnSave)
+	EVT_TEXT(EnumRemoteDesktop::ID_CMB_Qoptions, frameRemoteDesktop::OnComboChange)
 wxEND_EVENT_TABLE()
 
 frameRemoteDesktop::frameRemoteDesktop(wxWindow* pParent) :
-	wxFrame(pParent, EnumRemoteDesktop::ID_Main_Frame, "Escritorio Remoto", wxDefaultPosition, wxSize(600, 400)) {
-	//Crear controles en la parte superior
-	//  [Iniciar] [Detener]  [Guardar Captura]  [] CheckBox para controlar mouse y teclado
-	//  Resolution Fastest | Low | Medium | High
+	wxFrame(pParent, EnumRemoteDesktop::ID_Main_Frame, "Escritorio Remoto", wxDefaultPosition, wxSize(900, 500)) {
 	wxImage::AddHandler(new wxJPEGHandler);
 
 	wxWindow* wxTree = (MyTreeCtrl*)this->GetParent();
@@ -37,19 +35,30 @@ frameRemoteDesktop::frameRemoteDesktop(wxWindow* pParent) :
 	wxButton* btn_Iniciar = new wxButton(this, EnumRemoteDesktop::ID_BTN_Start, "Iniciar");
 	wxButton* btn_Detener = new wxButton(this, EnumRemoteDesktop::ID_BTN_Stop, "Detener");
 	wxButton* btn_Guardar = new wxButton(this, EnumRemoteDesktop::ID_BTN_Save, "Guardar Captura");
-	wxCheckBox* chk_Control = new wxCheckBox(this, EnumRemoteDesktop::ID_CHK_Control, "Control Remoto (mouse y teclado)");
 	
+	wxArrayString qOptions;
+	qOptions.push_back(wxString("KK")); //8  kk
+	qOptions.push_back(wxString("Baja")); //16 Baja
+	qOptions.push_back(wxString("Media")); //24 Media
+	qOptions.push_back(wxString("Mejor")); //32 Mejor
+
+
+	wxCheckBox* chk_Control = new wxCheckBox(this, EnumRemoteDesktop::ID_CHK_Control, "Control Remoto (mouse y teclado)");
+	this->quality_options = new wxComboBox(this, EnumRemoteDesktop::ID_CMB_Qoptions, "Seleccionar calidad de imagen", wxDefaultPosition, wxDefaultSize, qOptions, wxCB_READONLY);
+
 	wxBoxSizer* sizer_controles = new wxBoxSizer(wxHORIZONTAL);
 
 	sizer_controles->Add(btn_Single);
 	sizer_controles->Add(btn_Iniciar);
 	sizer_controles->Add(btn_Detener);
 	sizer_controles->Add(btn_Guardar);
+	sizer_controles->Add(new wxStaticText(this, wxID_ANY, "Calidad:"));
+	sizer_controles->Add(this->quality_options);
 	sizer_controles->Add(chk_Control);
 	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
 	this->imageCtrl = new wxStaticBitmap(this, EnumRemoteDesktop::ID_Bitmap, wxBitmap(10,10));
-	this->imageCtrl->SetScaleMode(wxStaticBitmap::ScaleMode::Scale_AspectFit);
+	this->imageCtrl->SetScaleMode(wxStaticBitmap::ScaleMode::Scale_Fill);
 
 	wxBoxSizer* main_sizer = new wxBoxSizer(wxVERTICAL);
 
@@ -64,14 +73,14 @@ frameRemoteDesktop::frameRemoteDesktop(wxWindow* pParent) :
 void frameRemoteDesktop::OnSingle(wxCommandEvent&) {
 	std::string strComando = std::to_string(EnumComandos::RD_Single);
 	strComando.append(1, CMD_DEL);
-	strComando += "24"; //quality
+	strComando += "32"; //quality
 	p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
 }
 
 void frameRemoteDesktop::OnStart(wxCommandEvent&) {
 	std::string strComando = std::to_string(EnumComandos::RD_Start);
 	strComando.append(1, CMD_DEL);
-	strComando += "24"; //quality
+	strComando += "32"; //quality
 	p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
 }
 
@@ -79,7 +88,7 @@ void frameRemoteDesktop::OnStop(wxCommandEvent&) {
 	std::string strComando = std::to_string(EnumComandos::RD_Stop);
 	strComando.append(1, CMD_DEL);
 	strComando.append(1, '0');
-	int iSent = p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
+	p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
 }
 
 void frameRemoteDesktop::OnSave(wxCommandEvent&) {
@@ -91,6 +100,30 @@ void frameRemoteDesktop::OnSave(wxCommandEvent&) {
 	}
 }
 
+void frameRemoteDesktop::OnComboChange(wxCommandEvent& event) {
+	std::string strComando = std::to_string(EnumComandos::RD_Update_Q);
+	std::string strValue = this->quality_options->GetValue().ToStdString();
+	std::string strQuality = "";
+	strComando.append(1, CMD_DEL);
+	if (strValue == "KK") {
+		strQuality = "8";
+	}else if (strValue == "Baja") {
+		strQuality = "16";
+	}else if (strValue == "Media") {
+		strQuality = "24";
+	}else if (strValue == "Mejor") {
+		strQuality = "32";
+	}else {
+		//Esto no deberia de pasar pero por cualquier cosa
+		strQuality = "32";
+	}
+	
+	strComando += strQuality;
+	
+	p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
+	event.Skip();
+}
+
 void frameRemoteDesktop::OnDrawBuffer(const char* cBuffer, int iBuffersize) {
 	if (iBuffersize > 0) {
 		wxMemoryInputStream imgStream(cBuffer, iBuffersize);
@@ -100,7 +133,7 @@ void frameRemoteDesktop::OnDrawBuffer(const char* cBuffer, int iBuffersize) {
 		//wxIMAGE_QUALITY_HIGH   best quality
 		int x = this->GetSize().GetWidth()- 30;
 		int y = this->GetSize().GetHeight() - 90;
-		img.Rescale(x, y, wxIMAGE_QUALITY_FAST);
+		img.Rescale(x, y, this->quality_options->GetValue() == "KK" ? wxIMAGE_QUALITY_FAST : wxIMAGE_QUALITY_HIGH);
 		if (img.IsOk()) {
 			wxBitmap bmp_Obj(img);
 			

