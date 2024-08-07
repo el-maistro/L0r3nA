@@ -74,7 +74,8 @@ class Cliente {
 			{"541", EnumComandos::RD_Start},
 			{"542", EnumComandos::RD_Stop},
 			{"543", EnumComandos::RD_Salida},
-			{"544", EnumComandos::RD_Update_Q}
+			{"544", EnumComandos::RD_Update_Q},
+			{"545", EnumComandos::RD_Update_Vmouse}
 		};
 
 		Cliente();

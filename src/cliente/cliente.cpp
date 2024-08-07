@@ -672,6 +672,20 @@ void Cliente::ProcesarComando(char* const& pBuffer, int iSize) {
         }
     }
 
+    //Mostar/ocultar mouse remoto
+    if (this->Comandos[strIn[0].c_str()] == EnumComandos::RD_Update_Vmouse) {
+        strIn = strSplit(std::string(pBuffer), CMD_DEL, 2);
+        if (strIn.size() == 2) {
+            if (this->mod_RemoteDesk) {
+                bool isVmouseOn = strIn[1][0] == '0' ? false : true;
+                this->mod_RemoteDesk->m_UpdateVmouse(isVmouseOn);
+            }
+            else {
+                DebugPrint("[RD]No se ha creado el objeto");
+            }
+        }
+    }
+
 }
 
 

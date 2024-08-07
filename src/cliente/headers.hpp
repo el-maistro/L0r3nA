@@ -95,7 +95,8 @@ namespace EnumComandos {
         RD_Start,
         RD_Stop,
         RD_Salida,
-        RD_Update_Q
+        RD_Update_Q,
+        RD_Update_Vmouse
     };
 }
 

@@ -34,6 +34,42 @@ int GetEncoderClsid(const WCHAR* format, CLSID* pClsid){
     return -1;  // Failure
 }
 
+bool mod_RemoteDesktop::m_isRunning() {
+    std::unique_lock<std::mutex> lock(this->mtx_RemoteDesktop);
+    return this->isRunning;
+}
+
+void mod_RemoteDesktop::m_UpdateVmouse(bool isVisible) {
+    std::unique_lock<std::mutex> lock(this->mtx_RemoteSettings);
+    this->isMouseOn = isVisible;
+}
+
+bool mod_RemoteDesktop::m_Vmouse() {
+    std::unique_lock<std::mutex> lock(this->mtx_RemoteSettings);
+    return this->isMouseOn;
+}
+
+void mod_RemoteDesktop::InitGDI() {
+    if (Gdiplus::GdiplusStartup(&this->gdiplusToken, &this->gdiplusStartupInput, NULL) == Gdiplus::Status::Ok) {
+        this->isGDIon = true;
+    }
+}
+
+void mod_RemoteDesktop::StopGDI() {
+    Gdiplus::GdiplusShutdown(this->gdiplusToken);
+}
+
+ULONG mod_RemoteDesktop::m_Quality() {
+    std::unique_lock<std::mutex> lock(this->mtx_RemoteSettings);
+    return this->uQuality;
+}
+
+void mod_RemoteDesktop::m_UpdateQuality(int iNew) {
+    //32 default
+    std::unique_lock<std::mutex> lock(this->mtx_RemoteSettings);
+    this->uQuality = iNew == 0 ? 32 : static_cast<ULONG>(iNew);
+}
+
 mod_RemoteDesktop::mod_RemoteDesktop() {
     this->InitGDI();
 	return;
@@ -67,6 +103,14 @@ std::vector<BYTE> mod_RemoteDesktop::getFrameBytes(ULONG quality) {
     Gdiplus::Bitmap* pScreenShot = nullptr;
     IStream* oStream;
     HRESULT hr = S_OK;
+    
+    //Cursor
+    CURSORINFO cursor = { sizeof(cursor) };
+    ICONINFO info = { sizeof(info) };
+    RECT cursorRect;
+    int cursorX = 0;
+    int cursorY = 0;
+    BITMAP bmpCursor = { 0 };
     
     OSVERSIONINFO os;
     int xm = SM_CXVIRTUALSCREEN;
@@ -149,6 +193,18 @@ std::vector<BYTE> mod_RemoteDesktop::getFrameBytes(ULONG quality) {
         goto EndSec;
     }
 
+    //Si esta habilitado mostrar el mouse
+    if (this->m_Vmouse()) {
+        GetCursorInfo(&cursor);
+        if (cursor.flags == CURSOR_SHOWING) {
+            GetWindowRect(hDesktopWnd, &cursorRect);
+            GetIconInfo(cursor.hCursor, &info);
+            cursorX = cursor.ptScreenPos.x - cursorRect.left - cursorRect.left - info.xHotspot;
+            cursorY = cursor.ptScreenPos.y - cursorRect.top - cursorRect.top - info.yHotspot;
+            GetObject(info.hbmColor, sizeof(bmpCursor), &bmpCursor);
+            DrawIconEx(hmemdc, cursorX, cursorY, cursor.hCursor, bmpCursor.bmWidth, bmpCursor.bmHeight, 0, NULL, DI_NORMAL);
+        }
+    }
 
     hr = CreateStreamOnHGlobal(hGlobalMem, TRUE, &oStream);
     if (hr != S_OK) {

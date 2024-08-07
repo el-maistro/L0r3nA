@@ -11,39 +11,27 @@ class mod_RemoteDesktop {
 		ULONG_PTR gdiplusToken;
 		ULONG uQuality = 0;
 		bool isGDIon = false;
+		bool isMouseOn = false;
 		
 		std::thread th_RemoteDesktop;
 		std::mutex mtx_RemoteDesktop;
-		std::mutex mtx_Quality;
+		std::mutex mtx_RemoteSettings;
 
-		void InitGDI() {
-			if (Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL) == Gdiplus::Status::Ok) {
-				isGDIon = true;
-			}
-		}
 
-		void StopGDI() {
-			Gdiplus::GdiplusShutdown(gdiplusToken);
-		}
+		void InitGDI();
 
-		ULONG m_Quality() {
-			std::unique_lock<std::mutex> lock(mtx_Quality);
-			return uQuality;
-		}
+		void StopGDI();
+
+		ULONG m_Quality();
+		bool  m_Vmouse();
 
 	public:
 		bool isRunning = false;
 
-		bool m_isRunning() {
-			std::unique_lock<std::mutex> lock(mtx_RemoteDesktop);
-			return isRunning;
-		}
+		bool m_isRunning();
 
-		void m_UpdateQuality(int iNew) {
-			//32 default
-			std::unique_lock<std::mutex> lock(mtx_Quality);
-			uQuality = iNew == 0 ? 32 : static_cast<ULONG>(iNew);
-		}
+		void m_UpdateQuality(int iNew);
+		void m_UpdateVmouse(bool isVisible);
 
 		mod_RemoteDesktop();
 		~mod_RemoteDesktop();

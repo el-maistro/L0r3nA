@@ -13,6 +13,7 @@ namespace EnumRemoteDesktop {
 		ID_BTN_Stop,
 		ID_BTN_Save,
 		ID_CHK_Control,
+		ID_CHK_Vmouse,
 		ID_CMB_Qoptions
 	};
 }
@@ -27,11 +28,12 @@ class frameRemoteDesktop : public wxFrame {
 	private:
 		SOCKET sckCliente = INVALID_SOCKET;
 
-		void OnComboChange(wxCommandEvent&);
-		void OnSingle(wxCommandEvent&);
-		void OnStart(wxCommandEvent&);
-		void OnStop(wxCommandEvent&);
-		void OnSave(wxCommandEvent&);
+		void OnCheckVmouse(wxCommandEvent&); //Mostrar mouse remoto
+		void OnComboChange(wxCommandEvent&); //Cambiar calidad de imagen
+		void OnSingle(wxCommandEvent&);      //Tomar captura sencilla
+		void OnStart(wxCommandEvent&);       //Iniciar live
+		void OnStop(wxCommandEvent&);        //Detener live
+		void OnSave(wxCommandEvent&);        //Guardar captura
 		void Onclose(wxCloseEvent&);
 
 		wxDECLARE_EVENT_TABLE();

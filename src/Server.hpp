@@ -13,6 +13,7 @@ struct TransferStatus {
 
 struct Archivo_Descarga {
     std::string strNombre;
+    //std::ofstream ssOutFile;
     FILE* iFP;
     double uTamarchivo;
     double uDescargado;
@@ -133,7 +134,7 @@ class Cliente_Handler {
 
         Cliente_Handler(struct Cliente s_cliente) : p_Cliente(s_cliente) {}
         ~Cliente_Handler() {
-            for (auto& archivo: um_Archivos_Descarga) {
+            for (auto& archivo : um_Archivos_Descarga) {
                 if (archivo.second.iFP) {
                     fclose(archivo.second.iFP);
                 }
@@ -235,12 +236,13 @@ class Servidor{
 
         void m_BorrarCliente(std::mutex& mtx, int iIndex) {
             std::unique_lock<std::mutex> lock(mtx);
-            if (iIndex < static_cast<int>(vc_Clientes.size())) {
+            if (iIndex < static_cast<int>(vc_Clientes.size()) && iIndex >= 0) {
                 if (vc_Clientes[iIndex]) {
                     vc_Clientes[iIndex]->JoinThread();
                     m_CerrarConexion(vc_Clientes[iIndex]->p_Cliente._sckCliente);
                     delete vc_Clientes[iIndex];
                     vc_Clientes[iIndex] = nullptr;
+                    
                     vc_Clientes.erase(vc_Clientes.begin() + iIndex);
                 }
             }
