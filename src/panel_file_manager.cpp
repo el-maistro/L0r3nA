@@ -309,12 +309,12 @@ void ListCtrlManager::OnDescargarArchivo(wxCommandEvent& event) {
 
 	struct TransferStatus nuevo_transfer;
 	struct Archivo_Descarga nuevo_archivo;
-	nuevo_archivo.iFP = fopen(dialog.GetPath().c_str(), "wb");
+	nuevo_archivo.ssOutFile = std::make_shared < std::ofstream>(dialog.GetPath().ToStdString(), std::ios::binary);
 	nuevo_transfer.uDescargado = nuevo_transfer.uTamano = nuevo_archivo.uTamarchivo = nuevo_archivo.uDescargado = 0;
 	nuevo_transfer.strNombre = nuevo_archivo.strNombre = this->GetItemText(item, 1);
 	nuevo_transfer.strCliente = this->itemp->strID;
 	nuevo_transfer.isUpload = false;
-	if (nuevo_archivo.iFP == nullptr) {
+	if(!nuevo_archivo.ssOutFile.get()->is_open()) {
 		error();
 		p_Servidor->m_txtLog->LogThis("[X] No se pudo abrir el archivo " + strNombre, LogType::LogError);
 		return;
@@ -328,7 +328,8 @@ void ListCtrlManager::OnDescargarArchivo(wxCommandEvent& event) {
 	}
 
 	std::unique_lock<std::mutex> lock(p_Servidor->vc_Clientes[iClienteID]->mt_Archivos);
-	p_Servidor->vc_Clientes[iClienteID]->um_Archivos_Descarga.insert({ strID, nuevo_archivo });
+	//p_Servidor->vc_Clientes[iClienteID]->um_Archivos_Descarga.insert({ strID, nuevo_archivo });
+	p_Servidor->vc_Clientes[iClienteID]->um_Archivos_Descarga.insert(std::make_pair(strID, nuevo_archivo));
 	lock.unlock();
 
 	std::unique_lock<std::mutex> lock2(p_Servidor->p_transfers);

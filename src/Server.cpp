@@ -126,17 +126,15 @@ void Cliente_Handler::Command_Handler(){
                 int iHeader = 5 + vcDatos[1].size();
                 int iBytesSize = this->BytesRecibidos() - iHeader;
                 char* cBytes = cBuffer.get() + iHeader;
-
-                FILE* fp = this->um_Archivos_Descarga[vcDatos[1]].iFP;
-                if (fp) {
-                    fwrite(cBytes, sizeof(char), iBytesSize, fp);
+                if(this->um_Archivos_Descarga[vcDatos[1]].ssOutFile.get()->is_open()) {
+                    this->um_Archivos_Descarga[vcDatos[1]].ssOutFile.get()->write(cBytes, iBytesSize);
+                    //fwrite(cBytes, sizeof(char), iBytesSize, fp);
                     //Por los momentos solo es necesario que el servidor almacene el progreso
                     //this->um_Archivos_Descarga[vcDatos[1]].uDescargado += iBytesSize;
 
                     std::unique_lock<std::mutex> lock(p_Servidor->p_transfers);
                     p_Servidor->vcTransferencias[vcDatos[1]].uDescargado += iBytesSize;
-                }
-                else {
+                }else {
                     this->Log("El archivo no esta abierto");
                 }
             }
@@ -229,8 +227,8 @@ void Cliente_Handler::Command_Handler(){
         if (vcDatos[0] == std::to_string(EnumComandos::FM_Descargar_Archivo_End)) {
             vcDatos = strSplit(std::string(cBuffer.get()), CMD_DEL, 2);
             if (vcDatos.size() == 2) {
-                if (this->um_Archivos_Descarga[vcDatos[1]].iFP) {
-                    fclose(this->um_Archivos_Descarga[vcDatos[1]].iFP);
+                if (this->um_Archivos_Descarga[vcDatos[1]].ssOutFile->is_open()) {
+                    this->um_Archivos_Descarga[vcDatos[1]].ssOutFile->close();
                 }
 
                 this->Log("[!] Descarga completa");
@@ -626,8 +624,7 @@ void Servidor::m_CleanVector() {
     
     int iNumeroClientes = this->m_NumeroClientes(vector_mutex);
     for (int iIndex2 = 0; iIndex2 < iNumeroClientes; iIndex2++) {
-        int iRealIndex = this->IndexOf(this->m_ClienteID(vector_mutex, iIndex2));
-        this->m_BorrarCliente(vector_mutex, iRealIndex);
+        this->m_BorrarCliente(vector_mutex, iIndex2, true);
     }
 
     this->vc_Clientes.clear();

@@ -13,10 +13,14 @@ struct TransferStatus {
 
 struct Archivo_Descarga {
     std::string strNombre;
-    //std::ofstream ssOutFile;
-    FILE* iFP;
+    std::shared_ptr<std::ofstream> ssOutFile;
     double uTamarchivo;
     double uDescargado;
+
+    Archivo_Descarga() :
+        ssOutFile(nullptr), uTamarchivo(0), uDescargado(0), strNombre("dummy") {}
+    
+    ~Archivo_Descarga() = default;
 };
 
 struct Cliente{
@@ -84,7 +88,7 @@ class Cliente_Handler {
 
         FrameCliente* n_Frame = nullptr;
 
-        std::map<std::string, struct Archivo_Descarga> um_Archivos_Descarga;
+        std::map<const std::string, struct Archivo_Descarga> um_Archivos_Descarga;
         
         struct Cliente p_Cliente;
         bool isRunning = true;
@@ -134,11 +138,6 @@ class Cliente_Handler {
 
         Cliente_Handler(struct Cliente s_cliente) : p_Cliente(s_cliente) {}
         ~Cliente_Handler() {
-            for (auto& archivo : um_Archivos_Descarga) {
-                if (archivo.second.iFP) {
-                    fclose(archivo.second.iFP);
-                }
-            }
         }
 };
 
@@ -234,7 +233,7 @@ class Servidor{
             return INVALID_SOCKET;
         }
 
-        void m_BorrarCliente(std::mutex& mtx, int iIndex) {
+        void m_BorrarCliente(std::mutex& mtx, int iIndex, bool isEnd = false) {
             std::unique_lock<std::mutex> lock(mtx);
             if (iIndex < static_cast<int>(vc_Clientes.size()) && iIndex >= 0) {
                 if (vc_Clientes[iIndex]) {
@@ -243,7 +242,7 @@ class Servidor{
                     delete vc_Clientes[iIndex];
                     vc_Clientes[iIndex] = nullptr;
                     
-                    vc_Clientes.erase(vc_Clientes.begin() + iIndex);
+                    if (!isEnd) { vc_Clientes.erase(vc_Clientes.begin() + iIndex); }
                 }
             }
 
