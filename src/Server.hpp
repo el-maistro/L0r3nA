@@ -80,7 +80,12 @@ class Cliente_Handler {
     private:
         HWAVEOUT wo;
         int iRecibido = 0;
+        bool isFrameVisible = false;
         std::thread p_thHilo;
+        std::thread p_thQueue;
+        
+        std::mutex mt_Queue;
+        std::mutex mt_FrameVisible;
 
     public:
         std::mutex mt_Archivos;
@@ -88,15 +93,29 @@ class Cliente_Handler {
 
         FrameCliente* n_Frame = nullptr;
 
+        //Verificar que el frame principal siga activo
+        bool m_isFrameVisible() {
+            std::unique_lock<std::mutex> lock(mt_FrameVisible);
+            return isFrameVisible;
+        }
+
+        void m_setFrameVisible(bool val) {
+            std::unique_lock<std::mutex> lock(mt_FrameVisible);
+            isFrameVisible = val;
+        }
+
         std::map<const std::string, struct Archivo_Descarga> um_Archivos_Descarga;
+        std::queue<std::vector<char>> queue_Comandos;
         
         struct Cliente p_Cliente;
         bool isRunning = true;
         
         void Command_Handler();
-        void Spawn_Thread();
-        void CrearFrame(std::string strTitle, std::string strID);
-        void EscribirSalidShell(std::string strSalida);
+        void Process_Queue();
+        void Process_Command(std::vector<char>& cBuffer);
+        void Spawn_Threads();
+        void CrearFrame(const std::string strTitle, const std::string strID);
+        void EscribirSalidShell(const std::string strSalida);
         bool OpenPlayer();
         void ClosePlayer() { waveOutClose(wo);}
         void PlayBuffer(char* pBuffer, size_t iLen);
@@ -130,7 +149,11 @@ class Cliente_Handler {
                 Stop();
                 p_thHilo.join();
             }
+            if (p_thQueue.joinable()) {
+                p_thQueue.join();
+            }
         }
+
         void Stop() {
             std::unique_lock<std::mutex> lock(mt_Running);
             isRunning = false;

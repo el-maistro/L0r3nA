@@ -688,10 +688,9 @@ void Cliente::ProcesarComando(char* const& pBuffer, int iSize) {
 
 }
 
-
 void Cliente::iniPacket() {
     //Enviar SO
-    std::string strOut = "01";
+    std::string strOut = std::to_string(EnumComandos::INIT_PACKET);
     strOut.append(1, CMD_DEL);
     strOut += strOS();
     strOut.append(1, CMD_DEL);

