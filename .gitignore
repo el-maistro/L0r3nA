@@ -5,6 +5,8 @@ build*
 src/build*
 src/cliente/build*
 src/out*
+src/zlib
+src/wxWidgets
 .vs*
 *.json
 *.zip

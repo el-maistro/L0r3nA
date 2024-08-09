@@ -192,8 +192,7 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID) {
 		return;
 	}
 
-	//>15 kb LZO crashea en tiempo de ejecucion
-	u_int uiTamBloque = 1024 * 90; //90 KB
+	u_int uiTamBloque = 1024 * 5; //5 KB
 	u64 uTamArchivo = GetFileSize(cPath.c_str());
 	u64 uBytesEnviados = 0;
 
@@ -240,7 +239,6 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID) {
 
 			int iEnviado = cCliente->cSend(cCliente->sckSocket, nSendBuffer.data(), iTotal, 0, true, nullptr);
 			uBytesEnviados += iEnviado;
-			Sleep(10);
 
 			if (iEnviado == -1 || iEnviado == WSAECONNRESET) {
 				//No se pudo enviar el paquete

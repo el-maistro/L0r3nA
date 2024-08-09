@@ -137,7 +137,7 @@ void frameRemoteDesktop::OnDrawBuffer(const char* cBuffer, int iBuffersize) {
 		//wxIMAGE_QUALITY_HIGH   best quality
 		int x = this->GetSize().GetWidth()- 30;
 		int y = this->GetSize().GetHeight() - 90;
-		img.Rescale(x, y, this->quality_options->GetValue() == "KK" ? wxIMAGE_QUALITY_FAST : wxIMAGE_QUALITY_HIGH);
+		img.Rescale(x, y, this->quality_options->GetValue() == "KK" ? wxIMAGE_QUALITY_NORMAL : wxIMAGE_QUALITY_HIGH);
 		if (img.IsOk()) {
 			wxBitmap bmp_Obj(img);
 			

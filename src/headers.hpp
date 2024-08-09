@@ -29,6 +29,7 @@
 #include<wx/stattext.h>
 #include<wx/radiobox.h>
 #include<wx/sizer.h>
+#include<wx/image.h>
 #include<wx/wxhtml.h>
 #include<wx/aui/aui.h>
 #include<winsqlite/winsqlite3.h>
@@ -40,6 +41,7 @@
 #include<atomic>
 #include<thread>
 #include<map>
+#include<unordered_map> 
 #include<random>
 #include<fcntl.h>
 #include<fstream>
@@ -86,6 +88,8 @@ namespace EnumIDS {
         ID_MAIN = 100,
         ID_LimpiarLog,
         ID_Interactuar,
+        ID_CerrarProceso,
+        ID_ReiniciarCliente,
         ID_Refrescar,
         ID_FrameClienteTest,
         ID_Main_List,

@@ -114,7 +114,11 @@ void Cliente_Handler::Command_Handler(){
 
         //Agregar datos al queue
         std::unique_lock<std::mutex> lock(this->mt_Queue);
-        this->queue_Comandos.push(cBuffer);
+        std::vector<char> nBuffer(iTempRecibido+1);
+        std::memcpy(nBuffer.data(), cBuffer.data(), iTempRecibido+1);
+        //nBuffer[iTempRecibido] = '\0';
+
+        this->queue_Comandos.push(nBuffer);
     }
 
     this->Log("Done");
@@ -131,13 +135,16 @@ void Cliente_Handler::Process_Queue() {
 
         if (!this->isfRunning() && iTotal == 0) {break;}
 
-        lock.lock();
         if (iTotal > 0) {
-            this->Process_Command(this->queue_Comandos.front()); //Procesar comando
+            //Copiar el buffer para liberar el lock y seguir agregando tareas
+            lock.lock();
+            std::vector<char> nTemp = this->queue_Comandos.front();
             this->queue_Comandos.pop(); //Elminar del queue
+            lock.unlock();
+
+            this->Process_Command(nTemp); //Procesar comando
         }
-        lock.unlock();
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 }
 
@@ -150,30 +157,6 @@ void Cliente_Handler::Process_Command(std::vector<char>& cBuffer) {
     int iRecibido = cBuffer.size();
     int iHeadSize = vcDatos[0].size() + 1;
     int iComando = atoi(vcDatos[0].c_str());
-
-    //Prioridad para descarga de archivos
-    if (iComando == EnumComandos::FM_Descargar_Archivo_Recibir) {
-        vcDatos = strSplit(std::string(cBuffer.data()), CMD_DEL, 2);
-        if (vcDatos.size() == 2) {
-            // CMD + 2 slashs /  +len del id
-            int iHeader = 5 + vcDatos[1].size();
-            int iBytesSize = iRecibido - iHeader;
-            char* cBytes = cBuffer.data() + iHeader;
-            if (this->um_Archivos_Descarga[vcDatos[1]].ssOutFile.get()->is_open()) {
-                this->um_Archivos_Descarga[vcDatos[1]].ssOutFile.get()->write(cBytes, iBytesSize);
-                //fwrite(cBytes, sizeof(char), iBytesSize, fp);
-                //Por los momentos solo es necesario que el servidor almacene el progreso
-                //this->um_Archivos_Descarga[vcDatos[1]].uDescargado += iBytesSize;
-
-                std::unique_lock<std::mutex> lock(p_Servidor->p_transfers);
-                p_Servidor->vcTransferencias[vcDatos[1]].uDescargado += iBytesSize;
-            }
-            else {
-                this->Log("El archivo no esta abierto");
-            }
-        }
-        return;
-    }
 
     //Pquete inicial
     if (iComando == EnumComandos::INIT_PACKET) {
@@ -258,6 +241,31 @@ void Cliente_Handler::Process_Command(std::vector<char>& cBuffer) {
             lock.unlock();
 
             std::cout << "[ID-" << vcDatos[1] << "]Tam archivo: " << uTamArchivo << std::endl;
+        }
+        return;
+    }
+
+    //Paquete de archivo
+    if (iComando == EnumComandos::FM_Descargar_Archivo_Recibir) {
+        vcDatos = strSplit(std::string(cBuffer.data()), CMD_DEL, 2);
+        if (vcDatos.size() == 2) {
+            // CMD + 2 slashs /  +len del id
+            int iHeader = iHeadSize + vcDatos[1].size() + 1;
+            int iBytesSize = iRecibido - iHeader;
+            char* cBytes = cBuffer.data() + iHeader;
+            std::cout << "[DOWN] " << iBytesSize << '\n';
+            if (this->um_Archivos_Descarga[vcDatos[1]].ssOutFile.get()->is_open()) {
+                this->um_Archivos_Descarga[vcDatos[1]].ssOutFile.get()->write(cBytes, iBytesSize);
+                //fwrite(cBytes, sizeof(char), iBytesSize, fp);
+                //Por los momentos solo es necesario que el servidor almacene el progreso
+                //this->um_Archivos_Descarga[vcDatos[1]].uDescargado += iBytesSize;
+
+                std::unique_lock<std::mutex> lock(p_Servidor->p_transfers);
+                p_Servidor->vcTransferencias[vcDatos[1]].uDescargado += iBytesSize;
+            }
+            else {
+                this->Log("El archivo no esta abierto");
+            }
         }
         return;
     }
@@ -1095,6 +1103,12 @@ void MyListCtrl::ShowContextMenu(const wxPoint& pos, long item) {
 
     wxMenu menu;
     menu.Append(EnumIDS::ID_Interactuar, "Administrar");
+
+    wxMenu* subMenu1 = new wxMenu;
+    subMenu1->Append(EnumIDS::ID_CerrarProceso, "Matar proceso");
+    subMenu1->Append(EnumIDS::ID_ReiniciarCliente, "Reiniciar conexion");
+
+    menu.AppendSubMenu(subMenu1, "Cliente");
     menu.AppendSeparator();
     menu.Append(EnumIDS::ID_Refrescar, "Refrescar");
     
