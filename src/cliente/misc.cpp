@@ -189,12 +189,30 @@ bool Execute(const char *cCmdLine, int iOpt){
 	return false;
 }
 
-void DebugPrint(const std::string cMessage){
+void DebugPrint(const std::string strMsg) {
 #ifdef ___DEBUG_
-	error();
-	std::cout<<cMessage<<std::endl;
+	std::cout << strMsg << '\n';
 #endif
 }
+
+template<typename T>
+void DebugPrint(T t){
+#ifdef ___DEBUG_
+	//error();
+	std::cout << t << ' ';
+#endif
+}
+
+template<typename T, typename... Args>
+void DebugPrint(T t, Args... args) {
+#ifdef ___DEBUG_
+	std::cout << t << ' ';
+	DebugPrint(args...);
+	std::cout << '\n';
+#endif
+}
+
+
 
 bool EndProcess(int iPID) {
 	HANDLE hProc = OpenProcess(PROCESS_TERMINATE, false, iPID);

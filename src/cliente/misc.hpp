@@ -7,6 +7,13 @@ std::string strOS();
 std::vector<std::string> strSplit(const std::string& strString, char cDelimiter, int iMax);
 u64 GetFileSize(c_char* cPath);
 bool Execute(const char *cCmdLine, int iOpt);
-void DebugPrint(const std::string cMessage);
 bool EndProcess(int iPID);
 std::string strProcessList();
+
+void DebugPrint(const std::string strMsg);
+
+template<typename T>
+void DebugPrint(T t);
+
+template<typename T, typename... Args>
+void DebugPrint(T t, Args... args);
