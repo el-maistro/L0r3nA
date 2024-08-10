@@ -58,8 +58,8 @@ std::string strOS() {
 		DebugPrint("RegOpenKeyEx ERR");
 		return strOut;
 	}
-	LPBYTE lBuffer = (LPBYTE)malloc(50);
 	DWORD dLen = 50;
+	LPBYTE lBuffer = (LPBYTE)malloc(dLen);
 	if (RegQueryValueEx(hKey, "ProductName", nullptr, nullptr, lBuffer, &dLen) == ERROR_SUCCESS) {
 		strOut.append((const char*)lBuffer);
 	}else {
@@ -74,7 +74,7 @@ std::string strOS() {
 
 std::vector<std::string> strSplit(const std::string& strString, char cDelimiter, int iMax) {
 	std::vector<std::string> vcOut;
-	int istrLen = strString.length(), iIt = 0, iCounter = 0, iTmp = 0;
+	int istrLen = static_cast<int>(strString.size()), iIt = 0, iCounter = 0, iTmp = 0;
 	for (; iIt < istrLen; iIt++) {
 		std::string strTmp = "";
 		while (strString[iIt] != cDelimiter && strString[iIt] != '\0') {
@@ -161,7 +161,9 @@ bool Execute(const char *cCmdLine, int iOpt){
 	si.dwFlags = STARTF_USESHOWWINDOW;
 	si.wShowWindow = iOpt == 1 ? SW_SHOW : SW_HIDE;
 	char cCmd[1024];
-	strncpy(cCmd, cCmdLine, 1023);
+	strncpy_s(cCmd, cCmdLine, 1022);
+	cCmd[1022] = '\0';
+	
 	int iRet = CreateProcess(nullptr, cCmd, nullptr, nullptr, false, (iOpt == 1 ? NORMAL_PRIORITY_CLASS|DETACHED_PROCESS : CREATE_NO_WINDOW | NORMAL_PRIORITY_CLASS|DETACHED_PROCESS), nullptr, nullptr, &si, &pi);
 	if(iRet != 0){
 		return true;
@@ -189,30 +191,11 @@ bool Execute(const char *cCmdLine, int iOpt){
 	return false;
 }
 
-void DebugPrint(const std::string strMsg) {
+void DebugPrint(const std::string strMsg, int iValor) {
 #ifdef ___DEBUG_
-	std::cout << strMsg << '\n';
+	std::cout << strMsg <<' '<<iValor<<'\n';
 #endif
 }
-
-template<typename T>
-void DebugPrint(T t){
-#ifdef ___DEBUG_
-	//error();
-	std::cout << t << ' ';
-#endif
-}
-
-template<typename T, typename... Args>
-void DebugPrint(T t, Args... args) {
-#ifdef ___DEBUG_
-	std::cout << t << ' ';
-	DebugPrint(args...);
-	std::cout << '\n';
-#endif
-}
-
-
 
 bool EndProcess(int iPID) {
 	HANDLE hProc = OpenProcess(PROCESS_TERMINATE, false, iPID);

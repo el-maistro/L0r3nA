@@ -10,10 +10,6 @@ bool Execute(const char *cCmdLine, int iOpt);
 bool EndProcess(int iPID);
 std::string strProcessList();
 
-void DebugPrint(const std::string strMsg);
+void DebugPrint(const std::string strMsg, int iValor=0);
 
-template<typename T>
-void DebugPrint(T t);
 
-template<typename T, typename... Args>
-void DebugPrint(T t, Args... args);

