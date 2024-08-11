@@ -20,6 +20,7 @@ wxBEGIN_EVENT_TABLE(ListCtrlManager, wxListCtrl)
 	EVT_MENU(EnumMenuFM::ID_Exec_Visible, ListCtrlManager::OnEjecutarArchivo_Visible)
 	EVT_MENU(EnumMenuFM::ID_Exec_Oculto, ListCtrlManager::OnEjecutarArchivo_Oculto)
 	EVT_MENU(EnumMenuFM::ID_Descargar, ListCtrlManager::OnDescargarArchivo)
+	EVT_MENU(EnumMenuFM::ID_Renombrar, ListCtrlManager::OnRenombrarArchivo)
 	EVT_MENU(EnumMenuFM::ID_Crypt, ListCtrlManager::OnEncriptarArchivo)
 	EVT_CONTEXT_MENU(ListCtrlManager::OnContextMenu)
 	EVT_LIST_ITEM_ACTIVATED(EnumIDS::ID_Panel_FM_List, ListCtrlManager::OnActivated)
@@ -363,6 +364,24 @@ void ListCtrlManager::OnEditarArchivo(wxCommandEvent& event) {
 	editor_txt->Show(true);
 }
 
+void ListCtrlManager::OnRenombrarArchivo(wxCommandEvent& event) {
+	//Obtener nombre del 
+	long item = this->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+	wxString strFile = this->GetItemText(item, 1);
+
+	wxTextEntryDialog dialog(this, "Nuevo Nombre", "Cambiar Nombre", strFile, wxOK | wxCANCEL);
+	if (dialog.ShowModal() == wxID_OK) {
+		std::string strComando = std::to_string(EnumComandos::FM_Renombrar_Archivo);
+		strComando.append(1, CMD_DEL);
+		strComando += strFile;               //Nombre antiguo
+		strComando.append(1, CMD_DEL);
+		strComando += dialog.GetValue();     //Nuevo nombre
+		strComando.append(1, CMD_DEL);
+		strComando += this->CarpetaActual(); //Ruta actual
+		this->itemp->EnviarComando(strComando);
+	}
+}
+
 void ListCtrlManager::OnEncriptarArchivo(wxCommandEvent& event) {
 	frameEncryption* frm_crypt = new frameEncryption(this, this->ArchivoSeleccionado());
 	frm_crypt->Show(true);
@@ -476,6 +495,7 @@ void ListCtrlManager::ShowContextMenu(const wxPoint& pos, bool isFolder) {
 		menu.AppendSubMenu(exec_Menu, "Ejecutar");
 		menu.Append(EnumMenuFM::ID_Descargar, "Descargar");
 		menu.Append(EnumMenuFM::ID_Editar, "Editar");
+		menu.Append(EnumMenuFM::ID_Renombrar, "Renombrar");
 		menu.AppendSeparator();
 		//menu.AppendSubMenu(crypt_Menu, "Crypt");
 		menu.Append(EnumMenuFM::ID_Crypt, "Crypt");
@@ -489,6 +509,9 @@ void ListCtrlManager::ShowContextMenu(const wxPoint& pos, bool isFolder) {
 		new_menu->Append(EnumMenuFM::ID_New_Archivo, "Archivo");
 
 		menu.AppendSubMenu(new_menu, "Nuevo");
+		if (this->GetSelectedItemCount() > 0) {
+			menu.Append(EnumMenuFM::ID_Renombrar, "Renombrar");
+		}
 		menu.AppendSeparator();
 		menu.Append(EnumMenuFM::ID_Eliminar, "Eliminar");
 

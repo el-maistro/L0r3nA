@@ -314,7 +314,7 @@ void Cliente::Procesar_Comando(std::vector<char>& cBuffer) {
         return;
     }
 
-    if (iComando == EnumComandos::FM_Editar_Archivo_Guardar) {
+    if (iComando == EnumComandos::FM_Editar_Archivo_Guardar_Remoto) {
         strIn = strSplit(std::string(cBuffer.data()), CMD_DEL, 2);
         if (strIn.size() == 2) {
             int iHeader = iHeadSize + strIn[1].size() + 1;
@@ -329,6 +329,17 @@ void Cliente::Procesar_Comando(std::vector<char>& cBuffer) {
         strIn = strSplit(std::string(cBuffer.data()), CMD_DEL, 4);
         if (strIn.size() == 4) {
             Crypt_Archivo(strIn[2], strIn[1][0], strIn[1][1], strIn[3]);
+        }
+        return;
+    }
+
+    if (iComando == EnumComandos::FM_Renombrar_Archivo) {
+        strIn = strSplit(std::string(cBuffer.data()), CMD_DEL, 4);
+        if (strIn.size() == 4) {
+            //1 == nombre anterior -  2 == nuevo - 3 == ruta
+            std::string strAntiguo = strIn[3] + strIn[1];
+            std::string strNuevo = strIn[3] + strIn[2];
+            RenombrarArchivo(strAntiguo.c_str(), strNuevo.c_str());
         }
         return;
     }
@@ -718,7 +729,7 @@ void Cliente::MainLoop() {
 
     }
 
-    this->m_Stop();
+    //this->m_Stop();
     if (this->p_thQueue.joinable()) {
         this->p_thQueue.join();
     }

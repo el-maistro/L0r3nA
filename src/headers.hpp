@@ -152,6 +152,7 @@ namespace EnumMenuFM {
         ID_Decrypt,
         ID_New_Folder,
         ID_New_Archivo,
+        ID_Renombrar
     };
 }
 
@@ -169,6 +170,7 @@ namespace EnumComandos {
         Mic_Iniciar_Escucha,
         Mic_Detener_Escucha,
         Mic_Live_Packet,
+        Mic_Stop,
         FM_Discos,
         FM_Discos_Lista,
         FM_Dir_Folder,
@@ -177,14 +179,16 @@ namespace EnumComandos {
         FM_Crear_Archivo,
         FM_Borrar_Archivo,
         FM_Descargar_Archivo,
-        FM_Descargar_Archivo_Recibir, //Recibir paquete del cliente
-        FM_Descargar_Archivo_Init, //Recibir el tamaño del archivo
-        FM_Descargar_Archivo_End, //Ya se recibio todo, cerrar archivo
+        FM_Descargar_Archivo_Recibir, 
+        FM_Descargar_Archivo_Init, 
+        FM_Descargar_Archivo_End,
         FM_Ejecutar_Archivo,
         FM_Editar_Archivo,
         FM_Editar_Archivo_Paquete,
         FM_Editar_Archivo_Guardar_Remoto,
+        FM_Renombrar_Archivo,
         FM_Crypt_Archivo,
+        FM_Crypt_Confirm,
         PM_Refrescar,
         PM_Kill,
         PM_Lista,
@@ -197,8 +201,6 @@ namespace EnumComandos {
         CM_Single_Salida,
         CM_Live_Start,
         CM_Live_Stop,
-        FM_Crypt_Confirm,
-        Mic_Stop,
         RD_Single,
         RD_Start,
         RD_Stop,

@@ -159,8 +159,12 @@ void BorrarArchivo(c_char* cPath) {
 	DeleteFile(static_cast<LPCSTR>(cPath));
 }
 
-void RenombrarArchivo(c_char* cPath, c_char* cNuevoNombre){
-	MoveFile(static_cast<LPCSTR>(cPath), static_cast<LPCSTR>(cNuevoNombre));
+void RenombrarArchivo(c_char* cPath, c_char* cNuevoNombre) {
+	if (!MoveFile(static_cast<LPCSTR>(cPath), static_cast<LPCSTR>(cNuevoNombre))) {
+		error();
+		DebugPrint("Error renombrando archivo");
+		DebugPrint(std::string(cPath) + "|" + std::string(cNuevoNombre));
+	}
 }
 
 void BorrarFolder(c_char* cPath) {
