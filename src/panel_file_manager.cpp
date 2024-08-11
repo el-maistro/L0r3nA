@@ -165,7 +165,7 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 		return;
 	}
 
-	u_int uiTamBloque = 1024 * 70; //70 KB
+	u_int uiTamBloque = 1024 * 5; //5 KB
 	u64 uTamArchivo = GetFileSize(lPath.c_str());
 	u64 uBytesEnviados = 0;
 
@@ -193,32 +193,25 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 	//Calcular tamaño header
 	std::string strHeader = std::to_string(EnumComandos::FM_Descargar_Archivo_Recibir);
 	strHeader.append(1, CMD_DEL);
-
 	int iHeaderSize = strHeader.size();
 		
-	char* cBufferArchivo = new char[uiTamBloque];
-	int iBytesLeidos = 0;
+	std::vector<char> cBufferArchivo(uiTamBloque);
+	int iBytesLeidos = 0;;
 
 	while (1) {
-		localFile.read(cBufferArchivo, uiTamBloque);
+		localFile.read(cBufferArchivo.data(), uiTamBloque);
 		iBytesLeidos = localFile.gcount();
 		if (iBytesLeidos > 0) {
 			int iTotal = iBytesLeidos + iHeaderSize;
-			char* nTempBuffer = new char[iTotal];
-
-			memcpy(nTempBuffer, strHeader.c_str(), iHeaderSize);
-			memcpy(nTempBuffer + iHeaderSize, cBufferArchivo, iBytesLeidos);
+			std::vector<char> nTempBuffer(iTotal);
+			
+			memcpy(nTempBuffer.data(), strHeader.c_str(), iHeaderSize);
+			memcpy(nTempBuffer.data() + iHeaderSize, cBufferArchivo.data(), iBytesLeidos);
 
 			//Implementar otro metodo para verificar el id antes de enviar
-			uBytesEnviados += p_Servidor->cSend(this->sckCliente, nTempBuffer, iTotal, 0, true);
+			uBytesEnviados += p_Servidor->cSend(this->sckCliente, nTempBuffer.data(), iTotal, 0, true);
 			std::unique_lock<std::mutex> lock(p_Servidor->p_transfers);
 			p_Servidor->vcTransferencias[strCliente].uDescargado += iBytesLeidos;
-			lock.unlock();
-			
-			if (nTempBuffer) {
-				delete[] nTempBuffer;
-				nTempBuffer = nullptr;
-			}
 		}else {
 			break;
 		}
@@ -231,11 +224,6 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 	std::string strComandoCerrar = std::to_string(EnumComandos::FM_Descargar_Archivo_End);
 	strComandoCerrar.append(1, CMD_DEL);
 	p_Servidor->cSend(this->sckCliente, strComandoCerrar.c_str(), strComandoCerrar.size(), 0, true);
-
-	if (cBufferArchivo) {
-		delete[] cBufferArchivo;
-		cBufferArchivo = nullptr;
-	}
 	
 }
 

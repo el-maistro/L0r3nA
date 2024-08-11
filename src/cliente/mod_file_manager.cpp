@@ -222,15 +222,13 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID) {
 	int iHeaderSize = strHeader.size();
 	int iBytesLeidos = 0;
 
-	std::shared_ptr<char[]> cBufferArchivo(new char[uiTamBloque]);
-	if (!cBufferArchivo) {
+	std::vector<char> cBufferArchivo(uiTamBloque);
+	if (cBufferArchivo.size() == 0) {
 		DebugPrint("[FM]No se pudo reservar memoria para enviar el archivo");
 		return;
 	}
 
 	std::vector<char> nSendBuffer(uiTamBloque + iHeaderSize);
-	//std::unique_ptr<char[]> nSendbuffer = std::make_unique<char[]>(uiTamBloque + iHeaderSize);
-	//if (!nSendbuffer) {
 	if (nSendBuffer.size() == 0) {
 		DebugPrint("[FM]No se pudo reservar memoria para enviar el archivo - 2");
 		return;
@@ -239,11 +237,11 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID) {
 	memcpy(nSendBuffer.data(), strHeader.c_str(), iHeaderSize);
 
 	while (1) {
-		localFile.read(cBufferArchivo.get(), uiTamBloque);
+		localFile.read(cBufferArchivo.data(), uiTamBloque);
 		iBytesLeidos = localFile.gcount();
 		if (iBytesLeidos > 0) {
 			int iTotal = iBytesLeidos + iHeaderSize;
-			memcpy(nSendBuffer.data() + iHeaderSize, cBufferArchivo.get(), iBytesLeidos);
+			memcpy(nSendBuffer.data() + iHeaderSize, cBufferArchivo.data(), iBytesLeidos);
 
 			int iEnviado = cCliente->cSend(cCliente->sckSocket, nSendBuffer.data(), iTotal, 0, true, nullptr);
 			uBytesEnviados += iEnviado;

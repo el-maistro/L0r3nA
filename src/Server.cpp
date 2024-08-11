@@ -256,7 +256,6 @@ void Cliente_Handler::Process_Command(std::vector<char>& cBuffer) {
             std::cout << "[DOWN] " << iBytesSize << '\n';
             if (this->um_Archivos_Descarga[vcDatos[1]].ssOutFile.get()->is_open()) {
                 this->um_Archivos_Descarga[vcDatos[1]].ssOutFile.get()->write(cBytes, iBytesSize);
-                //fwrite(cBytes, sizeof(char), iBytesSize, fp);
                 //Por los momentos solo es necesario que el servidor almacene el progreso
                 //this->um_Archivos_Descarga[vcDatos[1]].uDescargado += iBytesSize;
 
@@ -906,7 +905,7 @@ int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, 
     // 0 block
 
     //Tamaño del buffer + cabecera
-    int iDataSize = pLen + 2;
+    unsigned long iDataSize = pLen + 2;
 
     std::unique_ptr<char[]> new_Buffer = std::make_unique<char[]>(iDataSize);
     if (!new_Buffer) {
@@ -988,7 +987,7 @@ int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, 
     return iEnviado;
 }
 
-int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool isBlock, DWORD* error_code) {
+int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, unsigned long pLen, int pFlags, bool isBlock, DWORD* error_code) {
     
     // 1 non block
     // 0 block
@@ -1115,8 +1114,7 @@ void MyListCtrl::ShowContextMenu(const wxPoint& pos, long item) {
     PopupMenu(&menu, pos.x, pos.y);
 }
 
-void MyListCtrl::OnContextMenu(wxContextMenuEvent& event)
-{
+void MyListCtrl::OnContextMenu(wxContextMenuEvent& event){
     if (GetEditControl() == NULL)
     {
         wxPoint point = event.GetPosition();
@@ -1156,9 +1154,13 @@ void MyListCtrl::OnContextMenu(wxContextMenuEvent& event)
 }
 
 void MyListCtrl::OnInteractuar(wxCommandEvent& event) {
-    std::vector<std::string> vcOut = strSplit(strTmp.ToStdString(), '/', 2);
-
-    std::unique_lock<std::mutex> lock(vector_mutex);
+    std::vector<std::string> vcOut = strSplit(strTmp.ToStdString(), '/', 1);
+    int iCliIndex = p_Servidor->IndexOf(vcOut[0]);
+    
+    if (iCliIndex != -1) {
+        p_Servidor->vc_Clientes[iCliIndex]->CrearFrame(this->strTmp.ToStdString(), vcOut[0]);
+    }
+    /*std::unique_lock<std::mutex> lock(vector_mutex);
     for (std::vector<Cliente_Handler*>::iterator it = p_Servidor->vc_Clientes.begin(); it != p_Servidor->vc_Clientes.end(); it++) {
         if ((*it)->p_Cliente._id == vcOut[0]) {
             lock.unlock();
@@ -1168,7 +1170,7 @@ void MyListCtrl::OnInteractuar(wxCommandEvent& event) {
             lock.lock();
             break;
         }
-    }
+    }*/
 }
 
 void MyListCtrl::OnActivated(wxListEvent& event) {
@@ -1197,5 +1199,18 @@ void MyListCtrl::OnRefrescar(wxCommandEvent& event) {
 
     for (auto& cliente : p_Servidor->vc_Clientes) {
         p_Servidor->m_InsertarCliente(cliente->p_Cliente);
+    }
+}
+
+void MyListCtrl::OnMatarProceso(wxCommandEvent& event) {
+    std::vector<std::string> vcOut = strSplit(this->strTmp.ToStdString(), '/', 1);
+    int iCliIndex = p_Servidor->IndexOf(vcOut[0]);
+    if (iCliIndex != -1) {
+        std::string strComando = std::to_string(EnumComandos::CLI_STOP);
+        strComando.append(1, CMD_DEL);
+        strComando.append(1, '0');
+
+        p_Servidor->cSend(p_Servidor->vc_Clientes[iCliIndex]->p_Cliente._sckCliente, strComando.c_str(), strComando.size(), 0, true);
+        p_Servidor->m_CerrarConexion(p_Servidor->vc_Clientes[iCliIndex]->p_Cliente._sckCliente);
     }
 }

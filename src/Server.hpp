@@ -68,6 +68,7 @@ public:
     void ShowContextMenu(const wxPoint& pos, long item);
     void OnContextMenu(wxContextMenuEvent& event);
     void OnInteractuar(wxCommandEvent& event);
+    void OnMatarProceso(wxCommandEvent& event);
     void OnRefrescar(wxCommandEvent& event);
     void OnActivated(wxListEvent& event);
 
@@ -218,8 +219,7 @@ class Servidor{
 
         //Socket wraps
         int cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock = false);
-        //int cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool isBlock = false);
-        int cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool isBlock, DWORD* err_code);
+        int cRecv(SOCKET& pSocket, char* pBuffer, unsigned long pLen, int pFlags, bool isBlock, DWORD* err_code);
         
 
         //AES 256

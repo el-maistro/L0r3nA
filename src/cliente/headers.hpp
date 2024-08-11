@@ -51,7 +51,9 @@ typedef unsigned long long int u64;
 
 namespace EnumComandos {
     enum Enum {
-        INIT_PACKET = 498,
+        CLI_RESTART = 496,
+        CLI_STOP,
+        INIT_PACKET,
         PONG,
         PING,
         Reverse_Shell_Start,

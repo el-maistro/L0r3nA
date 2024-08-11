@@ -33,6 +33,7 @@ wxBEGIN_EVENT_TABLE(MyListCtrl, wxListCtrl)
     EVT_CONTEXT_MENU(MyListCtrl::OnContextMenu)
     EVT_MENU(EnumIDS::ID_Interactuar, MyListCtrl::OnInteractuar)
     EVT_MENU(EnumIDS::ID_Refrescar, MyListCtrl::OnRefrescar)
+    EVT_MENU(EnumIDS::ID_CerrarProceso, MyListCtrl::OnMatarProceso)
     EVT_LIST_ITEM_ACTIVATED(EnumIDS::ID_Main_List, MyListCtrl::OnActivated)
 wxEND_EVENT_TABLE()
 

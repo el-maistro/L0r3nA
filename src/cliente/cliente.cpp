@@ -123,6 +123,10 @@ void Cliente::Process_Queue() {
             lock.unlock();
 
             this->Procesar_Comando(nTemp);
+        }else {
+            if (!this->m_isQueueRunning()) {
+                break;
+            }
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
@@ -146,16 +150,23 @@ void Cliente::Procesar_Comando(std::vector<char>& cBuffer) {
     if (iComando == EnumComandos::FM_Descargar_Archivo_Recibir) {
         // CMD + 1, resto son bytes
         char* cBytes = cBuffer.data() + iHeadSize;
-        if (this->fpArchivo != nullptr) {
-            int iEscrito = fwrite(cBytes, sizeof(char), iRecibido-iHeadSize, this->fpArchivo);
-            DebugPrint("[!] Escritos ",iEscrito);
+        if(this->ssArchivo.is_open()){
+        //if (this->fpArchivo != nullptr) {
+            //int iEscrito = fwrite(cBytes, sizeof(char), iRecibido-iHeadSize, this->fpArchivo);
+            //int iEscrito = this->ssArchivo.tellp();
+            this->ssArchivo.write(cBytes, iRecibido - iHeadSize);
+            //int iNewPos = this->ssArchivo.tellp();
+            //iEscrito = iNewPos - iEscrito;
+            //DebugPrint("[!] Escritos ",iEscrito);
         }
         return;
     }
 
     if (iComando == EnumComandos::FM_Descargar_Archivo_End) {
-        if (this->fpArchivo != nullptr) {
-            fclose(this->fpArchivo);
+        if(this->ssArchivo.is_open()){
+        //if (this->fpArchivo != nullptr) {
+            //fclose(this->fpArchivo);
+            this->ssArchivo.close();
         }
         DebugPrint("[!] Descarga completa");
         return;
@@ -165,7 +176,9 @@ void Cliente::Procesar_Comando(std::vector<char>& cBuffer) {
         strIn = strSplit(std::string(cBuffer.data()), CMD_DEL, 3);
         if (strIn.size() == 3) {
             DebugPrint("[!] Descargando archivo en ruta " + strIn[1], atoi(strIn[2].c_str()));
-            if ((this->fpArchivo = fopen(strIn[1].c_str(), "wb")) == nullptr) {
+            this->ssArchivo.open(strIn[1], std::ios::binary);
+            if(!this->ssArchivo.is_open()){
+            //if ((this->fpArchivo = fopen(strIn[1].c_str(), "wb")) == nullptr) {
                 DebugPrint("[X] No se pudo abrir el archivo " + strIn[1]);
             }
         }else {
@@ -182,6 +195,10 @@ void Cliente::Procesar_Comando(std::vector<char>& cBuffer) {
         return;
     }
 
+    if (iComando == EnumComandos::CLI_STOP) {
+        this->m_Stop();
+        return;
+    }
 
     //#####################################################
     //#####################################################
@@ -729,12 +746,14 @@ void Cliente::MainLoop() {
 
     }
 
-    //this->m_Stop();
+    this->m_StopQueue();
+    
     if (this->p_thQueue.joinable()) {
         this->p_thQueue.join();
     }
 
     this->DestroyClasses();
+
 }
 
 void Cliente::iniPacket() {

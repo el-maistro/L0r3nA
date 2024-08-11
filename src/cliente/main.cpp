@@ -9,8 +9,8 @@ int main(int argc, char** argv) {
 #else
 int WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, LPSTR /*lpCmdLine*/, int /*nShowCmd*/) {
 #endif
-	char* cHost = "127.0.0.1";
-	char* cPort = "31337";
+	const char* cHost = "127.0.0.1";
+	const char* cPort = "31337";
 	WSADATA wsa;
 	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
 		error();
@@ -19,7 +19,7 @@ int WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, LPSTR /*lpCmdL
 
 	cCliente = new Cliente();
 	
-	while (cCliente->isRunning) {
+	while (cCliente->m_isRunning()) {
 #ifdef ___DEBUG_
 		if (cCliente->bConectar(argc == 3 ? argv[1] : cHost, argc == 3 ? argv[2]: cPort)) {
 #else
@@ -27,11 +27,14 @@ int WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, LPSTR /*lpCmdL
 #endif
 			cCliente->iniPacket();
 			cCliente->MainLoop();
+
 		} else {
 			//no se pudo conectar
 			DebugPrint("No se pudo conectar el host");
 		}
-		std::this_thread::sleep_for(std::chrono::milliseconds(6000)); //Esperar 6 segundos para volver a intentar
+		if (cCliente->m_isRunning()) {
+			std::this_thread::sleep_for(std::chrono::milliseconds(6000)); //Esperar 6 segundos para volver a intentar
+		}
 	}
 
 	delete cCliente;
