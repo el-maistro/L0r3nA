@@ -211,7 +211,7 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID) {
 	strComando += std::to_string(uTamArchivo);
 	//Enviar confirmacion y tama�o de archivo
 	cCliente->cSend(cCliente->sckSocket, strComando.c_str(), strComando.size(), 0, true, nullptr);
-	Sleep(100);
+	std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
 	//Calcular tama�o header
 	std::string strHeader = std::to_string(EnumComandos::FM_Descargar_Archivo_Recibir);
@@ -258,7 +258,7 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID) {
 	localFile.close();
 
 	//Ya se envio todo, cerrar el archivo
-	Sleep(500);
+	std::this_thread::sleep_for(std::chrono::milliseconds(500));
 	std::string strComandoCerrar = std::to_string(EnumComandos::FM_Descargar_Archivo_End);
 	strComandoCerrar.append(1, CMD_DEL);
 	strComandoCerrar += cID;
@@ -281,25 +281,20 @@ void EditarArchivo(const std::string strPath, const std::string strID){
 	int iHeaderSize = strHeader.size();
 
 	int iBytesLeidos = 0;
-	int uiTamBloque = 4096;
-	char* cBufferArchivo = new char[uiTamBloque];
+	int uiTamBloque = 1024;
+	std::vector<char> cBufferArchivo(uiTamBloque);
 	while (1) {
-		localFile.read(cBufferArchivo, uiTamBloque);
+		localFile.read(cBufferArchivo.data(), uiTamBloque);
 		iBytesLeidos = localFile.gcount();
 		if (iBytesLeidos > 0) {
 			int iTotal = iBytesLeidos + iHeaderSize;
-			char* nTempBuffer = new char[iTotal];
+			std::vector<char> nTempBuffer(iTotal);
+			
+			memcpy(nTempBuffer.data(), strHeader.c_str(), iHeaderSize);
+			memcpy(nTempBuffer.data() + iHeaderSize, cBufferArchivo.data(), iBytesLeidos);
 
-			memcpy(nTempBuffer, strHeader.c_str(), iHeaderSize);
-			memcpy(nTempBuffer + iHeaderSize, cBufferArchivo, iBytesLeidos);
-
-			int iEnviado = cCliente->cSend(cCliente->sckSocket, nTempBuffer, iTotal, 0, true, nullptr);
-			Sleep(30);
-
-			if (nTempBuffer) {
-				delete[] nTempBuffer;
-				nTempBuffer = nullptr;
-			}
+			int iEnviado = cCliente->cSend(cCliente->sckSocket, nTempBuffer.data(), iTotal, 0, true, nullptr);
+			std::this_thread::sleep_for(std::chrono::milliseconds(30));
 
 			if(iEnviado == -1 || iEnviado == WSAECONNRESET){
 				//No se pudo enviar el paquete
@@ -311,11 +306,6 @@ void EditarArchivo(const std::string strPath, const std::string strID){
 	}
 
 	localFile.close();
-
-	if (cBufferArchivo) {
-		delete[] cBufferArchivo;
-		cBufferArchivo = nullptr;
-	}
 }
 
 void Crypt_Archivo(const std::string strPath, const char cCryptOption, const char cDelOption, const std::string strPass) {

@@ -320,7 +320,7 @@ void mod_RemoteDesktop::IniciarLive(int quality) {
             }
         }else {
             DebugPrint("Hubo un error creando el buffer. Esperando...");
-            Sleep(1000);
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
     }
 }

@@ -164,6 +164,6 @@ void frameRemoteDesktop::Onclose(wxCloseEvent&) {
 	strComando.append(1, CMD_DEL);
 	strComando.append(1, '0');
 	int iSent = p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
-	Sleep(1000);
+	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 	Destroy();
 }

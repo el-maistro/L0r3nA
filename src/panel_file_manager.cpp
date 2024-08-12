@@ -188,8 +188,8 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 	strComando += std::to_string(uTamArchivo);
 	//Enviar ruta remota y tamaño de archivo
 	p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, true);
-	Sleep(100);
-
+	std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	
 	//Calcular tamaño header
 	std::string strHeader = std::to_string(EnumComandos::FM_Descargar_Archivo_Recibir);
 	strHeader.append(1, CMD_DEL);
@@ -220,7 +220,8 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 	localFile.close();
 
 	//Ya se envio todo, cerrar el archivo
-	Sleep(500);
+	std::this_thread::sleep_for(std::chrono::milliseconds(500));
+	
 	std::string strComandoCerrar = std::to_string(EnumComandos::FM_Descargar_Archivo_End);
 	strComandoCerrar.append(1, CMD_DEL);
 	p_Servidor->cSend(this->sckCliente, strComandoCerrar.c_str(), strComandoCerrar.size(), 0, true);
@@ -427,7 +428,7 @@ void ListCtrlManager::OnActivated(wxListEvent& event) {
 			
 			itemp->Enable(false);
 
-			Sleep(100);
+			std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
 			itemp->EnviarComando(strCommand);
 			itemp->iMODE = FM_NORMAL;
@@ -454,7 +455,7 @@ void ListCtrlManager::OnActivated(wxListEvent& event) {
 
 					itemp->Enable(false); 
 
-					Sleep(100); 
+					std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
 					itemp->EnviarComando(strCommand);
 					

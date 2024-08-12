@@ -62,7 +62,8 @@ void Cliente_Handler::PlayBuffer(char* pBuffer, size_t iLen){
     }
 
     while (waveOutUnprepareHeader(this->wo, &header, sizeof(header)) == WAVERR_STILLPLAYING) {
-        Sleep(100); // Espera un poco antes de intentar nuevamente
+        // Espera un poco antes de intentar nuevamente
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 }
 
@@ -81,7 +82,7 @@ void Cliente_Handler::Command_Handler(){
         
         iTempRecibido = p_Servidor->cRecv(this->p_Cliente._sckCliente, cBuffer.data(), iBufferSize - 1, 0, true, &error_code);
         this->SetBytesRecibidos(iTempRecibido);
-
+        
         //timeout
         if (error_code == WSAETIMEDOUT) {
             continue;
@@ -96,17 +97,15 @@ void Cliente_Handler::Command_Handler(){
         /*Desconexion del cliente
         Si no recibio nada y el error no es timeout*/
         if(this->BytesRecibidos() == WSAECONNRESET) {
-            //Cambiar titulo de ventana si esta sigue abierta
-            FrameCliente* temp_cli = (FrameCliente*)wxWindow::FindWindowByName(this->p_Cliente._id);
-            if (temp_cli) {
-                temp_cli->SetTitle(this->p_Cliente._id + " [DESCONECTADO]");
-            }
-            std::unique_lock<std::mutex> lock(this->mt_Running);
             this->iRecibido = WSA_FUNADO;
             break;
         }
-
-        if (this->BytesRecibidos() <= 0) {
+        
+        if (this->BytesRecibidos() == 0 && error_code == 0) {
+            //Se cerro repentinamente
+            this->iRecibido = WSA_FUNADO;
+            break;
+        }else if (this->BytesRecibidos() <= 0) {
             continue;
         }
 
@@ -120,6 +119,12 @@ void Cliente_Handler::Command_Handler(){
 
         this->queue_Comandos.push(nBuffer);
     }
+
+    FrameCliente* temp_cli = (FrameCliente*)wxWindow::FindWindowByName(this->p_Cliente._id);
+    if (temp_cli) {
+        temp_cli->SetTitle(this->p_Cliente._id + " [DESCONECTADO]");
+    }
+    std::unique_lock<std::mutex> lock(this->mt_Running);
 
     this->Log("Done");
 
@@ -663,7 +668,7 @@ void Servidor::m_CleanVector() {
             break;
         }
     
-        Sleep(100);
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
         int iNumeroClientes = this->m_NumeroClientes(vector_mutex);
         if (iNumeroClientes == 0) {
             continue;
@@ -794,7 +799,7 @@ void Servidor::m_MonitorTransferencias() {
         }else {
             std::cout << "No se pudo encontrar el panel abierto" << std::endl;
         }
-        Sleep(1000);
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
     
 }
@@ -1160,17 +1165,6 @@ void MyListCtrl::OnInteractuar(wxCommandEvent& event) {
     if (iCliIndex != -1) {
         p_Servidor->vc_Clientes[iCliIndex]->CrearFrame(this->strTmp.ToStdString(), vcOut[0]);
     }
-    /*std::unique_lock<std::mutex> lock(vector_mutex);
-    for (std::vector<Cliente_Handler*>::iterator it = p_Servidor->vc_Clientes.begin(); it != p_Servidor->vc_Clientes.end(); it++) {
-        if ((*it)->p_Cliente._id == vcOut[0]) {
-            lock.unlock();
-
-            (*it)->CrearFrame(this->strTmp.ToStdString(), vcOut[0]);
-
-            lock.lock();
-            break;
-        }
-    }*/
 }
 
 void MyListCtrl::OnActivated(wxListEvent& event) {
