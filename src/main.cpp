@@ -146,7 +146,8 @@ void TransferFrame::OnClose(wxCloseEvent& event){
     std::unique_lock<std::mutex> lock(p_Servidor->p_transfers);
     p_Servidor->p_Transferencias = false;
     lock.unlock();
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    Sleep(500);
+    //std::this_thread::sleep_for(std::chrono::milliseconds(500));
     if (p_Servidor->thTransfers.joinable()) {
         p_Servidor->thTransfers.join();
     }
@@ -201,7 +202,8 @@ void MyFrame::OnToggle(wxCommandEvent& event) {
         SetTitle(strTitle);
         this->btn_toggle->SetLabelText("Iniciar Servidor");
     }
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    Sleep(500);
+    //std::this_thread::sleep_for(std::chrono::milliseconds(500));
 }
 
 void MyFrame::CrearControlesPanelIzquierdo(){

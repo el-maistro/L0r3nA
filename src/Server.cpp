@@ -95,36 +95,29 @@ void Cliente_Handler::Command_Handler(){
         //}
 
         /*Desconexion del cliente
-        Si no recibio nada y el error no es timeout*/
-        if(this->BytesRecibidos() == WSAECONNRESET) {
-            this->iRecibido = WSA_FUNADO;
-            break;
-        }
-        
-        if (this->BytesRecibidos() == 0 && error_code == 0) {
-            //Se cerro repentinamente
+        Si no recibio nada y el error no es timeout o se cerro repentinamente*/
+        if ((this->BytesRecibidos() == WSAECONNRESET) || (this->BytesRecibidos() == 0 && error_code == 0)) {
+            if (this->m_isFrameVisible()) {
+                this->n_Frame->SetTitle("DESCONECTADO...");
+            }
+            std::unique_lock<std::mutex> lock(this->mt_Running);
             this->iRecibido = WSA_FUNADO;
             break;
         }else if (this->BytesRecibidos() <= 0) {
             continue;
         }
 
-        cBuffer[this->BytesRecibidos()] = '\0';
-
+        
         //Agregar datos al queue
+        cBuffer[iTempRecibido] = '\0';
         std::unique_lock<std::mutex> lock(this->mt_Queue);
         std::vector<char> nBuffer(iTempRecibido+1);
         std::memcpy(nBuffer.data(), cBuffer.data(), iTempRecibido+1);
-        //nBuffer[iTempRecibido] = '\0';
-
+        
         this->queue_Comandos.push(nBuffer);
     }
 
-    FrameCliente* temp_cli = (FrameCliente*)wxWindow::FindWindowByName(this->p_Cliente._id);
-    if (temp_cli) {
-        temp_cli->SetTitle(this->p_Cliente._id + " [DESCONECTADO]");
-    }
-    std::unique_lock<std::mutex> lock(this->mt_Running);
+    
 
     this->Log("Done");
 
@@ -256,9 +249,9 @@ void Cliente_Handler::Process_Command(std::vector<char>& cBuffer) {
         if (vcDatos.size() == 2) {
             // CMD + 2 slashs /  +len del id
             int iHeader = iHeadSize + vcDatos[1].size() + 1;
-            int iBytesSize = iRecibido - iHeader;
+            int iBytesSize = iRecibido - iHeader - 1;
             char* cBytes = cBuffer.data() + iHeader;
-            std::cout << "[DOWN] " << iBytesSize << '\n';
+            std::cout << "[DOWN] " << iBytesSize << " TOTAL: "<<iRecibido<< '\n';
             if (this->um_Archivos_Descarga[vcDatos[1]].ssOutFile.get()->is_open()) {
                 this->um_Archivos_Descarga[vcDatos[1]].ssOutFile.get()->write(cBytes, iBytesSize);
                 //Por los momentos solo es necesario que el servidor almacene el progreso
@@ -702,70 +695,6 @@ void Servidor::m_CleanVector() {
 
     this->vc_Clientes.clear();
 }
-
-/*
-void Servidor::m_Ping(){
-    this->m_txtLog->LogThis("Thread PING iniciada", LogType::LogMessage);
-    
-    while(this->p_Escuchando){
-        //Si no hay clientes seguir en el loop para cerrar thread mas rapido
-        std::unique_lock<std::mutex> lock(this->count_mutex);
-        if (this->iCount <= 0) {
-            lock.unlock();
-            Sleep(100);
-            continue;
-        }
-        lock.unlock();
-        
-        std::unique_lock<std::mutex> lock2(vector_mutex);
-        
-        for(auto it = this->um_Clientes.begin(); it != this->um_Clientes.end();){
-            if ((time(0) - it->second._ttUltimaVez) <= PING_TIME) {
-                    ++it;
-                    continue;
-            } else {
-                if (!it->second._isBusy) {
-                    //Si no esta activo enviar el ping
-                    std::string strData = std::to_string(EnumComandos::PING);
-                    strData.append(1, CMD_DEL);
-                    int iBytes = this->cSend(it->second._sckCliente, strData.c_str(), strData.size(), 0, false);
-                    if (iBytes <= 0) {
-                        //No se pudo enviar el ping
-                        std::string strTmp = "Cliente " + it->second._strIp + "-" + it->second._id + " desconectado";
-                        this->m_txtLog->LogThis(strTmp, LogType::LogMessage);
-
-                        FrameCliente* temp = (FrameCliente*)wxWindow::FindWindowByName(it->second._id);
-                        if (temp) {
-                            wxString strTmp = it->second._id;
-                            strTmp.append(1, '>');
-                            strTmp += " desconectado";
-                            temp->SetTitle(strTmp);
-                        } else {
-                            std::cout << "No se pudo encontrar el objeto\n";
-                        }
-
-                        this->m_RemoverClienteLista(it->second._id);
-                        //Remover aqui del mapa, mover uno antes de moverlo
-                        auto nIT = it;
-                        ++it;
-                        this->um_Clientes.erase(nIT);
-
-                        std::unique_lock<std::mutex> lock3(this->count_mutex);
-                        this->iCount--;
-                        lock3.unlock();
-                    } else {
-                        it->second._ttUltimaVez = time(0);
-                        ++it;
-                    }
-                } else {
-                    ++it;
-                }
-            }
-        }
-        lock2.unlock(); //desbloquear vector
-    }
-}
-*/
 
 void Servidor::m_MonitorTransferencias() {
     while (true){

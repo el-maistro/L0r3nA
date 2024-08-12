@@ -194,22 +194,34 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 	std::string strHeader = std::to_string(EnumComandos::FM_Descargar_Archivo_Recibir);
 	strHeader.append(1, CMD_DEL);
 	int iHeaderSize = strHeader.size();
-		
-	std::vector<char> cBufferArchivo(uiTamBloque);
 	int iBytesLeidos = 0;;
+
+	std::vector<char> cBufferArchivo(uiTamBloque);
+	if (cBufferArchivo.size() == 0) {
+		std::cout << "No se pudo reservar memoria para enviar el archivo...\n";
+		return;
+	}
+
+	std::vector<char> nSendBuffer(uiTamBloque + iHeaderSize);
+	if (nSendBuffer.size() == 0) {
+		std::cout << "No se pudo reservar memoria para enviar el archivo...\n";
+		return;
+	}
+	memcpy(nSendBuffer.data(), strHeader.c_str(), iHeaderSize);
 
 	while (1) {
 		localFile.read(cBufferArchivo.data(), uiTamBloque);
 		iBytesLeidos = localFile.gcount();
 		if (iBytesLeidos > 0) {
 			int iTotal = iBytesLeidos + iHeaderSize;
-			std::vector<char> nTempBuffer(iTotal);
-			
-			memcpy(nTempBuffer.data(), strHeader.c_str(), iHeaderSize);
-			memcpy(nTempBuffer.data() + iHeaderSize, cBufferArchivo.data(), iBytesLeidos);
+			memcpy(nSendBuffer.data() + iHeaderSize, cBufferArchivo.data(), iBytesLeidos);
 
-			//Implementar otro metodo para verificar el id antes de enviar
-			uBytesEnviados += p_Servidor->cSend(this->sckCliente, nTempBuffer.data(), iTotal, 0, true);
+			int iEnviado = p_Servidor->cSend(this->sckCliente, nSendBuffer.data(), iTotal, 0, true);
+			uBytesEnviados += iEnviado;
+			if (iEnviado == -1 || iEnviado == WSAECONNRESET) {
+				break;
+			}
+			std::this_thread::sleep_for(std::chrono::milliseconds(20));
 			std::unique_lock<std::mutex> lock(p_Servidor->p_transfers);
 			p_Servidor->vcTransferencias[strCliente].uDescargado += iBytesLeidos;
 		}else {

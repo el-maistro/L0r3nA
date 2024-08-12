@@ -242,7 +242,7 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID) {
 		if (iBytesLeidos > 0) {
 			int iTotal = iBytesLeidos + iHeaderSize;
 			memcpy(nSendBuffer.data() + iHeaderSize, cBufferArchivo.data(), iBytesLeidos);
-
+			
 			int iEnviado = cCliente->cSend(cCliente->sckSocket, nSendBuffer.data(), iTotal, 0, true, nullptr);
 			uBytesEnviados += iEnviado;
 

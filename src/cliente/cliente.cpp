@@ -150,14 +150,19 @@ void Cliente::Procesar_Comando(std::vector<char>& cBuffer) {
     if (iComando == EnumComandos::FM_Descargar_Archivo_Recibir) {
         // CMD + 1, resto son bytes
         char* cBytes = cBuffer.data() + iHeadSize;
+        int iBytesSize = iRecibido - iHeadSize - 1;
         if(this->ssArchivo.is_open()){
+            DebugPrint("[FM] ", iBytesSize);
         //if (this->fpArchivo != nullptr) {
             //int iEscrito = fwrite(cBytes, sizeof(char), iRecibido-iHeadSize, this->fpArchivo);
             //int iEscrito = this->ssArchivo.tellp();
-            this->ssArchivo.write(cBytes, iRecibido - iHeadSize);
+            this->ssArchivo.write(cBytes, iBytesSize);
             //int iNewPos = this->ssArchivo.tellp();
             //iEscrito = iNewPos - iEscrito;
             //DebugPrint("[!] Escritos ",iEscrito);
+        }
+        else {
+            DebugPrint("No esta abierto :v");
         }
         return;
     }
@@ -739,8 +744,9 @@ void Cliente::MainLoop() {
             
             cBuffer[iRecibido] = '\0';
             std::unique_lock<std::mutex> lock(this->mtx_queue);
-            std::vector<char> nBuffer(iRecibido + 1);
-            std::memcpy(nBuffer.data(), cBuffer.data(), iRecibido + 1);
+            std::vector<char> nBuffer(iRecibido+1);
+            std::memcpy(nBuffer.data(), cBuffer.data(), iRecibido+1);
+
             this->queue_Comandos.push(nBuffer);
         }
 
