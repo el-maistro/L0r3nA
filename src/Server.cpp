@@ -141,9 +141,19 @@ void Cliente_Handler::Process_Queue() {
             lock.unlock();
 
             this->Process_Command(nTemp); //Procesar comando
+        }else {
+            if (!this->m_isQueueRunning()) {
+                break;
+            }
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
+
+    std::unique_lock<std::mutex> lock(this->mt_Queue);
+    while (this->queue_Comandos.size() > 0) {
+        this->queue_Comandos.pop();
+    }
+    lock.unlock();
 }
 
 void Cliente_Handler::Process_Command(std::vector<char>& cBuffer) {
@@ -532,7 +542,7 @@ void Servidor::Init_Key() {
 }
 
 Servidor::Servidor(){
-    this->uiPuertoLocal = 31337;
+    this->uiPuertoLocal = 65500;
 
     //clase para logear
     this->m_txtLog = DBG_NEW MyLogClass();
@@ -554,7 +564,7 @@ bool Servidor::m_Iniciar(){
     }
 
     int iTemp = 1;
-    if(setsockopt(this->sckSocket, SOL_SOCKET, SO_REUSEADDR, (const char*)&iTemp, sizeof(int)) < 0){
+    if(setsockopt(this->sckSocket, SOL_SOCKET, SO_REUSEADDR, (const char*)&iTemp, sizeof(iTemp)) < 0){
         this->m_txtLog->LogThis("Error configurando el socket SO_REUSEADDR", LogType::LogError);
         return false;
     }
@@ -568,8 +578,7 @@ bool Servidor::m_Iniciar(){
 
     this->structServer.sin_family        =                    AF_INET;
     this->structServer.sin_port          = htons(this->uiPuertoLocal);
-    this->structServer.sin_addr.s_addr =                 INADDR_ANY;
-
+    this->structServer.sin_addr.s_addr   =                 INADDR_ANY;
     if(bind(this->sckSocket, (struct sockaddr *)&this->structServer, sizeof(struct sockaddr)) == -1){
         this->m_txtLog->LogThis("Error configurando el socket BIND", LogType::LogError);
         return false;

@@ -42,6 +42,8 @@ void Cliente::DestroyClasses() {
         delete this->mod_Cam;
         this->mod_Cam = nullptr;
     }
+
+    DebugPrint("[DC] Clases destruidas");
 }
 
 Cliente::Cliente() {
@@ -108,6 +110,7 @@ void Cliente::Spawn_QueueMan() {
 }
 
 void Cliente::Process_Queue() {
+    DebugPrint("[PQ] Inicio");
     while (true) {
         int iTotal = 0;
         std::unique_lock<std::mutex> lock(this->mtx_queue);
@@ -121,7 +124,7 @@ void Cliente::Process_Queue() {
             std::vector<char> nTemp = this->queue_Comandos.front();
             this->queue_Comandos.pop();
             lock.unlock();
-
+            DebugPrint("[PQ] Procesando comando...");
             this->Procesar_Comando(nTemp);
         }else {
             if (!this->m_isQueueRunning()) {
@@ -130,6 +133,14 @@ void Cliente::Process_Queue() {
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
+    std::unique_lock<std::mutex> lock(this->mtx_queue);
+    //Limpiar queue de tareas
+    while (this->queue_Comandos.size() > 0) {
+        this->queue_Comandos.pop();
+    }
+    lock.unlock();
+
+    DebugPrint("[PQ] Done");
 }
 
 void Cliente::Procesar_Comando(std::vector<char>& cBuffer) {
@@ -153,15 +164,8 @@ void Cliente::Procesar_Comando(std::vector<char>& cBuffer) {
         int iBytesSize = iRecibido - iHeadSize - 1;
         if(this->ssArchivo.is_open()){
             DebugPrint("[FM] ", iBytesSize);
-        //if (this->fpArchivo != nullptr) {
-            //int iEscrito = fwrite(cBytes, sizeof(char), iRecibido-iHeadSize, this->fpArchivo);
-            //int iEscrito = this->ssArchivo.tellp();
             this->ssArchivo.write(cBytes, iBytesSize);
-            //int iNewPos = this->ssArchivo.tellp();
-            //iEscrito = iNewPos - iEscrito;
-            //DebugPrint("[!] Escritos ",iEscrito);
-        }
-        else {
+        } else {
             DebugPrint("No esta abierto :v");
         }
         return;
@@ -710,7 +714,6 @@ void Cliente::Procesar_Comando(std::vector<char>& cBuffer) {
 //Loop principal
 void Cliente::MainLoop() {
     this->Spawn_QueueMan(); //spawn thread que lee el queue de los comandos
-
     DWORD error_code = 0;
     const int iBuffSize = 1024 * 100; //100 kb
     std::vector<char> cBuffer(iBuffSize);
@@ -718,11 +721,8 @@ void Cliente::MainLoop() {
         DebugPrint("[MAIN-LOOP] No se pudo reservar memoria para el buffer principal");
         return;
     }
-    while (true) {
-        if (!this->m_isRunning()) {
-            break;
-        }
-
+    while (this->m_isRunning()) {
+        
         int iRecibido = this->cRecv(this->sckSocket, cBuffer.data(), iBuffSize-1, 0, false, &error_code);
 
         if (iRecibido < 0 && error_code != WSAEWOULDBLOCK) {
@@ -748,13 +748,16 @@ void Cliente::MainLoop() {
             std::memcpy(nBuffer.data(), cBuffer.data(), iRecibido+1);
 
             this->queue_Comandos.push(nBuffer);
+            lock.unlock();
+
+            DebugPrint("[MLOOP] Nuevo comando agregado al queue");
         }
 
     }
 
-    this->m_StopQueue();
     
     if (this->p_thQueue.joinable()) {
+        this->m_StopQueue();
         this->p_thQueue.join();
     }
 
@@ -780,9 +783,9 @@ void Cliente::iniPacket() {
 }
 
 int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock, DWORD* err_code) {
-    
     // 1 non block
     // 0 block
+    
     std::unique_lock<std::mutex> lock(this->sck_mutex);
 
     //Tamaño del buffer

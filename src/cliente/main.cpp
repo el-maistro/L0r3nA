@@ -10,7 +10,7 @@ int main(int argc, char** argv) {
 int WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, LPSTR /*lpCmdLine*/, int /*nShowCmd*/) {
 #endif
 	const char* cHost = "127.0.0.1";
-	const char* cPort = "31337";
+	const char* cPort = "65500";
 	WSADATA wsa;
 	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
 		error();

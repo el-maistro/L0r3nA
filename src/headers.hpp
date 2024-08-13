@@ -52,6 +52,7 @@
 #include<cstring>
 #include<ctime>
 #include<mmsystem.h>
+#include<errno.h>
 
 #include<iomanip>
 #include<exception>

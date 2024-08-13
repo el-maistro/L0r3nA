@@ -82,6 +82,7 @@ class Cliente_Handler {
         HWAVEOUT wo;
         int iRecibido = 0;
         bool isFrameVisible = false;
+        bool isQueueRunning = true;
         std::thread p_thHilo;
         std::thread p_thQueue;
         
@@ -145,12 +146,23 @@ class Cliente_Handler {
             return bFlag;
         }
 
+        bool m_isQueueRunning() {
+            std::unique_lock<std::mutex> lock(mt_Queue);
+            return isQueueRunning;
+        }
+
+        void m_StopQueue() {
+            std::unique_lock<std::mutex> lock(mt_Queue);
+            isQueueRunning = false;
+        }
+
         void JoinThread() {
             if (p_thHilo.joinable()) {
                 Stop();
                 p_thHilo.join();
             }
             if (p_thQueue.joinable()) {
+                m_StopQueue();
                 p_thQueue.join();
             }
         }
