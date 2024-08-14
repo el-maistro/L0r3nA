@@ -55,16 +55,15 @@ void frameEncryption::Exec_SQL(const char* cCMD) {
 	if (sqlite3_open(DB_FILE, &db) != SQLITE_OK) {
 		std::cout << "[DBCRYPT] No se pudo abrir la bd :" << sqlite3_errmsg(db) << std::endl;
 		wxMessageBox("No se pudo abrir la base de datos");
-		sqlite3_close(db);
-		return;
+		goto dbRelease;
 	}
 
 	if (sqlite3_exec(db, cCMD, NULL, 0, &zErrMsg) != SQLITE_OK) {
 		wxMessageBox("Error: " + std::string(zErrMsg));
-		sqlite3_free(zErrMsg);
-		sqlite3_close(db);
-		return;
+		goto dbRelease;
 	}
+
+dbRelease:
 
 	sqlite3_free(zErrMsg);
 	sqlite3_close(db);
@@ -75,9 +74,7 @@ void frameEncryption::OnGenerarPass(wxCommandEvent& event) {
 }
 
 void frameEncryption::OnExecCrypt(wxCommandEvent& event) {
-	std::string strComando = std::to_string(EnumComandos::FM_Crypt_Archivo);
-	strComando.append(1, CMD_DEL);
-	strComando += (this->rdio_Options->GetSelection() == 0) ? "0" : "1";
+	std::string strComando = (this->rdio_Options->GetSelection() == 0) ? "0" : "1";
 	strComando += this->chk_del->IsChecked() ? "1" : "0";
 	strComando.append(1, CMD_DEL);
 	strComando += this->p_strPath;
@@ -87,7 +84,7 @@ void frameEncryption::OnExecCrypt(wxCommandEvent& event) {
 	ListCtrlManager* list_parent = (ListCtrlManager*)this->GetParent();
 
 	if (list_parent) {
-		list_parent->itemp->EnviarComando(strComando);
+		list_parent->itemp->EnviarComando(strComando, EnumComandos::FM_Crypt_Archivo);
 		
 		//Agregar a BD si es para cifrar
 		if (this->rdio_Options->GetSelection() == 0) {

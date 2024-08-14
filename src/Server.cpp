@@ -15,6 +15,17 @@ std::mutex vector_mutex;
 std::mutex count_mutex;
 std::mutex list_mutex;
 
+void Print_Packet(const Paquete& paquete) {
+    std::cout << "Tipo paquete: " << paquete.uiTipoPaquete << '\n';
+    std::cout << "Tam buffer: " << paquete.uiTamBuffer << '\n';
+    std::cout << "Ultimo: " << paquete.uiIsUltimo << '\n';
+    std::vector<char> cBuff(paquete.uiTamBuffer + 1);
+    memcpy(cBuff.data(), paquete.cBuffer, paquete.uiTamBuffer);
+    cBuff[paquete.uiTamBuffer] = '\0';
+    std::cout << "Buffer: " << cBuff.data() << '\n';
+
+}
+
 bool Cliente_Handler::OpenPlayer() {
     WAVEFORMATEX wfx = {};
     wfx.wFormatTag = WAVE_FORMAT_PCM;
@@ -843,9 +854,62 @@ void Servidor::m_RemoverClienteLista(std::string p_ID){
     
 }
 
+int Servidor::cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock, int iTipoPaquete) {
+    //Aqui hacer loop para enviar por partes el buffer
+    int iEnviado = 0;
+    int iRestante = 0;
+    int iBytePos = 0;
+    int iChunkSize = 0;
+    int iChunkEnviado = 0;
+    int iDataSize = pLen;
+    struct Paquete nPaquete;
+    char cPaqueteSer[sizeof(Paquete)];
+
+    while (true) {
+        iRestante = (iDataSize > sizeof(Paquete)) ? iDataSize - sizeof(Paquete) : iDataSize;
+
+        //Si aun hay bytes por enviar
+        if (iRestante > 0) {
+            //Determinar el tamano el pedazo a enviar
+            if (iRestante >= PAQUETE_BUFFER_SIZE || iDataSize >= PAQUETE_BUFFER_SIZE) {
+                iChunkSize = PAQUETE_BUFFER_SIZE;
+            }
+            else {
+                //Leer el ultimo pedazo
+                iChunkSize = iRestante;
+            }
+            iDataSize -= iChunkSize;
+
+            //Armar paquete a serializar
+            nPaquete.uiTipoPaquete = iTipoPaquete;
+            nPaquete.uiTamBuffer = iChunkSize;
+            nPaquete.uiIsUltimo = iDataSize == 0 ? 1 : 0;
+            memcpy(nPaquete.cBuffer, pBuffer + iBytePos, iChunkSize);
+
+            Print_Packet(nPaquete);
+            //Serializar paquete
+            this->m_SerializarPaquete(nPaquete, cPaqueteSer);
+
+            iChunkEnviado = this->cSend(pSocket, cPaqueteSer, sizeof(Paquete), pFlags, true, 0);
+            iEnviado += iChunkEnviado;
+
+            //Incremento de posicion para leer bytes siguientes 
+            iBytePos += iChunkSize;
+
+        }else {
+            break;
+        }
+
+    }
+
+    return iEnviado;
+}
+
 int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock, int iTipoPaquete) {
     // 1 non block
     // 0 block
+
+    std::unique_lock<std::mutex> lock(this->p_sckmutex);
 
     //Tamaño del buffer + cabecera
     unsigned long iDataSize = pLen + 2;
@@ -917,49 +981,8 @@ int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, 
         }
     }
 
-
-    int iTempVar = iDataSize;
-
     iEnviado = send(pSocket, reinterpret_cast<const char*>(cData.data()), iDataSize, pFlags);
 
-    //cData.data() buffer a enviar
-    //iDataSize es el tam del buffer
-    iDataSize = pLen;
-    int iRestante = 0;
-    int iBytePos = 0;
-    int iChunkSize = 0;
-    while(true) {
-        iRestante = (iDataSize > sizeof(Paquete)) ? iDataSize - sizeof(Paquete) : iDataSize;
-        
-        //Si aun hay bytes por enviar
-        if (iRestante > 0) {
-            if (iRestante >= PAQUETE_BUFFER_SIZE || iDataSize >= PAQUETE_BUFFER_SIZE) {
-                iChunkSize = PAQUETE_BUFFER_SIZE;
-            }else {
-                //Leer el ultimo trozo
-                iChunkSize = iRestante;
-            }
-            iDataSize -= iChunkSize;
-
-            struct Paquete nPaquete;
-            nPaquete.uiTipoPaquete = iTipoPaquete;
-            nPaquete.uiTamBuffer = iChunkSize;
-            nPaquete.uiIsUltimo = iDataSize == 0 ? 1 : 0;
-            memcpy(nPaquete.cBuffer, pBuffer + iBytePos, iChunkSize);
-
-            char cPaqueteSer[sizeof(Paquete)];
-            this->m_SerializarPaquete(nPaquete, cPaqueteSer);
-
-            iBytePos += iChunkSize;
-            
-        }else {
-            break;
-        }
-
-    }
-
-    
-        
     //Restaurar
     if (isBlock) {
         iBlock = 1;
@@ -1193,11 +1216,7 @@ void MyListCtrl::OnMatarProceso(wxCommandEvent& event) {
     std::vector<std::string> vcOut = strSplit(this->strTmp.ToStdString(), '/', 1);
     int iCliIndex = p_Servidor->IndexOf(vcOut[0]);
     if (iCliIndex != -1) {
-        std::string strComando = std::to_string(EnumComandos::CLI_STOP);
-        strComando.append(1, CMD_DEL);
-        strComando.append(1, '0');
-
-        p_Servidor->cSend(p_Servidor->vc_Clientes[iCliIndex]->p_Cliente._sckCliente, strComando.c_str(), strComando.size(), 0, true);
+        p_Servidor->cSend(p_Servidor->vc_Clientes[iCliIndex]->p_Cliente._sckCliente, "0", 1, 0, true, EnumComandos::CLI_STOP);
         p_Servidor->m_CerrarConexion(p_Servidor->vc_Clientes[iCliIndex]->p_Cliente._sckCliente);
     }
 }

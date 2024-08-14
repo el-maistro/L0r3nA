@@ -198,13 +198,14 @@ class Servidor{
         ByteArray bKey;
         void Init_Key();
         int p_PingTime = 1000 * 60; //60 segundos
+        std::mutex p_sckmutex;
     public:
         Servidor();
 
         std::mutex p_mutex;
         std::mutex p_transfers;
         std::mutex count_mutex;
-
+        
         std::map<std::string, struct TransferStatus> vcTransferencias;
 
         std::vector<Cliente_Handler*> vc_Clientes;
@@ -241,6 +242,7 @@ class Servidor{
         int cRecv(SOCKET& pSocket, char* pBuffer, unsigned long pLen, int pFlags, bool isBlock, DWORD* err_code);
         void m_SerializarPaquete(const Paquete& paquete, char* cBuffer);
         void m_DeserializarPaquete(const char*& cBuffer, Paquete& paquete);
+        int cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock = false, int iTipoPaquete = 0);
         
 
         //AES 256

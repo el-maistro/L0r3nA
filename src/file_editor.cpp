@@ -47,30 +47,26 @@ wxEditForm::wxEditForm(wxWindow* pParent, wxString strNombre, std::string strID)
 
 	ListCtrlManager* temp = (ListCtrlManager*)this->GetParent();
 
-	std::string strComando = std::to_string(EnumComandos::FM_Editar_Archivo);
-	strComando.append(1, CMD_DEL);
-	strComando += strNombre;
+	std::string strComando = strNombre;
 	strComando.append(1, CMD_DEL);
 	strComando += strID;
 
 	if (temp) {
-		temp->itemp->EnviarComando(strComando);
+		temp->itemp->EnviarComando(strComando, EnumComandos::FM_Editar_Archivo);
 	}else {
 		error();
 	}
 }
 
 void wxEditForm::OnGuardarRemoto(wxCommandEvent& event) {
-	std::string strComando = std::to_string(EnumComandos::FM_Editar_Archivo_Guardar_Remoto);
-	strComando.append(1, CMD_DEL);
-	strComando += this->strFilename;
+	std::string strComando = this->strFilename;
 	strComando.append(1, CMD_DEL);
 	strComando += this->p_txtEditor->GetValue();
 
 	ListCtrlManager* temp = (ListCtrlManager*)this->GetParent();
 	
 	if (temp) {
-		temp->itemp->EnviarComando(strComando);
+		temp->itemp->EnviarComando(strComando, EnumComandos::FM_Editar_Archivo_Guardar_Remoto);
 	}
 	else {
 		error();

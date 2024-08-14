@@ -72,6 +72,9 @@
 #define UNCOMP_HEADER_BYTE_1 'D'
 #define BUFFER_COMP_REQ_LEN 1024
 #define PAQUETE_BUFFER_SIZE 255
+#define DUMMY_PARAM "0"
+#define EXEC_OCULTO '0'
+#define EXEC_VISIBLE '1'
 
 
 //FM Modos

@@ -77,11 +77,9 @@ void panelPictureBox::OnClose(wxCloseEvent& event) {
 void panelPictureBox::OnSingleShot(wxCommandEvent& event) {
 	//Enviar comando para obtener captura sencilla
 	std::vector<std::string> vcTmp = strSplit(this->GetTitle().ToStdString(), ' ', 10);
-	std::string strComando = std::to_string(EnumComandos::CM_Single);
-	strComando.append(1, CMD_DEL);
-	strComando += vcTmp[vcTmp.size() - 1];
+	std::string strComando = vcTmp[vcTmp.size() - 1];
 
-	p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
+	p_Servidor->cChunkSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false, EnumComandos::CM_Single);
 }
 
 void panelPictureBox::OnStopLive(wxCommandEvent& event) {
@@ -92,11 +90,9 @@ void panelPictureBox::OnStopLive(wxCommandEvent& event) {
 	}
 	//Enviar comando para iniciar live
 	std::vector<std::string> vcTmp = strSplit(this->GetTitle().ToStdString(), ' ', 10);
-	std::string strComando = std::to_string(EnumComandos::CM_Live_Stop);
-	strComando.append(1, CMD_DEL);
-	strComando += vcTmp[vcTmp.size() - 1];
+	std::string strComando = vcTmp[vcTmp.size() - 1];
 
-	p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
+	p_Servidor->cChunkSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false, EnumComandos::CM_Live_Stop);
 }
 
 void panelPictureBox::OnLive(wxCommandEvent& event) {
@@ -107,11 +103,9 @@ void panelPictureBox::OnLive(wxCommandEvent& event) {
 	}
 	//Enviar comando para iniciar live
 	std::vector<std::string> vcTmp = strSplit(this->GetTitle().ToStdString(), ' ', 10);
-	std::string strComando = std::to_string(EnumComandos::CM_Live_Start);
-	strComando.append(1, CMD_DEL);
-	strComando += vcTmp[vcTmp.size() - 1];
+	std::string strComando = vcTmp[vcTmp.size() - 1];
 
-	p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
+	p_Servidor->cChunkSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false, EnumComandos::CM_Live_Start);
 }
 
 void panelPictureBox::OnGuardarFrame(wxCommandEvent& event) {
@@ -153,10 +147,7 @@ panelCamara::panelCamara(wxWindow* pParent):
 
 void panelCamara::OnRefrescarLista(wxCommandEvent& event) {
 	//Enviar comando para obtener lista
-	std::string strComando = std::to_string(EnumComandos::CM_Lista);
-	strComando.append(1, CMD_DEL);
-	strComando.append(1, '1');
-	p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
+	p_Servidor->cChunkSend(this->sckCliente, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, false, EnumComandos::CM_Lista);
 }
 
 void panelCamara::OnManageCam(wxCommandEvent& event) {

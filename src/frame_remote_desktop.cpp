@@ -75,24 +75,15 @@ frameRemoteDesktop::frameRemoteDesktop(wxWindow* pParent) :
 }
 
 void frameRemoteDesktop::OnSingle(wxCommandEvent&) {
-	std::string strComando = std::to_string(EnumComandos::RD_Single);
-	strComando.append(1, CMD_DEL);
-	strComando += "32"; //quality
-	p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
+	p_Servidor->cChunkSend(this->sckCliente, "32", 2, 0, false, EnumComandos::RD_Single);
 }
 
 void frameRemoteDesktop::OnStart(wxCommandEvent&) {
-	std::string strComando = std::to_string(EnumComandos::RD_Start);
-	strComando.append(1, CMD_DEL);
-	strComando += "32"; //quality
-	p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
+	p_Servidor->cChunkSend(this->sckCliente, "32", 2, 0, false, EnumComandos::RD_Start);
 }
 
 void frameRemoteDesktop::OnStop(wxCommandEvent&) {
-	std::string strComando = std::to_string(EnumComandos::RD_Stop);
-	strComando.append(1, CMD_DEL);
-	strComando.append(1, '0');
-	p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
+	p_Servidor->cChunkSend(this->sckCliente, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, false, EnumComandos::RD_Stop);
 }
 
 void frameRemoteDesktop::OnSave(wxCommandEvent&) {
@@ -105,10 +96,9 @@ void frameRemoteDesktop::OnSave(wxCommandEvent&) {
 }
 
 void frameRemoteDesktop::OnComboChange(wxCommandEvent& event) {
-	std::string strComando = std::to_string(EnumComandos::RD_Update_Q);
 	std::string strValue = this->quality_options->GetValue().ToStdString();
 	std::string strQuality = "";
-	strComando.append(1, CMD_DEL);
+	
 	if (strValue == "KK") {
 		strQuality = "8";
 	}else if (strValue == "Baja") {
@@ -122,9 +112,7 @@ void frameRemoteDesktop::OnComboChange(wxCommandEvent& event) {
 		strQuality = "32";
 	}
 	
-	strComando += strQuality;
-	
-	p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
+	p_Servidor->cChunkSend(this->sckCliente, strQuality.c_str(), strQuality.size(), 0, false, EnumComandos::RD_Update_Q);
 	event.Skip();
 }
 
@@ -152,18 +140,12 @@ void frameRemoteDesktop::OnDrawBuffer(const char* cBuffer, int iBuffersize) {
 
 void frameRemoteDesktop::OnCheckVmouse(wxCommandEvent& event) {
 	bool isChecked = event.IsChecked();
-	std::string strComando = std::to_string(EnumComandos::RD_Update_Vmouse);
-	strComando.append(1, CMD_DEL);
-	strComando.append(1, isChecked ? '1' : '0');
-	p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
+	p_Servidor->cChunkSend(this->sckCliente, (isChecked ? "1" : "0"), 1, 0, false, EnumComandos::RD_Update_Vmouse);
 	event.Skip();
 }
 
 void frameRemoteDesktop::Onclose(wxCloseEvent&) {
-	std::string strComando = std::to_string(EnumComandos::RD_Stop);
-	strComando.append(1, CMD_DEL);
-	strComando.append(1, '0');
-	int iSent = p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
+	p_Servidor->cChunkSend(this->sckCliente, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, false, EnumComandos::RD_Stop);
 	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 	Destroy();
 }

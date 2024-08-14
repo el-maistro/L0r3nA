@@ -87,7 +87,7 @@ class panelMicrophone : public wxPanel {
         void OnEscuchar(wxCommandEvent& event);
         void OnDetener(wxCommandEvent& event);
 
-        void EnviarComando(std::string pComando);
+        void EnviarComando(std::string pComando, int iComando);
         
         wxDECLARE_EVENT_TABLE();
 };

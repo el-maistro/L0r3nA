@@ -11,7 +11,7 @@ class panelFileManager: public wxPanel{
 		
 		void CrearLista();
 		wxString RutaActual();
-		void EnviarComando(std::string pComando);
+		void EnviarComando(std::string pComando, int iComando);
 		void EnviarArchivo(const std::string cPath, const char* rPath, std::string strCliente);
 
 		panelFileManager(wxWindow* pParent);

