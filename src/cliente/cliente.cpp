@@ -106,6 +106,7 @@ bool Cliente::bConectar(const char* cIP, const char* cPuerto) {
 }
 
 void Cliente::Spawn_QueueMan() {
+    this->isQueueRunning = true;
     this->p_thQueue = std::thread(&Cliente::Process_Queue, this);
 }
 
@@ -113,26 +114,21 @@ void Cliente::Process_Queue() {
     DebugPrint("[PQ] Inicio");
     while (true) {
         int iTotal = 0;
+        
+        if (!this->m_isRunning() || !this->m_isQueueRunning()) { break; }
+
         std::unique_lock<std::mutex> lock(this->mtx_queue);
-        iTotal = this->queue_Comandos.size();
-        lock.unlock();
-
-        if (!this->m_isRunning() && iTotal == 0) { break; }
-
-        if (iTotal > 0) {
-            lock.lock();
+        
+        if (!this->queue_Comandos.empty()) {
             std::vector<char> nTemp = this->queue_Comandos.front();
             this->queue_Comandos.pop();
             lock.unlock();
             DebugPrint("[PQ] Procesando comando...");
             this->Procesar_Comando(nTemp);
-        }else {
-            if (!this->m_isQueueRunning()) {
-                break;
-            }
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
+
     std::unique_lock<std::mutex> lock(this->mtx_queue);
     //Limpiar queue de tareas
     while (this->queue_Comandos.size() > 0) {
@@ -721,8 +717,9 @@ void Cliente::MainLoop() {
         DebugPrint("[MAIN-LOOP] No se pudo reservar memoria para el buffer principal");
         return;
     }
-    while (this->m_isRunning()) {
-        
+    while (true) {
+        if (!this->m_isRunning()) {break;}
+
         int iRecibido = this->cRecv(this->sckSocket, cBuffer.data(), iBuffSize-1, 0, false, &error_code);
 
         if (iRecibido < 0 && error_code != WSAEWOULDBLOCK) {
@@ -743,13 +740,13 @@ void Cliente::MainLoop() {
         if (iRecibido > 0) {
             
             cBuffer[iRecibido] = '\0';
-            std::unique_lock<std::mutex> lock(this->mtx_queue);
-            std::vector<char> nBuffer(iRecibido+1);
-            std::memcpy(nBuffer.data(), cBuffer.data(), iRecibido+1);
+            {
+                std::unique_lock<std::mutex> lock(this->mtx_queue);
+                std::vector<char> nBuffer(iRecibido + 1);
+                std::memcpy(nBuffer.data(), cBuffer.data(), iRecibido + 1);
 
-            this->queue_Comandos.push(nBuffer);
-            lock.unlock();
-
+                this->queue_Comandos.push(nBuffer);
+            }
             DebugPrint("[MLOOP] Nuevo comando agregado al queue");
         }
 

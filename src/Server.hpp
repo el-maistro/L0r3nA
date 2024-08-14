@@ -3,6 +3,13 @@
 #include "headers.hpp"
 #include "frame_client.hpp"
 
+struct Paquete {
+    u_int uiTipoPaquete;
+    u_int uiTamBuffer;
+    u_int uiIsUltimo;
+    char cBuffer[PAQUETE_BUFFER_SIZE];
+};
+
 struct TransferStatus {
     std::string strCliente;
     std::string strNombre;
@@ -230,8 +237,10 @@ class Servidor{
         void m_RemoverClienteLista(std::string p_ID);
 
         //Socket wraps
-        int cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock = false);
+        int cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock = false, int iTipoPaquete = 0);
         int cRecv(SOCKET& pSocket, char* pBuffer, unsigned long pLen, int pFlags, bool isBlock, DWORD* err_code);
+        void m_SerializarPaquete(const Paquete& paquete, char* cBuffer);
+        void m_DeserializarPaquete(const char*& cBuffer, Paquete& paquete);
         
 
         //AES 256

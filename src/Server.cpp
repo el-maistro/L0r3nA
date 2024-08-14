@@ -843,7 +843,7 @@ void Servidor::m_RemoverClienteLista(std::string p_ID){
     
 }
 
-int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock) {
+int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock, int iTipoPaquete) {
     // 1 non block
     // 0 block
 
@@ -917,7 +917,48 @@ int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, 
         }
     }
 
+
+    int iTempVar = iDataSize;
+
     iEnviado = send(pSocket, reinterpret_cast<const char*>(cData.data()), iDataSize, pFlags);
+
+    //cData.data() buffer a enviar
+    //iDataSize es el tam del buffer
+    iDataSize = pLen;
+    int iRestante = 0;
+    int iBytePos = 0;
+    int iChunkSize = 0;
+    while(true) {
+        iRestante = (iDataSize > sizeof(Paquete)) ? iDataSize - sizeof(Paquete) : iDataSize;
+        
+        //Si aun hay bytes por enviar
+        if (iRestante > 0) {
+            if (iRestante >= PAQUETE_BUFFER_SIZE || iDataSize >= PAQUETE_BUFFER_SIZE) {
+                iChunkSize = PAQUETE_BUFFER_SIZE;
+            }else {
+                //Leer el ultimo trozo
+                iChunkSize = iRestante;
+            }
+            iDataSize -= iChunkSize;
+
+            struct Paquete nPaquete;
+            nPaquete.uiTipoPaquete = iTipoPaquete;
+            nPaquete.uiTamBuffer = iChunkSize;
+            nPaquete.uiIsUltimo = iDataSize == 0 ? 1 : 0;
+            memcpy(nPaquete.cBuffer, pBuffer + iBytePos, iChunkSize);
+
+            char cPaqueteSer[sizeof(Paquete)];
+            this->m_SerializarPaquete(nPaquete, cPaqueteSer);
+
+            iBytePos += iChunkSize;
+            
+        }else {
+            break;
+        }
+
+    }
+
+    
         
     //Restaurar
     if (isBlock) {
@@ -1019,6 +1060,20 @@ int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, unsigned long pLen, int pFla
     }
 
     return iRecibido;
+}
+
+void Servidor::m_SerializarPaquete(const Paquete& paquete, char* cBuffer) {
+    memcpy(cBuffer, &paquete.uiTipoPaquete, sizeof(paquete.uiTipoPaquete));
+    memcpy(cBuffer + sizeof(paquete.uiTipoPaquete), &paquete.uiTamBuffer, sizeof(paquete.uiTamBuffer));
+    memcpy(cBuffer + sizeof(paquete.uiTipoPaquete) + sizeof(paquete.uiTamBuffer), &paquete.uiIsUltimo, sizeof(paquete.uiIsUltimo));
+    memcpy(cBuffer + sizeof(paquete.uiTipoPaquete) + sizeof(paquete.uiTamBuffer) + sizeof(paquete.uiIsUltimo), paquete.cBuffer, sizeof(paquete.cBuffer));    
+}
+
+void Servidor::m_DeserializarPaquete(const char*& cBuffer, Paquete& paquete) {
+    memcpy(&paquete.uiTipoPaquete, cBuffer, sizeof(paquete.uiTipoPaquete));
+    memcpy(&paquete.uiTamBuffer, cBuffer + sizeof(paquete.uiTipoPaquete), sizeof(paquete.uiTamBuffer));
+    memcpy(&paquete.uiIsUltimo, cBuffer + sizeof(paquete.uiTipoPaquete) + sizeof(paquete.uiTamBuffer), sizeof(paquete.uiIsUltimo));
+    memcpy(&paquete.cBuffer, cBuffer + sizeof(paquete.uiTipoPaquete) + sizeof(paquete.uiTamBuffer) + sizeof(paquete.uiIsUltimo), sizeof(paquete.cBuffer));
 }
 
 //AES256

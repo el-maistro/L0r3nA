@@ -71,6 +71,7 @@
 #define COMP_HEADER_BYTE_2 'B'
 #define UNCOMP_HEADER_BYTE_1 'D'
 #define BUFFER_COMP_REQ_LEN 1024
+#define PAQUETE_BUFFER_SIZE 255
 
 
 //FM Modos
