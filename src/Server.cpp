@@ -16,13 +16,13 @@ std::mutex count_mutex;
 std::mutex list_mutex;
 
 void Print_Packet(const Paquete& paquete) {
-    std::cout << "Tipo paquete: " << paquete.uiTipoPaquete << '\n';
+    //std::cout << "Tipo paquete: " << paquete.uiTipoPaquete << '\n';
     std::cout << "Tam buffer: " << paquete.uiTamBuffer << '\n';
-    std::cout << "Ultimo: " << paquete.uiIsUltimo << '\n';
-    std::vector<char> cBuff(paquete.uiTamBuffer + 1);
-    memcpy(cBuff.data(), paquete.cBuffer, paquete.uiTamBuffer);
-    cBuff[paquete.uiTamBuffer] = '\0';
-    std::cout << "Buffer: " << cBuff.data() << '\n';
+    //std::cout << "Ultimo: " << paquete.uiIsUltimo << '\n';
+    //std::vector<char> cBuff(paquete.uiTamBuffer + 1);
+    //memcpy(cBuff.data(), paquete.cBuffer, paquete.uiTamBuffer);
+    //cBuff[paquete.uiTamBuffer] = '\0';
+    //std::cout << "Buffer: " << cBuff.data() << '\n';
 
 }
 
@@ -895,7 +895,7 @@ int Servidor::cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFl
 
             //Incremento de posicion para leer bytes siguientes 
             iBytePos += iChunkSize;
-
+            std::this_thread::sleep_for(std::chrono::milliseconds(6));
         }else {
             break;
         }
