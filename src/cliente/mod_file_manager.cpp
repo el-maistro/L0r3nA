@@ -200,7 +200,6 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID) {
 		return;
 	}
 
-	u_int uiTamBloque = 1024 * 5; //5 KB
 	u64 uTamArchivo = GetFileSize(cPath.c_str());
 	u64 uBytesEnviados = 0;
 
@@ -222,13 +221,13 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID) {
 	int iHeaderSize = strHeader.size();
 	int iBytesLeidos = 0;
 
-	std::vector<char> cBufferArchivo(uiTamBloque);
+	std::vector<char> cBufferArchivo(CHUNK_FILE_TRANSFER_SIZE);
 	if (cBufferArchivo.size() == 0) {
 		DebugPrint("[FM]No se pudo reservar memoria para enviar el archivo");
 		return;
 	}
 
-	std::vector<char> nSendBuffer(uiTamBloque + iHeaderSize);
+	std::vector<char> nSendBuffer(CHUNK_FILE_TRANSFER_SIZE + iHeaderSize);
 	if (nSendBuffer.size() == 0) {
 		DebugPrint("[FM]No se pudo reservar memoria para enviar el archivo - 2");
 		return;
@@ -237,7 +236,7 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID) {
 	memcpy(nSendBuffer.data(), strHeader.c_str(), iHeaderSize);
 
 	while (1) {
-		localFile.read(cBufferArchivo.data(), uiTamBloque);
+		localFile.read(cBufferArchivo.data(), CHUNK_FILE_TRANSFER_SIZE);
 		iBytesLeidos = localFile.gcount();
 		if (iBytesLeidos > 0) {
 			int iTotal = iBytesLeidos + iHeaderSize;
@@ -281,10 +280,9 @@ void EditarArchivo(const std::string strPath, const std::string strID){
 	int iHeaderSize = strHeader.size();
 
 	int iBytesLeidos = 0;
-	int uiTamBloque = 1024;
-	std::vector<char> cBufferArchivo(uiTamBloque);
+	std::vector<char> cBufferArchivo(CHUNK_FILE_TRANSFER_SIZE);
 	while (1) {
-		localFile.read(cBufferArchivo.data(), uiTamBloque);
+		localFile.read(cBufferArchivo.data(), CHUNK_FILE_TRANSFER_SIZE);
 		iBytesLeidos = localFile.gcount();
 		if (iBytesLeidos > 0) {
 			int iTotal = iBytesLeidos + iHeaderSize;

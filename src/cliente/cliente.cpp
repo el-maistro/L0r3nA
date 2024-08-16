@@ -681,7 +681,10 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
 
 void Cliente::Procesar_Paquete(const Paquete& paquete) {
     std::vector<char>& acumulador = this->paquetes_Acumulados[paquete.uiTipoPaquete];
-    acumulador.insert(acumulador.end(), paquete.cBuffer, paquete.cBuffer + paquete.uiTamBuffer); //Aqui error en tiempo de ejecucion
+    size_t oldsize = acumulador.size();
+    acumulador.resize(oldsize + paquete.uiTamBuffer);
+    std::memcpy(acumulador.data() + oldsize, paquete.cBuffer, paquete.uiTamBuffer);
+    //acumulador.insert(acumulador.end(), paquete.cBuffer, paquete.cBuffer + paquete.uiTamBuffer); //Aqui error en tiempo de ejecucion
     /* probar esto
     size_t oldSize = acumulador.size();
 acumulador.resize(oldSize + paquete.uiTamBuffer);

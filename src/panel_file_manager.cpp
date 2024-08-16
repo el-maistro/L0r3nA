@@ -160,7 +160,6 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 		return;
 	}
 
-	u_int uiTamBloque = 1024 * 5; //5 KB
 	u64 uTamArchivo = GetFileSize(lPath.c_str());
 	u64 uBytesEnviados = 0;
 
@@ -183,38 +182,24 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 	p_Servidor->cChunkSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, true, EnumComandos::FM_Descargar_Archivo_Init);
 	std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	
-	//Calcular tamaño header
-	//std::string strHeader = std::to_string(EnumComandos::FM_Descargar_Archivo_Recibir);
-	//strHeader.append(1, CMD_DEL);
-	//int iHeaderSize = strHeader.size();
 	int iBytesLeidos = 0;
 
-	std::vector<char> cBufferArchivo(uiTamBloque);
+	std::vector<char> cBufferArchivo(CHUNK_FILE_TRANSFER_SIZE);
 	if (cBufferArchivo.size() == 0) {
 		std::cout << "No se pudo reservar memoria para enviar el archivo...\n";
 		return;
 	}
 
-	//std::vector<char> nSendBuffer(uiTamBloque + iHeaderSize);
-	//if (nSendBuffer.size() == 0) {
-	//	std::cout << "No se pudo reservar memoria para enviar el archivo...\n";
-	//	return;
-	//}
-	//memcpy(nSendBuffer.data(), strHeader.c_str(), iHeaderSize);
-
+	
 	while (1) {
-		localFile.read(cBufferArchivo.data(), uiTamBloque);
+		localFile.read(cBufferArchivo.data(), CHUNK_FILE_TRANSFER_SIZE);
 		iBytesLeidos = localFile.gcount();
 		if (iBytesLeidos > 0) {
-			//int iTotal = iBytesLeidos + iHeaderSize;
-			//memcpy(nSendBuffer.data() + iHeaderSize, cBufferArchivo.data(), iBytesLeidos);
-
 			int iEnviado = p_Servidor->cChunkSend(this->sckCliente, cBufferArchivo.data(), iBytesLeidos, 0, true, EnumComandos::FM_Descargar_Archivo_Recibir);
 			uBytesEnviados += iEnviado;
 			if (iEnviado == -1 || iEnviado == WSAECONNRESET) {
 				break;
 			}
-			//std::this_thread::sleep_for(std::chrono::milliseconds(20));
 			std::unique_lock<std::mutex> lock(p_Servidor->p_transfers);
 			p_Servidor->vcTransferencias[strCliente].uDescargado += iBytesLeidos;
 		}else {

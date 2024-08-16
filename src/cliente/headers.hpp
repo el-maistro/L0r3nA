@@ -41,6 +41,7 @@
 #define UNCOMP_HEADER_BYTE_1 'D'
 #define BUFFER_COMP_REQ_LEN 1024
 #define PAQUETE_BUFFER_SIZE 1024
+#define CHUNK_FILE_TRANSFER_SIZE 1024 * 1
 
 #define error() std::cout<<"Error["<<GetLastError()<<"]\n";
 #define error_2(x) std::cout<<"["<<x<<"]"<<"Error["<<GetLastError()<<"]\n";
