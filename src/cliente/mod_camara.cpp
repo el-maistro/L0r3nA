@@ -5,8 +5,7 @@
 extern Cliente* cCliente;
 
 //Conversion functions
-int mod_Camera::GetEncoderClsid(const WCHAR* format, CLSID* pClsid)
-{
+int mod_Camera::GetEncoderClsid(const WCHAR* format, CLSID* pClsid){
     UINT  num = 0;          // number of image encoders
     UINT  size = 0;         // size of the image encoder array in bytes
 
@@ -605,12 +604,13 @@ void mod_Camera::LiveCam(int pIndexDev) {
                 std::vector<BYTE> cJPGBuffer = this->toJPEG(cBuffer.data(), cBuffer.size());
                 if (cJPGBuffer.size() > 0) {
                     uiPacketSize = iHeaderSize + cJPGBuffer.size();
-                    std::unique_ptr<BYTE[]> cPacket = std::make_unique<BYTE[]>(uiPacketSize);
-                    if (cPacket) {
-                        memcpy(cPacket.get(), strHeader.c_str(), iHeaderSize);
-                        memcpy(cPacket.get() + iHeaderSize, cJPGBuffer.data(), cJPGBuffer.size());
+                    std::vector<char> cPacket(uiPacketSize);
+                    if (cPacket.size() == uiPacketSize) {
+                        memcpy(cPacket.data(), strHeader.c_str(), iHeaderSize);
+                        memcpy(cPacket.data() + iHeaderSize, cJPGBuffer.data(), cJPGBuffer.size());
                         
-                        int iSent = cCliente->cSend(cCliente->sckSocket, reinterpret_cast<const char*>(cPacket.get()), uiPacketSize, 0, true, nullptr);
+                        //int iSent = cCliente->cSend(cCliente->sckSocket, reinterpret_cast<const char*>(cPacket.get()), uiPacketSize, 0, true, nullptr);
+                        int iSent = cCliente->cChunkSend(cCliente->sckSocket, cPacket.data(), uiPacketSize, 0, true, nullptr, EnumComandos::CM_Single_Salida);
                         if (iSent == -1) {
                             this->vcCamObjs[pIndexDev].isLive = false;
                             break;

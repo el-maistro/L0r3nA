@@ -856,10 +856,10 @@ void Servidor::m_RemoverClienteLista(std::string p_ID){
 
 int Servidor::cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock, int iTipoPaquete) {
     //Aqui hacer loop para enviar por partes el buffer
-    int iEnviado = 0;
-    int iRestante = 0;
-    int iBytePos = 0;
-    int iChunkSize = 0;
+    int iEnviado      = 0;
+    int iRestante     = 0;
+    int iBytePos      = 0;
+    int iChunkSize    = 0;
     int iChunkEnviado = 0;
     int iDataSize = pLen;
     struct Paquete nPaquete;
@@ -871,7 +871,7 @@ int Servidor::cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFl
         //Si aun hay bytes por enviar
         if (iRestante > 0) {
             //Determinar el tamano el pedazo a enviar
-            if (iRestante >= PAQUETE_BUFFER_SIZE || iDataSize >= PAQUETE_BUFFER_SIZE) {
+            if (iRestante >= PAQUETE_BUFFER_SIZE) {
                 iChunkSize = PAQUETE_BUFFER_SIZE;
             }
             else {
@@ -890,7 +890,7 @@ int Servidor::cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFl
             //Serializar paquete
             this->m_SerializarPaquete(nPaquete, cPaqueteSer);
 
-            iChunkEnviado = this->cSend(pSocket, cPaqueteSer, sizeof(Paquete), pFlags, true, 0);
+            iChunkEnviado = this->cSend(pSocket, cPaqueteSer, sizeof(Paquete), pFlags, isBlock, 0);
             iEnviado += iChunkEnviado;
 
             //Incremento de posicion para leer bytes siguientes 

