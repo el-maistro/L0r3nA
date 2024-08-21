@@ -39,7 +39,7 @@ class mod_RemoteDesktop {
 		void IniciarLive(int quality);
 		void SpawnThread(int quality);
 		void DetenerLive();
-		std::vector<BYTE> getFrameBytes(ULONG quality);
+		std::vector<char> getFrameBytes(ULONG quality);
 };
 
 #endif

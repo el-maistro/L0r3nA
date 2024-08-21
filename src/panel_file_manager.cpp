@@ -455,7 +455,11 @@ void ListCtrlManager::ShowContextMenu(const wxPoint& pos, bool isFolder) {
 		menu.AppendSubMenu(new_menu, "Nuevo");
 		menu.AppendSubMenu(exec_Menu, "Ejecutar");
 		menu.Append(EnumMenuFM::ID_Descargar, "Descargar");
-		menu.Append(EnumMenuFM::ID_Editar, "Editar");
+		
+		//Deshabilitado hasta cambiar metodo de edicion
+		menu.Append(EnumMenuFM::ID_Editar, "Editar - Deshabilitado");
+		menu.Enable(EnumMenuFM::ID_Editar, false);
+
 		menu.Append(EnumMenuFM::ID_Renombrar, "Renombrar");
 		menu.AppendSeparator();
 		//menu.AppendSubMenu(crypt_Menu, "Crypt");

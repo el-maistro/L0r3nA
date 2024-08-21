@@ -80,8 +80,8 @@ mod_RemoteDesktop::~mod_RemoteDesktop() {
     return;
 }
 
-std::vector<BYTE> mod_RemoteDesktop::getFrameBytes(ULONG quality) {
-    std::vector<BYTE> cBuffer;
+std::vector<char> mod_RemoteDesktop::getFrameBytes(ULONG quality) {
+    std::vector<char> cBuffer;
 
     if (!this->isGDIon) {
         DebugPrint("GDI no esta inicializado, init...");
@@ -208,7 +208,7 @@ std::vector<BYTE> mod_RemoteDesktop::getFrameBytes(ULONG quality) {
 
     hr = CreateStreamOnHGlobal(hGlobalMem, TRUE, &oStream);
     if (hr != S_OK) {
-        DebugPrint("CreateStreamOnHGlobal\n");
+        DebugPrint("CreateStreamOnHGlobal error\n");
         goto EndSec;
     }
 
@@ -305,16 +305,9 @@ void mod_RemoteDesktop::IniciarLive(int quality) {
 
     while (this->m_isRunning()) {
         
-        std::vector<BYTE> scrBuffer = this->getFrameBytes(this->m_Quality());
+        std::vector<char> scrBuffer = this->getFrameBytes(this->m_Quality());
         if (scrBuffer.size() > 0) {
-            int iBufferSize = scrBuffer.size();
-            int iPaquetSize = iBufferSize + iHeadSize;
-            std::vector<BYTE> cPaquete(iPaquetSize);
-            
-            std::memcpy(cPaquete.data(), strCommand.c_str(), iHeadSize);
-            std::memcpy(cPaquete.data() + iHeadSize, scrBuffer.data(), iBufferSize);
-
-            int iSent = cCliente->cSend(cCliente->sckSocket, reinterpret_cast<const char*>(cPaquete.data()), iPaquetSize, 0, true, nullptr);
+            int iSent = cCliente->cChunkSend(cCliente->sckSocket, scrBuffer.data(), scrBuffer.size(), 0, true, nullptr, EnumComandos::RD_Salida);
             if (iSent == -1) {
                 break;
             }
