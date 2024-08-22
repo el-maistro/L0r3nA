@@ -298,11 +298,7 @@ void mod_RemoteDesktop::DetenerLive() {
 void mod_RemoteDesktop::IniciarLive(int quality) {
     this->isRunning = true;
     this->m_UpdateQuality(quality);
-    //Head del paquete para no tener que crear uno nuevo en el loop
-    std::string strCommand = std::to_string(EnumComandos::RD_Salida);
-    strCommand.append(1, CMD_DEL);
-    int iHeadSize = strCommand.size();
-
+    
     while (this->m_isRunning()) {
         
         std::vector<char> scrBuffer = this->getFrameBytes(this->m_Quality());

@@ -300,8 +300,7 @@ void EditarArchivo(const std::string strPath, const std::string strID){
 }
 
 void Crypt_Archivo(const std::string strPath, const char cCryptOption, const char cDelOption, const std::string strPass) {
-	std::string strComando = std::to_string(EnumComandos::FM_Crypt_Confirm);
-	strComando.append(1, CMD_DEL);
+	std::string strComando = "";
 	// 1 = No se pudo abrir archivo entrada
 	// 2 = ""  "" ""   ""    ""      salida
 	// 3 = success
@@ -319,20 +318,20 @@ void Crypt_Archivo(const std::string strPath, const char cCryptOption, const cha
 	std::ifstream archivo(strPath, std::ios::binary);
 	if (!archivo.is_open()) {
 		DebugPrint("[CRYPT] ERR IN " + strPass);
-		strComando.append(1, '1');
-		cCliente->cSend(cCliente->sckSocket, strComando.c_str(), strComando.size(), 0, false, nullptr);
+		//cCliente->cSend(cCliente->sckSocket, strComando.c_str(), strComando.size(), 0, false, nullptr);
+		cCliente->cChunkSend(cCliente->sckSocket, "1", 1, 0, true, nullptr, EnumComandos::FM_Crypt_Confirm);
 		return;
 	}
 
-	char* cBuffer = new char[uFileSize];
-	archivo.read(cBuffer, uFileSize);
+	std::vector<char> cBuffer(uFileSize);
+	archivo.read(cBuffer.data(), uFileSize);
 
 	if (cCryptOption == '0') {
 		//Cifrar
-		out_len = Aes256::encrypt(bKey, reinterpret_cast<unsigned const char*>(cBuffer), uFileSize, bOutput);
+		out_len = Aes256::encrypt(bKey, reinterpret_cast<const unsigned char*>(cBuffer.data()), uFileSize, bOutput);
 	}else if (cCryptOption == '1') {
 		//Descifrar
-		out_len = Aes256::decrypt(bKey, reinterpret_cast<unsigned char*>(cBuffer), uFileSize, bOutput);
+		out_len = Aes256::decrypt(bKey, reinterpret_cast<const unsigned char*>(cBuffer.data()), uFileSize, bOutput);
 	}
 
 	archivo.close();
@@ -344,20 +343,15 @@ void Crypt_Archivo(const std::string strPath, const char cCryptOption, const cha
 	if (archivo_out.is_open()) {
 		archivo_out.write(reinterpret_cast<const char*>(bOutput.data()), out_len);
 		archivo_out.close();
-		strComando.append(1, '3');
+		strComando = "3";
 	}else {
 		DebugPrint("[CRYPT] ERR OUT " + strOut);
-		strComando.append(1, '2');
-	}
-
-	if (cBuffer) {
-		delete[] cBuffer;
-		cBuffer = nullptr;
+		strComando = "2";
 	}
 
 	if (cDelOption == '1') {
 		BorrarArchivo(strPath.c_str());
 	}
 
-	cCliente->cSend(cCliente->sckSocket, strComando.c_str(), strComando.size(), 0, false, nullptr);
+	cCliente->cChunkSend(cCliente->sckSocket, strComando.c_str(), 1, 0, true, nullptr, EnumComandos::FM_Crypt_Confirm);
 }

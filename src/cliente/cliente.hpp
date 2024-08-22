@@ -30,8 +30,7 @@ class Cliente {
 		std::mutex mtx_running;
 		std::mutex mtx_queue;
 		std::mutex mtx_kill;
-		std::mutex mtx_map_paquetes;
-
+		
 		std::thread p_thQueue;
 
 		unsigned char t_key[AES_KEY_LEN] = { 0x74, 0X48, 0X33, 0X2D, 0X4A, 0X5C, 0X2F, 0X61, 0X4E, 0X7C, 0X3C, 0X45, 0X72, 0X7B, 0X31, 0X33,
@@ -124,7 +123,7 @@ class Cliente {
 		int cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock, DWORD* err_code);
 		int cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool isBlock, DWORD* err_code);
 		void m_SerializarPaquete(const Paquete& paquete, char* cBuffer);
-		void m_DeserializarPaquete(const char*& cBuffer, Paquete& paquete);
+		void m_DeserializarPaquete(const char* cBuffer, Paquete& paquete);
 		int cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock, DWORD* err_code, int iTipoPaquete);
 
 

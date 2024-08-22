@@ -589,9 +589,7 @@ void mod_Camera::LiveCam(int pIndexDev) {
 
         DebugPrint("[!]Live iniciado");
 
-        std::string strHeader = std::to_string(EnumComandos::CM_Single_Salida);
-        strHeader.append(1, CMD_DEL);
-        strHeader += std::to_string(pIndexDev);
+        std::string strHeader = std::to_string(pIndexDev);
         strHeader.append(1, CMD_DEL);
 
         int iHeaderSize = strHeader.size();

