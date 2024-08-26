@@ -12,3 +12,4 @@ src/wxWidgets
 *.zip
 enc_temp_folder/*
 NOTES.txt
+code*.cpp

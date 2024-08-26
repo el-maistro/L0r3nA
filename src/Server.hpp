@@ -216,7 +216,7 @@ class Servidor{
         ByteArray bKey;
         void Init_Key();
         int p_PingTime = 1000 * 60; //60 segundos
-        std::mutex p_sckmutex;
+        std::mutex p_sckmutex;   //mutex para enviar
     public:
         Servidor();
 
@@ -256,6 +256,7 @@ class Servidor{
         void m_RemoverClienteLista(std::string p_ID);
 
         //Socket wraps
+        int recv_all(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags);
         int cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock = false, int iTipoPaquete = 0);
         int cRecv(SOCKET& pSocket, char* pBuffer, unsigned long pLen, int pFlags, bool isBlock, DWORD* err_code);
         void m_SerializarPaquete(const Paquete& paquete, char* cBuffer);
