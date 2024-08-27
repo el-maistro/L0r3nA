@@ -16,9 +16,10 @@ std::mutex count_mutex;
 std::mutex list_mutex;
 
 void Print_Packet(const Paquete& paquete) {
-    //std::cout << "Tipo paquete: " << paquete.uiTipoPaquete << '\n';
+    std::cout << "Tipo paquete: " << paquete.uiTipoPaquete << '\n';
     std::cout << "[CHUNK]Tam buffer: " << paquete.uiTamBuffer << '\n';
-    //std::cout << "Ultimo: " << paquete.uiIsUltimo << '\n';
+    std::cout << "Ultimo: " << paquete.uiIsUltimo << '\n';
+    std::cout << "Buffer: " << paquete.cBuffer.data() << "\n";
     //std::vector<char> cBuff(paquete.uiTamBuffer + 1);
     //memcpy(cBuff.data(), paquete.cBuffer, paquete.uiTamBuffer);
     //cBuff[paquete.uiTamBuffer] = '\0';
@@ -79,9 +80,7 @@ void Cliente_Handler::PlayBuffer(char* pBuffer, size_t iLen){
 }
 
 void Cliente_Handler::Command_Handler(){
-    int iPq = 0;
-    int iBufferSize = PAQUETE_BUFFER_SIZE + 1024;
-    std::vector<char> cBuffer(iBufferSize);
+    std::vector<char> cBuffer;
     DWORD error_code = 0;
     int iTempRecibido = 0;
     while (true) {
@@ -92,7 +91,7 @@ void Cliente_Handler::Command_Handler(){
         }
         
         
-        iTempRecibido = p_Servidor->cRecv(this->p_Cliente._sckCliente, cBuffer.data(), iBufferSize - 1, 0, true, &error_code);
+        iTempRecibido = p_Servidor->cRecv(this->p_Cliente._sckCliente, cBuffer, 0, true, &error_code);
         this->SetBytesRecibidos(iTempRecibido);
         
         //timeout
@@ -108,39 +107,27 @@ void Cliente_Handler::Command_Handler(){
 
         /*Desconexion del cliente
         Si no recibio nada y el error no es timeout o se cerro repentinamente*/
-        if ((this->BytesRecibidos() == WSAECONNRESET) || (this->BytesRecibidos() == 0 && error_code == 0)) {
+        if ((iTempRecibido == WSAECONNRESET) || (iTempRecibido == 0 && error_code == 0)) {
             if (this->m_isFrameVisible()) {
                 this->n_Frame->SetTitle("DESCONECTADO...");
             }
             std::unique_lock<std::mutex> lock(this->mt_Running);
             this->iRecibido = WSA_FUNADO;
             break;
-        }else if (this->BytesRecibidos() <= 0) {
+        }else if (iTempRecibido <= 0) {
             continue;
         }
 
-        
         //Agregar datos al queue
         if (iTempRecibido > 0) {
-            unsigned int iDiff = sizeof(Paquete) - iTempRecibido;
-            
-            if (iTempRecibido >= sizeof(Paquete)) {
-                struct Paquete nNuevo;
-                p_Servidor->m_DeserializarPaquete(cBuffer.data(), nNuevo);
-
-                this->Procesar_Paquete(nNuevo);
-            }
-            else {
-                iPq++;
-            }
+            struct Paquete nNuevo;
+            p_Servidor->m_DeserializarPaquete(cBuffer.data(), nNuevo);
+            this->Procesar_Paquete(nNuevo);
         }
     }
 
+    this->Log("Done!");
     
-
-    this->Log("Done. Paquetes incompletos: ");
-    this->Log(std::to_string(iPq));
-
 }
 
 void Cliente_Handler::Add_to_Queue(const Paquete_Queue& paquete) {
@@ -152,7 +139,7 @@ void Cliente_Handler::Procesar_Paquete(const Paquete& paquete) {
     std::vector<char>& acumulador = this->paquetes_Acumulados[paquete.uiTipoPaquete];
     size_t oldSize = acumulador.size();
     acumulador.resize(oldSize + paquete.uiTamBuffer);
-    memcpy(acumulador.data() + oldSize, paquete.cBuffer, paquete.uiTamBuffer);
+    memcpy(acumulador.data() + oldSize, paquete.cBuffer.data(), paquete.uiTamBuffer);
 
     if(paquete.uiIsUltimo == 1){
         acumulador.push_back('\0'); //Borrar este byte al trabajar con datos binarios
@@ -847,17 +834,19 @@ void Servidor::m_RemoverClienteLista(std::string p_ID){
 
 int Servidor::cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock, int iTipoPaquete) {
     //Aqui hacer loop para enviar por partes el buffer
-    int iEnviado      = 0;
-    int iRestante     = 0;
-    int iBytePos      = 0;
-    int iChunkSize    = 0;
-    int iChunkEnviado = 0;
-    int iDataSize = pLen;
+    int iEnviado      =    0;
+    int iRestante     =    0;
+    int iBytePos      =    0;
+    int iChunkSize    =    0;
+    int iChunkEnviado =    0;
+    int iDataSize     = pLen;
+
     struct Paquete nPaquete;
-    char cPaqueteSer[sizeof(Paquete)];
+    int iPaquet_Size = (sizeof(int) * 3) + PAQUETE_BUFFER_SIZE;
+    char cPaqueteSer[(sizeof(int) * 3) + PAQUETE_BUFFER_SIZE];
 
     while (true) {
-        iRestante = (iDataSize > sizeof(Paquete)) ? iDataSize - sizeof(Paquete) : iDataSize;
+        iRestante = (iDataSize > iPaquet_Size) ? iDataSize - iPaquet_Size : iDataSize;
 
         //Si aun hay bytes por enviar
         if (iRestante > 0) {
@@ -872,17 +861,27 @@ int Servidor::cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFl
             iDataSize -= iChunkSize;
 
             //Armar paquete a serializar
-            nPaquete.uiTipoPaquete = iTipoPaquete;
-            nPaquete.uiTamBuffer = iChunkSize;
-            nPaquete.uiIsUltimo = iDataSize == 0 ? 1 : 0;
-            memcpy(nPaquete.cBuffer, pBuffer + iBytePos, iChunkSize);
+            nPaquete.uiTipoPaquete =           iTipoPaquete;
+            nPaquete.uiTamBuffer   =             iChunkSize;
+            nPaquete.uiIsUltimo    = iDataSize == 0 ? 1 : 0;
+            nPaquete.cBuffer.resize( iChunkSize );
+            if (nPaquete.cBuffer.size() < iChunkSize) {
+                std::cout << "[CHUNK] No se pudo reservar memoria\n";
+                break;
+            }
+
+            int iFinalSize = (sizeof(int) * 3) + iChunkSize;
+            
+            memcpy(nPaquete.cBuffer.data(), pBuffer + iBytePos, iChunkSize);
+
+            Print_Packet(nPaquete);
 
             this->m_SerializarPaquete(nPaquete, cPaqueteSer);
 
-            iChunkEnviado = this->cSend(pSocket, cPaqueteSer, sizeof(Paquete), pFlags, isBlock, 0);
+            iChunkEnviado = this->cSend(pSocket, cPaqueteSer, iFinalSize, pFlags, isBlock, 0);
             
             iEnviado += iChunkEnviado;
-            iBytePos += iChunkSize;
+            iBytePos +=    iChunkSize;
         }else {
             break;
         }
@@ -958,21 +957,14 @@ int Servidor::recv_all(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags) {
     return iTotalRecibido;
 }
 
-int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, unsigned long pLen, int pFlags, bool isBlock, DWORD* error_code) {
+int Servidor::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, bool isBlock, DWORD* error_code) {
     
     // 1 non block
     // 0 block
     
-    if (!pBuffer) {
-        std::cout << "Buffer no reservado para recibir paquete\n";
-        return 0;
-    }
-
-    std::vector<char> cTmpBuff(pLen);
-    
     int iRecibido = 0;
     unsigned long int iBlock = 0;
-    
+    std::vector<char> cRecvBuffer;
     //Hacer el socket block
     if (isBlock) {
         //Hacer el socket block
@@ -982,10 +974,13 @@ int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, unsigned long pLen, int pFla
     }
 
     //Leer primero sizeof(int) para obtener el total de bytes a leer
-    int iPaqueteSize = recv(pSocket, cTmpBuff.data(), sizeof(int), pFlags);
+    char cBuffSize[sizeof(int)];
+    int iPaqueteSize = recv(pSocket, cBuffSize, sizeof(int), pFlags);
     if (iPaqueteSize == sizeof(int)) {
-        memcpy(&iPaqueteSize, cTmpBuff.data(), sizeof(int));
-        iRecibido = this->recv_all(pSocket, cTmpBuff.data(), iPaqueteSize, pFlags);
+        memcpy(&iPaqueteSize, cBuffSize, sizeof(int));
+        //Establecer un limite para evitar buffer demasiado grande 
+        cRecvBuffer.resize(iPaqueteSize);
+        iRecibido = this->recv_all(pSocket, cRecvBuffer.data(), iPaqueteSize, pFlags);
     }
 
     if (error_code != nullptr) {
@@ -1008,15 +1003,20 @@ int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, unsigned long pLen, int pFla
     }
         
     //Decrypt
-    ByteArray bOut = this->bDec(reinterpret_cast<const unsigned char*>(cTmpBuff.data()), iRecibido);
+    ByteArray bOut = this->bDec(reinterpret_cast<const unsigned char*>(cRecvBuffer.data()), iRecibido);
     iRecibido = bOut.size();
     if (iRecibido == 0) {
         error();
         return -1;
     }
 
-    std::memcpy(pBuffer, bOut.data(), iRecibido);
-
+    pBuffer.resize(iRecibido);
+    if (pBuffer.size() == iRecibido) {
+        memcpy(pBuffer.data(), bOut.data(), iRecibido);
+    }else {
+        std::cout << "[cRecv] No se pudo reservar memoria en el buffer de salida\n";
+        return -1;
+    }
     return iRecibido;
 }
 
@@ -1024,14 +1024,20 @@ void Servidor::m_SerializarPaquete(const Paquete& paquete, char* cBuffer) {
     memcpy(cBuffer, &paquete.uiTipoPaquete, sizeof(paquete.uiTipoPaquete));
     memcpy(cBuffer + sizeof(paquete.uiTipoPaquete), &paquete.uiTamBuffer, sizeof(paquete.uiTamBuffer));
     memcpy(cBuffer + sizeof(paquete.uiTipoPaquete) + sizeof(paquete.uiTamBuffer), &paquete.uiIsUltimo, sizeof(paquete.uiIsUltimo));
-    memcpy(cBuffer + sizeof(paquete.uiTipoPaquete) + sizeof(paquete.uiTamBuffer) + sizeof(paquete.uiIsUltimo), paquete.cBuffer, sizeof(paquete.cBuffer));    
+    memcpy(cBuffer + sizeof(paquete.uiTipoPaquete) + sizeof(paquete.uiTamBuffer) + sizeof(paquete.uiIsUltimo), paquete.cBuffer.data(), paquete.uiTamBuffer);
 }
 
 void Servidor::m_DeserializarPaquete(const char* cBuffer, Paquete& paquete) {
     memcpy(&paquete.uiTipoPaquete, cBuffer, sizeof(paquete.uiTipoPaquete));
     memcpy(&paquete.uiTamBuffer, cBuffer + sizeof(paquete.uiTipoPaquete), sizeof(paquete.uiTamBuffer));
     memcpy(&paquete.uiIsUltimo, cBuffer + sizeof(paquete.uiTipoPaquete) + sizeof(paquete.uiTamBuffer), sizeof(paquete.uiIsUltimo));
-    memcpy(&paquete.cBuffer, cBuffer + sizeof(paquete.uiTipoPaquete) + sizeof(paquete.uiTamBuffer) + sizeof(paquete.uiIsUltimo), sizeof(paquete.cBuffer));
+    paquete.cBuffer.resize(paquete.uiTamBuffer);
+    if (paquete.cBuffer.size() == paquete.uiTamBuffer) {
+        memcpy(paquete.cBuffer.data(), cBuffer + sizeof(paquete.uiTipoPaquete) + sizeof(paquete.uiTamBuffer) + sizeof(paquete.uiIsUltimo), paquete.uiTamBuffer);
+    }
+    else {
+        std::cout << "[Deserializar] No se pudo reservar memoria para el buffer " << GetLastError() << "\n";
+    }
 }
 
 //AES256

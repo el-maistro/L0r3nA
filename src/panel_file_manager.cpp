@@ -544,6 +544,8 @@ void ListCtrlManager::ListarDir(const char* strData) {
 		itemCol.SetWidth(100);
 		this->InsertColumn(3, itemCol);
 	}
+
+	std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	
 	for (std::string vcEntry : strSplit(std::string(strData), '|', 10000)) {
 		std::vector<std::string> vcFileEntry;
@@ -613,15 +615,17 @@ void ListCtrlManager::ListarEquipo(const std::vector<std::string> vcDrives) {
 		itemCol.SetWidth(50);
 		this->InsertColumn(4, itemCol);
 	}
+	std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-	for (int iCount = 0; iCount<int(vcDrives.size()); iCount++) {
+	for (int iCount = 0, iRowCount = 0; iCount<int(vcDrives.size()); iCount++) {
 		std::vector<std::string> vDrive = strSplit(vcDrives[iCount], '|', 5);
 		if (vDrive.size() >= 5) {
-			this->InsertItem(iCount, wxString(vDrive[0]));
-			this->SetItem(iCount, 1, wxString(vDrive[2]));
-			this->SetItem(iCount, 2, wxString(vDrive[1]));
-			this->SetItem(iCount, 3, wxString(vDrive[3]));
-			this->SetItem(iCount, 4, wxString(vDrive[4]));
+			this->InsertItem(iRowCount, wxString(vDrive[0]));
+			this->SetItem(iRowCount, 1, wxString(vDrive[2]));
+			this->SetItem(iRowCount, 2, wxString(vDrive[1]));
+			this->SetItem(iRowCount, 3, wxString(vDrive[3]));
+			this->SetItem(iRowCount, 4, wxString(vDrive[4]));
+			iRowCount++;
 		}
 	}
 

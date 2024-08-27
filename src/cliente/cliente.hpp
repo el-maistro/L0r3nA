@@ -11,7 +11,8 @@ struct Paquete {
 	u_int uiTipoPaquete;
 	u_int uiTamBuffer;
 	u_int uiIsUltimo;
-	char cBuffer[PAQUETE_BUFFER_SIZE];
+	//char cBuffer[PAQUETE_BUFFER_SIZE];
+	std::vector<char> cBuffer;
 };
 
 struct Paquete_Queue {
@@ -122,7 +123,7 @@ class Cliente {
 		//Socket wraps
 		int recv_all(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags);
 		int cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock, DWORD* err_code);
-		int cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool isBlock, DWORD* err_code);
+		int cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, bool isBlock, DWORD* err_code);
 		void m_SerializarPaquete(const Paquete& paquete, char* cBuffer);
 		void m_DeserializarPaquete(const char* cBuffer, Paquete& paquete);
 		int cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock, DWORD* err_code, int iTipoPaquete);
