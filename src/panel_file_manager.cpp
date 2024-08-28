@@ -545,8 +545,6 @@ void ListCtrlManager::ListarDir(const char* strData) {
 		this->InsertColumn(3, itemCol);
 	}
 
-	std::this_thread::sleep_for(std::chrono::milliseconds(100));
-	
 	for (std::string vcEntry : strSplit(std::string(strData), '|', 10000)) {
 		std::vector<std::string> vcFileEntry;
 		wxString strTama = "-";
@@ -615,7 +613,6 @@ void ListCtrlManager::ListarEquipo(const std::vector<std::string> vcDrives) {
 		itemCol.SetWidth(50);
 		this->InsertColumn(4, itemCol);
 	}
-	std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
 	for (int iCount = 0, iRowCount = 0; iCount<int(vcDrives.size()); iCount++) {
 		std::vector<std::string> vDrive = strSplit(vcDrives[iCount], '|', 5);

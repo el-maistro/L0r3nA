@@ -19,12 +19,7 @@ void Print_Packet(const Paquete& paquete) {
     std::cout << "Tipo paquete: " << paquete.uiTipoPaquete << '\n';
     std::cout << "[CHUNK]Tam buffer: " << paquete.uiTamBuffer << '\n';
     std::cout << "Ultimo: " << paquete.uiIsUltimo << '\n';
-    std::cout << "Buffer: " << paquete.cBuffer.data() << "\n";
-    //std::vector<char> cBuff(paquete.uiTamBuffer + 1);
-    //memcpy(cBuff.data(), paquete.cBuffer, paquete.uiTamBuffer);
-    //cBuff[paquete.uiTamBuffer] = '\0';
-    //std::cout << "Buffer: " << cBuff.data() << '\n';
-
+    //std::cout << "Buffer: " << paquete.cBuffer.data() << "\n";
 }
 
 bool Cliente_Handler::OpenPlayer() {

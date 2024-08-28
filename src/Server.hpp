@@ -7,7 +7,6 @@ struct Paquete {
     u_int uiTipoPaquete;
     u_int uiTamBuffer;
     u_int uiIsUltimo;
-    //char cBuffer[PAQUETE_BUFFER_SIZE];
     std::vector<char> cBuffer;
 };
 
