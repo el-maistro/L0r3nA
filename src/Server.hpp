@@ -3,6 +3,18 @@
 #include "headers.hpp"
 #include "frame_client.hpp"
 
+struct Paquete {
+    u_int uiTipoPaquete;
+    u_int uiTamBuffer;
+    u_int uiIsUltimo;
+    std::vector<char> cBuffer;
+};
+
+struct Paquete_Queue {
+    std::vector<char> cBuffer;
+    u_int uiTipoPaquete;
+};
+
 struct TransferStatus {
     std::string strCliente;
     std::string strNombre;
@@ -87,7 +99,11 @@ class Cliente_Handler {
         std::thread p_thQueue;
         
         std::mutex mt_Queue;
-        std::mutex mt_FrameVisible;
+        std::mutex mt_FrameVisible; 
+
+        std::map<int, std::vector<char>> paquetes_Acumulados;
+        
+        std::queue<Paquete_Queue> queue_Comandos;
 
     public:
         std::mutex mt_Archivos;
@@ -107,14 +123,23 @@ class Cliente_Handler {
         }
 
         std::map<const std::string, struct Archivo_Descarga> um_Archivos_Descarga;
-        std::queue<std::vector<char>> queue_Comandos;
         
         struct Cliente p_Cliente;
         bool isRunning = true;
+
+        //funcion para agregar un paquete ya completado al queue
+        void Add_to_Queue(const Paquete_Queue& paquete);
         
-        void Command_Handler();
+        //Procesador y acumulador de paquetes entrantes
+        void Procesar_Paquete(const Paquete& paquete);
+        
+        // thread para procesar comandos ya completos y eliminarlos del map        
         void Process_Queue();
-        void Process_Command(std::vector<char>& cBuffer);
+
+        //Una vez el comando este completo y eliminado del queue de comandos principal
+        void Process_Command(const Paquete_Queue& paquete);
+
+        void Command_Handler();
         void Spawn_Threads();
         void CrearFrame(const std::string strTitle, const std::string strID);
         void EscribirSalidShell(const std::string strSalida);
@@ -191,13 +216,14 @@ class Servidor{
         ByteArray bKey;
         void Init_Key();
         int p_PingTime = 1000 * 60; //60 segundos
+        std::mutex p_sckmutex;   //mutex para enviar
     public:
         Servidor();
 
         std::mutex p_mutex;
         std::mutex p_transfers;
         std::mutex count_mutex;
-
+        
         std::map<std::string, struct TransferStatus> vcTransferencias;
 
         std::vector<Cliente_Handler*> vc_Clientes;
@@ -230,8 +256,12 @@ class Servidor{
         void m_RemoverClienteLista(std::string p_ID);
 
         //Socket wraps
-        int cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock = false);
-        int cRecv(SOCKET& pSocket, char* pBuffer, unsigned long pLen, int pFlags, bool isBlock, DWORD* err_code);
+        int recv_all(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags);
+        int cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock = false, int iTipoPaquete = 0);
+        int cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, bool isBlock, DWORD* err_code);
+        void m_SerializarPaquete(const Paquete& paquete, char* cBuffer);
+        void m_DeserializarPaquete(const char* cBuffer, Paquete& paquete);
+        int cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock = false, int iTipoPaquete = 0);
         
 
         //AES 256

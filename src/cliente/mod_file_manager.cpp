@@ -200,35 +200,29 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID) {
 		return;
 	}
 
-	u_int uiTamBloque = 1024 * 5; //5 KB
 	u64 uTamArchivo = GetFileSize(cPath.c_str());
 	u64 uBytesEnviados = 0;
 
-	std::string strComando = std::to_string(EnumComandos::FM_Descargar_Archivo_Init);
-	strComando.append(1, CMD_DEL);
-	strComando += cID;
+	std::string strComando = cID;
 	strComando.append(1, CMD_DEL);
 	strComando += std::to_string(uTamArchivo);
-	//Enviar confirmacion y tama�o de archivo
-	cCliente->cSend(cCliente->sckSocket, strComando.c_str(), strComando.size(), 0, true, nullptr);
-	std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	
+	cCliente->cChunkSend(cCliente->sckSocket, strComando.c_str(), strComando.size(), 0, true, nullptr, EnumComandos::FM_Descargar_Archivo_Init);
+	std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
-	//Calcular tama�o header
-	std::string strHeader = std::to_string(EnumComandos::FM_Descargar_Archivo_Recibir);
-	strHeader.append(1, CMD_DEL);
-	strHeader += cID;
+	std::string strHeader = cID;
 	strHeader.append(1, CMD_DEL);
 	
 	int iHeaderSize = strHeader.size();
 	int iBytesLeidos = 0;
 
-	std::vector<char> cBufferArchivo(uiTamBloque);
+	std::vector<char> cBufferArchivo(CHUNK_FILE_TRANSFER_SIZE);
 	if (cBufferArchivo.size() == 0) {
 		DebugPrint("[FM]No se pudo reservar memoria para enviar el archivo");
 		return;
 	}
 
-	std::vector<char> nSendBuffer(uiTamBloque + iHeaderSize);
+	std::vector<char> nSendBuffer(CHUNK_FILE_TRANSFER_SIZE + iHeaderSize);
 	if (nSendBuffer.size() == 0) {
 		DebugPrint("[FM]No se pudo reservar memoria para enviar el archivo - 2");
 		return;
@@ -237,13 +231,14 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID) {
 	memcpy(nSendBuffer.data(), strHeader.c_str(), iHeaderSize);
 
 	while (1) {
-		localFile.read(cBufferArchivo.data(), uiTamBloque);
+		localFile.read(cBufferArchivo.data(), CHUNK_FILE_TRANSFER_SIZE);
 		iBytesLeidos = localFile.gcount();
 		if (iBytesLeidos > 0) {
 			int iTotal = iBytesLeidos + iHeaderSize;
 			memcpy(nSendBuffer.data() + iHeaderSize, cBufferArchivo.data(), iBytesLeidos);
 			
-			int iEnviado = cCliente->cSend(cCliente->sckSocket, nSendBuffer.data(), iTotal, 0, true, nullptr);
+			int iEnviado = cCliente->cChunkSend(cCliente->sckSocket, nSendBuffer.data(), iTotal, 0, true, nullptr, EnumComandos::FM_Descargar_Archivo_Recibir);
+
 			uBytesEnviados += iEnviado;
 
 			if (iEnviado == -1 || iEnviado == WSAECONNRESET) {
@@ -259,10 +254,7 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID) {
 
 	//Ya se envio todo, cerrar el archivo
 	std::this_thread::sleep_for(std::chrono::milliseconds(500));
-	std::string strComandoCerrar = std::to_string(EnumComandos::FM_Descargar_Archivo_End);
-	strComandoCerrar.append(1, CMD_DEL);
-	strComandoCerrar += cID;
-	cCliente->cSend(cCliente->sckSocket, strComandoCerrar.c_str(), strComandoCerrar.size(), 0, true, nullptr);
+	cCliente->cChunkSend(cCliente->sckSocket, cID.c_str(), cID.size(), 0, true, nullptr, EnumComandos::FM_Descargar_Archivo_End);
 }
 
 //Enviar bytes de archivo a editar
@@ -281,10 +273,9 @@ void EditarArchivo(const std::string strPath, const std::string strID){
 	int iHeaderSize = strHeader.size();
 
 	int iBytesLeidos = 0;
-	int uiTamBloque = 1024;
-	std::vector<char> cBufferArchivo(uiTamBloque);
+	std::vector<char> cBufferArchivo(CHUNK_FILE_TRANSFER_SIZE);
 	while (1) {
-		localFile.read(cBufferArchivo.data(), uiTamBloque);
+		localFile.read(cBufferArchivo.data(), CHUNK_FILE_TRANSFER_SIZE);
 		iBytesLeidos = localFile.gcount();
 		if (iBytesLeidos > 0) {
 			int iTotal = iBytesLeidos + iHeaderSize;
@@ -309,8 +300,7 @@ void EditarArchivo(const std::string strPath, const std::string strID){
 }
 
 void Crypt_Archivo(const std::string strPath, const char cCryptOption, const char cDelOption, const std::string strPass) {
-	std::string strComando = std::to_string(EnumComandos::FM_Crypt_Confirm);
-	strComando.append(1, CMD_DEL);
+	std::string strComando = "";
 	// 1 = No se pudo abrir archivo entrada
 	// 2 = ""  "" ""   ""    ""      salida
 	// 3 = success
@@ -328,20 +318,20 @@ void Crypt_Archivo(const std::string strPath, const char cCryptOption, const cha
 	std::ifstream archivo(strPath, std::ios::binary);
 	if (!archivo.is_open()) {
 		DebugPrint("[CRYPT] ERR IN " + strPass);
-		strComando.append(1, '1');
-		cCliente->cSend(cCliente->sckSocket, strComando.c_str(), strComando.size(), 0, false, nullptr);
+		//cCliente->cSend(cCliente->sckSocket, strComando.c_str(), strComando.size(), 0, false, nullptr);
+		cCliente->cChunkSend(cCliente->sckSocket, "1", 1, 0, true, nullptr, EnumComandos::FM_Crypt_Confirm);
 		return;
 	}
 
-	char* cBuffer = new char[uFileSize];
-	archivo.read(cBuffer, uFileSize);
+	std::vector<char> cBuffer(uFileSize);
+	archivo.read(cBuffer.data(), uFileSize);
 
 	if (cCryptOption == '0') {
 		//Cifrar
-		out_len = Aes256::encrypt(bKey, reinterpret_cast<unsigned const char*>(cBuffer), uFileSize, bOutput);
+		out_len = Aes256::encrypt(bKey, reinterpret_cast<const unsigned char*>(cBuffer.data()), uFileSize, bOutput);
 	}else if (cCryptOption == '1') {
 		//Descifrar
-		out_len = Aes256::decrypt(bKey, reinterpret_cast<unsigned char*>(cBuffer), uFileSize, bOutput);
+		out_len = Aes256::decrypt(bKey, reinterpret_cast<const unsigned char*>(cBuffer.data()), uFileSize, bOutput);
 	}
 
 	archivo.close();
@@ -353,20 +343,15 @@ void Crypt_Archivo(const std::string strPath, const char cCryptOption, const cha
 	if (archivo_out.is_open()) {
 		archivo_out.write(reinterpret_cast<const char*>(bOutput.data()), out_len);
 		archivo_out.close();
-		strComando.append(1, '3');
+		strComando = "3";
 	}else {
 		DebugPrint("[CRYPT] ERR OUT " + strOut);
-		strComando.append(1, '2');
-	}
-
-	if (cBuffer) {
-		delete[] cBuffer;
-		cBuffer = nullptr;
+		strComando = "2";
 	}
 
 	if (cDelOption == '1') {
 		BorrarArchivo(strPath.c_str());
 	}
 
-	cCliente->cSend(cCliente->sckSocket, strComando.c_str(), strComando.size(), 0, false, nullptr);
+	cCliente->cChunkSend(cCliente->sckSocket, strComando.c_str(), 1, 0, true, nullptr, EnumComandos::FM_Crypt_Confirm);
 }

