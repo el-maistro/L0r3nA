@@ -109,7 +109,7 @@ MyFrame::MyFrame()
     
     CreateStatusBar();
     SetStatusText("IDLE");
-
+    
 #ifdef DEBUG_DESIGN_LIMITS
     SetBackgroundColour(wxColour(255, 255, 255, 128)); // Establecer el color de fondo con transparencia
     this->m_BPanel->SetBackgroundColour(wxColor(0, 255, 0));

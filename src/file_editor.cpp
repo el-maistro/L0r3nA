@@ -8,10 +8,14 @@ wxBEGIN_EVENT_TABLE(wxEditForm, wxFrame)
 wxEND_EVENT_TABLE()
 
 wxEditForm::wxEditForm(wxWindow* pParent, wxString strNombre, std::string strID)
-	: wxFrame(pParent, wxID_ANY, "[REMOTO]" + strNombre, wxDefaultPosition, wxDefaultSize, wxDD_DEFAULT_STYLE, strID)
+	: wxFrame(pParent, wxID_ANY, "[REMOTO]" + strNombre, wxDefaultPosition, wxSize(600, 600), wxDEFAULT_FRAME_STYLE, strID)
 {
-	this->p_txtEditor = new wxTextCtrl(this, EnumIDS::ID_Panel_FM_Editar_TXT, wxEmptyString, wxDefaultPosition, wxSize(500, 600), wxTE_MULTILINE | wxTE_RICH | wxHSCROLL);
-
+	this->p_txtEditor = new wxStyledTextCtrl(this, EnumIDS::ID_Panel_FM_Editar_TXT, wxDefaultPosition, wxDefaultSize);
+	this->p_txtEditor->SetCaretLineVisible(true);
+	this->p_txtEditor->SetCaretLineBackground(wxColour(186, 186, 186));
+	this->p_txtEditor->SetMarginType(0, wxSTC_MARGIN_NUMBER);
+	this->p_txtEditor->SetMarginWidth(0, 40);
+	
 	this->strFilename = strNombre;
 
 	wxBoxSizer* nsizer = new wxBoxSizer(wxHORIZONTAL);

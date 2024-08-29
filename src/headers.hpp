@@ -31,6 +31,7 @@
 #include<wx/sizer.h>
 #include<wx/image.h>
 #include<wx/wxhtml.h>
+#include<wx/stc/stc.h>
 #include<wx/aui/aui.h>
 #include<winsqlite/winsqlite3.h>
 

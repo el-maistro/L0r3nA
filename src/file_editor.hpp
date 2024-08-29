@@ -6,7 +6,7 @@
 class wxEditForm : public wxFrame {
 	public:
 		wxEditForm(wxWindow* pParent, wxString strNombre, std::string strID);
-		wxTextCtrl* p_txtEditor = nullptr;
+		wxStyledTextCtrl* p_txtEditor = nullptr;
 
 		//Eventos
 		void OnGuardarRemoto(wxCommandEvent& event);
