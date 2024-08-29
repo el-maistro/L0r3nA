@@ -178,9 +178,9 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 	std::string strComando = rPath;
 	strComando.append(1, CMD_DEL);
 	strComando += std::to_string(uTamArchivo);
+	
 	//Enviar ruta remota y tamaño de archivo
 	p_Servidor->cChunkSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, true, EnumComandos::FM_Descargar_Archivo_Init);
-	std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	
 	int iBytesLeidos = 0;
 
@@ -210,7 +210,7 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 	localFile.close();
 
 	//Ya se envio todo, cerrar el archivo
-	std::this_thread::sleep_for(std::chrono::milliseconds(500));
+	//std::this_thread::sleep_for(std::chrono::milliseconds(500));
 	
 	p_Servidor->cChunkSend(this->sckCliente, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, true, EnumComandos::FM_Descargar_Archivo_End);
 	
@@ -298,7 +298,6 @@ void ListCtrlManager::OnDescargarArchivo(wxCommandEvent& event) {
 	}
 
 	std::unique_lock<std::mutex> lock(p_Servidor->vc_Clientes[iClienteID]->mt_Archivos);
-	//p_Servidor->vc_Clientes[iClienteID]->um_Archivos_Descarga.insert({ strID, nuevo_archivo });
 	p_Servidor->vc_Clientes[iClienteID]->um_Archivos_Descarga.insert(std::make_pair(strID, nuevo_archivo));
 	lock.unlock();
 
@@ -402,8 +401,6 @@ void ListCtrlManager::OnActivated(wxListEvent& event) {
 
 			//Talvez agregar un gif de carga?
 
-			std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
 			itemp->EnviarComando(strCommand, EnumComandos::FM_Dir_Folder);
 			itemp->iMODE = FM_NORMAL;
 			break;
@@ -426,8 +423,6 @@ void ListCtrlManager::OnActivated(wxListEvent& event) {
 					strCommand = itemp->RutaActual();
 
 					itemp->Enable(false); 
-
-					std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
 					itemp->EnviarComando(strCommand, EnumComandos::FM_Dir_Folder);
 					
@@ -455,14 +450,9 @@ void ListCtrlManager::ShowContextMenu(const wxPoint& pos, bool isFolder) {
 		menu.AppendSubMenu(new_menu, "Nuevo");
 		menu.AppendSubMenu(exec_Menu, "Ejecutar");
 		menu.Append(EnumMenuFM::ID_Descargar, "Descargar");
-		
-		//Deshabilitado hasta cambiar metodo de edicion
-		menu.Append(EnumMenuFM::ID_Editar, "Editar - Deshabilitado");
-		menu.Enable(EnumMenuFM::ID_Editar, false);
-
+		menu.Append(EnumMenuFM::ID_Editar, "Editar");
 		menu.Append(EnumMenuFM::ID_Renombrar, "Renombrar");
 		menu.AppendSeparator();
-		//menu.AppendSubMenu(crypt_Menu, "Crypt");
 		menu.Append(EnumMenuFM::ID_Crypt, "Crypt");
 		menu.Append(EnumMenuFM::ID_Eliminar, "Eliminar");
 

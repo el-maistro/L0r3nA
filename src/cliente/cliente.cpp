@@ -13,11 +13,6 @@ void Print_Packet(const Paquete& paquete) {
     std::cout << "Tam buffer: " << paquete.uiTamBuffer<< '\n';
     std::cout << "Ultimo: " << paquete.uiIsUltimo<< '\n';
     std::cout << "Buffer size: " << paquete.cBuffer.size() << '\n';
-    //std::vector<char> cBuff(paquete.uiTamBuffer + 1);
-    //memcpy(cBuff.data(), paquete.cBuffer, paquete.uiTamBuffer);
-    //cBuff[paquete.uiTamBuffer] = '\0';
-    //std::cout << "Buffer: " << cBuff.data()<< '\n';
-
 }
 
 void Cliente::Init_Key() {
@@ -295,6 +290,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         return;
     }
 
+    //Enviar archivo al servidor
     if (iComando == EnumComandos::FM_Descargar_Archivo) {
         strIn = strSplit(std::string(paquete.cBuffer.data()), CMD_DEL, 2);
         //strIn[0] = ruta
@@ -302,7 +298,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         if (strIn.size() == 2) {
             std::string param1 = strIn[0];
             std::string param2 = strIn[1];
-            std::thread th(&EnviarArchivo, param1, param2);
+            std::thread th(&EnviarArchivo, param1, param2, false);
             th.detach();
         }
         return;
@@ -329,7 +325,10 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         //strIn[0] = ruta_archivo
         //strIn[1] = id_archivo
         if (strIn.size() == 2) {
-            EditarArchivo(strIn[0], strIn[1]);
+            std::string param1 = strIn[0];
+            std::string param2 = strIn[1];
+            std::thread th(&EnviarArchivo, param1, param2, true);
+            th.detach();
         }
         return;
     }

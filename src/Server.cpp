@@ -291,27 +291,29 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
         return;
     }
 
-    //Paque de editor de texto remoto TEMPORALMENTE DESHABILITADO
-    /*if (iComando == EnumComandos::FM_Editar_Archivo_Paquete) {
+    //Paquet de editor de texto remoto
+    if (iComando == EnumComandos::FM_Editar_Archivo_Paquete) {
         if (this->m_isFrameVisible()) {
-            vcDatos = strSplit(std::string(cBuffer.data()), CMD_DEL, 2);
-            if (vcDatos.size() == 2) {
+            vcDatos = strSplit(std::string(paquete.cBuffer.data()), CMD_DEL, 1);
+            if (vcDatos.size() == 1) {
                 //Tama�o del id del comando, id del archivo y dos back slashes
-                int iHeadSize2 = 2 + vcDatos[0].size() + vcDatos[1].size();
-                char* cBytes = cBuffer.data() + iHeadSize2;
+                int iHeadSize = vcDatos[0].size() + 1;
+                const char* cBytes = paquete.cBuffer.data() + iHeadSize;
 
-                wxEditForm* temp_edit_form = (wxEditForm*)wxWindow::FindWindowByName(vcDatos[1], this->n_Frame);
+                wxEditForm* temp_edit_form = (wxEditForm*)wxWindow::FindWindowByName(vcDatos[0], this->n_Frame);
                 if (temp_edit_form) {
                     temp_edit_form->p_txtEditor->AppendText(wxString(cBytes));
                     temp_edit_form->p_txtEditor->SetInsertionPoint(0);
                 }
                 else {
-                    this->Log("No se pudo encontrar la ventana con id " + vcDatos[1]);
+                    this->Log("No se pudo encontrar la ventana con id " + vcDatos[0]);
                 }
+            }else {
+                std::cout << "No se pudo parsear el contenido de edicion remota:\n" << paquete.cBuffer.data() << "\n";
             }
         }
         return;
-    }*/
+    }
 
     //Confirmacion de cifrado
     if (iComando == EnumComandos::FM_Crypt_Confirm) {

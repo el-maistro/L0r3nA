@@ -191,7 +191,7 @@ void EditarArchivo_Guardar(const std::string strPath, c_char* cBuffer, std::stre
 
 }
 
-void EnviarArchivo(const std::string& cPath, const std::string& cID) {
+void EnviarArchivo(const std::string& cPath, const std::string& cID, bool isEdit) {
 	DebugPrint("[ID-" + cID + "]Enviando " + cPath);
 	
 	std::ifstream localFile(cPath, std::ios::binary);
@@ -207,8 +207,12 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID) {
 	strComando.append(1, CMD_DEL);
 	strComando += std::to_string(uTamArchivo);
 	
-	cCliente->cChunkSend(cCliente->sckSocket, strComando.c_str(), strComando.size(), 0, true, nullptr, EnumComandos::FM_Descargar_Archivo_Init);
-	std::this_thread::sleep_for(std::chrono::milliseconds(10));
+	int iPaqueteTipo = EnumComandos::FM_Editar_Archivo_Paquete;
+	if (!isEdit) {
+		cCliente->cChunkSend(cCliente->sckSocket, strComando.c_str(), strComando.size(), 0, true, nullptr, EnumComandos::FM_Descargar_Archivo_Init);
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		iPaqueteTipo = EnumComandos::FM_Descargar_Archivo_Recibir;
+	}
 
 	std::string strHeader = cID;
 	strHeader.append(1, CMD_DEL);
@@ -237,7 +241,7 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID) {
 			int iTotal = iBytesLeidos + iHeaderSize;
 			memcpy(nSendBuffer.data() + iHeaderSize, cBufferArchivo.data(), iBytesLeidos);
 			
-			int iEnviado = cCliente->cChunkSend(cCliente->sckSocket, nSendBuffer.data(), iTotal, 0, true, nullptr, EnumComandos::FM_Descargar_Archivo_Recibir);
+			int iEnviado = cCliente->cChunkSend(cCliente->sckSocket, nSendBuffer.data(), iTotal, 0, true, nullptr, iPaqueteTipo);
 
 			uBytesEnviados += iEnviado;
 
@@ -253,50 +257,10 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID) {
 	localFile.close();
 
 	//Ya se envio todo, cerrar el archivo
-	std::this_thread::sleep_for(std::chrono::milliseconds(500));
-	cCliente->cChunkSend(cCliente->sckSocket, cID.c_str(), cID.size(), 0, true, nullptr, EnumComandos::FM_Descargar_Archivo_End);
-}
-
-//Enviar bytes de archivo a editar
-void EditarArchivo(const std::string strPath, const std::string strID){
-	std::ifstream localFile(strPath, std::ios::binary);
-	if (!localFile.is_open()) {
-		DebugPrint("No se pudo abrir el archivo " + strPath);
-		return;
+	if (!isEdit) {
+		std::this_thread::sleep_for(std::chrono::milliseconds(500));
+		cCliente->cChunkSend(cCliente->sckSocket, cID.c_str(), cID.size(), 0, true, nullptr, EnumComandos::FM_Descargar_Archivo_End);
 	}
-
-	std::string strHeader = std::to_string(EnumComandos::FM_Editar_Archivo_Paquete);
-	strHeader.append(1, CMD_DEL);
-	strHeader += strID;
-	strHeader.append(1, CMD_DEL);
-
-	int iHeaderSize = strHeader.size();
-
-	int iBytesLeidos = 0;
-	std::vector<char> cBufferArchivo(CHUNK_FILE_TRANSFER_SIZE);
-	while (1) {
-		localFile.read(cBufferArchivo.data(), CHUNK_FILE_TRANSFER_SIZE);
-		iBytesLeidos = localFile.gcount();
-		if (iBytesLeidos > 0) {
-			int iTotal = iBytesLeidos + iHeaderSize;
-			std::vector<char> nTempBuffer(iTotal);
-			
-			memcpy(nTempBuffer.data(), strHeader.c_str(), iHeaderSize);
-			memcpy(nTempBuffer.data() + iHeaderSize, cBufferArchivo.data(), iBytesLeidos);
-
-			int iEnviado = cCliente->cSend(cCliente->sckSocket, nTempBuffer.data(), iTotal, 0, true, nullptr);
-			std::this_thread::sleep_for(std::chrono::milliseconds(30));
-
-			if(iEnviado == -1 || iEnviado == WSAECONNRESET){
-				//No se pudo enviar el paquete
-				break;
-			}
-		} else {
-			break;
-		}
-	}
-
-	localFile.close();
 }
 
 void Crypt_Archivo(const std::string strPath, const char cCryptOption, const char cDelOption, const std::string strPass) {

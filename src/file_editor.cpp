@@ -10,7 +10,7 @@ wxEND_EVENT_TABLE()
 wxEditForm::wxEditForm(wxWindow* pParent, wxString strNombre, std::string strID)
 	: wxFrame(pParent, wxID_ANY, "[REMOTO]" + strNombre, wxDefaultPosition, wxDefaultSize, wxDD_DEFAULT_STYLE, strID)
 {
-	this->p_txtEditor = new wxTextCtrl(this, EnumIDS::ID_Panel_FM_Editar_TXT, wxEmptyString, wxDefaultPosition, wxSize(500, 600), wxTE_MULTILINE | wxTE_RICH);
+	this->p_txtEditor = new wxTextCtrl(this, EnumIDS::ID_Panel_FM_Editar_TXT, wxEmptyString, wxDefaultPosition, wxSize(500, 600), wxTE_MULTILINE | wxTE_RICH | wxHSCROLL);
 
 	this->strFilename = strNombre;
 
@@ -29,9 +29,9 @@ wxEditForm::wxEditForm(wxWindow* pParent, wxString strNombre, std::string strID)
 
 	
 	//Encoders :v
-	wxMenu* p_encoders = new wxMenu();
-	p_encoders->Append(wxID_ANY, "Base64");
-	p_encoders->Append(wxID_ANY, "MD5");
+	//wxMenu* p_encoders = new wxMenu();
+	//p_encoders->Append(wxID_ANY, "Base64");
+	//p_encoders->Append(wxID_ANY, "MD5");
 	
 	//wxMenu* p_misc_tools = new wxMenu();
 	//p_misc_tools->AppendSubMenu(p_encoders, "Encoders");
@@ -71,7 +71,6 @@ void wxEditForm::OnGuardarRemoto(wxCommandEvent& event) {
 	else {
 		error();
 	}
-	
 }
 
 

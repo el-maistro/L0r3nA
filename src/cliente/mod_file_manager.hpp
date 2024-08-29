@@ -19,8 +19,7 @@ void BorrarArchivo(c_char* cPath);
 void BorrarFolder(c_char* cPath);
 void RenombrarArchivo(c_char* cPath, c_char* cNuevoNombre);
 void EditarArchivo_Guardar(std::string strPath, c_char* cBuffer, std::streamsize iBufferSize);
-void EditarArchivo(const std::string strPath, const std::string strID);
-void EnviarArchivo(const std::string& cPath, const std::string& cID);
+void EnviarArchivo(const std::string& cPath, const std::string& cID, bool isEdit);
 void Crypt_Archivo(const std::string strPath, const char cCryptOption, const char cDelOption, const std::string strPass);
 #endif
 
