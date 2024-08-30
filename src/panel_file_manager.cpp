@@ -93,6 +93,7 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 			strComando = DUMMY_PARAM;
 			
 			this->Enable(false);
+			this->listManager->MostrarCarga();
 
 			this->EnviarComando(strComando, EnumComandos::FM_Discos);
 			break;
@@ -103,6 +104,7 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 			strComando = "DESCAR-DOWN";
 
 			this->Enable(false);
+			this->listManager->MostrarCarga();
 
 			this->EnviarComando(strComando, EnumComandos::FM_Dir_Folder);
 			break;
@@ -113,6 +115,7 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 			strComando = "ESCRI-DESK";
 
 			this->Enable(false);
+			this->listManager->MostrarCarga();
 
 			this->EnviarComando(strComando, EnumComandos::FM_Dir_Folder);
 			break;
@@ -121,6 +124,7 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 			strComando = this->p_RutaActual->GetLabelText();
 			
 			this->Enable(false);
+			this->listManager->MostrarCarga();
 			
 			this->EnviarComando(strComando, EnumComandos::FM_Dir_Folder);
 			break;
@@ -144,6 +148,8 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 
 void panelFileManager::CrearLista() {
 	this->listManager = new ListCtrlManager(this, EnumIDS::ID_Panel_FM_List, wxDefaultPosition,  wxSize(FRAME_CLIENT_SIZE_WIDTH*3, FRAME_CLIENT_SIZE_WIDTH*3), wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES);
+	this->listManager->m_indicator = new wxActivityIndicator(this->listManager, wxID_ANY, wxDefaultPosition, wxDefaultSize);
+	this->listManager->m_indicator->Show(false);
 }
 
 void panelFileManager::EnviarComando(std::string pComando, int iComando) {
@@ -398,9 +404,9 @@ void ListCtrlManager::OnActivated(wxListEvent& event) {
 			this->InsertColumn(3, itemCol);
 			
 			itemp->Enable(false);
-
-			//Talvez agregar un gif de carga?
-
+			
+			this->MostrarCarga();
+			
 			itemp->EnviarComando(strCommand, EnumComandos::FM_Dir_Folder);
 			itemp->iMODE = FM_NORMAL;
 			break;
@@ -423,6 +429,8 @@ void ListCtrlManager::OnActivated(wxListEvent& event) {
 					strCommand = itemp->RutaActual();
 
 					itemp->Enable(false); 
+					
+					this->MostrarCarga();
 
 					itemp->EnviarComando(strCommand, EnumComandos::FM_Dir_Folder);
 					
@@ -571,6 +579,7 @@ void ListCtrlManager::ListarDir(const char* strData) {
 
 	}
 	this->GetParent()->Enable(true);
+	this->OcultarCarga();
 }
 
 void ListCtrlManager::ListarEquipo(const std::vector<std::string> vcDrives) {
@@ -617,4 +626,17 @@ void ListCtrlManager::ListarEquipo(const std::vector<std::string> vcDrives) {
 	}
 
 	this->GetParent()->Enable(true);
+	this->OcultarCarga();
+}
+
+void ListCtrlManager::MostrarCarga() {
+	std::unique_lock<std::mutex> lock(this->mtx_carga);
+	this->m_indicator->Show(true);
+	this->m_indicator->Start();
+}
+
+void ListCtrlManager::OcultarCarga() {
+	std::unique_lock<std::mutex> lock(this->mtx_carga);
+	this->m_indicator->Stop();
+	this->m_indicator->Show(false);
 }

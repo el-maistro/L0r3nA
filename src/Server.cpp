@@ -15,6 +15,11 @@ std::mutex vector_mutex;
 std::mutex count_mutex;
 std::mutex list_mutex;
 
+void Notify(const char* cTitle, std::string strMessage, int iSecDelay) {
+    //wxFrame notify
+    //std::this_thread::sleep_for(std::chrono::seconds(iSecDelay));
+}
+
 void Print_Packet(const Paquete& paquete) {
     std::cout << "Tipo paquete: " << paquete.uiTipoPaquete << '\n';
     std::cout << "[CHUNK]Tam buffer: " << paquete.uiTamBuffer << '\n';

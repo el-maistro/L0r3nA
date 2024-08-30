@@ -37,6 +37,7 @@ class panelFileManager: public wxPanel{
 class ListCtrlManager : public wxListCtrl {
 	public:
 		panelFileManager* itemp = nullptr;
+		wxActivityIndicator* m_indicator = nullptr;
 
 		ListCtrlManager(wxWindow* parent, const wxWindowID id, 
 			            const wxPoint& pos, const wxSize& size, long style)
@@ -44,9 +45,14 @@ class ListCtrlManager : public wxListCtrl {
 
 		void ListarDir(const char* strData);
 		void ListarEquipo(const std::vector<std::string> vcDrives);
+		
+		//Carga
+		void MostrarCarga();
+		void OcultarCarga();
 
 	private:
 		std::mutex mtx_fm;
+		std::mutex mtx_carga;
 
 		void OnActivated(wxListEvent& event);
 
