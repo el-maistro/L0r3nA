@@ -53,6 +53,10 @@ bool MyApp::OnInit(){
     AllocConsole();
     freopen("CONOUT$", "w", stdout);
     freopen("CONOUT$", "w", stderr);
+
+    wxImage::AddHandler(new wxJPEGHandler);
+    wxImage::AddHandler(new wxPNGHandler);
+
     this->frame = DBG_NEW MyFrame();
     this->frame->Show(true);
 
@@ -66,10 +70,7 @@ MyFrame::MyFrame()
     //_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
     //_CrtSetBreakAlloc(40997);
 
-    wxImage::AddHandler(new wxJPEGHandler);
-    wxImage::AddHandler(new wxPNGHandler);
-
-
+    
     SetTransparent(245);
     p_Servidor = DBG_NEW Servidor();
     p_Servidor->m_listCtrl = nullptr;
@@ -121,10 +122,7 @@ MyFrame::MyFrame()
     this->m_RPanel->SetBackgroundColour(wxColor(0, 0, 255));
     this->m_LPanel->SetBackgroundColour(wxColor(255, 0, 0));
 #endif
-    std::string strTitle = "Titulo";
-    std::string strContent = "Contenido";
-    //MyNotify* n_notify = new MyNotify(nullptr, strTitle, strContent, 3);
-   
+    
 }
 
 TransferFrame::TransferFrame() 

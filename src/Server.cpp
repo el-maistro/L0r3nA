@@ -774,10 +774,9 @@ void Servidor::m_Escucha(){
                 std::string strTest = strtmpIP;
                 std::string strTitle = "["+strTmpId+"] Nueva conexion";
                 
-                //MyNotify* n_notify = nullptr;
                 wxTheApp->CallAfter([strTest, strTitle] {
-                    MyNotify* n_notify = new MyNotify(nullptr, strTitle, strTest, 5);
-                 });
+                    std::shared_ptr<MyNotify> n_notify = MyNotify::Create(nullptr, strTitle, strTest, 5);
+                });
                 
                 //Agregar el cliente al vector global - se agrega a la list una vez se reciba la info
                 std::unique_lock<std::mutex> lock(vector_mutex);
