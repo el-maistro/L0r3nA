@@ -18,8 +18,7 @@ wxEND_EVENT_TABLE()
 
 frameRemoteDesktop::frameRemoteDesktop(wxWindow* pParent) :
 	wxFrame(pParent, EnumRemoteDesktop::ID_Main_Frame, "Escritorio Remoto", wxDefaultPosition, wxSize(900, 500)) {
-	wxImage::AddHandler(new wxJPEGHandler);
-
+	
 	wxWindow* wxTree = (MyTreeCtrl*)this->GetParent();
 	if (wxTree) {
 		wxPanel* panel_cliente = (wxPanel*)wxTree->GetParent();

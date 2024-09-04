@@ -3,6 +3,7 @@
 #include "frame_main.hpp"
 #include "server.hpp"
 #include "headers.hpp"
+#include "notify.hpp"
 
 extern Servidor* p_Servidor;
 
@@ -63,11 +64,15 @@ MyFrame::MyFrame()
 {
     //Trace memory leak
     //_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-    //_CrtSetBreakAlloc(61650);
+    //_CrtSetBreakAlloc(40997);
+
+    wxImage::AddHandler(new wxJPEGHandler);
+    wxImage::AddHandler(new wxPNGHandler);
+
+
     SetTransparent(245);
     p_Servidor = DBG_NEW Servidor();
     p_Servidor->m_listCtrl = nullptr;
-
     
     //Panel derecho ListCtrl
     this->m_RPanel = DBG_NEW wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize); // wxSize(700, 450));
@@ -116,6 +121,10 @@ MyFrame::MyFrame()
     this->m_RPanel->SetBackgroundColour(wxColor(0, 0, 255));
     this->m_LPanel->SetBackgroundColour(wxColor(255, 0, 0));
 #endif
+    std::string strTitle = "Titulo";
+    std::string strContent = "Contenido";
+    //MyNotify* n_notify = new MyNotify(nullptr, strTitle, strContent, 3);
+   
 }
 
 TransferFrame::TransferFrame() 
@@ -173,7 +182,6 @@ void MyFrame::OnMostrarTransferencias(wxCommandEvent& event){
 }
 
 void MyFrame::OnToggle(wxCommandEvent& event) {
-
     bool isSel = this->btn_toggle->GetValue();
     if (isSel) {
         //Iniciar escucha

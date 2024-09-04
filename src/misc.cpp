@@ -1,5 +1,6 @@
 #include "misc.hpp"
 #include "frame_client.hpp"
+#include "notify.hpp"
 
 void printHex(const char* data, int length) {
 	std::cout << std::hex << std::setfill('0'); // Establece la base hexadecimal y el relleno con ceros

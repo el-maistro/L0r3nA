@@ -26,6 +26,7 @@
 #include<wx/tglbtn.h >
 #include<wx/toolbar.h>
 #include<wx/treectrl.h>
+#include<wx/display.h>
 #include<wx/stattext.h>
 #include<wx/radiobox.h>
 #include<wx/sizer.h>

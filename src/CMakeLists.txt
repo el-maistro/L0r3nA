@@ -23,17 +23,18 @@ set(SRCS main.cpp
          panel_camara.cpp
          frame_crypt_db.cpp
          aes256/aes256.cpp
-         zlib/compress.c 
-         zlib/inflate.c 
-         zlib/infback.c 
-         zlib/inftrees.c 
-         zlib/trees.c 
-         zlib/inffast.c 
-         zlib/adler32.c 
-         zlib/deflate.c 
-         zlib/crc32.c 
-         zlib/zutil.c 
-         zlib/uncompr.c
+         notify.cpp
+         #zlib/compress.c 
+         #zlib/inflate.c 
+         #zlib/infback.c 
+         #zlib/inftrees.c 
+         #zlib/trees.c 
+         #zlib/inffast.c 
+         #zlib/adler32.c 
+         #zlib/deflate.c 
+         #zlib/crc32.c 
+         #zlib/zutil.c 
+         #zlib/uncompr.c
 )
 
 add_executable(main WIN32 ${SRCS})

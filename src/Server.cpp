@@ -1,5 +1,6 @@
 #include "server.hpp"
 #include "misc.hpp"
+#include "notify.hpp"
 #include "frame_client.hpp"
 #include "frame_remote_desktop.hpp"
 #include "frame_main.hpp"
@@ -14,11 +15,6 @@ Servidor* p_Servidor;
 std::mutex vector_mutex;
 std::mutex count_mutex;
 std::mutex list_mutex;
-
-void Notify(const char* cTitle, std::string strMessage, int iSecDelay) {
-    //wxFrame notify
-    //std::this_thread::sleep_for(std::chrono::seconds(iSecDelay));
-}
 
 void Print_Packet(const Paquete& paquete) {
     std::cout << "Tipo paquete: " << paquete.uiTipoPaquete << '\n';
@@ -775,17 +771,19 @@ void Servidor::m_Escucha(){
                 structNuevoCliente._id = strTmpId;
                 structNuevoCliente._strIp = strtmpIP;
 
+                std::string strTest = strtmpIP;
+                std::string strTitle = "["+strTmpId+"] Nueva conexion";
+                
+                //MyNotify* n_notify = nullptr;
+                wxTheApp->CallAfter([strTest, strTitle] {
+                    MyNotify* n_notify = new MyNotify(nullptr, strTitle, strTest, 5);
+                 });
                 
                 //Agregar el cliente al vector global - se agrega a la list una vez se reciba la info
                 std::unique_lock<std::mutex> lock(vector_mutex);
                 this->vc_Clientes.push_back(DBG_NEW Cliente_Handler(structNuevoCliente));
                 this->vc_Clientes[this->vc_Clientes.size() - 1]->Spawn_Threads();
                 
-                MyFrame* main = (MyFrame*)wxWindow::FindWindowById(EnumIDS::ID_MAIN);
-                if (main) {
-                    std::string strTitle = "[" + std::to_string(this->vc_Clientes.size()) + "] Online Lorena v0.1";
-                    main->SetTitle(strTitle);
-                }
             }
 
         }
