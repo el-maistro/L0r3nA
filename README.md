@@ -1,6 +1,7 @@
-<p align=center><img src="./imagenes/logo_512x512.jpg" width="100" height="100"/><br>
-L0R3NA
+<p><img src="./imagenes/logo_512x512.jpg" width="150" height="150"/><br>
 </p>
+
+# L0r3nA
  Herramienta de administracion remota escrita en C++
 
 ### Funciones
