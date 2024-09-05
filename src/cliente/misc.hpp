@@ -9,6 +9,7 @@ u64 GetFileSize(c_char* cPath);
 bool Execute(const char *cCmdLine, int iOpt);
 bool EndProcess(int iPID);
 std::string strProcessList();
+u64 StrToUint(const std::string strString);
 
 void DebugPrint(const std::string strMsg, int iValor=0);
 

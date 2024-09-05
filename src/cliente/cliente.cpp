@@ -160,34 +160,55 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     DebugPrint("[PQ] Procesando comando ", iComando);
 
     if (iComando == EnumComandos::FM_Descargar_Archivo_Recibir) {
-        int iBytesSize = iRecibido - 1;
-        if(this->ssArchivo.is_open()){
-            DebugPrint("[FM] ", iBytesSize);
-            this->ssArchivo.write(paquete.cBuffer.data(), iBytesSize);
+        strIn = strSplit(std::string(paquete.cBuffer.data()), CMD_DEL, 1);
+        //strIn[0] = id archivo
+        if (strIn.size() == 1) {
+            int iHeadsize = strIn[0].size() + 1;
+            int iBytesSize = iRecibido - iHeadsize - 1; // -1 por el \0 agregado al armar el paquete
+            const char* cBytes = paquete.cBuffer.data() + iHeadsize;
+            if (this->map_Archivos_Descarga[strIn[0]].ssOutfile.get()->is_open()) {
+                this->map_Archivos_Descarga[strIn[0]].ssOutfile.get()->write(cBytes, iBytesSize);
+                this->map_Archivos_Descarga[strIn[0]].uDescargado += iBytesSize;
+            }else {
+                DebugPrint("[X] El archivo no esta abierto", GetLastError());
+            }
         } else {
-            DebugPrint("No esta abierto :v");
+            DebugPrint("[X] Error parseando comando: " + std::string(paquete.cBuffer.data()));
         }
         return;
     }
 
     if (iComando == EnumComandos::FM_Descargar_Archivo_End) {
-        if(this->ssArchivo.is_open()){
-            this->ssArchivo.close();
+        std::string strID = paquete.cBuffer.data();
+        if (this->map_Archivos_Descarga[strID].ssOutfile.get()->is_open()) {
+            this->map_Archivos_Descarga[strID].ssOutfile.get()->close();
         }
         DebugPrint("[!] Descarga completa");
+        if (this->map_Archivos_Descarga[strID].uDescargado == this->map_Archivos_Descarga[strID].uTamArchivo) {
+            DebugPrint("[!] ");
+        }else {
+            DebugPrint("[X] Error en la tranferencia");
+        }
         return;
     }
 
     if (iComando == EnumComandos::FM_Descargar_Archivo_Init) {
-        strIn = strSplit(std::string(paquete.cBuffer.data()), CMD_DEL, 2);
+        strIn = strSplit(std::string(paquete.cBuffer.data()), CMD_DEL, 3);
         //strIn[0] = ruta archivo
         //strIn[1] = tamano archivo
-        if (strIn.size() == 2) {
-            DebugPrint("[!] Descargando archivo en ruta " + strIn[0], atoi(strIn[1].c_str()));
-            this->ssArchivo.open(strIn[0], std::ios::binary);
-            if(!this->ssArchivo.is_open()){
-            //if ((this->fpArchivo = fopen(strIn[1].c_str(), "wb")) == nullptr) {
-                DebugPrint("[X] No se pudo abrir el archivo " + strIn[0]);
+        //strIn[2] = id del archivo a recibir
+        if (strIn.size() == 3) {
+            DebugPrint("[!] Descargando archivo en ruta " + strIn[0] + ". ID: " + strIn[2], atoi(strIn[1].c_str()));
+            u64 uTamArchivo = StrToUint(strIn[1]);
+            Archivo_Descarga nuevo_archivo;
+            nuevo_archivo.ssOutfile = std::make_shared<std::ofstream>(strIn[0], std::ios::binary);
+            nuevo_archivo.uDescargado = 0;
+            nuevo_archivo.uTamArchivo = uTamArchivo;
+
+            if (nuevo_archivo.ssOutfile.get()->is_open()) {
+                this->Agregar_Archivo_Descarga(nuevo_archivo, strIn[2]);
+            }else {
+                DebugPrint("[X] No se pudo abrir el archivo", GetLastError());
             }
         }else {
             DebugPrint("[X] Error parseando comando: " + std::string(paquete.cBuffer.data()));
@@ -950,6 +971,11 @@ void Cliente::m_DeserializarPaquete(const char* cBuffer, Paquete& paquete) {
     else {
         DebugPrint("[DESER] No se pudo reservar memoria", GetLastError());
     }
+}
+
+void Cliente::Agregar_Archivo_Descarga(Archivo_Descarga& nuevo_archivo, const std::string strID) {
+    std::unique_lock<std::mutex> lock(this->mtx_map_archivos);
+    this->map_Archivos_Descarga.insert(std::make_pair(strID, nuevo_archivo));
 }
 
 //AES256

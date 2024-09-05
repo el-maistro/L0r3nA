@@ -168,7 +168,8 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 	u64 uTamArchivo = GetFileSize(lPath.c_str());
 	u64 uBytesEnviados = 0;
 
-	//AGREGAR TRANSFER AL VECTOR DEL SERVIDOR
+	//////     AGREGAR TRANSFER AL VECTOR DEL SERVIDOR       /////////////
+	// Solo para monitorear transferencia
 	struct TransferStatus nuevo_transfer;
 	nuevo_transfer.isUpload = true;
 	nuevo_transfer.uTamano = uTamArchivo;
@@ -178,29 +179,39 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 	std::unique_lock<std::mutex> lock(p_Servidor->p_transfers);
 	p_Servidor->vcTransferencias.insert({ strCliente, nuevo_transfer });
 	lock.unlock();
+	///////////////////////////////////////////////////////////////////////
 
-
+	std::string strID = RandomID(4);
 	std::string strComando = rPath;
 	strComando.append(1, CMD_DEL);
 	strComando += std::to_string(uTamArchivo);
+	strComando.append(1, CMD_DEL);
+	strComando += strID;
 	
 	//Enviar ruta remota y tamaño de archivo
 	p_Servidor->cChunkSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, true, EnumComandos::FM_Descargar_Archivo_Init);
 	
 	int iBytesLeidos = 0;
 
-	std::vector<char> cBufferArchivo(CHUNK_FILE_TRANSFER_SIZE);
-	if (cBufferArchivo.size() == 0) {
-		std::cout << "No se pudo reservar memoria para enviar el archivo...\n";
+	std::string strHeader = strID;
+	strHeader.append(1, CMD_DEL);
+
+	int iHeaderSize = strHeader.size();
+
+	std::vector<char> nSendBuffer(CHUNK_FILE_TRANSFER_SIZE + iHeaderSize);
+	if (nSendBuffer.size() == 0) {
+		std::cout << "[0]No se pudo reservar memoria para enviar el archivo...\n";
 		return;
 	}
 
-	
+	memcpy(nSendBuffer.data(), strHeader.c_str(), iHeaderSize);
+
 	while (1) {
-		localFile.read(cBufferArchivo.data(), CHUNK_FILE_TRANSFER_SIZE);
+		localFile.read(nSendBuffer.data() + iHeaderSize, CHUNK_FILE_TRANSFER_SIZE);
 		iBytesLeidos = localFile.gcount();
 		if (iBytesLeidos > 0) {
-			int iEnviado = p_Servidor->cChunkSend(this->sckCliente, cBufferArchivo.data(), iBytesLeidos, 0, true, EnumComandos::FM_Descargar_Archivo_Recibir);
+			iBytesLeidos += iHeaderSize;
+			int iEnviado = p_Servidor->cChunkSend(this->sckCliente, nSendBuffer.data(), iBytesLeidos, 0, true, EnumComandos::FM_Descargar_Archivo_Recibir);
 			uBytesEnviados += iEnviado;
 			if (iEnviado == -1 || iEnviado == WSAECONNRESET) {
 				break;
@@ -215,9 +226,8 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 	localFile.close();
 
 	//Ya se envio todo, cerrar el archivo
-	//std::this_thread::sleep_for(std::chrono::milliseconds(500));
-	
-	p_Servidor->cChunkSend(this->sckCliente, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, true, EnumComandos::FM_Descargar_Archivo_End);
+	std::this_thread::sleep_for(std::chrono::milliseconds(500));
+	p_Servidor->cChunkSend(this->sckCliente, strID.c_str(), strID.size(), 0, true, EnumComandos::FM_Descargar_Archivo_End);
 	
 }
 
@@ -295,7 +305,6 @@ void ListCtrlManager::OnDescargarArchivo(wxCommandEvent& event) {
 		return;
 	}
 
-	
 	int iClienteID = p_Servidor->IndexOf(this->itemp->strID);
 	if (iClienteID == -1) {
 		p_Servidor->m_txtLog->LogThis("[X] No se pudo encontrar el cliente " + this->itemp->strID, LogType::LogError);

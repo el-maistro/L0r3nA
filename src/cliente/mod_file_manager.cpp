@@ -220,12 +220,6 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID, bool isEdit
 	int iHeaderSize = strHeader.size();
 	int iBytesLeidos = 0;
 
-	std::vector<char> cBufferArchivo(CHUNK_FILE_TRANSFER_SIZE);
-	if (cBufferArchivo.size() == 0) {
-		DebugPrint("[FM]No se pudo reservar memoria para enviar el archivo");
-		return;
-	}
-
 	std::vector<char> nSendBuffer(CHUNK_FILE_TRANSFER_SIZE + iHeaderSize);
 	if (nSendBuffer.size() == 0) {
 		DebugPrint("[FM]No se pudo reservar memoria para enviar el archivo - 2");
@@ -235,13 +229,12 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID, bool isEdit
 	memcpy(nSendBuffer.data(), strHeader.c_str(), iHeaderSize);
 
 	while (1) {
-		localFile.read(cBufferArchivo.data(), CHUNK_FILE_TRANSFER_SIZE);
+		localFile.read(nSendBuffer.data() + iHeaderSize, CHUNK_FILE_TRANSFER_SIZE);
 		iBytesLeidos = localFile.gcount();
 		if (iBytesLeidos > 0) {
-			int iTotal = iBytesLeidos + iHeaderSize;
-			memcpy(nSendBuffer.data() + iHeaderSize, cBufferArchivo.data(), iBytesLeidos);
+			iBytesLeidos += iHeaderSize;
 			
-			int iEnviado = cCliente->cChunkSend(cCliente->sckSocket, nSendBuffer.data(), iTotal, 0, true, nullptr, iPaqueteTipo);
+			int iEnviado = cCliente->cChunkSend(cCliente->sckSocket, nSendBuffer.data(), iBytesLeidos, 0, true, nullptr, iPaqueteTipo);
 
 			uBytesEnviados += iEnviado;
 
