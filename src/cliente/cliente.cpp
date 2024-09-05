@@ -819,6 +819,23 @@ int Cliente::cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFla
     return iEnviado;
 }
 
+int Cliente::send_all(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags) {
+    int iEnviado = 0;
+    int iTotalEnviado = 0;
+    while (iTotalEnviado < pLen) {
+        iEnviado = send(pSocket, pBuffer + iTotalEnviado, pLen - iTotalEnviado, pFlags);
+        if (iEnviado == 0) {
+            break;
+        }
+        else if (iEnviado < 0) {
+            return -1;
+        }
+        iTotalEnviado += iEnviado;
+    }
+
+    return iTotalEnviado;
+}
+
 int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock, DWORD* err_code) {
     // 1 non block
     // 0 block
@@ -852,7 +869,7 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
         }
     }
     
-    iEnviado = send(pSocket, cBufferFinal.data(), iDataSize, pFlags);
+    iEnviado = send_all(pSocket, cBufferFinal.data(), iDataSize, pFlags);
     if (err_code != nullptr) {
         *err_code = GetLastError();
     }

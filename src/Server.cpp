@@ -890,6 +890,23 @@ int Servidor::cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFl
     return iEnviado;
 }
 
+int Servidor::send_all(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags) {
+    int iEnviado = 0;
+    int iTotalEnviado = 0;
+    while (iTotalEnviado < pLen) {
+        iEnviado = send(pSocket, pBuffer + iTotalEnviado, pLen - iTotalEnviado, pFlags);
+        if (iEnviado == 0) {
+            break;
+        }
+        else if (iEnviado < 0) {
+            return -1;
+        }
+        iTotalEnviado += iEnviado;
+    }
+
+    return iTotalEnviado;
+}
+
 int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock, int iTipoPaquete) {
     // 1 non block
     // 0 block
@@ -924,7 +941,7 @@ int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, 
         }
     }
 
-    iEnviado = send(pSocket, cBufferFinal.data(), iDataSize, pFlags);
+    iEnviado = send_all(pSocket, cBufferFinal.data(), iDataSize, pFlags);
 
     //Restaurar
     if (isBlock) {
@@ -941,7 +958,7 @@ int Servidor::recv_all(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags) {
     int iRecibido = 0;
     int iTotalRecibido = 0;
     while (iTotalRecibido < pLen) {
-        iRecibido = recv(pSocket, pBuffer + iTotalRecibido, pLen - iRecibido, pFlags);
+        iRecibido = recv(pSocket, pBuffer + iTotalRecibido, pLen - iTotalRecibido, pFlags);
         if (iRecibido == 0) {
             //Se cerro el socket
             break;

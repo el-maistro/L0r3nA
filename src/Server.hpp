@@ -256,6 +256,7 @@ class Servidor{
         void m_RemoverClienteLista(std::string p_ID);
 
         //Socket wraps
+        int send_all(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags);
         int recv_all(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags);
         int cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock = false, int iTipoPaquete = 0);
         int cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, bool isBlock, DWORD* err_code);
