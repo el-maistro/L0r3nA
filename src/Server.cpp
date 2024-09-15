@@ -86,7 +86,6 @@ void Cliente_Handler::Command_Handler(){
             break;
         }
         
-        
         iTempRecibido = p_Servidor->cRecv(this->p_Cliente._sckCliente, cBuffer, 0, true, &error_code);
         this->SetBytesRecibidos(iTempRecibido);
         
@@ -164,7 +163,6 @@ void Cliente_Handler::Process_Queue() {
 
             this->Process_Command(nTemp);
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 
     std::unique_lock<std::mutex> lock(this->mt_Queue);
@@ -460,7 +458,8 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
         if (this->m_isFrameVisible()) {
             frameRemoteDesktop* temp_frame = (frameRemoteDesktop*)wxWindow::FindWindowById(EnumRemoteDesktop::ID_Main_Frame, this->n_Frame);
             if (temp_frame) {
-                temp_frame->OnDrawBuffer(paquete.cBuffer.data(), iRecibido-1);
+                const char* cBufferImagen = paquete.cBuffer.data();
+                temp_frame->OnDrawBuffer(cBufferImagen, iRecibido-1);
             }
         }
         return;

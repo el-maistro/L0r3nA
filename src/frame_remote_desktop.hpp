@@ -24,7 +24,7 @@ class frameRemoteDesktop : public wxFrame {
 		wxStaticBitmap* imageCtrl = nullptr;
 		wxComboBox* quality_options = nullptr;
 
-		void OnDrawBuffer(const char* cBuffer, int iBuffersize);
+		void OnDrawBuffer(const char*& cBuffer, int iBuffersize);
 	private:
 		SOCKET sckCliente = INVALID_SOCKET;
 

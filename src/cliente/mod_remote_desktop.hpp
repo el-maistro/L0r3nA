@@ -33,6 +33,9 @@ class mod_RemoteDesktop {
 		void m_UpdateQuality(int iNew);
 		void m_UpdateVmouse(bool isVisible);
 
+		bool m_AreEqual(const std::vector<char>& cBuffer1, const std::vector<char>& cBuffer2);
+		std::vector<char> m_Diff(const std::vector<char>& cBuffer1, const std::vector<char>& cBuffer2);
+
 		mod_RemoteDesktop();
 		~mod_RemoteDesktop();
 

@@ -298,11 +298,17 @@ void mod_RemoteDesktop::DetenerLive() {
 void mod_RemoteDesktop::IniciarLive(int quality) {
     this->isRunning = true;
     this->m_UpdateQuality(quality);
-    
+    std::vector<char> cOldBuffer;
     while (this->m_isRunning()) {
         
         std::vector<char> scrBuffer = this->getFrameBytes(this->m_Quality());
         if (scrBuffer.size() > 0) {
+            if(this->m_AreEqual(scrBuffer, cOldBuffer)){
+                //buffers are equal
+                std::this_thread::sleep_for(std::chrono::milliseconds(30));
+                continue;
+            }
+            cOldBuffer = scrBuffer;
             int iSent = cCliente->cChunkSend(cCliente->sckSocket, scrBuffer.data(), scrBuffer.size(), 0, true, nullptr, EnumComandos::RD_Salida);
             if (iSent == -1) {
                 break;
@@ -312,4 +318,22 @@ void mod_RemoteDesktop::IniciarLive(int quality) {
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
     }
+}
+
+bool mod_RemoteDesktop::m_AreEqual(const std::vector<char>& cBuffer1, const std::vector<char>& cBuffer2) {
+    if (cBuffer1.size() == cBuffer2.size()) {
+        int iSize = cBuffer1.size();
+        for (int iPos = 0; iPos < iSize; iPos++) {
+            if (cBuffer1[iPos] != cBuffer2[iPos]) {
+                return false;
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
+std::vector<char> mod_RemoteDesktop::m_Diff(const std::vector<char>& cBuffer1, const std::vector<char>& cBuffer2) {
+    std::vector<char> cOutput;
+    return cOutput;
 }

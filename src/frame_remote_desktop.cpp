@@ -115,7 +115,7 @@ void frameRemoteDesktop::OnComboChange(wxCommandEvent& event) {
 	event.Skip();
 }
 
-void frameRemoteDesktop::OnDrawBuffer(const char* cBuffer, int iBuffersize) {
+void frameRemoteDesktop::OnDrawBuffer(const char*& cBuffer, int iBuffersize) {
 	if (iBuffersize > 0) {
 		wxMemoryInputStream imgStream(cBuffer, iBuffersize);
 		wxImage img(imgStream, wxBITMAP_TYPE_JPEG);
