@@ -9,10 +9,12 @@ extern std::mutex vector_mutex;
 wxBEGIN_EVENT_TABLE(frameRemoteDesktop, wxFrame)
 	EVT_CLOSE(frameRemoteDesktop::Onclose)
 	EVT_BUTTON(EnumRemoteDesktop::ID_BTN_Single, frameRemoteDesktop::OnSingle)
+	EVT_BUTTON(EnumRemoteDesktop::ID_BTN_Lista, frameRemoteDesktop::OnObtenerLista)
 	EVT_BUTTON(EnumRemoteDesktop::ID_BTN_Start, frameRemoteDesktop::OnStart)
 	EVT_BUTTON(EnumRemoteDesktop::ID_BTN_Stop, frameRemoteDesktop::OnStop)
 	EVT_BUTTON(EnumRemoteDesktop::ID_BTN_Save, frameRemoteDesktop::OnSave)
 	EVT_TEXT(EnumRemoteDesktop::ID_CMB_Qoptions, frameRemoteDesktop::OnComboChange)
+	EVT_CHECKBOX(EnumRemoteDesktop::ID_CHK_Control, frameRemoteDesktop::OnRemoteControl)
 	EVT_CHECKBOX(EnumRemoteDesktop::ID_CHK_Vmouse, frameRemoteDesktop::OnCheckVmouse)
 wxEND_EVENT_TABLE()
 
@@ -29,8 +31,9 @@ frameRemoteDesktop::frameRemoteDesktop(wxWindow* pParent) :
 			}
 		}
 	}
-	
+
 	// - - - - - - - - - CONTROLES PRINCIPALES  - - - - - - - - - 
+	wxButton* btn_Lista = new wxButton(this, EnumRemoteDesktop::ID_BTN_Lista, "Obtener Lista");
 	wxButton* btn_Single = new wxButton(this, EnumRemoteDesktop::ID_BTN_Single, "Tomar Captura");
 	wxButton* btn_Iniciar = new wxButton(this, EnumRemoteDesktop::ID_BTN_Start, "Iniciar");
 	wxButton* btn_Detener = new wxButton(this, EnumRemoteDesktop::ID_BTN_Stop, "Detener");
@@ -43,12 +46,15 @@ frameRemoteDesktop::frameRemoteDesktop(wxWindow* pParent) :
 	qOptions.push_back(wxString("Mejor")); //32 Mejor
 
 
-	wxCheckBox* chk_Control = new wxCheckBox(this, EnumRemoteDesktop::ID_CHK_Control, "Control Remoto (mouse y teclado)");
+	this->chk_Control = new wxCheckBox(this, EnumRemoteDesktop::ID_CHK_Control, "Control Remoto (mouse y teclado)");
 	wxCheckBox* chk_Vmouse = new wxCheckBox(this, EnumRemoteDesktop::ID_CHK_Vmouse, "Mostar mouse remoto");
 	this->quality_options = new wxComboBox(this, EnumRemoteDesktop::ID_CMB_Qoptions, "Seleccionar calidad de imagen", wxDefaultPosition, wxDefaultSize, qOptions, wxCB_READONLY);
+	this->combo_lista_monitores = new wxComboBox(this, EnumRemoteDesktop::ID_CMB_Monitores, "Lista de monitores", wxDefaultPosition, wxSize(200, wxDefaultSize.GetHeight()), wxArrayString(0, ' '), wxCB_READONLY);
 
 	wxBoxSizer* sizer_controles = new wxBoxSizer(wxHORIZONTAL);
 
+	sizer_controles->Add(btn_Lista);
+	sizer_controles->Add(this->combo_lista_monitores);
 	sizer_controles->Add(btn_Single);
 	sizer_controles->Add(btn_Iniciar);
 	sizer_controles->Add(btn_Detener);
@@ -63,6 +69,8 @@ frameRemoteDesktop::frameRemoteDesktop(wxWindow* pParent) :
 	this->imageCtrl = new wxStaticBitmap(this, EnumRemoteDesktop::ID_Bitmap, wxBitmap(10,10));
 	this->imageCtrl->SetScaleMode(wxStaticBitmap::ScaleMode::Scale_Fill);
 
+	this->imageCtrl->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(frameRemoteDesktop::OnRemoteClick), NULL, this);
+
 	wxBoxSizer* main_sizer = new wxBoxSizer(wxVERTICAL);
 
 	main_sizer->Add(sizer_controles, 0, wxEXPAND | wxALL, 2);
@@ -75,6 +83,10 @@ frameRemoteDesktop::frameRemoteDesktop(wxWindow* pParent) :
 
 void frameRemoteDesktop::OnSingle(wxCommandEvent&) {
 	p_Servidor->cChunkSend(this->sckCliente, "32", 2, 0, false, EnumComandos::RD_Single);
+}
+
+void frameRemoteDesktop::OnObtenerLista(wxCommandEvent&) {
+	p_Servidor->cChunkSend(this->sckCliente, "32", 2, 0, false, EnumComandos::RD_Lista);
 }
 
 void frameRemoteDesktop::OnStart(wxCommandEvent&) {
@@ -147,4 +159,28 @@ void frameRemoteDesktop::Onclose(wxCloseEvent&) {
 	p_Servidor->cChunkSend(this->sckCliente, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, false, EnumComandos::RD_Stop);
 	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 	Destroy();
+}
+
+void frameRemoteDesktop::OnRemoteControl(wxCommandEvent&) {
+	this->isRemoteControl = this->chk_Control->IsChecked();
+}
+
+void frameRemoteDesktop::OnRemoteClick(wxMouseEvent& event) {
+	if (this->isRemoteControl) {
+		int localx = event.GetX();
+		int localy = event.GetY();
+		
+		int localres_Width  = this->imageCtrl->GetSize().GetWidth();
+		int localres_Height = this->imageCtrl->GetSize().GetHeight();
+		
+		//Solo prueba, obtener resolucion del cliente
+		int remote_res_Width = 1600;
+		int remote_res_Height = 900;
+
+		int remote_x = localx * remote_res_Width / localres_Width;
+		int remote_y = localy * remote_res_Height / localres_Height;
+		
+		
+	}
+	event.Skip();
 }

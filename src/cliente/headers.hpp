@@ -99,12 +99,15 @@ namespace EnumComandos {
         CM_Single_Salida,
         CM_Live_Start,
         CM_Live_Stop,
+        RD_Lista,
+        RD_Lista_Salida,
         RD_Single,
         RD_Start,
         RD_Stop,
         RD_Salida,
         RD_Update_Q,
-        RD_Update_Vmouse
+        RD_Update_Vmouse,
+        RD_Send_Click
     };
 }
 

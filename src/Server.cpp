@@ -453,6 +453,41 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
         return;
     }
 
+    //mod escritorio remoto - lista monitores
+    if (iComando == EnumComandos::RD_Lista_Salida) {
+        if (this->m_isFrameVisible()) {
+            frameRemoteDesktop* temp_frame = (frameRemoteDesktop*)wxWindow::FindWindowById(EnumRemoteDesktop::ID_Main_Frame, this->n_Frame);
+            if (temp_frame) {
+                std::vector<std::string> vcMonitores = strSplit(std::string(paquete.cBuffer.data()), '|', 20);
+                if (vcMonitores.size() > 0) {
+                    for (std::string strMonitor : vcMonitores) {
+                        //nombre | width | height
+                        std::vector<std::string> vcInfo = strSplit(strMonitor, CMD_DEL, 3);
+                        if (vcInfo.size() == 3) {
+                            MonitorInfo new_monitor;
+                            new_monitor.resWidth = atoi(vcInfo[1].c_str());
+                            new_monitor.resHeight = atoi(vcInfo[2].c_str());
+                            temp_frame->AgregarMonitor(new_monitor);
+                            wxString strEntry = vcInfo[0];
+                            strEntry.append(1, ' ');
+                            strEntry += vcInfo[1];
+                            strEntry.append(1, 'x');
+                            strEntry += vcInfo[2];
+
+                            temp_frame->combo_lista_monitores->Clear();
+                            temp_frame->combo_lista_monitores->Append(strEntry);
+                        }else {
+                            std::cout << "No se pudo parsear la info del monitor\n" << strMonitor << "\n";
+                        }
+                    }
+                }else {
+                    std::cout << "No se pudo parsear la informacion...\n" << paquete.cBuffer.data() << "\n";
+                }
+            }
+        }
+        return;
+    }
+
     //mod escritorio remoto - Buffer de video del escritorio
     if (iComando == EnumComandos::RD_Salida) {
         if (this->m_isFrameVisible()) {

@@ -613,6 +613,34 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //#####################################################
     //#####################################################
     //                ESCRITORIO REMOTO                   # 
+    //Lista de pantallas
+    if (iComando == EnumComandos::RD_Lista) {
+        if (!this->mod_RemoteDesk) {
+            this->mod_RemoteDesk = new mod_RemoteDesktop();
+        }
+        std::string strPaquete = "";
+        std::vector<Monitor> Monitores = this->mod_RemoteDesk->m_ListaMonitores();
+        if (Monitores.size() > 0) {
+            for (Monitor m : Monitores) {
+                //Testing
+                strPaquete += m.szDevice;
+                strPaquete.append(1, CMD_DEL);
+                strPaquete += std::to_string(m.rectData.resWidth);
+                strPaquete.append(1, CMD_DEL);
+                strPaquete += std::to_string(m.rectData.resHeight);
+                
+                strPaquete.append(1, '|');
+                //std::cout << "Nombre " << m.szDevice<<"\n";
+                //std::cout << "Resolucion: " << m.rectData.resWidth << "x" << m.rectData.resHeight << "\n";
+                //std::cout << "Bounds: xStart:" << m.rectData.xStart << " yStart: " << m.rectData.yStart << "\n";
+            }
+            strPaquete.pop_back();
+            this->cChunkSend(this->sckSocket, strPaquete.c_str(), strPaquete.size(), 0, true, nullptr, EnumComandos::RD_Lista_Salida);
+        }else {
+            DebugPrint("No se obtuvieron monitores ? ", GetLastError());
+        }
+        return;
+    }
     //Single
     if (iComando == EnumComandos::RD_Single) {
         //Enviar solo una captura

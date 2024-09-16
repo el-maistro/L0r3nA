@@ -4,6 +4,8 @@
 
 extern Cliente* cCliente;
 
+std::vector<Monitor> tmp_Monitores;
+
 int GetEncoderClsid(const WCHAR* format, CLSID* pClsid){
     UINT  num = 0;          // number of image encoders
     UINT  size = 0;         // size of the image encoder array in bytes
@@ -82,7 +84,7 @@ mod_RemoteDesktop::~mod_RemoteDesktop() {
 
 std::vector<char> mod_RemoteDesktop::getFrameBytes(ULONG quality) {
     std::vector<char> cBuffer;
-
+    
     if (!this->isGDIon) {
         DebugPrint("GDI no esta inicializado, init...");
         this->InitGDI();
@@ -336,4 +338,30 @@ bool mod_RemoteDesktop::m_AreEqual(const std::vector<char>& cBuffer1, const std:
 std::vector<char> mod_RemoteDesktop::m_Diff(const std::vector<char>& cBuffer1, const std::vector<char>& cBuffer2) {
     std::vector<char> cOutput;
     return cOutput;
+}
+
+std::vector<Monitor> mod_RemoteDesktop::m_ListaMonitores() {
+    this->vc_Monitores.clear();
+    EnumDisplayMonitors(NULL, NULL, this->MonitorEnumProc, 0);
+    this->vc_Monitores.insert(this->vc_Monitores.begin(), tmp_Monitores.begin(), tmp_Monitores.end());
+    tmp_Monitores.clear();
+    return this->vc_Monitores;
+}
+
+BOOL mod_RemoteDesktop::MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT rectMonitor, LPARAM lparam) {
+    MONITORINFOEX info;
+    Monitor new_Monitor;
+    info.cbSize = sizeof(MONITORINFOEX);
+    int width = rectMonitor->right - rectMonitor->left;
+    int height = rectMonitor->bottom - rectMonitor->top;
+    new_Monitor.rectData.resWidth = width;
+    new_Monitor.rectData.resHeight = height;
+    new_Monitor.rectData.xStart = rectMonitor->left;
+    new_Monitor.rectData.yStart = rectMonitor->top;
+    if (GetMonitorInfo(hMonitor, &info)) {
+        memcpy(new_Monitor.szDevice, info.szDevice, sizeof(new_Monitor.szDevice) - 1);
+    }
+    tmp_Monitores.push_back(new_Monitor);
+
+    return TRUE;
 }
