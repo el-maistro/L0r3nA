@@ -460,6 +460,7 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
             if (temp_frame) {
                 std::vector<std::string> vcMonitores = strSplit(std::string(paquete.cBuffer.data()), '|', 20);
                 if (vcMonitores.size() > 0) {
+                    temp_frame->LimpiarVector();
                     for (std::string strMonitor : vcMonitores) {
                         //nombre | width | height
                         std::vector<std::string> vcInfo = strSplit(strMonitor, CMD_DEL, 3);

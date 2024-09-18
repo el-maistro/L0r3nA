@@ -82,19 +82,41 @@ frameRemoteDesktop::frameRemoteDesktop(wxWindow* pParent) :
 }
 
 void frameRemoteDesktop::OnSingle(wxCommandEvent&) {
-	p_Servidor->cChunkSend(this->sckCliente, "32", 2, 0, false, EnumComandos::RD_Single);
+	//Si ya esta live porque pedir una captura?
+	if (!this->isLive) {
+		int monitor_index = this->combo_lista_monitores->GetSelection();
+
+		if (monitor_index != wxNOT_FOUND) {
+			std::string strPaquete = this->strQuality;
+			strPaquete.append(1, '|');
+			strPaquete += std::to_string(monitor_index);
+			p_Servidor->cChunkSend(this->sckCliente, strPaquete.c_str(), strPaquete.size(), 0, true, EnumComandos::RD_Single);
+		}
+		else {
+			wxMessageBox("Monitor no seleccionado", "Error");
+		}
+	}
 }
 
 void frameRemoteDesktop::OnObtenerLista(wxCommandEvent&) {
-	p_Servidor->cChunkSend(this->sckCliente, "32", 2, 0, false, EnumComandos::RD_Lista);
+	p_Servidor->cChunkSend(this->sckCliente, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, false, EnumComandos::RD_Lista);
 }
 
 void frameRemoteDesktop::OnStart(wxCommandEvent&) {
-	p_Servidor->cChunkSend(this->sckCliente, "32", 2, 0, false, EnumComandos::RD_Start);
+	int monitor_index = this->combo_lista_monitores->GetSelection();
+	if (monitor_index != wxNOT_FOUND) {
+		std::string strPaquete = "32|";
+		strPaquete += std::to_string(monitor_index);
+		p_Servidor->cChunkSend(this->sckCliente, strPaquete.c_str(), strPaquete.size(), 0, true, EnumComandos::RD_Start);
+		this->isLive = true;
+	}else {
+		wxMessageBox("Monitor no seleccionado", "Error");
+	}
 }
 
 void frameRemoteDesktop::OnStop(wxCommandEvent&) {
 	p_Servidor->cChunkSend(this->sckCliente, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, false, EnumComandos::RD_Stop);
+	this->isLive = false;
 }
 
 void frameRemoteDesktop::OnSave(wxCommandEvent&) {
@@ -108,22 +130,23 @@ void frameRemoteDesktop::OnSave(wxCommandEvent&) {
 
 void frameRemoteDesktop::OnComboChange(wxCommandEvent& event) {
 	std::string strValue = this->quality_options->GetValue().ToStdString();
-	std::string strQuality = "";
 	
 	if (strValue == "KK") {
-		strQuality = "8";
+		this->strQuality = "8";
 	}else if (strValue == "Baja") {
-		strQuality = "16";
+		this->strQuality = "16";
 	}else if (strValue == "Media") {
-		strQuality = "24";
+		this->strQuality = "24";
 	}else if (strValue == "Mejor") {
-		strQuality = "32";
+		this->strQuality = "32";
 	}else {
 		//Esto no deberia de pasar pero por cualquier cosa
-		strQuality = "32";
+		this->strQuality = "32";
 	}
-	
-	p_Servidor->cChunkSend(this->sckCliente, strQuality.c_str(), strQuality.size(), 0, false, EnumComandos::RD_Update_Q);
+	//si esta live actualizar, de lo contrario solo variable local
+	if (this->isLive) {
+		p_Servidor->cChunkSend(this->sckCliente, this->strQuality.c_str(), this->strQuality.size(), 0, false, EnumComandos::RD_Update_Q);
+	}
 	event.Skip();
 }
 
@@ -166,21 +189,50 @@ void frameRemoteDesktop::OnRemoteControl(wxCommandEvent&) {
 }
 
 void frameRemoteDesktop::OnRemoteClick(wxMouseEvent& event) {
-	if (this->isRemoteControl) {
-		int localx = event.GetX();
-		int localy = event.GetY();
-		
-		int localres_Width  = this->imageCtrl->GetSize().GetWidth();
-		int localres_Height = this->imageCtrl->GetSize().GetHeight();
-		
-		//Solo prueba, obtener resolucion del cliente
-		int remote_res_Width = 1600;
-		int remote_res_Height = 900;
+	if (this->isRemoteControl && this->isLive) {
+		int monitor_index = this->combo_lista_monitores->GetSelection();
 
-		int remote_x = localx * remote_res_Width / localres_Width;
-		int remote_y = localy * remote_res_Height / localres_Height;
-		
-		
+		if (monitor_index != wxNOT_FOUND && monitor_index < this->vcMonitor.size()) {
+			int localx = event.GetX();
+			int localy = event.GetY();
+
+			int localres_Width = this->imageCtrl->GetSize().GetWidth();
+			int localres_Height = this->imageCtrl->GetSize().GetHeight();
+
+			MonitorInfo monitor = this->GetCopy(monitor_index);
+			int remote_res_Width = monitor.resWidth;
+			int remote_res_Height = monitor.resHeight;
+
+			int remote_x = localx * remote_res_Width / localres_Width;
+			int remote_y = localy * remote_res_Height / localres_Height;
+
+			//Enviar click
+			std::string strComando = std::to_string(remote_x);
+			strComando.append(1, CMD_DEL);
+			strComando += std::to_string(remote_y);
+			strComando.append(1, CMD_DEL);
+			strComando += std::to_string(monitor_index);
+
+			p_Servidor->cChunkSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, true, EnumComandos::RD_Send_Click);
+
+		}else {
+			wxMessageBox("No hay un monitor seleccionado. whut?", "Remote_click");
+		}
 	}
 	event.Skip();
+}
+
+void frameRemoteDesktop::LimpiarVector() {
+	std::unique_lock<std::mutex> lock(this->mtx_vector);
+	this->vcMonitor.clear();
+}
+
+void frameRemoteDesktop::AgregarMonitor(MonitorInfo& monitor) {
+	std::unique_lock<std::mutex> lock(this->mtx_vector);
+	this->vcMonitor.push_back(monitor);
+}
+
+MonitorInfo frameRemoteDesktop::GetCopy(int index) {
+	std::unique_lock<std::mutex> lock(this->mtx_vector);
+	return this->vcMonitor[index];
 }

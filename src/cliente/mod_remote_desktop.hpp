@@ -10,6 +10,8 @@ struct rect_Monitor {
 	int resHeight;
 	int xStart;
 	int yStart;
+	rect_Monitor()
+		:resWidth(0), resHeight(0), xStart(0), yStart(0) {}
 };
 
 struct Monitor {
@@ -28,6 +30,7 @@ class mod_RemoteDesktop {
 		std::thread th_RemoteDesktop;
 		std::mutex mtx_RemoteDesktop;
 		std::mutex mtx_RemoteSettings;
+		std::mutex mtx_Monitores;
 
 		void InitGDI();
 
@@ -49,19 +52,27 @@ class mod_RemoteDesktop {
 		void m_UpdateQuality(int iNew);
 		void m_UpdateVmouse(bool isVisible);
 
+		//Click remoto
+		void m_SendClick(int x, int y, int monitor_index);
+
 		//Comparacion de imagenes (incompleto)
 		bool m_AreEqual(const std::vector<char>& cBuffer1, const std::vector<char>& cBuffer2);
 		std::vector<char> m_Diff(const std::vector<char>& cBuffer1, const std::vector<char>& cBuffer2);
 
+		//Funciones para monitores
 		std::vector<Monitor> m_ListaMonitores();
+		Monitor m_GetMonitor(int index);
+		void m_Agregar_Monitor(Monitor& new_monitor);
+		void m_Clear_Monitores();
+		std::vector<Monitor> m_GetVectorCopy();
 
 		mod_RemoteDesktop();
 		~mod_RemoteDesktop();
 
-		void IniciarLive(int quality);
-		void SpawnThread(int quality);
+		void IniciarLive(int quality, int monitor_index);
+		void SpawnThread(int quality, int monitor_index);
 		void DetenerLive();
-		std::vector<char> getFrameBytes(ULONG quality);
+		std::vector<char> getFrameBytes(ULONG quality, int index);
 };
 
 #endif

