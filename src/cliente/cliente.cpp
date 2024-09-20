@@ -770,8 +770,9 @@ void Cliente::MainLoop() {
     this->Spawn_QueueMan(); //spawn thread que lee el queue de los comandos
     DWORD error_code = 0;
     const int iBuffSize = PAQUETE_BUFFER_SIZE + 1024;
+    int ultimo_paquete = 0;
     std::vector<char> cBuffer;
-
+    
     while (true) {
         if (!this->m_isRunning()) {break;}
 
@@ -789,6 +790,10 @@ void Cliente::MainLoop() {
                 }
             }
             DebugPrint("[MAIN-LOOP] No se pudo recibir nada");
+            DebugPrint("Recibido:", iRecibido);
+            DebugPrint("Error:", error_code);
+            DebugPrint("Ultimo paquete:", ultimo_paquete);
+
             break;
         }
 
@@ -796,7 +801,7 @@ void Cliente::MainLoop() {
         if (iRecibido > 0) {
             struct Paquete nNuevo;
             this->m_DeserializarPaquete(cBuffer.data(), nNuevo);
-
+            ultimo_paquete = nNuevo.uiTipoPaquete;
             this->Procesar_Paquete(nNuevo);
 
         }
@@ -992,17 +997,18 @@ int Cliente::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, bool
         //Asegurarse de leer todos los bytes
         iRecibido = this->recv_all(pSocket, cRecvBuffer.data(), iPaquetesize, pFlags);
         if (iRecibido < 0) {
+            DebugPrint("No se pudo leer nada recv_all.", iRecibido);
             if (err_code != nullptr) {
                 *err_code = GetLastError();
             }
-            return -1;
+            return iRecibido;
         }
-    }else{
+    }else if(iPaquetesize <= 0){
         //Si se quiere obtener el ultimo error al trabajar con el socket, setear el valor en el puntero
         if (err_code != nullptr) {
             *err_code = GetLastError();
         }
-        return -1;
+        return iPaquetesize;
     }
     
     //Restaurar block_mode en el socket
@@ -1018,7 +1024,7 @@ int Cliente::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, bool
     iRecibido = bOut.size();
     if (iRecibido == 0) {
         DebugPrint("[cRecv] No se pudo desencriptar el buffer", GetLastError());
-        return -1;
+        return 0;
     }
 
     pBuffer.resize(iRecibido);
@@ -1026,7 +1032,7 @@ int Cliente::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, bool
         memcpy(pBuffer.data(), bOut.data(), iRecibido);
     }else {
         DebugPrint("[cRecv] No se pudo reservar memoria para el buffer de salida", GetLastError());
-        return -1;
+        return 0;
     }
     return iRecibido;
 }

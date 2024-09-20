@@ -75,6 +75,7 @@ void Cliente_Handler::PlayBuffer(char* pBuffer, size_t iLen){
     }
 }
 
+//Loop principal del thread del cliente
 void Cliente_Handler::Command_Handler(){
     std::vector<char> cBuffer;
     DWORD error_code = 0;
@@ -90,7 +91,7 @@ void Cliente_Handler::Command_Handler(){
         this->SetBytesRecibidos(iTempRecibido);
         
         //timeout
-        if (error_code == WSAETIMEDOUT) {
+        if (error_code == WSAETIMEDOUT || error_code == WSAEWOULDBLOCK) {
             continue;
         }
 
@@ -102,14 +103,14 @@ void Cliente_Handler::Command_Handler(){
 
         /*Desconexion del cliente
         Si no recibio nada y el error no es timeout o se cerro repentinamente*/
-        if ((iTempRecibido == WSAECONNRESET) || (iTempRecibido == 0 && error_code == 0)) {
+        if ((iTempRecibido == WSAECONNRESET) || (iTempRecibido < 0 && error_code != WSAETIMEDOUT)) {
             if (this->m_isFrameVisible()) {
                 this->n_Frame->SetTitle("DESCONECTADO...");
             }
             std::unique_lock<std::mutex> lock(this->mt_Running);
             this->iRecibido = WSA_FUNADO;
             break;
-        }else if (iTempRecibido <= 0) {
+        }else if (iTempRecibido == 0) {
             continue;
         }
 
@@ -628,7 +629,7 @@ ClientConInfo Servidor::m_Aceptar(){
         
         this->m_txtLog->LogThis(strTmp, LogType::LogMessage);
 
-        DWORD timeout = CLI_TIMEOUT_SECS * 100;
+        DWORD timeout = CLI_TIMEOUT_MILSECS; //100 miliseconds timeout
         setsockopt(tmpSck, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof timeout);
         
         structNuevo._strPuerto = std::to_string(ntohs(structCliente.sin_port));
@@ -827,6 +828,7 @@ void Servidor::m_Escucha(){
 
 int Servidor::IndexOf(std::string strID) {
     std::lock_guard<std::mutex> lock(vector_mutex);
+    if (strID == "sofocante") { return -1; }
     bool isFound = false;
     int iIndex = 0;
     for (; iIndex < this->vc_Clientes.size(); iIndex++) {
@@ -1013,10 +1015,11 @@ int Servidor::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, boo
     // 1 non block
     // 0 block
     
-    int iRecibido = 0;
-    unsigned long int iBlock = 0;
-    std::vector<char> cRecvBuffer;
-    //Hacer el socket block
+    int                     iRecibido = 0;
+    int               temp_error_code = 0;
+    unsigned long int          iBlock = 0;
+    std::vector<char>         cRecvBuffer;
+    
     if (isBlock) {
         //Hacer el socket block
         if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
@@ -1033,13 +1036,13 @@ int Servidor::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, boo
         cRecvBuffer.resize(iPaqueteSize);
         iRecibido = this->recv_all(pSocket, cRecvBuffer.data(), iPaqueteSize, pFlags);
     }
-
+    temp_error_code = WSAGetLastError();
     if (error_code != nullptr) {
-        *error_code = WSAGetLastError();
+        *error_code = temp_error_code;
     }
 
 
-    if (WSAGetLastError() == WSAECONNRESET || iRecibido < 0) {
+    if (temp_error_code == WSAECONNRESET || iRecibido < 0) {
         return WSAECONNRESET;
     }else if (iRecibido == 0) {
         return iRecibido;
@@ -1058,7 +1061,7 @@ int Servidor::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, boo
     iRecibido = bOut.size();
     if (iRecibido == 0) {
         error();
-        return -1;
+        return 0;
     }
 
     pBuffer.resize(iRecibido);
@@ -1066,7 +1069,7 @@ int Servidor::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, boo
         memcpy(pBuffer.data(), bOut.data(), iRecibido);
     }else {
         std::cout << "[cRecv] No se pudo reservar memoria en el buffer de salida\n";
-        return -1;
+        return 0;
     }
     return iRecibido;
 }

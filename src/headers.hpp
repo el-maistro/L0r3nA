@@ -66,7 +66,7 @@
 #define WSA_FUNADO -31337
 #define PING_TIME 5 * 1
 #define AES_KEY_LEN 32
-#define CLI_TIMEOUT_SECS 1
+#define CLI_TIMEOUT_MILSECS 100
 #define FRAME_CLIENT_SIZE_WIDTH 600
 #define DB_FILE "./crypt_.db"
 #define CMD_DEL '~'

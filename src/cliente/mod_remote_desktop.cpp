@@ -54,6 +54,18 @@ bool mod_RemoteDesktop::m_Vmouse() {
 void mod_RemoteDesktop::m_SendClick(int x, int y, int monitor_index) {
     Monitor monitor = this->m_GetMonitor(monitor_index);
     if (monitor.rectData.resWidth > 0) {
+        SetCursorPos(x, y);
+        INPUT inputs[2] = {};
+        ZeroMemory(inputs, sizeof(inputs));
+
+        inputs[0].type = INPUT_MOUSE;
+        inputs[0].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+
+        inputs[1].type = INPUT_MOUSE;
+        inputs[1].mi.dwFlags = MOUSEEVENTF_LEFTUP;
+
+        /*
+        Metodo 2
         int normalized_x = ((x - monitor.rectData.xStart) * 65535) / monitor.rectData.resWidth;
         int normalized_y = ((y - monitor.rectData.yStart) * 65535) / monitor.rectData.resHeight;
 
@@ -64,10 +76,15 @@ void mod_RemoteDesktop::m_SendClick(int x, int y, int monitor_index) {
         inputs[0].mi.dx = normalized_x;
         inputs[0].mi.dy = normalized_y;
         inputs[0].mi.dwFlags = MOUSEEVENTF_VIRTUALDESK | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE | MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP;
-        UINT uSent = SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
-        if (uSent != ARRAYSIZE(inputs)) {
-           DebugPrint("SendInput failed: 0x", HRESULT_FROM_WIN32(GetLastError()));
-        }
+        */
+        //UINT uSent = SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
+        //if (uSent != ARRAYSIZE(inputs)) {
+        //   DebugPrint("SendInput failed: 0x", HRESULT_FROM_WIN32(GetLastError()));
+        //}
+        SendInput(1, &inputs[0], sizeof(INPUT));
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        SendInput(1, &inputs[1], sizeof(INPUT));
+
     }else {
         DebugPrint("[X] El monitor seleccionado no existe", monitor_index);
     }

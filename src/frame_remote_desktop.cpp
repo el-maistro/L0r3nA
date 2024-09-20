@@ -189,6 +189,7 @@ void frameRemoteDesktop::OnRemoteControl(wxCommandEvent&) {
 }
 
 void frameRemoteDesktop::OnRemoteClick(wxMouseEvent& event) {
+	//event.GetEventType();
 	if (this->isRemoteControl && this->isLive) {
 		int monitor_index = this->combo_lista_monitores->GetSelection();
 
