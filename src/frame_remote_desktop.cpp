@@ -40,8 +40,8 @@ frameRemoteDesktop::frameRemoteDesktop(wxWindow* pParent) :
 	wxButton* btn_Guardar = new wxButton(this, EnumRemoteDesktop::ID_BTN_Save, "Guardar Captura");
 	
 	wxArrayString qOptions;
-	qOptions.push_back(wxString("KK")); //8  kk
-	qOptions.push_back(wxString("Baja")); //16 Baja
+	qOptions.push_back(wxString("KK"));    //8  kk
+	qOptions.push_back(wxString("Baja"));  //16 Baja
 	qOptions.push_back(wxString("Media")); //24 Media
 	qOptions.push_back(wxString("Mejor")); //32 Mejor
 
@@ -69,8 +69,8 @@ frameRemoteDesktop::frameRemoteDesktop(wxWindow* pParent) :
 	this->imageCtrl = new wxStaticBitmap(this, EnumRemoteDesktop::ID_Bitmap, wxBitmap(10,10));
 	this->imageCtrl->SetScaleMode(wxStaticBitmap::ScaleMode::Scale_Fill);
 
-	this->imageCtrl->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(frameRemoteDesktop::OnRemoteClick), NULL, this);
-
+	this->ConectarEventos();
+		
 	wxBoxSizer* main_sizer = new wxBoxSizer(wxVERTICAL);
 
 	main_sizer->Add(sizer_controles, 0, wxEXPAND | wxALL, 2);
@@ -188,14 +188,96 @@ void frameRemoteDesktop::OnRemoteControl(wxCommandEvent&) {
 	this->isRemoteControl = this->chk_Control->IsChecked();
 }
 
-void frameRemoteDesktop::OnRemoteClick(wxMouseEvent& event) {
-	//event.GetEventType();
+void frameRemoteDesktop::OnRemoteMouse_Click_Left(wxMouseEvent& event) {
+	wxEventType evento = event.GetEventType();
+	this->EnviarEvento(evento, event.GetX(), event.GetY());
+	
+	/*if (evento == wxEVT_LEFT_DOWN) {
+		std::cout << "LEFT_DOWN\n";
+	}else if (evento == wxEVT_LEFT_UP) {
+		std::cout << "LEFT_UP\n";
+	}
+	*/
+	event.Skip();
+}
+
+void frameRemoteDesktop::OnRemoteMouse_Click_Right(wxMouseEvent& event) {
+	wxEventType evento = event.GetEventType();
+	this->EnviarEvento(evento, event.GetX(), event.GetY());
+	/*if (evento == wxEVT_RIGHT_DOWN) {
+		std::cout << "RIGHT_DOWN\n";
+	}
+	else if (evento == wxEVT_RIGHT_UP) {
+		std::cout << "RIGHT_UP\n";
+	}*/
+	event.Skip();
+}
+
+void frameRemoteDesktop::OnRemoteMouse_Click_Middle(wxMouseEvent& event) {
+	wxEventType evento = event.GetEventType();
+	this->EnviarEvento(evento, event.GetX(), event.GetY());
+	/*if (evento == wxEVT_MIDDLE_DOWN) {
+		std::cout << "MIDDLE_DOWN\n";
+	}
+	else if (evento == wxEVT_MIDDLE_UP) {
+		std::cout << "MIDDLE_UP\n";
+	}*/
+	event.Skip();
+}
+
+void frameRemoteDesktop::OnRemoteMouse_Click_Double(wxMouseEvent& event) {
+	wxEventType evento = event.GetEventType();
+	this->EnviarEvento(evento, event.GetX(), event.GetY());
+	/*if (evento == wxEVT_LEFT_DCLICK) {
+		std::cout << "LEFT_DOUBLE\n";
+	}else if (evento == wxEVT_RIGHT_DCLICK) {
+		std::cout << "RIGHT_DOUBLE\n";
+	}else if (evento == wxEVT_MIDDLE_DCLICK) {
+		std::cout << "MIDDLE_DOUBLE\n";
+	}*/
+
+	event.Skip();
+}
+
+void frameRemoteDesktop::OnRemoteMouse_Wheel(wxMouseEvent& event) {
+	this->EnviarEvento(event.GetEventType(), event.GetX(), event.GetY(), event.GetWheelRotation() < 0 ? true : false);
+
+	//int position = event.GetWheelRotation();
+	//std::cout << "WHEEL " << position << "\n";
+	// < 0  scroll hacia abajo
+	// > 0  scroll hacia arriba
+}
+
+void frameRemoteDesktop::EnviarEvento(wxEventType evento, int x, int y, bool isDown = false) {
 	if (this->isRemoteControl && this->isLive) {
 		int monitor_index = this->combo_lista_monitores->GetSelection();
+		
+		int mouse_action = 0;
+		if (evento == wxEVT_LEFT_DOWN) {
+			mouse_action = EnumRemoteMouse::_LEFT_DOWN;
+		}else if (evento == wxEVT_LEFT_UP) {
+			mouse_action = EnumRemoteMouse::_LEFT_UP;
+		}else if (evento == wxEVT_RIGHT_DOWN) {
+			mouse_action = EnumRemoteMouse::_RIGHT_DOWN;
+		}else if (evento == wxEVT_RIGHT_UP) {
+			mouse_action = EnumRemoteMouse::_RIGHT_UP;
+		}else if (evento == wxEVT_MIDDLE_DOWN) {
+			mouse_action = EnumRemoteMouse::_MIDDLE_DOWN;
+		}else if (evento == wxEVT_RIGHT_UP) {
+			mouse_action = EnumRemoteMouse::_MIDDLE_UP;
+		}else if (evento == wxEVT_LEFT_DCLICK) {
+			mouse_action = EnumRemoteMouse::_DOUBLE_LEFT;
+		}else if (evento == wxEVT_RIGHT_DCLICK) {
+			mouse_action = EnumRemoteMouse::_DOUBLE_RIGHT;
+		}else if (evento == wxEVT_MIDDLE_DCLICK) {
+			mouse_action = EnumRemoteMouse::_DOUBLE_MIDDLE;
+		}else if (evento == wxEVT_MOUSEWHEEL) {
+			mouse_action = (isDown ? EnumRemoteMouse::_WHEEL_DOWN : EnumRemoteMouse::_WHEEL_UP);
+		}
 
 		if (monitor_index != wxNOT_FOUND && monitor_index < this->vcMonitor.size()) {
-			int localx = event.GetX();
-			int localy = event.GetY();
+			int localx = x;
+			int localy = y;
 
 			int localres_Width = this->imageCtrl->GetSize().GetWidth();
 			int localres_Height = this->imageCtrl->GetSize().GetHeight();
@@ -207,20 +289,45 @@ void frameRemoteDesktop::OnRemoteClick(wxMouseEvent& event) {
 			int remote_x = localx * remote_res_Width / localres_Width;
 			int remote_y = localy * remote_res_Height / localres_Height;
 
-			//Enviar click
+			//Armar paquete de evento
+			//X | Y | monitor | action
 			std::string strComando = std::to_string(remote_x);
 			strComando.append(1, CMD_DEL);
 			strComando += std::to_string(remote_y);
 			strComando.append(1, CMD_DEL);
 			strComando += std::to_string(monitor_index);
-
+			strComando.append(1, CMD_DEL);
+			strComando += std::to_string(mouse_action);
+			
 			p_Servidor->cChunkSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, true, EnumComandos::RD_Send_Click);
 
 		}else {
+			//Esto no deberia de pasar
 			wxMessageBox("No hay un monitor seleccionado. whut?", "Remote_click");
 		}
 	}
-	event.Skip();
+}
+
+void frameRemoteDesktop::ConectarEventos() {
+	//Click izquierdo 
+	this->imageCtrl->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse_Click_Left), NULL, this);
+	this->imageCtrl->Connect(wxEVT_LEFT_UP, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse_Click_Left), NULL, this);
+
+	//Click derecho
+	this->imageCtrl->Connect(wxEVT_RIGHT_DOWN, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse_Click_Right), NULL, this);
+	this->imageCtrl->Connect(wxEVT_RIGHT_UP, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse_Click_Right), NULL, this);
+
+	//Click boton central
+	this->imageCtrl->Connect(wxEVT_MIDDLE_DOWN, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse_Click_Middle), NULL, this);
+	this->imageCtrl->Connect(wxEVT_MIDDLE_UP, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse_Click_Middle), NULL, this);
+
+	//Double click
+	this->imageCtrl->Connect(wxEVT_LEFT_DCLICK, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse_Click_Double), NULL, this);
+	this->imageCtrl->Connect(wxEVT_RIGHT_DCLICK, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse_Click_Double), NULL, this);
+	this->imageCtrl->Connect(wxEVT_MIDDLE_DCLICK, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse_Click_Double), NULL, this);
+	
+	//wheel
+	this->imageCtrl->Connect(wxEVT_MOUSEWHEEL, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse_Wheel), NULL, this);
 }
 
 void frameRemoteDesktop::LimpiarVector() {

@@ -44,9 +44,13 @@
 #define CHUNK_FILE_TRANSFER_SIZE 1024 * 10
 #define DUMMY_PARAM "0"
 
-#define error() std::cout<<"Error["<<GetLastError()<<"]\n";
-#define error_2(x) std::cout<<"["<<x<<"]"<<"Error["<<GetLastError()<<"]\n";
-
+#ifdef ___DEBUG_
+    #define error() std::cout<<"Error["<<GetLastError()<<"]\n";
+    #define error_2(x) std::cout<<"["<<x<<"]"<<"Error["<<GetLastError()<<"]\n";
+#else
+    #define error() NULL
+    #define error_2(x) NULL
+#endif
 
 typedef unsigned int u_int;
 typedef const char c_char;

@@ -7,7 +7,7 @@ Cliente* cCliente;
 #ifdef ___DEBUG_
 int main(int argc, char** argv) {
 #else
-int WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, LPSTR /*lpCmdLine*/, int /*nShowCmd*/) {
+int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, LPSTR /*lpCmdLine*/, int /*nShowCmd*/) {
 #endif
 	const char* cHost = "127.0.0.1";
 	const char* cPort = "65500";
