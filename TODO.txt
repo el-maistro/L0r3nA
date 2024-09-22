@@ -1,7 +1,0 @@
-[SPY] Mod Remote Desktop
-[SPY] Administrador de ventanas (Lista, Minimizar, Maximizar, Cerrar)
-[INFORMATION] OS, Users, Passwords 
-[NETWORK] Reverse proxy
-[NETWORK] LAN/WAN scanner
-[FUN] Obvio :v
-[PERSISTENCE] Instalacion, evasion
