@@ -164,9 +164,11 @@ void frameRemoteDesktop::OnDrawBuffer(const char*& cBuffer, int iBuffersize) {
 			wxBitmap bmp_Obj(img);
 			
 			if (this->imageCtrl) {
-				this->imageCtrl->SetBitmap(bmp_Obj);
-				this->Refresh();
-				this->Update();
+				if (bmp_Obj.IsOk()) {
+					this->imageCtrl->SetBitmap(bmp_Obj);
+					this->imageCtrl->Refresh();
+					this->imageCtrl->Update();
+				}
 			}
 		}
 	}
@@ -188,67 +190,23 @@ void frameRemoteDesktop::OnRemoteControl(wxCommandEvent&) {
 	this->isRemoteControl = this->chk_Control->IsChecked();
 }
 
-void frameRemoteDesktop::OnRemoteMouse_Click_Left(wxMouseEvent& event) {
+void frameRemoteDesktop::OnRemoteMouse(wxMouseEvent& event) {
 	wxEventType evento = event.GetEventType();
-	this->EnviarEvento(evento, event.GetX(), event.GetY());
-	
-	/*if (evento == wxEVT_LEFT_DOWN) {
-		std::cout << "LEFT_DOWN\n";
-	}else if (evento == wxEVT_LEFT_UP) {
-		std::cout << "LEFT_UP\n";
+	this->imageCtrl->SetFocus();
+	if (evento == wxEVT_MOUSEWHEEL) {
+		this->EnviarEventoMouse(evento, event.GetX(), event.GetY(), event.GetWheelRotation() < 0 ? true : false);
+	}else {
+		this->EnviarEventoMouse(evento, event.GetX(), event.GetY());
 	}
-	*/
 	event.Skip();
 }
 
-void frameRemoteDesktop::OnRemoteMouse_Click_Right(wxMouseEvent& event) {
-	wxEventType evento = event.GetEventType();
-	this->EnviarEvento(evento, event.GetX(), event.GetY());
-	/*if (evento == wxEVT_RIGHT_DOWN) {
-		std::cout << "RIGHT_DOWN\n";
-	}
-	else if (evento == wxEVT_RIGHT_UP) {
-		std::cout << "RIGHT_UP\n";
-	}*/
+void frameRemoteDesktop::OnRemoteKey(wxKeyEvent& event) {
+	this->EnviarEventoTeclado(event.GetEventType(), event.GetKeyCode());
 	event.Skip();
 }
 
-void frameRemoteDesktop::OnRemoteMouse_Click_Middle(wxMouseEvent& event) {
-	wxEventType evento = event.GetEventType();
-	this->EnviarEvento(evento, event.GetX(), event.GetY());
-	/*if (evento == wxEVT_MIDDLE_DOWN) {
-		std::cout << "MIDDLE_DOWN\n";
-	}
-	else if (evento == wxEVT_MIDDLE_UP) {
-		std::cout << "MIDDLE_UP\n";
-	}*/
-	event.Skip();
-}
-
-void frameRemoteDesktop::OnRemoteMouse_Click_Double(wxMouseEvent& event) {
-	wxEventType evento = event.GetEventType();
-	this->EnviarEvento(evento, event.GetX(), event.GetY());
-	/*if (evento == wxEVT_LEFT_DCLICK) {
-		std::cout << "LEFT_DOUBLE\n";
-	}else if (evento == wxEVT_RIGHT_DCLICK) {
-		std::cout << "RIGHT_DOUBLE\n";
-	}else if (evento == wxEVT_MIDDLE_DCLICK) {
-		std::cout << "MIDDLE_DOUBLE\n";
-	}*/
-
-	event.Skip();
-}
-
-void frameRemoteDesktop::OnRemoteMouse_Wheel(wxMouseEvent& event) {
-	this->EnviarEvento(event.GetEventType(), event.GetX(), event.GetY(), event.GetWheelRotation() < 0 ? true : false);
-
-	//int position = event.GetWheelRotation();
-	//std::cout << "WHEEL " << position << "\n";
-	// < 0  scroll hacia abajo
-	// > 0  scroll hacia arriba
-}
-
-void frameRemoteDesktop::EnviarEvento(wxEventType evento, int x, int y, bool isDown = false) {
+void frameRemoteDesktop::EnviarEventoMouse(wxEventType evento, int x, int y, bool isDown) {
 	if (this->isRemoteControl && this->isLive) {
 		int monitor_index = this->combo_lista_monitores->GetSelection();
 		
@@ -308,26 +266,44 @@ void frameRemoteDesktop::EnviarEvento(wxEventType evento, int x, int y, bool isD
 	}
 }
 
+void frameRemoteDesktop::EnviarEventoTeclado(wxEventType evento, int key) {
+	if (this->isRemoteControl && this->isLive) {
+		//key | DOWN/UP 0/1
+		bool isDown = false;
+		if (evento == wxEVT_KEY_DOWN) {
+			isDown = true;
+		}
+		std::string strComando = "";
+		strComando.append(1, (char)key);
+		strComando.append(1, CMD_DEL);
+		strComando.append(1, isDown ? '0' : '1');
+
+		p_Servidor->cChunkSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, true, EnumComandos::RD_Send_Teclado);
+	}
+}
+
 void frameRemoteDesktop::ConectarEventos() {
+	//Mouse
 	//Click izquierdo 
-	this->imageCtrl->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse_Click_Left), NULL, this);
-	this->imageCtrl->Connect(wxEVT_LEFT_UP, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse_Click_Left), NULL, this);
-
+	this->imageCtrl->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse), NULL, this);
+	this->imageCtrl->Connect(wxEVT_LEFT_UP, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse), NULL, this);
 	//Click derecho
-	this->imageCtrl->Connect(wxEVT_RIGHT_DOWN, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse_Click_Right), NULL, this);
-	this->imageCtrl->Connect(wxEVT_RIGHT_UP, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse_Click_Right), NULL, this);
-
+	this->imageCtrl->Connect(wxEVT_RIGHT_DOWN, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse), NULL, this);
+	this->imageCtrl->Connect(wxEVT_RIGHT_UP, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse), NULL, this);
 	//Click boton central
-	this->imageCtrl->Connect(wxEVT_MIDDLE_DOWN, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse_Click_Middle), NULL, this);
-	this->imageCtrl->Connect(wxEVT_MIDDLE_UP, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse_Click_Middle), NULL, this);
-
+	this->imageCtrl->Connect(wxEVT_MIDDLE_DOWN, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse), NULL, this);
+	this->imageCtrl->Connect(wxEVT_MIDDLE_UP, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse), NULL, this);
 	//Double click
-	this->imageCtrl->Connect(wxEVT_LEFT_DCLICK, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse_Click_Double), NULL, this);
-	this->imageCtrl->Connect(wxEVT_RIGHT_DCLICK, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse_Click_Double), NULL, this);
-	this->imageCtrl->Connect(wxEVT_MIDDLE_DCLICK, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse_Click_Double), NULL, this);
-	
+	this->imageCtrl->Connect(wxEVT_LEFT_DCLICK, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse), NULL, this);
+	this->imageCtrl->Connect(wxEVT_RIGHT_DCLICK, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse), NULL, this);
+	this->imageCtrl->Connect(wxEVT_MIDDLE_DCLICK, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse), NULL, this);
 	//wheel
-	this->imageCtrl->Connect(wxEVT_MOUSEWHEEL, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse_Wheel), NULL, this);
+	this->imageCtrl->Connect(wxEVT_MOUSEWHEEL, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse), NULL, this);
+
+	//Teclado 
+	this->imageCtrl->Connect(wxEVT_KEY_DOWN, wxKeyEventHandler(frameRemoteDesktop::OnRemoteKey), NULL, this);
+	this->imageCtrl->Connect(wxEVT_KEY_UP, wxKeyEventHandler(frameRemoteDesktop::OnRemoteKey), NULL, this);
+
 }
 
 void frameRemoteDesktop::LimpiarVector() {

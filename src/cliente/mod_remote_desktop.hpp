@@ -19,6 +19,22 @@ struct Monitor {
 	rect_Monitor rectData;
 };
 
+namespace EnumRemoteMouse {
+	enum Enum {
+		_LEFT_DOWN = 1,
+		_LEFT_UP,
+		_RIGHT_DOWN,
+		_RIGHT_UP,
+		_MIDDLE_DOWN,
+		_MIDDLE_UP,
+		_DOUBLE_LEFT,
+		_DOUBLE_RIGHT,
+		_DOUBLE_MIDDLE,
+		_WHEEL_DOWN,
+		_WHEEL_UP
+	};
+}
+
 class mod_RemoteDesktop {
 	private:
 		Gdiplus::GdiplusStartupInput gdiplusStartupInput;
@@ -52,8 +68,9 @@ class mod_RemoteDesktop {
 		void m_UpdateQuality(int iNew);
 		void m_UpdateVmouse(bool isVisible);
 
-		//Click remoto
-		void m_SendClick(int x, int y, int monitor_index);
+		//Mouse remoto
+		void m_RemoteMouse(int x, int y, int monitor_index, int mouse_action);
+		void m_RemoteTeclado(char key, bool isDown);
 
 		//Comparacion de imagenes (incompleto)
 		bool m_AreEqual(const std::vector<char>& cBuffer1, const std::vector<char>& cBuffer2);

@@ -6,6 +6,10 @@ extern Cliente* cCliente;
 
 std::vector<Monitor> tmp_Monitores;
 
+void Print_Mouse_Command(int x, int y, int monitor_index, int mouse_action) {
+    std::cout << "X: " << x << "\nY:" << y << "Monitor: " << monitor_index << "\nAction: " << mouse_action << "\n";
+}
+
 int GetEncoderClsid(const WCHAR* format, CLSID* pClsid){
     UINT  num = 0;          // number of image encoders
     UINT  size = 0;         // size of the image encoder array in bytes
@@ -51,20 +55,45 @@ bool mod_RemoteDesktop::m_Vmouse() {
     return this->isMouseOn;
 }
 
-void mod_RemoteDesktop::m_SendClick(int x, int y, int monitor_index) {
+void mod_RemoteDesktop::m_RemoteMouse(int x, int y, int monitor_index, int mouse_action) {
+    Print_Mouse_Command(x, y, monitor_index, mouse_action);
     Monitor monitor = this->m_GetMonitor(monitor_index);
     if (monitor.rectData.resWidth > 0) {
         SetCursorPos(x, y);
-        INPUT inputs[2] = {};
+        INPUT inputs[1] = {};
         ZeroMemory(inputs, sizeof(inputs));
 
-        inputs[0].type = INPUT_MOUSE;
-        inputs[0].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+        DWORD dwFlag = MOUSEEVENTF_VIRTUALDESK | MOUSEEVENTF_ABSOLUTE;
+        switch (mouse_action) {
+            case EnumRemoteMouse::_LEFT_DOWN:
+                dwFlag |= MOUSEEVENTF_LEFTDOWN;
+                break;
+            case EnumRemoteMouse::_LEFT_UP:
+                dwFlag |= MOUSEEVENTF_LEFTUP;
+                break;
+            case EnumRemoteMouse::_RIGHT_DOWN:
+                dwFlag |= MOUSEEVENTF_RIGHTDOWN;
+                break;
+            case EnumRemoteMouse::_RIGHT_UP:
+                dwFlag |= MOUSEEVENTF_RIGHTUP;
+                break;
+            case EnumRemoteMouse::_MIDDLE_DOWN:
+                dwFlag |= MOUSEEVENTF_MIDDLEDOWN;
+                break;
+            case EnumRemoteMouse::_MIDDLE_UP:
+                dwFlag |= MOUSEEVENTF_MIDDLEUP;
+                break;
+            default:
+                break;
+        }
 
-        inputs[1].type = INPUT_MOUSE;
-        inputs[1].mi.dwFlags = MOUSEEVENTF_LEFTUP;
-
+        if (dwFlag != (MOUSEEVENTF_VIRTUALDESK | MOUSEEVENTF_ABSOLUTE)) {
+            inputs[0].type = INPUT_MOUSE;
+            inputs[0].mi.dwFlags = dwFlag;
+            SendInput(1, inputs, sizeof(INPUT));
+        }
         /*
+         
         Metodo 2
         int normalized_x = ((x - monitor.rectData.xStart) * 65535) / monitor.rectData.resWidth;
         int normalized_y = ((y - monitor.rectData.yStart) * 65535) / monitor.rectData.resHeight;
@@ -81,13 +110,24 @@ void mod_RemoteDesktop::m_SendClick(int x, int y, int monitor_index) {
         //if (uSent != ARRAYSIZE(inputs)) {
         //   DebugPrint("SendInput failed: 0x", HRESULT_FROM_WIN32(GetLastError()));
         //}
-        SendInput(1, &inputs[0], sizeof(INPUT));
-        std::this_thread::sleep_for(std::chrono::milliseconds(50));
-        SendInput(1, &inputs[1], sizeof(INPUT));
-
+        
     }else {
         DebugPrint("[X] El monitor seleccionado no existe", monitor_index);
     }
+}
+
+void mod_RemoteDesktop::m_RemoteTeclado(char key, bool isDown) {
+    INPUT inputs[1] = {};
+    ZeroMemory(inputs, sizeof(inputs));
+
+    inputs[0].type = INPUT_KEYBOARD;
+    inputs[0].ki.wVk = key;
+    
+    //Si no es up no hay necesidad de setear un flag
+    if (!isDown) {
+        inputs[0].ki.dwFlags = KEYEVENTF_KEYUP;
+    }
+    SendInput(1, inputs, sizeof(INPUT));
 }
 
 void mod_RemoteDesktop::InitGDI() {

@@ -79,6 +79,8 @@
 #define DUMMY_PARAM "0"
 #define EXEC_OCULTO '0'
 #define EXEC_VISIBLE '1'
+#define PAQUETE_MINIMUM_SIZE sizeof(unsigned int) * 3
+#define MAX_PAQUETE_SIZE 50000
 
 
 //FM Modos
@@ -220,7 +222,8 @@ namespace EnumComandos {
         RD_Salida,
         RD_Update_Q,
         RD_Update_Vmouse,
-        RD_Send_Click
+        RD_Send_Click,
+        RD_Send_Teclado
     };
 }
 

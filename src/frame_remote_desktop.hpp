@@ -67,13 +67,12 @@ class frameRemoteDesktop : public wxFrame {
 
 		void OnRemoteControl(wxCommandEvent&);               //Habilitar control remoto (toggle)
 		
-		//Control de Mouse
-		void OnRemoteMouse_Click_Left(wxMouseEvent&);		 //Click izquierdo
-		void OnRemoteMouse_Click_Right(wxMouseEvent&);	     //Click derecho
-		void OnRemoteMouse_Click_Middle(wxMouseEvent&);      //Click boton central
-		void OnRemoteMouse_Click_Double(wxMouseEvent&);      //Doble click
-		void OnRemoteMouse_Wheel(wxMouseEvent&);             //Scroll
+		//Mouse remoto
+		void OnRemoteMouse(wxMouseEvent& event);
 
+		//Teclado remoto
+		void OnRemoteKey(wxKeyEvent& event);
+	
 		void OnCheckVmouse(wxCommandEvent&);                 //Mostrar mouse remoto
 		void OnComboChange(wxCommandEvent&);	             //Cambiar calidad de imagen
 		void OnObtenerLista(wxCommandEvent&);                //Obtener lista de monitores
@@ -83,7 +82,8 @@ class frameRemoteDesktop : public wxFrame {
 		void OnSave(wxCommandEvent&);			             //Guardar captura
 		void Onclose(wxCloseEvent&);
 
-		void EnviarEvento(wxEventType evento, int x, int y, bool isDown = false); //Enviar evento de mouse
+		void EnviarEventoMouse(wxEventType evento, int x, int y, bool isDown = false); 
+		void EnviarEventoTeclado(wxEventType evento, int key);
 		void ConectarEventos();
 
 		wxDECLARE_EVENT_TABLE();

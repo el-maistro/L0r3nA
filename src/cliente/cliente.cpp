@@ -727,17 +727,35 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //Recibir coordenadas click remoto
     if (iComando == EnumComandos::RD_Send_Click) {
         if (this->mod_RemoteDesk) {
-            strIn = strSplit(paquete.cBuffer.data(), CMD_DEL, 3);
-            if (strIn.size() == 3) {
-                int x = atoi(strIn[0].c_str());
-                int y = atoi(strIn[1].c_str());
+            strIn = strSplit(paquete.cBuffer.data(), CMD_DEL, 4);
+            if (strIn.size() == 4) {
+                int x             = atoi(strIn[0].c_str());
+                int y             = atoi(strIn[1].c_str());
                 int monitor_index = atoi(strIn[2].c_str());
-                this->mod_RemoteDesk->m_SendClick(x, y, monitor_index);
+                int mouse_action  = atoi(strIn[3].c_str());
+                this->mod_RemoteDesk->m_RemoteMouse(x, y, monitor_index, mouse_action);
             }else {
                 DebugPrint("[RD] No se pudo parsear el paquete remote_click");
             }
         }
         else {
+            DebugPrint("[RD]No se ha creado el objeto");
+        }
+        return;
+    }
+
+    //Teclado remoto
+    if (iComando == EnumComandos::RD_Send_Teclado) {
+        if (this->mod_RemoteDesk) {
+            strIn = strSplit(paquete.cBuffer.data(), CMD_DEL, 2);
+            if (strIn.size() == 2) {
+                char key    = strIn[0][0];
+                bool isDown = strIn[1][0] == '0' ? true : false;
+                this->mod_RemoteDesk->m_RemoteTeclado(key, isDown);
+            }else {
+                DebugPrint("[RD] No se pudo parsear el paquete remote_teclado");
+            }
+        }else {
             DebugPrint("[RD]No se ha creado el objeto");
         }
         return;
@@ -800,10 +818,13 @@ void Cliente::MainLoop() {
         //Si se recibio un paquete completo
         if (iRecibido > 0) {
             struct Paquete nNuevo;
-            this->m_DeserializarPaquete(cBuffer.data(), nNuevo);
-            ultimo_paquete = nNuevo.uiTipoPaquete;
-            this->Procesar_Paquete(nNuevo);
-
+            if (this->m_DeserializarPaquete(cBuffer.data(), nNuevo, iRecibido)) {
+                ultimo_paquete = nNuevo.uiTipoPaquete;
+                this->Procesar_Paquete(nNuevo);
+            }else {
+                DebugPrint("Error deserializando el paquete. Recibido:", iRecibido);
+            }
+            
         }
 
     }
@@ -980,7 +1001,7 @@ int Cliente::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, bool
     
     int iRecibido = 0;
     unsigned long int iBlock = 0;
-
+    bool bErrorFlag = false;
     if (isBlock) {
         //Hacer el socket block
         if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
@@ -993,24 +1014,24 @@ int Cliente::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, bool
     int iPaquetesize = recv(pSocket, cBuffSize, sizeof(int), pFlags);
     if (iPaquetesize == sizeof(int)) {
         memcpy(&iPaquetesize, cBuffSize, sizeof(int));
-        cRecvBuffer.resize(iPaquetesize);
-        //Asegurarse de leer todos los bytes
-        iRecibido = this->recv_all(pSocket, cRecvBuffer.data(), iPaquetesize, pFlags);
-        if (iRecibido < 0) {
-            DebugPrint("No se pudo leer nada recv_all.", iRecibido);
-            if (err_code != nullptr) {
-                *err_code = GetLastError();
+        if (iPaquetesize > 0 && iPaquetesize < MAX_PAQUETE_SIZE) {
+            cRecvBuffer.resize(iPaquetesize);
+            //Asegurarse de leer todos los bytes
+            iRecibido = this->recv_all(pSocket, cRecvBuffer.data(), iPaquetesize, pFlags);
+            if (iRecibido < 0) {
+                DebugPrint("No se pudo leer nada recv_all.", iRecibido);
+                bErrorFlag = true;
             }
-            return iRecibido;
         }
     }else if(iPaquetesize <= 0){
-        //Si se quiere obtener el ultimo error al trabajar con el socket, setear el valor en el puntero
-        if (err_code != nullptr) {
-            *err_code = GetLastError();
-        }
-        return iPaquetesize;
+        iRecibido = iPaquetesize;
+        bErrorFlag = true;
     }
     
+    if (err_code != nullptr) {
+        *err_code = GetLastError();
+    }
+
     //Restaurar block_mode en el socket
     if (isBlock && !this->BLOCK_MODE) {
         iBlock = 1;
@@ -1018,6 +1039,8 @@ int Cliente::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, bool
             DebugPrint("No se pudo restaurar el block_mode en el socket");
         }
     }
+
+    if (bErrorFlag) { return iRecibido; }
     
     //Decrypt data
     ByteArray bOut = this->bDec(reinterpret_cast<const unsigned char*>(cRecvBuffer.data()), iRecibido);
@@ -1044,17 +1067,25 @@ void Cliente::m_SerializarPaquete(const Paquete& paquete, char* cBuffer) {
     memcpy(cBuffer + sizeof(paquete.uiTipoPaquete) + sizeof(paquete.uiTamBuffer) + sizeof(paquete.uiIsUltimo), paquete.cBuffer.data(), paquete.uiTamBuffer);
 }
 
-void Cliente::m_DeserializarPaquete(const char* cBuffer, Paquete& paquete) {
+bool Cliente::m_DeserializarPaquete(const char* cBuffer, Paquete& paquete, int bufer_size) {
+    if (bufer_size < PAQUETE_MINIMUM_SIZE) { return false; }
     memcpy(&paquete.uiTipoPaquete, cBuffer,  sizeof(paquete.uiTipoPaquete));
     memcpy(&paquete.uiTamBuffer,   cBuffer + sizeof(paquete.uiTipoPaquete),  sizeof(paquete.uiTamBuffer));
     memcpy(&paquete.uiIsUltimo,    cBuffer + sizeof(paquete.uiTipoPaquete) + sizeof(paquete.uiTamBuffer),  sizeof(paquete.uiIsUltimo));
-    paquete.cBuffer.resize(paquete.uiTamBuffer);
+    
+    if (paquete.uiTamBuffer > 0 && paquete.uiTamBuffer < MAX_PAQUETE_SIZE) {
+        paquete.cBuffer.resize(paquete.uiTamBuffer);
+    }else {
+        return false;
+    }
+
     if (paquete.cBuffer.size() == paquete.uiTamBuffer) {
         memcpy(paquete.cBuffer.data(), cBuffer + sizeof(paquete.uiTipoPaquete) + sizeof(paquete.uiTamBuffer) + sizeof(paquete.uiIsUltimo), paquete.uiTamBuffer);
-    }
-    else {
+    }else {
         DebugPrint("[DESER] No se pudo reservar memoria", GetLastError());
+        return false;
     }
+    return true;
 }
 
 void Cliente::Agregar_Archivo_Descarga(Archivo_Descarga& nuevo_archivo, const std::string strID) {

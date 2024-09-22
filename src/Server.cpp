@@ -77,7 +77,6 @@ void Cliente_Handler::PlayBuffer(char* pBuffer, size_t iLen){
 
 //Loop principal del thread del cliente
 void Cliente_Handler::Command_Handler(){
-    std::vector<char> cBuffer;
     DWORD error_code = 0;
     int iTempRecibido = 0;
     while (true) {
@@ -86,7 +85,8 @@ void Cliente_Handler::Command_Handler(){
             this->iRecibido = WSA_FUNADO;
             break;
         }
-        
+        std::vector<char> cBuffer;
+
         iTempRecibido = p_Servidor->cRecv(this->p_Cliente._sckCliente, cBuffer, 0, true, &error_code);
         this->SetBytesRecibidos(iTempRecibido);
         
@@ -117,8 +117,11 @@ void Cliente_Handler::Command_Handler(){
         //Agregar datos al queue
         if (iTempRecibido > 0) {
             struct Paquete nNuevo;
-            p_Servidor->m_DeserializarPaquete(cBuffer.data(), nNuevo);
-            this->Procesar_Paquete(nNuevo);
+            if (p_Servidor->m_DeserializarPaquete(cBuffer.data(), nNuevo, iTempRecibido)) {
+                this->Procesar_Paquete(nNuevo);
+            }else {
+                this->Log("No se pudo deserializar el paquete. Recibido: " + std::to_string(iTempRecibido));
+            }
         }
     }
 
@@ -1019,7 +1022,7 @@ int Servidor::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, boo
     int               temp_error_code = 0;
     unsigned long int          iBlock = 0;
     std::vector<char>         cRecvBuffer;
-    
+    bool               bErrorFlag = false;
     if (isBlock) {
         //Hacer el socket block
         if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
@@ -1033,14 +1036,18 @@ int Servidor::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, boo
     if (iPaqueteSize == sizeof(int)) {
         memcpy(&iPaqueteSize, cBuffSize, sizeof(int));
         //Establecer un limite para evitar buffer demasiado grande 
-        cRecvBuffer.resize(iPaqueteSize);
-        iRecibido = this->recv_all(pSocket, cRecvBuffer.data(), iPaqueteSize, pFlags);
+        if (iPaqueteSize > 0 && iPaqueteSize < MAX_PAQUETE_SIZE) {
+            cRecvBuffer.resize(iPaqueteSize);
+            iRecibido = this->recv_all(pSocket, cRecvBuffer.data(), iPaqueteSize, pFlags);
+        }else {
+            std::cout << "Error parseando entero\n"<<iPaqueteSize<<">> " << cBuffSize << " << \n";
+            bErrorFlag = true;
+        }
     }
     temp_error_code = WSAGetLastError();
     if (error_code != nullptr) {
         *error_code = temp_error_code;
     }
-
 
     if (temp_error_code == WSAECONNRESET || iRecibido < 0) {
         return WSAECONNRESET;
@@ -1055,7 +1062,9 @@ int Servidor::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, boo
             this->m_txtLog->LogThis("Error configurando el socket NON_BLOCK", LogType::LogError);
         }
     }
-        
+    
+    if (bErrorFlag) { return 0; }
+
     //Decrypt
     ByteArray bOut = this->bDec(reinterpret_cast<const unsigned char*>(cRecvBuffer.data()), iRecibido);
     iRecibido = bOut.size();
@@ -1081,17 +1090,25 @@ void Servidor::m_SerializarPaquete(const Paquete& paquete, char* cBuffer) {
     memcpy(cBuffer + sizeof(paquete.uiTipoPaquete) + sizeof(paquete.uiTamBuffer) + sizeof(paquete.uiIsUltimo), paquete.cBuffer.data(), paquete.uiTamBuffer);
 }
 
-void Servidor::m_DeserializarPaquete(const char* cBuffer, Paquete& paquete) {
+bool Servidor::m_DeserializarPaquete(const char* cBuffer, Paquete& paquete, int bufer_size) {
+    if (bufer_size < PAQUETE_MINIMUM_SIZE) { return false; }
     memcpy(&paquete.uiTipoPaquete, cBuffer, sizeof(paquete.uiTipoPaquete));
     memcpy(&paquete.uiTamBuffer, cBuffer + sizeof(paquete.uiTipoPaquete), sizeof(paquete.uiTamBuffer));
     memcpy(&paquete.uiIsUltimo, cBuffer + sizeof(paquete.uiTipoPaquete) + sizeof(paquete.uiTamBuffer), sizeof(paquete.uiIsUltimo));
-    paquete.cBuffer.resize(paquete.uiTamBuffer);
+    
+    if (paquete.uiTamBuffer > 0 && paquete.uiTamBuffer < MAX_PAQUETE_SIZE) {
+        paquete.cBuffer.resize(paquete.uiTamBuffer);
+    }else {
+        return false;
+    }
+
     if (paquete.cBuffer.size() == paquete.uiTamBuffer) {
         memcpy(paquete.cBuffer.data(), cBuffer + sizeof(paquete.uiTipoPaquete) + sizeof(paquete.uiTamBuffer) + sizeof(paquete.uiIsUltimo), paquete.uiTamBuffer);
-    }
-    else {
+    }else {
         std::cout << "[Deserializar] No se pudo reservar memoria para el buffer " << GetLastError() << "\n";
+        return false;
     }
+    return true;
 }
 
 //AES256

@@ -43,6 +43,8 @@
 #define PAQUETE_BUFFER_SIZE 1024 * 10
 #define CHUNK_FILE_TRANSFER_SIZE 1024 * 10
 #define DUMMY_PARAM "0"
+#define PAQUETE_MINIMUM_SIZE sizeof(unsigned int) * 3
+#define MAX_PAQUETE_SIZE 50000
 
 #ifdef ___DEBUG_
     #define error() std::cout<<"Error["<<GetLastError()<<"]\n";
@@ -111,7 +113,8 @@ namespace EnumComandos {
         RD_Salida,
         RD_Update_Q,
         RD_Update_Vmouse,
-        RD_Send_Click
+        RD_Send_Click,
+        RD_Send_Teclado
     };
 }
 

@@ -136,7 +136,7 @@ class Cliente {
 		int cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock, DWORD* err_code);
 		int cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, bool isBlock, DWORD* err_code);
 		void m_SerializarPaquete(const Paquete& paquete, char* cBuffer);
-		void m_DeserializarPaquete(const char* cBuffer, Paquete& paquete);
+		bool m_DeserializarPaquete(const char* cBuffer, Paquete& paquete, int bufer_size);
 		int cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock, DWORD* err_code, int iTipoPaquete);
 
 		void Agregar_Archivo_Descarga(Archivo_Descarga& nuevo_archivo, const std::string strID);

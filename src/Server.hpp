@@ -261,7 +261,7 @@ class Servidor{
         int cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock = false, int iTipoPaquete = 0);
         int cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, bool isBlock, DWORD* err_code);
         void m_SerializarPaquete(const Paquete& paquete, char* cBuffer);
-        void m_DeserializarPaquete(const char* cBuffer, Paquete& paquete);
+        bool m_DeserializarPaquete(const char* cBuffer, Paquete& paquete, int bufer_size);
         int cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock = false, int iTipoPaquete = 0);
         
 
