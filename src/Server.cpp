@@ -1040,7 +1040,7 @@ int Servidor::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, boo
             cRecvBuffer.resize(iPaqueteSize);
             iRecibido = this->recv_all(pSocket, cRecvBuffer.data(), iPaqueteSize, pFlags);
         }else {
-            std::cout << "Error parseando entero\n"<<iPaqueteSize<<">> " << cBuffSize << " << \n";
+            std::cout << "Error parseando entero\n"<<iPaqueteSize<<">> " << " << \n";
             bErrorFlag = true;
         }
     }

@@ -5,6 +5,8 @@
 #include<shlwapi.h>
 #include<gdiplus.h>
 
+#define KEYEVENTF_KEDOWN 0x0000
+
 struct rect_Monitor {
 	int resWidth;
 	int resHeight;

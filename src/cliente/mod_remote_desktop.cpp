@@ -63,35 +63,42 @@ void mod_RemoteDesktop::m_RemoteMouse(int x, int y, int monitor_index, int mouse
         INPUT inputs[1] = {};
         ZeroMemory(inputs, sizeof(inputs));
 
-        DWORD dwFlag = MOUSEEVENTF_VIRTUALDESK | MOUSEEVENTF_ABSOLUTE;
+        DWORD dwFlag = 0; //MOUSEEVENTF_VIRTUALDESK | MOUSEEVENTF_ABSOLUTE;
         switch (mouse_action) {
             case EnumRemoteMouse::_LEFT_DOWN:
-                dwFlag |= MOUSEEVENTF_LEFTDOWN;
+                dwFlag = MOUSEEVENTF_LEFTDOWN;
                 break;
             case EnumRemoteMouse::_LEFT_UP:
-                dwFlag |= MOUSEEVENTF_LEFTUP;
+                dwFlag = MOUSEEVENTF_LEFTUP;
                 break;
             case EnumRemoteMouse::_RIGHT_DOWN:
-                dwFlag |= MOUSEEVENTF_RIGHTDOWN;
+                dwFlag = MOUSEEVENTF_RIGHTDOWN;
                 break;
             case EnumRemoteMouse::_RIGHT_UP:
-                dwFlag |= MOUSEEVENTF_RIGHTUP;
+                dwFlag = MOUSEEVENTF_RIGHTUP;
                 break;
             case EnumRemoteMouse::_MIDDLE_DOWN:
-                dwFlag |= MOUSEEVENTF_MIDDLEDOWN;
+                dwFlag = MOUSEEVENTF_MIDDLEDOWN;
                 break;
             case EnumRemoteMouse::_MIDDLE_UP:
-                dwFlag |= MOUSEEVENTF_MIDDLEUP;
+                dwFlag = MOUSEEVENTF_MIDDLEUP;
+                break;
+            case EnumRemoteMouse::_WHEEL_DOWN:
+            case EnumRemoteMouse::_WHEEL_UP:
+                dwFlag = MOUSEEVENTF_WHEEL;
                 break;
             default:
                 break;
         }
 
-        if (dwFlag != (MOUSEEVENTF_VIRTUALDESK | MOUSEEVENTF_ABSOLUTE)) {
-            inputs[0].type = INPUT_MOUSE;
-            inputs[0].mi.dwFlags = dwFlag;
-            SendInput(1, inputs, sizeof(INPUT));
+        inputs[0].type = INPUT_MOUSE;
+        inputs[0].mi.dwFlags = dwFlag;
+        if (mouse_action == EnumRemoteMouse::_WHEEL_DOWN) {
+            inputs[0].mi.mouseData = -120;
+        }else if (mouse_action == EnumRemoteMouse::_WHEEL_UP) {
+            inputs[0].mi.mouseData = 120;
         }
+        SendInput(1, inputs, sizeof(INPUT));
         /*
          
         Metodo 2
@@ -122,11 +129,8 @@ void mod_RemoteDesktop::m_RemoteTeclado(char key, bool isDown) {
 
     inputs[0].type = INPUT_KEYBOARD;
     inputs[0].ki.wVk = key;
+    inputs[0].ki.dwFlags = isDown ? KEYEVENTF_KEDOWN : KEYEVENTF_KEYUP;
     
-    //Si no es up no hay necesidad de setear un flag
-    if (!isDown) {
-        inputs[0].ki.dwFlags = KEYEVENTF_KEYUP;
-    }
     SendInput(1, inputs, sizeof(INPUT));
 }
 

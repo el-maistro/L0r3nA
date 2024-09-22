@@ -83,7 +83,7 @@ class frameRemoteDesktop : public wxFrame {
 		void Onclose(wxCloseEvent&);
 
 		void EnviarEventoMouse(wxEventType evento, int x, int y, bool isDown = false); 
-		void EnviarEventoTeclado(wxEventType evento, int key);
+		void EnviarEventoTeclado(wxEventType evento, u_int key);
 		void ConectarEventos();
 
 		wxDECLARE_EVENT_TABLE();

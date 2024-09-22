@@ -138,8 +138,10 @@ void Cliente::Process_Queue() {
             lock.unlock();
             
             this->Procesar_Comando(nTemp);
+        }else {
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        
     }
 
     std::unique_lock<std::mutex> lock(this->mtx_queue);
@@ -749,7 +751,8 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         if (this->mod_RemoteDesk) {
             strIn = strSplit(paquete.cBuffer.data(), CMD_DEL, 2);
             if (strIn.size() == 2) {
-                char key    = strIn[0][0];
+                int key     = atoi(strIn[0].c_str());
+                
                 bool isDown = strIn[1][0] == '0' ? true : false;
                 this->mod_RemoteDesk->m_RemoteTeclado(key, isDown);
             }else {
@@ -824,7 +827,8 @@ void Cliente::MainLoop() {
             }else {
                 DebugPrint("Error deserializando el paquete. Recibido:", iRecibido);
             }
-            
+        }else {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
 
     }

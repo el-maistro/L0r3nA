@@ -152,25 +152,34 @@ void frameRemoteDesktop::OnComboChange(wxCommandEvent& event) {
 
 void frameRemoteDesktop::OnDrawBuffer(const char*& cBuffer, int iBuffersize) {
 	if (iBuffersize > 0) {
+		wxLogNull noerrormessages;
 		wxMemoryInputStream imgStream(cBuffer, iBuffersize);
 		wxImage img(imgStream, wxBITMAP_TYPE_JPEG);
-		
+
 		//wxIMAGE_QUALITY_FAST   Fast but same as wxIMAGE_QUALITY_NEAREST 
 		//wxIMAGE_QUALITY_HIGH   best quality
-		int x = this->GetSize().GetWidth()- 30;
+		int x = this->GetSize().GetWidth() - 30;
 		int y = this->GetSize().GetHeight() - 90;
 		if (img.IsOk()) {
 			img.Rescale(x, y, this->quality_options->GetValue() == "KK" ? wxIMAGE_QUALITY_NORMAL : wxIMAGE_QUALITY_HIGH);
 			wxBitmap bmp_Obj(img);
-			
-			if (this->imageCtrl) {
-				if (bmp_Obj.IsOk()) {
-					this->imageCtrl->SetBitmap(bmp_Obj);
-					this->imageCtrl->Refresh();
-					this->imageCtrl->Update();
+
+			if (bmp_Obj.IsOk()) {
+				try {
+					if (this->imageCtrl) {
+						this->imageCtrl->SetBitmap(bmp_Obj);
+						this->imageCtrl->Refresh();
+					}
+				}catch (const std::exception& e) {
+					std::cout << "genericError: " << e.what() << "\n";
+				}catch (const std::runtime_error& e) {
+					std::cout << "runtime_Error: " << e.what() << "\n";
+				}catch (...) {
+					throw;
 				}
 			}
 		}
+		
 	}
 }
 
@@ -202,7 +211,7 @@ void frameRemoteDesktop::OnRemoteMouse(wxMouseEvent& event) {
 }
 
 void frameRemoteDesktop::OnRemoteKey(wxKeyEvent& event) {
-	this->EnviarEventoTeclado(event.GetEventType(), event.GetKeyCode());
+	this->EnviarEventoTeclado(event.GetEventType(), event.GetRawKeyCode());
 	event.Skip();
 }
 
@@ -266,18 +275,16 @@ void frameRemoteDesktop::EnviarEventoMouse(wxEventType evento, int x, int y, boo
 	}
 }
 
-void frameRemoteDesktop::EnviarEventoTeclado(wxEventType evento, int key) {
+void frameRemoteDesktop::EnviarEventoTeclado(wxEventType evento, u_int key) {
 	if (this->isRemoteControl && this->isLive) {
-		//key | DOWN/UP 0/1
 		bool isDown = false;
 		if (evento == wxEVT_KEY_DOWN) {
 			isDown = true;
 		}
-		std::string strComando = "";
-		strComando.append(1, (char)key);
+		std::string strComando = std::to_string(key);
 		strComando.append(1, CMD_DEL);
 		strComando.append(1, isDown ? '0' : '1');
-
+		
 		p_Servidor->cChunkSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, true, EnumComandos::RD_Send_Teclado);
 	}
 }
