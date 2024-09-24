@@ -79,14 +79,15 @@ void Cliente_Handler::PlayBuffer(char* pBuffer, size_t iLen){
 void Cliente_Handler::Command_Handler(){
     DWORD error_code = 0;
     int iTempRecibido = 0;
+    std::vector<char> cBuffer;
+
     while (true) {
         if (!this->isfRunning() || this->p_Cliente._sckCliente == INVALID_SOCKET) {
             std::unique_lock<std::mutex> lock(this->mt_Running);
             this->iRecibido = WSA_FUNADO;
             break;
         }
-        std::vector<char> cBuffer;
-
+        
         iTempRecibido = p_Servidor->cRecv(this->p_Cliente._sckCliente, cBuffer, 0, true, &error_code);
         this->SetBytesRecibidos(iTempRecibido);
         
@@ -94,12 +95,6 @@ void Cliente_Handler::Command_Handler(){
         if (error_code == WSAETIMEDOUT || error_code == WSAEWOULDBLOCK) {
             continue;
         }
-
-        //No hay datos todavia, esperar un poco mas
-        //if (WSAGetLastError() == WSAEWOULDBLOCK) {
-        //    Sleep(10);
-        //    continue;
-        //}
 
         /*Desconexion del cliente
         Si no recibio nada y el error no es timeout o se cerro repentinamente*/

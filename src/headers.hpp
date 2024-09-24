@@ -70,10 +70,6 @@
 #define FRAME_CLIENT_SIZE_WIDTH 600
 #define DB_FILE "./crypt_.db"
 #define CMD_DEL '~'
-#define COMP_HEADER_BYTE_1 'C'
-#define COMP_HEADER_BYTE_2 'B'
-#define UNCOMP_HEADER_BYTE_1 'D'
-#define BUFFER_COMP_REQ_LEN 1024
 #define PAQUETE_BUFFER_SIZE 1024 * 5
 #define CHUNK_FILE_TRANSFER_SIZE 1024 * 10
 #define DUMMY_PARAM "0"

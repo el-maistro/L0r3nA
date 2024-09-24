@@ -11,6 +11,7 @@ bool EndProcess(int iPID);
 std::string strProcessList();
 u64 StrToUint(const std::string strString);
 
-void DebugPrint(const std::string strMsg, int iValor=0);
+//void _DEBUG(const std::string strMsg, int iValor=0);
+//void _DEBUG(const char* cMsg, int iValor=0);
 
 

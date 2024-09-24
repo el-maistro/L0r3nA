@@ -172,8 +172,6 @@ void frameRemoteDesktop::OnDrawBuffer(const char*& cBuffer, int iBuffersize) {
 					}
 				}catch (const std::exception& e) {
 					std::cout << "genericError: " << e.what() << "\n";
-				}catch (const std::runtime_error& e) {
-					std::cout << "runtime_Error: " << e.what() << "\n";
 				}catch (...) {
 					throw;
 				}

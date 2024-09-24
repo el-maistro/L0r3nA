@@ -33,26 +33,26 @@
 #include "../zlib/zlib.h"
 
 #define AES_KEY_LEN 32
-//#define ___DEBUG_
+#define ___DBG__
 #define MAX_CAMS 5
 #define CMD_DEL '~'
-#define COMP_HEADER_BYTE_1 'C'
-#define COMP_HEADER_BYTE_2 'B'
-#define UNCOMP_HEADER_BYTE_1 'D'
-#define BUFFER_COMP_REQ_LEN 1024
-#define PAQUETE_BUFFER_SIZE 1024 * 10
+#define PAQUETE_BUFFER_SIZE 1024 * 5
 #define CHUNK_FILE_TRANSFER_SIZE 1024 * 10
 #define DUMMY_PARAM "0"
 #define PAQUETE_MINIMUM_SIZE sizeof(unsigned int) * 3
 #define MAX_PAQUETE_SIZE 50000
 
 
-#ifdef ___DEBUG_
+#ifdef ___DBG__
     #define error() std::cout<<"Error["<<GetLastError()<<"]\n";
     #define error_2(x) std::cout<<"["<<x<<"]"<<"Error["<<GetLastError()<<"]\n";
+    #define _DBG_(a, b) std::cout<<"[DBG] "<<a<<" "<<b<<"\n";
+    #define __DBG_(a) std::cout<<"[DBG] "<<a<<"\n";
 #else
     #define error() NULL
     #define error_2(x) NULL
+    #define _DBG_(a, b) NULL
+    #define __DBG_(a) NULL
 #endif
 
 typedef unsigned int u_int;

