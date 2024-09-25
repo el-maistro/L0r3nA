@@ -154,7 +154,6 @@ void TransferFrame::OnClose(wxCloseEvent& event){
     p_Servidor->p_Transferencias = false;
     lock.unlock();
     Sleep(500);
-    //std::this_thread::sleep_for(std::chrono::milliseconds(500));
     if (p_Servidor->thTransfers.joinable()) {
         p_Servidor->thTransfers.join();
     }
@@ -162,7 +161,6 @@ void TransferFrame::OnClose(wxCloseEvent& event){
 }
 
 void MyFrame::OnCryptDB(wxCommandEvent& event) {
-    //OnCryptDB
     frameCryptDB* frame_crypt = DBG_NEW frameCryptDB();
 
     frame_crypt->Show();
@@ -174,7 +172,6 @@ void MyFrame::OnMostrarTransferencias(wxCommandEvent& event){
 
     p_Servidor->thTransfers = std::thread(&Servidor::m_MonitorTransferencias, p_Servidor);
     
-    //Crear form y mostrar
     TransferFrame* wxTransfers = DBG_NEW TransferFrame();
     wxTransfers->Show();
 }
@@ -200,7 +197,6 @@ void MyFrame::OnToggle(wxCommandEvent& event) {
         p_Servidor->m_StopHandler();
         p_Servidor->m_JoinThreads();
 
-        
         std::cout <<"VECTOR SIZE: "<< p_Servidor->vc_Clientes.size() << std::endl;
 
         p_Servidor->m_listCtrl->DeleteAllItems();
@@ -209,7 +205,6 @@ void MyFrame::OnToggle(wxCommandEvent& event) {
         this->btn_toggle->SetLabelText("Iniciar Servidor");
     }
     Sleep(500);
-    //std::this_thread::sleep_for(std::chrono::milliseconds(500));
 }
 
 void MyFrame::CrearControlesPanelIzquierdo(){
@@ -230,7 +225,6 @@ void MyFrame::CrearControlesPanelIzquierdo(){
     m_paneSizer->Add(this->btn_CryptDB, 0, wxALIGN_CENTER | wxALL, 3);
     
     this->m_LPanel->SetSizerAndFit(m_paneSizer);
-
 }
 
 void MyFrame::CrearLista(long flags, bool withText){

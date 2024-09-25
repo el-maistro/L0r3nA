@@ -48,6 +48,12 @@ void Cliente::DestroyClasses() {
     }
 
     if (this->mod_Cam != nullptr) {
+        for (int i = 0; i < this->mod_Cam->vcCamObjs.size(); i++) {
+            if (this->mod_Cam->vcCamObjs[i].isLive) {
+                this->mod_Cam->vcCamObjs[i].isLive = false;
+                this->mod_Cam->vcCamObjs[i].ReleaseCam();
+            }
+        }
         delete this->mod_Cam;
         this->mod_Cam = nullptr;
     }
@@ -227,6 +233,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     }
 
     if (iComando == EnumComandos::CLI_STOP) {
+        __DBG_("STOP");
         this->m_Stop();
         return;
     }
@@ -796,17 +803,12 @@ void Cliente::MainLoop() {
 
         int iRecibido = this->cRecv(this->sckSocket, cBuffer, 0, false, &error_code);
         
-        if (iRecibido < 0 && error_code != WSAEWOULDBLOCK) {
-            //No se pudo recibir nada
-            if (this->mod_Cam != nullptr) {
-                for(auto cCam : this->mod_Cam->vcCamObjs) {
-                    //Si alguna camara esta live esperar un poco y tratar de volver a leer
-                    if (cCam.isLive) {
-                        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                        continue;
-                    }
-                }
-            }
+        if ((iRecibido == SOCKET_ERROR && error_code != WSAEWOULDBLOCK) || iRecibido == WSAECONNRESET) {
+            //No se recibio nada
+            // o
+            //Hubo un error diferente a blocking en el socket
+            // o
+            //El servidor cerro la conexion
             __DBG_("[MAIN-LOOP] No se pudo recibir nada");
             _DBG_("Recibido:", iRecibido);
             _DBG_("Error:", error_code);
@@ -896,7 +898,10 @@ int Cliente::cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFla
             this->m_SerializarPaquete(nPaquete, cPaqueteSer);
 
             iChunkEnviado = this->cSend(pSocket, cPaqueteSer, iFinalSize, pFlags, isBlock, err_code);
-
+            if (iChunkEnviado == SOCKET_ERROR || iChunkEnviado == WSAECONNRESET) {
+                __DBG_("[CHUNK] Error enviando el chunk");
+                break;
+            }
             iEnviado += iChunkEnviado;
             iBytePos += iChunkSize;
         }else {
@@ -914,9 +919,8 @@ int Cliente::send_all(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags
         iEnviado = send(pSocket, pBuffer + iTotalEnviado, pLen - iTotalEnviado, pFlags);
         if (iEnviado == 0) {
             break;
-        }
-        else if (iEnviado < 0) {
-            return -1;
+        }else if (iEnviado == SOCKET_ERROR || iEnviado == WSAECONNRESET) {
+            return iEnviado;
         }
         iTotalEnviado += iEnviado;
     }
@@ -983,9 +987,9 @@ int Cliente::recv_all(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags) {
         if (iRecibido == 0) {
             //Se cerro el socket
             break;
-        }else if (iRecibido < 0) {
+        }else if (iRecibido == SOCKET_ERROR || iRecibido == WSAECONNRESET) {
             //Ocurrio un error
-            return -1;
+            return iRecibido;
         }
         iTotalRecibido += iRecibido;
     }
@@ -1000,7 +1004,7 @@ int Cliente::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, bool
 
     std::vector<char> cRecvBuffer;
     
-    int iRecibido = 0;
+    int iRecibido = SOCKET_ERROR;
     unsigned long int iBlock = 0;
     bool bErrorFlag = false;
     if (isBlock) {
@@ -1013,26 +1017,30 @@ int Cliente::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, bool
     //Leer primero sizeof(int) para opbtener el total de bytes a leer
     char cBuffSize[sizeof(int)];
     int iPaquetesize = recv(pSocket, cBuffSize, sizeof(int), pFlags);
+    if (err_code != nullptr) {
+        *err_code = WSAGetLastError();
+    }
+
     if (iPaquetesize == sizeof(int)) {
         memcpy(&iPaquetesize, cBuffSize, sizeof(int));
         if (iPaquetesize > 0 && iPaquetesize < MAX_PAQUETE_SIZE) {
             cRecvBuffer.resize(iPaquetesize);
-            //Asegurarse de leer todos los bytes
             iRecibido = this->recv_all(pSocket, cRecvBuffer.data(), iPaquetesize, pFlags);
-            if (iRecibido < 0) {
+            if (err_code != nullptr) {
+                *err_code = WSAGetLastError();
+            }
+            if (iRecibido == SOCKET_ERROR) {
                 _DBG_("No se pudo leer nada recv_all.", iRecibido);
                 bErrorFlag = true;
             }
+        }else {
+            __DBG_("[Recv]El entero leido es invalido");
+            bErrorFlag = true;
         }
-    }else if(iPaquetesize <= 0){
-        iRecibido = iPaquetesize;
+    }else if(iPaquetesize == SOCKET_ERROR){
         bErrorFlag = true;
     }
     
-    if (err_code != nullptr) {
-        *err_code = GetLastError();
-    }
-
     //Restaurar block_mode en el socket
     if (isBlock && !this->BLOCK_MODE) {
         iBlock = 1;
@@ -1041,7 +1049,9 @@ int Cliente::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, bool
         }
     }
 
-    if (bErrorFlag) { return iRecibido; }
+    if (bErrorFlag || iRecibido == SOCKET_ERROR || iRecibido == WSAECONNRESET) { 
+        return iRecibido; 
+    }
     
     //Decrypt data
     ByteArray bOut = this->bDec(reinterpret_cast<const unsigned char*>(cRecvBuffer.data()), iRecibido);

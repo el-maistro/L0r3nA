@@ -82,7 +82,7 @@ void Cliente_Handler::Command_Handler(){
     std::vector<char> cBuffer;
 
     while (true) {
-        if (!this->isfRunning() || this->p_Cliente._sckCliente == INVALID_SOCKET) {
+        if (!this->isfRunning()) {
             std::unique_lock<std::mutex> lock(this->mt_Running);
             this->iRecibido = WSA_FUNADO;
             break;
@@ -91,14 +91,15 @@ void Cliente_Handler::Command_Handler(){
         iTempRecibido = p_Servidor->cRecv(this->p_Cliente._sckCliente, cBuffer, 0, true, &error_code);
         this->SetBytesRecibidos(iTempRecibido);
         
-        //timeout
+        //timeout / nonblock
         if (error_code == WSAETIMEDOUT || error_code == WSAEWOULDBLOCK) {
             continue;
         }
 
         /*Desconexion del cliente
         Si no recibio nada y el error no es timeout o se cerro repentinamente*/
-        if ((iTempRecibido == WSAECONNRESET) || (iTempRecibido < 0 && error_code != WSAETIMEDOUT)) {
+        if ((iTempRecibido == SOCKET_ERROR && (error_code != WSAETIMEDOUT || error_code != WSAEWOULDBLOCK)) ||
+            iTempRecibido == WSAECONNRESET) {
             if (this->m_isFrameVisible()) {
                 this->n_Frame->SetTitle("DESCONECTADO...");
             }
@@ -913,7 +914,10 @@ int Servidor::cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFl
             this->m_SerializarPaquete(nPaquete, cPaqueteSer);
 
             iChunkEnviado = this->cSend(pSocket, cPaqueteSer, iFinalSize, pFlags, isBlock, 0);
-            
+            if (iChunkEnviado == SOCKET_ERROR || iChunkEnviado == WSAECONNRESET) {
+                std::cout << "[CHUNK] Error enviando el chunk\n";
+                break;
+            }
             iEnviado += iChunkEnviado;
             iBytePos +=    iChunkSize;
         }else {
@@ -932,9 +936,8 @@ int Servidor::send_all(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlag
         iEnviado = send(pSocket, pBuffer + iTotalEnviado, pLen - iTotalEnviado, pFlags);
         if (iEnviado == 0) {
             break;
-        }
-        else if (iEnviado < 0) {
-            return -1;
+        }else if (iEnviado == SOCKET_ERROR || iEnviado == WSAECONNRESET) {
+            return iEnviado;
         }
         iTotalEnviado += iEnviado;
     }
@@ -956,7 +959,7 @@ int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, 
     iDataSize = cData.size();
     if (iDataSize == 0) {
         error();
-        return -1;
+        return 0;
     }
 
     //Enviar al inicio el size del paquete
@@ -972,7 +975,7 @@ int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, 
     if (isBlock) {
         //Hacer el socket block
         if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
-            this->m_txtLog->LogThis("Error configurando el socket NON_BLOCK", LogType::LogError);
+            std::cout << "[cSend]Error configurando el socket NON_BLOCK\n";
         }
     }
 
@@ -982,7 +985,7 @@ int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, 
     if (isBlock) {
         iBlock = 1;
         if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
-            this->m_txtLog->LogThis("Error configurando el socket NON_BLOCK", LogType::LogError);
+            std::cout << "[cSend]Error configurando el socket NON_BLOCK\n";
         }
     }
     
@@ -997,9 +1000,9 @@ int Servidor::recv_all(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags) {
         if (iRecibido == 0) {
             //Se cerro el socket
             break;
-        }else if (iRecibido < 0) {
+        }else if (iRecibido == SOCKET_ERROR) {
             //Ocurrio un error
-            return -1;
+            return iRecibido;
         }
 
         iTotalRecibido += iRecibido;
@@ -1013,7 +1016,7 @@ int Servidor::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, boo
     // 1 non block
     // 0 block
     
-    int                     iRecibido = 0;
+    int          iRecibido = SOCKET_ERROR;
     int               temp_error_code = 0;
     unsigned long int          iBlock = 0;
     std::vector<char>         cRecvBuffer;
@@ -1021,44 +1024,48 @@ int Servidor::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, boo
     if (isBlock) {
         //Hacer el socket block
         if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
-            this->m_txtLog->LogThis("Error configurando el socket NON_BLOCK", LogType::LogError);
+            std::cout << "[cRecv]Error configurando el socket NON_BLOCK\n";
         }
     }
 
     //Leer primero sizeof(int) para obtener el total de bytes a leer
     char cBuffSize[sizeof(int)];
     int iPaqueteSize = recv(pSocket, cBuffSize, sizeof(int), pFlags);
+    if (error_code != nullptr) {
+        *error_code = WSAGetLastError();
+    }
     if (iPaqueteSize == sizeof(int)) {
         memcpy(&iPaqueteSize, cBuffSize, sizeof(int));
         //Establecer un limite para evitar buffer demasiado grande 
         if (iPaqueteSize > 0 && iPaqueteSize < MAX_PAQUETE_SIZE) {
             cRecvBuffer.resize(iPaqueteSize);
             iRecibido = this->recv_all(pSocket, cRecvBuffer.data(), iPaqueteSize, pFlags);
+            if (error_code != nullptr) {
+                *error_code = WSAGetLastError();
+            }
+            if (iRecibido == SOCKET_ERROR) {
+                std::cout<<"No se pudo leer nada recv_all.\n";
+                bErrorFlag = true;
+            }
         }else {
             std::cout << "Error parseando entero\n"<<iPaqueteSize<<">> " << " << \n";
             bErrorFlag = true;
         }
+    }else if (iPaqueteSize == SOCKET_ERROR) {
+        bErrorFlag = true;
     }
-    temp_error_code = WSAGetLastError();
-    if (error_code != nullptr) {
-        *error_code = temp_error_code;
-    }
-
-    if (temp_error_code == WSAECONNRESET || iRecibido < 0) {
-        return WSAECONNRESET;
-    }else if (iRecibido == 0) {
-        return iRecibido;
-    }
-
+    
     //Restaurar el socket
     if (isBlock) {
         iBlock = 1;
         if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
-            this->m_txtLog->LogThis("Error configurando el socket NON_BLOCK", LogType::LogError);
+            std::cout << "[1][cRecv]Error configurando el socket NON_BLOCK"<<iRecibido<<"\n";
         }
     }
-    
-    if (bErrorFlag) { return 0; }
+
+    if (bErrorFlag || iRecibido == WSAECONNRESET || iRecibido == SOCKET_ERROR) {
+        return iRecibido;
+    }
 
     //Decrypt
     ByteArray bOut = this->bDec(reinterpret_cast<const unsigned char*>(cRecvBuffer.data()), iRecibido);
@@ -1125,7 +1132,7 @@ ByteArray Servidor::bDec(const unsigned char* pInput, size_t pLen) {
     return bOutput;
 }
 
-//control list events
+//Mostrar menu contextual frame princiopal
 void MyListCtrl::ShowContextMenu(const wxPoint& pos, long item) {
 
     wxMenu menu;
@@ -1223,7 +1230,7 @@ void MyListCtrl::OnMatarProceso(wxCommandEvent& event) {
     std::vector<std::string> vcOut = strSplit(this->strTmp.ToStdString(), '/', 1);
     int iCliIndex = p_Servidor->IndexOf(vcOut[0]);
     if (iCliIndex != -1) {
-        p_Servidor->cSend(p_Servidor->vc_Clientes[iCliIndex]->p_Cliente._sckCliente, "0", 1, 0, true, EnumComandos::CLI_STOP);
+        p_Servidor->cChunkSend(p_Servidor->vc_Clientes[iCliIndex]->p_Cliente._sckCliente, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, false, EnumComandos::CLI_STOP);
         p_Servidor->m_CerrarConexion(p_Servidor->vc_Clientes[iCliIndex]->p_Cliente._sckCliente);
     }
 }

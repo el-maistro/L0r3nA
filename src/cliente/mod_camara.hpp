@@ -34,7 +34,7 @@ struct camOBJ {
     UINT32 numerator = 0;
     UINT32 denominator = 0;
     GUID mediaType = { 0 };
-
+    
     void ReleaseCam() {
         isActivated = isLive = isConvert = false;
         if (sActivate) {

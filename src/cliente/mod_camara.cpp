@@ -571,8 +571,8 @@ void mod_Camera::SpawnLive(int pIndexDev) {
 }
 
 void mod_Camera::JoinLiveThread(int pIndexDev) {
-    this->vcCamObjs[pIndexDev].isLive = false;
     if (this->thLive[pIndexDev].joinable()) {
+        this->vcCamObjs[pIndexDev].isLive = false;
         this->thLive[pIndexDev].join();
     }
 
