@@ -58,7 +58,7 @@ wxEditForm::wxEditForm(wxWindow* pParent, wxString strNombre, std::string strID)
 	if (temp) {
 		temp->itemp->EnviarComando(strComando, EnumComandos::FM_Editar_Archivo);
 	}else {
-		error();
+		DEBUG_MSG("No existe el panel principal");
 	}
 }
 
@@ -73,7 +73,7 @@ void wxEditForm::OnGuardarRemoto(wxCommandEvent& event) {
 		temp->itemp->EnviarComando(strComando, EnumComandos::FM_Editar_Archivo_Guardar_Remoto);
 	}
 	else {
-		error();
+		DEBUG_MSG("No existe el panel principal");
 	}
 }
 
@@ -93,8 +93,7 @@ void wxEditForm::OnGuardarLocal(wxCommandEvent& event) {
 			outFile.flush();
 			outFile.close();
 		}else {
-			std::cout << "[X] No se pudo abrir el archivo "<< dialog.GetPath() << std::endl;
-			error();
+			ERROR("[X] No se pudo abrir el archivo " << dialog.GetPath());
 		}
 	}
 	

@@ -197,7 +197,8 @@ void MyFrame::OnToggle(wxCommandEvent& event) {
         p_Servidor->m_StopHandler();
         p_Servidor->m_JoinThreads();
 
-        std::cout <<"VECTOR SIZE: "<< p_Servidor->vc_Clientes.size() << std::endl;
+        DEBUG_MSG("VECTOR SIZE:"); 
+        DEBUG_MSG(p_Servidor->vc_Clientes.size());
 
         p_Servidor->m_listCtrl->DeleteAllItems();
         SetStatusText("IDLE");

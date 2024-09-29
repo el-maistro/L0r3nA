@@ -161,7 +161,8 @@ void frameCryptDB::Exec_SQL(const char* cCMD) {
 	char* zErrMsg = 0;
 
 	if (sqlite3_open(DB_FILE, &db) != SQLITE_OK) {
-		std::cout << "[DBCRYPT] No se pudo abrir la bd :" << sqlite3_errmsg(db) << std::endl;
+		DEBUG_MSG("[DBCRYPT] No se pudo abrir la bd");
+		DEBUG_MSG(sqlite3_errmsg(db));
 		wxMessageBox("No se pudo abrir la base de datos");
 		sqlite3_close(db);
 		return;

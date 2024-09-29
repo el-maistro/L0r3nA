@@ -253,7 +253,8 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
             p_Servidor->vcTransferencias[vcDatos[0]].uTamano = uTamArchivo;
             lock.unlock();
 
-            std::cout << "[ID-" << vcDatos[0] << "]Tam archivo: " << uTamArchivo << std::endl;
+            DEBUG_MSG("[ID-" + vcDatos[0] + "]Tam archivo: ");
+            DEBUG_MSG(uTamArchivo);
         }
         return;
     }
@@ -265,7 +266,7 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
             int iHeader = vcDatos[0].size() + 1;
             int iBytesSize = iRecibido - iHeader - 1; //1 byte del delimitador y otro del \0 agregado al procesar el paquete
             const char* cBytes = paquete.cBuffer.data() + iHeader;
-            std::cout << "[DOWN] " << iBytesSize << " TOTAL: "<<iRecibido<< '\n';
+            
             if (this->um_Archivos_Descarga[vcDatos[0]].ssOutFile.get()->is_open()) {
                 this->um_Archivos_Descarga[vcDatos[0]].ssOutFile.get()->write(cBytes, iBytesSize);
                 //Por los momentos solo es necesario que el servidor almacene el progreso
@@ -308,7 +309,8 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
                     this->Log("No se pudo encontrar la ventana con id " + vcDatos[0]);
                 }
             }else {
-                std::cout << "No se pudo parsear el contenido de edicion remota:\n" << paquete.cBuffer.data() << "\n";
+                DEBUG_MSG("No se pudo parsear el contenido de edicion remota:");
+                DEBUG_MSG(paquete.cBuffer.data());
             }
         }
         return;
@@ -431,7 +433,8 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
                         temp_combo_box->Append(cli_devices);
                     }
                 }else {
-                    std::cout << "No se pudo encontrar ventana activa\n";
+                    DEBUG_MSG("[MIC]No se pudo encontrar ventana activa");
+                    DEBUG_MSG(paquete.cBuffer.data());
                 }
             }
         }
@@ -478,11 +481,11 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
                             temp_frame->combo_lista_monitores->Clear();
                             temp_frame->combo_lista_monitores->Append(strEntry);
                         }else {
-                            std::cout << "No se pudo parsear la info del monitor\n" << strMonitor << "\n";
+                            DEBUG_MSG("No se pudo parsear la info del monitor " + strMonitor);
                         }
                     }
                 }else {
-                    std::cout << "No se pudo parsear la informacion...\n" << paquete.cBuffer.data() << "\n";
+                    DEBUG_MSG("No se pudo parsear la informacion:");DEBUG_MSG(paquete.cBuffer.data());
                 }
             }
         }
@@ -593,8 +596,8 @@ bool Servidor::m_Iniciar(){
 
     unsigned long int iBlock = 1;
     if(ioctlsocket(this->sckSocket, FIONBIO, &iBlock) != 0){
-        this->m_txtLog->LogThis("Error configurando el socket NON_BLOCK", LogType::LogError);
-        error();
+        this->m_txtLog->LogThis("[SERVER] Error configurando el socket NON_BLOCK", LogType::LogError);
+        ERROR("<----");
         return false;
     }
 
@@ -669,7 +672,7 @@ void Servidor::m_StopHandler() {
 
 void Servidor::m_CerrarConexion(SOCKET pSocket) {
     if (pSocket != INVALID_SOCKET) {
-        std::cout << "Cerrando socket " << pSocket << "\n";
+        DEBUG_MSG("Cerrando socket:"); DEBUG_MSG(pSocket);
         closesocket(pSocket);
         pSocket = INVALID_SOCKET;
     }
@@ -717,7 +720,7 @@ void Servidor::m_CleanVector() {
             }
         }
     }
-    std::cout << "Thread CLEANER terminada\n";
+    DEBUG_MSG("Thread CLEANER terminada");
     
     int iNumeroClientes = this->m_NumeroClientes(vector_mutex);
     for (int iIndex2 = 0; iIndex2 < iNumeroClientes; iIndex2++) {
@@ -754,10 +757,10 @@ void Servidor::m_MonitorTransferencias() {
                     list_transfer->SetItem(iRowCount++, 3, wxString(strPor));
                 }
             } else {
-                std::cout << "No se pudo encontrar el list abierto" << std::endl;
+               DEBUG_MSG("No se pudo encontrar el list abierto");
             }
         }else {
-            std::cout << "No se pudo encontrar el panel abierto" << std::endl;
+            DEBUG_MSG("No se pudo encontrar el panel abierto");
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
@@ -822,7 +825,7 @@ void Servidor::m_Escucha(){
 
         }
     }
-    std::cout<<"DONE Listen" << std::endl;
+    DEBUG_MSG("DONE Listen");
 }
 
 int Servidor::IndexOf(std::string strID) {
@@ -862,7 +865,7 @@ void Servidor::m_RemoverClienteLista(std::string p_ID){
     if(lFound != wxNOT_FOUND){
         this->m_listCtrl->DeleteItem(lFound);
     } else{
-        error();
+        DEBUG_MSG("No se pudo encontrar el cliente " + p_ID);
     }
     
 }
@@ -901,7 +904,7 @@ int Servidor::cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFl
             nPaquete.uiIsUltimo    = iDataSize == 0 ? 1 : 0;
             nPaquete.cBuffer.resize( iChunkSize );
             if (nPaquete.cBuffer.size() < iChunkSize) {
-                std::cout << "[CHUNK] No se pudo reservar memoria\n";
+                DEBUG_MSG("[CHUNK] No se pudo reservar memoria");
                 break;
             }
 
@@ -915,7 +918,7 @@ int Servidor::cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFl
 
             iChunkEnviado = this->cSend(pSocket, cPaqueteSer, iFinalSize, pFlags, isBlock, 0);
             if (iChunkEnviado == SOCKET_ERROR || iChunkEnviado == WSAECONNRESET) {
-                std::cout << "[CHUNK] Error enviando el chunk\n";
+                DEBUG_MSG("[CHUNK] Error enviando el chunk");
                 break;
             }
             iEnviado += iChunkEnviado;
@@ -958,7 +961,7 @@ int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, 
     ByteArray cData = this->bEnc(reinterpret_cast<const unsigned char*>(pBuffer), iDataSize);
     iDataSize = cData.size();
     if (iDataSize == 0) {
-        error();
+        ERROR("Error encriptando los datos a enviar");
         return 0;
     }
 
@@ -975,7 +978,7 @@ int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, 
     if (isBlock) {
         //Hacer el socket block
         if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
-            std::cout << "[cSend]Error configurando el socket NON_BLOCK\n";
+            DEBUG_MSG("[cSend]Error configurando el socket NON_BLOCK");
         }
     }
 
@@ -985,7 +988,7 @@ int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, 
     if (isBlock) {
         iBlock = 1;
         if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
-            std::cout << "[cSend]Error configurando el socket NON_BLOCK\n";
+            DEBUG_MSG("[cSend]Error configurando el socket NON_BLOCK");
         }
     }
     
@@ -1024,7 +1027,7 @@ int Servidor::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, boo
     if (isBlock) {
         //Hacer el socket block
         if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
-            std::cout << "[cRecv]Error configurando el socket NON_BLOCK\n";
+            DEBUG_MSG("[cRecv]Error configurando el socket NON_BLOCK");
         }
     }
 
@@ -1044,11 +1047,12 @@ int Servidor::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, boo
                 *error_code = WSAGetLastError();
             }
             if (iRecibido == SOCKET_ERROR) {
-                std::cout<<"No se pudo leer nada recv_all.\n";
+                DEBUG_MSG("No se pudo leer nada recv_all.");
                 bErrorFlag = true;
             }
         }else {
-            std::cout << "Error parseando entero\n"<<iPaqueteSize<<">> " << " << \n";
+            DEBUG_MSG("Error parseando entero");
+            DEBUG_MSG(iPaqueteSize);
             bErrorFlag = true;
         }
     }else if (iPaqueteSize == SOCKET_ERROR) {
@@ -1059,7 +1063,8 @@ int Servidor::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, boo
     if (isBlock) {
         iBlock = 1;
         if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
-            std::cout << "[1][cRecv]Error configurando el socket NON_BLOCK"<<iRecibido<<"\n";
+            DEBUG_MSG("[1][cRecv]Error configurando el socket NON_BLOCK:");
+            DEBUG_MSG(iRecibido);
         }
     }
 
@@ -1071,7 +1076,7 @@ int Servidor::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, boo
     ByteArray bOut = this->bDec(reinterpret_cast<const unsigned char*>(cRecvBuffer.data()), iRecibido);
     iRecibido = bOut.size();
     if (iRecibido == 0) {
-        error();
+        ERROR("Error desencriptando los datos a enviar");
         return 0;
     }
 
@@ -1079,7 +1084,7 @@ int Servidor::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, boo
     if (pBuffer.size() == iRecibido) {
         memcpy(pBuffer.data(), bOut.data(), iRecibido);
     }else {
-        std::cout << "[cRecv] No se pudo reservar memoria en el buffer de salida\n";
+        DEBUG_MSG("[cRecv] No se pudo reservar memoria en el buffer de salida");
         return 0;
     }
     return iRecibido;
@@ -1107,7 +1112,7 @@ bool Servidor::m_DeserializarPaquete(const char* cBuffer, Paquete& paquete, int 
     if (paquete.cBuffer.size() == paquete.uiTamBuffer) {
         memcpy(paquete.cBuffer.data(), cBuffer + sizeof(paquete.uiTipoPaquete) + sizeof(paquete.uiTamBuffer) + sizeof(paquete.uiIsUltimo), paquete.uiTamBuffer);
     }else {
-        std::cout << "[Deserializar] No se pudo reservar memoria para el buffer " << GetLastError() << "\n";
+        ERROR("[Deserializar] No se pudo reservar memoria para el buffer");
         return false;
     }
     return true;
@@ -1118,7 +1123,8 @@ ByteArray Servidor::bEnc(const unsigned char* pInput, size_t pLen) {
     ByteArray bOutput;
     ByteArray::size_type enc_len = Aes256::encrypt(this->bKey, pInput, pLen, bOutput);
     if (enc_len <= 0) {
-        std::cout<<"Error encriptando "<<pInput<<"\n";
+        DEBUG_MSG("Error encriptando:");
+        DEBUG_MSG(pInput);
     }
     return bOutput;
 }
@@ -1127,7 +1133,8 @@ ByteArray Servidor::bDec(const unsigned char* pInput, size_t pLen) {
     ByteArray bOutput;
     ByteArray::size_type dec_len = Aes256::decrypt(this->bKey, pInput, pLen, bOutput);
     if (dec_len <= 0) {
-        std::cout << "Error desencriptando " << pInput << "\n";
+        DEBUG_MSG("Error desencriptando:");
+        DEBUG_MSG(pInput);
     }
     return bOutput;
 }

@@ -84,8 +84,9 @@
 #define FM_NORMAL    501
 
 
-extern bool bSignalFlag;
-#define error() std::cout<<"Error["<<GetLastError()<<"]\n";
+//extern bool bSignalFlag;
+#define ERROR(x) std::cout<<__FILE__<<":"<<__LINE__<<"ERR["<<GetLastError()<<"] "<<x<<"\n";
+#define DEBUG_MSG(x) std::cout<<__FILE__<<":"<<__LINE__<<"+[DBG] "<<x<<"\n";
 
 typedef unsigned int u_int;
 typedef unsigned long long int u64;

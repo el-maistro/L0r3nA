@@ -171,7 +171,8 @@ void frameRemoteDesktop::OnDrawBuffer(const char*& cBuffer, int iBuffersize) {
 						this->imageCtrl->Refresh();
 					}
 				}catch (const std::exception& e) {
-					std::cout << "genericError: " << e.what() << "\n";
+					DEBUG_MSG("exception:");
+					DEBUG_MSG(e.what());
 				}catch (...) {
 					throw;
 				}

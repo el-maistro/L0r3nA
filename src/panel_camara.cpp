@@ -63,8 +63,7 @@ void panelPictureBox::OnDrawBuffer(const char* cBuffer, int iBufferSize) {
 				this->Refresh(false);
 				this->Update();
 			} else {
-				error();
-				std::cout << "[X] imageCtrl no esta inicializado\n";
+				DEBUG_MSG("imageCtrl no esta inicializado");
 			}
 		}
 	}

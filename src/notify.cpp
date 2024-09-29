@@ -64,7 +64,8 @@ MyNotify::MyNotify(wxWindow* pParent, const std::string strTitle, const std::str
 
         //this->SpawnThread(shared_from_this()); Error lamar a la funcion aqui porque no se ha terminado de construir el obj
     } catch (const std::exception& e) {
-        std::cout << "Error en MyNotify constructor: " << e.what() << std::endl;
+        DEBUG_MSG("Error en MyNotify constructor. exception:");
+        DEBUG_MSG(e.what());
         throw;
     }
 }

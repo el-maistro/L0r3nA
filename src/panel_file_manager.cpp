@@ -156,12 +156,11 @@ void panelFileManager::EnviarComando(std::string pComando, int iComando) {
 }
 
 void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath, std::string strCliente) {
-	std::cout << "Enviando " << lPath << std::endl;
+	DEBUG_MSG("Enviado " + lPath);
 
 	std::ifstream localFile(lPath, std::ios::binary);
 	if (!localFile.is_open()) {
-		error();
-		std::cout << "No se pudo abrir el archivo " << lPath << std::endl;
+		ERROR("No se pudo abrir el archivo " + lPath);
 		return;
 	}
 
@@ -200,7 +199,7 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 
 	std::vector<char> nSendBuffer(CHUNK_FILE_TRANSFER_SIZE + iHeaderSize);
 	if (nSendBuffer.size() == 0) {
-		std::cout << "[0]No se pudo reservar memoria para enviar el archivo...\n";
+		DEBUG_MSG("[0]No se pudo reservar memoria para enviar el archivo.");
 		return;
 	}
 
@@ -228,7 +227,6 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 	//Ya se envio todo, cerrar el archivo
 	std::this_thread::sleep_for(std::chrono::milliseconds(500));
 	p_Servidor->cChunkSend(this->sckCliente, strID.c_str(), strID.size(), 0, true, EnumComandos::FM_Descargar_Archivo_End);
-	
 }
 
 wxString panelFileManager::RutaActual() {
@@ -300,14 +298,13 @@ void ListCtrlManager::OnDescargarArchivo(wxCommandEvent& event) {
 	nuevo_transfer.strCliente = this->itemp->strID;
 	nuevo_transfer.isUpload = false;
 	if(!nuevo_archivo.ssOutFile.get()->is_open()) {
-		error();
-		p_Servidor->m_txtLog->LogThis("[X] No se pudo abrir el archivo " + strNombre, LogType::LogError);
+		DEBUG_MSG("[X] No se pudo abrir el archivo " + strNombre);
 		return;
 	}
 
 	int iClienteID = p_Servidor->IndexOf(this->itemp->strID);
 	if (iClienteID == -1) {
-		p_Servidor->m_txtLog->LogThis("[X] No se pudo encontrar el cliente " + this->itemp->strID, LogType::LogError);
+		DEBUG_MSG("[X] No se pudo encontrar el cliente " + this->itemp->strID);
 		return;
 	}
 
@@ -570,7 +567,7 @@ void ListCtrlManager::ListarDir(const char* strData) {
 			}
 		}else {
 			//unknown
-			std::cout << "DESCONOCIDO: " << vcEntry << std::endl;
+			DEBUG_MSG("[FM]DESCONOCIDO: " + vcEntry);
 		}
 		
 		if (vcFileEntry.size() == 4) {
@@ -580,9 +577,8 @@ void ListCtrlManager::ListarDir(const char* strData) {
 			this->SetItem(iCount, 1, wxString(vcFileEntry[1]));
 			this->SetItem(iCount, 2, strTama); //tama
 			this->SetItem(iCount, 3, wxString(vcFileEntry[3]));
-		}
-		else {
-			std::cout << "La entrada no tiene los parametros requeridos\n" << vcEntry << '\n';
+		}else {
+			DEBUG_MSG("La entrada no tiene los parametros requeridos: " + vcEntry);
 		}
 
 	}
