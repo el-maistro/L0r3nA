@@ -5,6 +5,8 @@
 #include "headers.hpp"
 #include "notify.hpp"
 
+#include "file_editor.hpp"
+
 extern Servidor* p_Servidor;
 
 const wxString strTitle = "L0r3nA v0.1";
@@ -115,6 +117,9 @@ MyFrame::MyFrame()
     
     CreateStatusBar();
     SetStatusText("IDLE");
+
+    wxEditForm* edit_form = new wxEditForm(this, "Testing_archivo", "123456");
+    edit_form->Show(true);
     
 #ifdef DEBUG_DESIGN_LIMITS
     SetBackgroundColour(wxColour(255, 255, 255, 128)); // Establecer el color de fondo con transparencia

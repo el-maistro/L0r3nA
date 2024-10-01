@@ -57,22 +57,6 @@ class panelTransferencias : public wxPanel {
 
 };
 
-class panelReverseShell : public wxPanel {
-    public:
-        panelReverseShell(wxWindow* pParent);
-        wxTextCtrl* txtConsole;
-        void OnHook(wxKeyEvent& event);
-        unsigned long int p_uliUltimo = 19;
-
-    private:
-        //Historial
-        std::vector<wxString> vc_History;
-        int iHistorialPos = 0;
-
-        std::string strID = "";
-        SOCKET sckCliente = INVALID_SOCKET;
-};
-
 class panelMicrophone : public wxPanel {
     public:
         panelMicrophone(wxWindow* pParent);

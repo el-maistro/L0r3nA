@@ -507,12 +507,13 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
 }
 
 void Cliente_Handler::EscribirSalidShell(const std::string strSalida) {
-    panelReverseShell* panel_shell = (panelReverseShell*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Reverse_Shell, this->n_Frame);
+    /*panelReverseShell* panel_shell = (panelReverseShell*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Reverse_Shell, this->n_Frame);
     if (panel_shell) {
         panel_shell->txtConsole->AppendText(strSalida);
         int iLast = panel_shell->txtConsole->GetLastPosition();
         panel_shell->p_uliUltimo = iLast;
-    }
+    }*/
+    return;
 }
 
 void Cliente_Handler::Spawn_Threads() {

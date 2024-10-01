@@ -3,16 +3,17 @@
 #include "misc.hpp"
 
 wxBEGIN_EVENT_TABLE(wxEditForm, wxFrame)
-	EVT_MENU(EnumIDS::ID_Panel_FM_Editar_Save_Remoto, wxEditForm::OnGuardarRemoto)
-	EVT_MENU(EnumIDS::ID_Panel_FM_Editar_Save_Local, wxEditForm::OnGuardarLocal)
+	EVT_MENU(EditorIDS::Edit_Save_Remoto, wxEditForm::OnGuardarRemoto)
+	EVT_MENU(EditorIDS::Edit_Save_Local, wxEditForm::OnGuardarLocal)
+	EVT_MENU(EditorIDS::Edit_Menu_Buscar, wxEditForm::OnBuscar)
 wxEND_EVENT_TABLE()
 
 wxEditForm::wxEditForm(wxWindow* pParent, wxString strNombre, std::string strID)
 	: wxFrame(pParent, wxID_ANY, "[REMOTO]" + strNombre, wxDefaultPosition, wxSize(600, 600), wxDEFAULT_FRAME_STYLE, strID)
 {
-	this->p_txtEditor = new wxStyledTextCtrl(this, EnumIDS::ID_Panel_FM_Editar_TXT, wxDefaultPosition, wxDefaultSize);
+	this->p_txtEditor = new wxStyledTextCtrl(this, EditorIDS::Edit_Text, wxDefaultPosition, wxDefaultSize);
 	this->p_txtEditor->SetCaretLineVisible(true);
-	this->p_txtEditor->SetCaretLineBackground(wxColour(186, 186, 186));
+	this->p_txtEditor->SetCaretLineBackground(wxColour(0, 200, 255));
 	this->p_txtEditor->SetMarginType(0, wxSTC_MARGIN_NUMBER);
 	this->p_txtEditor->SetMarginWidth(0, 40);
 	
@@ -25,31 +26,24 @@ wxEditForm::wxEditForm(wxWindow* pParent, wxString strNombre, std::string strID)
 	wxMenuBar* p_menu = new wxMenuBar();
 
 	wxMenu* p_file = new wxMenu();
-	p_file->Append(EnumIDS::ID_Panel_FM_Editar_Save_Remoto, "Guardar [REMOTO]");
+	p_file->Append(EditorIDS::Edit_Save_Remoto, "Guardar [REMOTO]");
 	p_file->AppendSeparator();
-	p_file->Append(EnumIDS::ID_Panel_FM_Editar_Save_Local, "Guardar [LOCAL]");
+	p_file->Append(EditorIDS::Edit_Save_Local, "Guardar [LOCAL]");
 	p_file->AppendSeparator();
 	p_file->Append(wxID_CLOSE, "Salir");
 
-	
-	//Encoders :v
-	//wxMenu* p_encoders = new wxMenu();
-	//p_encoders->Append(wxID_ANY, "Base64");
-	//p_encoders->Append(wxID_ANY, "MD5");
-	
-	//wxMenu* p_misc_tools = new wxMenu();
-	//p_misc_tools->AppendSubMenu(p_encoders, "Encoders");
-	//p_misc_tools->AppendSeparator();
-	//p_misc_tools->Append(wxID_ANY, "Buscar");
+	wxMenu* p_misc_tools = new wxMenu();
+	p_misc_tools->Append(EditorIDS::Edit_Menu_Encoders, "Encoders");
+	p_misc_tools->AppendSeparator();
+	p_misc_tools->Append(EditorIDS::Edit_Menu_Buscar, "Buscar");
 	
 	p_menu->Append(p_file, "Archivo");
-	//p_menu->Append(p_misc_tools, "Herramientas");
-
+	p_menu->Append(p_misc_tools, "Herramientas");
 
 	this->SetSizer(nsizer);
 	this->SetMenuBar(p_menu);
 
-	ListCtrlManager* temp = (ListCtrlManager*)this->GetParent();
+	/*ListCtrlManager* temp = (ListCtrlManager*)this->GetParent();
 
 	std::string strComando = strNombre;
 	strComando.append(1, CMD_DEL);
@@ -59,10 +53,10 @@ wxEditForm::wxEditForm(wxWindow* pParent, wxString strNombre, std::string strID)
 		temp->itemp->EnviarComando(strComando, EnumComandos::FM_Editar_Archivo);
 	}else {
 		DEBUG_MSG("No existe el panel principal");
-	}
+	}*/
 }
 
-void wxEditForm::OnGuardarRemoto(wxCommandEvent& event) {
+void wxEditForm::OnGuardarRemoto(wxCommandEvent&) {
 	std::string strComando = this->strFilename;
 	strComando.append(1, CMD_DEL);
 	strComando += this->p_txtEditor->GetValue();
@@ -78,7 +72,7 @@ void wxEditForm::OnGuardarRemoto(wxCommandEvent& event) {
 }
 
 
-void wxEditForm::OnGuardarLocal(wxCommandEvent& event) {
+void wxEditForm::OnGuardarLocal(wxCommandEvent&) {
 	std::vector<std::string> vcPath = strSplit(this->strFilename, '\\', 100);
 	std::string strOutFile = vcPath[vcPath.size() - 1];
 
@@ -97,4 +91,20 @@ void wxEditForm::OnGuardarLocal(wxCommandEvent& event) {
 		}
 	}
 	
+}
+
+void wxEditForm::OnBuscar(wxCommandEvent&) {
+	wxTextEntryDialog dialog(this, "Buscar", "Buscar texto", "itnik", wxOK | wxCANCEL);
+	if (dialog.ShowModal() == wxID_OK) {
+		//dialog.GetValue()
+		int npos = this->p_txtEditor->FindText(0, this->p_txtEditor->GetLength(), dialog.GetValue(), 0, 0);
+		if (npos >= 0) {
+			//this->p_txtEditor->SetInsertionPoint(npos);
+			this->p_txtEditor->SetEmptySelection(npos);
+			this->p_txtEditor->SetCurrentPos(npos);
+		}else {
+			std::string strMsg = "No se pudo encontrar: " + dialog.GetValue();
+			wxMessageBox(strMsg, "Resultado");
+		}
+	}
 }
