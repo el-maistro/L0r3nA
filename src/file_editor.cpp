@@ -6,6 +6,11 @@ wxBEGIN_EVENT_TABLE(wxEditForm, wxFrame)
 	EVT_MENU(EditorIDS::Edit_Save_Remoto, wxEditForm::OnGuardarRemoto)
 	EVT_MENU(EditorIDS::Edit_Save_Local, wxEditForm::OnGuardarLocal)
 	EVT_MENU(EditorIDS::Edit_Menu_Buscar, wxEditForm::OnBuscar)
+	EVT_MENU(EditorIDS::Edit_Menu_Remplazar, wxEditForm::OnRemplazar)
+	EVT_FIND(wxID_ANY, wxEditForm::OnBuscarDialog)
+	EVT_FIND_NEXT(wxID_ANY, wxEditForm::OnBuscarDialog)
+	EVT_FIND_REPLACE(wxID_ANY, wxEditForm::OnBuscarDialog)
+	EVT_FIND_REPLACE_ALL(wxID_ANY, wxEditForm::OnBuscarDialog)
 wxEND_EVENT_TABLE()
 
 wxEditForm::wxEditForm(wxWindow* pParent, wxString strNombre, std::string strID)
@@ -36,6 +41,7 @@ wxEditForm::wxEditForm(wxWindow* pParent, wxString strNombre, std::string strID)
 	p_misc_tools->Append(EditorIDS::Edit_Menu_Encoders, "Encoders");
 	p_misc_tools->AppendSeparator();
 	p_misc_tools->Append(EditorIDS::Edit_Menu_Buscar, "Buscar");
+	p_misc_tools->Append(EditorIDS::Edit_Menu_Remplazar, "Buscar y remplazar");
 	
 	p_menu->Append(p_file, "Archivo");
 	p_menu->Append(p_misc_tools, "Herramientas");
@@ -71,7 +77,6 @@ void wxEditForm::OnGuardarRemoto(wxCommandEvent&) {
 	}
 }
 
-
 void wxEditForm::OnGuardarLocal(wxCommandEvent&) {
 	std::vector<std::string> vcPath = strSplit(this->strFilename, '\\', 100);
 	std::string strOutFile = vcPath[vcPath.size() - 1];
@@ -94,7 +99,9 @@ void wxEditForm::OnGuardarLocal(wxCommandEvent&) {
 }
 
 void wxEditForm::OnBuscar(wxCommandEvent&) {
-	wxTextEntryDialog dialog(this, "Buscar", "Buscar texto", "itnik", wxOK | wxCANCEL);
+	wxFindReplaceDialog* find_dlg = new wxFindReplaceDialog(this, &this->m_findData, "Buscar", wxFR_NOWHOLEWORD);
+	find_dlg->Show(true);
+	/*wxTextEntryDialog dialog(this, "Buscar", "Buscar texto", "itnik", wxOK | wxCANCEL);
 	if (dialog.ShowModal() == wxID_OK) {
 		//dialog.GetValue()
 		int npos = this->p_txtEditor->FindText(0, this->p_txtEditor->GetLength(), dialog.GetValue(), 0, 0);
@@ -106,5 +113,42 @@ void wxEditForm::OnBuscar(wxCommandEvent&) {
 			std::string strMsg = "No se pudo encontrar: " + dialog.GetValue();
 			wxMessageBox(strMsg, "Resultado");
 		}
+	}*/
+
+}
+
+void wxEditForm::OnRemplazar(wxCommandEvent& event) {
+	wxFindReplaceDialog* find_dlg = new wxFindReplaceDialog(this, &this->m_findData, "Buscar y remplazar", wxFR_REPLACEDIALOG);
+	find_dlg->Show(true);
+}
+
+void wxEditForm::OnBuscarDialog(wxFindDialogEvent& event) {
+	wxEventType type = event.GetEventType();
+	int flags = event.GetFlags();
+	wxString str = event.GetFindString();
+	bool isDown =          (flags & wxFR_DOWN)      ? true : false;
+	bool whole_word =      (flags & wxFR_WHOLEWORD) ? true : false;
+	bool isCaseSensitive = (flags & wxFR_MATCHCASE) ? true : false;
+
+	if(type == wxEVT_FIND || type == wxEVT_FIND_NEXT){
+		int posActual = this->p_txtEditor->GetCurrentPos();
+		if (type == wxEVT_FIND_NEXT && isDown) { posActual += str.size(); }
+		int posResultado = -1;
+		if (isDown) {
+			posResultado = this->p_txtEditor->FindText(posActual, this->p_txtEditor->GetLength(), event.GetFindString(), 0, 0);
+		}else {
+			posResultado = this->p_txtEditor->FindText(0, posActual, event.GetFindString(), 0, 0);
+		}
+		
+		if (posResultado >= 0) {
+			this->p_txtEditor->SetEmptySelection(posResultado);
+			this->p_txtEditor->SetCurrentPos(posResultado);
+			this->p_txtEditor->SetFocus();
+		}
+
+	}else if (type == wxEVT_FIND_REPLACE || type == wxEVT_FIND_REPLACE_ALL) {
+		DEBUG_MSG("Replace: ");
+		DEBUG_MSG(event.GetFindString());
+		DEBUG_MSG(event.GetReplaceString());
 	}
 }
