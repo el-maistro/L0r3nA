@@ -25,6 +25,7 @@ set(SRCS main.cpp
          frame_crypt_db.cpp
          aes256/aes256.cpp
          notify.cpp
+         base64/base64.cpp
          #zlib/compress.c 
          #zlib/inflate.c 
          #zlib/infback.c 

@@ -3,6 +3,7 @@
 
 #include "headers.hpp"
 #include <wx/fdrepdlg.h>
+#include "base64/base64.h"
 
 namespace EditorIDS {
 	enum Enum {
@@ -11,7 +12,11 @@ namespace EditorIDS {
 		Edit_Save_Local,
 		Edit_Menu_Buscar,
 		Edit_Menu_Remplazar,
-		Edit_Menu_Encoders
+		Edit_Menu_Encoders,
+		ENC_Combo,
+		ENC_Text_In,
+		ENC_Text_Out,
+		ENC_Process
 	};
 }
 
@@ -25,6 +30,7 @@ class wxEditForm : public wxFrame {
 		void OnGuardarLocal(wxCommandEvent& event);
 		void OnBuscar(wxCommandEvent& event);
 		void OnRemplazar(wxCommandEvent& event);
+		void OnEncoders(wxCommandEvent& event);
 
 		//Dialog busqueda y remplazo
 		void OnBuscarDialog(wxFindDialogEvent& event);
@@ -34,6 +40,20 @@ class wxEditForm : public wxFrame {
 
 		wxDECLARE_EVENT_TABLE();
 		
+};
+
+class wxEncoders : public wxFrame {
+	public:
+		wxEncoders(wxWindow* pParent);
+
+		void OnProcesar(wxCommandEvent& event);
+
+	private:
+		wxTextCtrl* txtIn = nullptr;
+		wxTextCtrl* txtOut = nullptr;
+		wxComboBox* cmbOpcion = nullptr;
+		wxString strProcesar(const wxString& in, const wxString& metodo);
+		wxDECLARE_EVENT_TABLE();
 };
 
 #endif

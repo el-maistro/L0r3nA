@@ -7,10 +7,15 @@ wxBEGIN_EVENT_TABLE(wxEditForm, wxFrame)
 	EVT_MENU(EditorIDS::Edit_Save_Local, wxEditForm::OnGuardarLocal)
 	EVT_MENU(EditorIDS::Edit_Menu_Buscar, wxEditForm::OnBuscar)
 	EVT_MENU(EditorIDS::Edit_Menu_Remplazar, wxEditForm::OnRemplazar)
+	EVT_MENU(EditorIDS::Edit_Menu_Encoders, wxEditForm::OnEncoders)
 	EVT_FIND(wxID_ANY, wxEditForm::OnBuscarDialog)
 	EVT_FIND_NEXT(wxID_ANY, wxEditForm::OnBuscarDialog)
 	EVT_FIND_REPLACE(wxID_ANY, wxEditForm::OnBuscarDialog)
 	EVT_FIND_REPLACE_ALL(wxID_ANY, wxEditForm::OnBuscarDialog)
+wxEND_EVENT_TABLE()
+
+wxBEGIN_EVENT_TABLE(wxEncoders, wxFrame)
+	EVT_BUTTON(EditorIDS::ENC_Process, wxEncoders::OnProcesar)
 wxEND_EVENT_TABLE()
 
 wxEditForm::wxEditForm(wxWindow* pParent, wxString strNombre, std::string strID)
@@ -101,20 +106,6 @@ void wxEditForm::OnGuardarLocal(wxCommandEvent&) {
 void wxEditForm::OnBuscar(wxCommandEvent&) {
 	wxFindReplaceDialog* find_dlg = new wxFindReplaceDialog(this, &this->m_findData, "Buscar", wxFR_NOWHOLEWORD);
 	find_dlg->Show(true);
-	/*wxTextEntryDialog dialog(this, "Buscar", "Buscar texto", "itnik", wxOK | wxCANCEL);
-	if (dialog.ShowModal() == wxID_OK) {
-		//dialog.GetValue()
-		int npos = this->p_txtEditor->FindText(0, this->p_txtEditor->GetLength(), dialog.GetValue(), 0, 0);
-		if (npos >= 0) {
-			//this->p_txtEditor->SetInsertionPoint(npos);
-			this->p_txtEditor->SetEmptySelection(npos);
-			this->p_txtEditor->SetCurrentPos(npos);
-		}else {
-			std::string strMsg = "No se pudo encontrar: " + dialog.GetValue();
-			wxMessageBox(strMsg, "Resultado");
-		}
-	}*/
-
 }
 
 void wxEditForm::OnRemplazar(wxCommandEvent& event) {
@@ -166,4 +157,59 @@ void wxEditForm::OnBuscarDialog(wxFindDialogEvent& event) {
 			}
 		}
 	}
+}
+
+void wxEditForm::OnEncoders(wxCommandEvent& event) {
+	wxEncoders* frame_encoders = new wxEncoders(this);
+	frame_encoders->Show(true);
+}
+
+wxEncoders::wxEncoders(wxWindow* pParent) :
+	wxFrame(pParent, wxID_ANY, "Funciones de encoding/hashing", wxDefaultPosition, wxDefaultSize) {
+	
+	wxStaticText* lblIn = new wxStaticText(this, wxID_ANY, "Entrada:");
+	wxStaticText* lblOut = new wxStaticText(this, wxID_ANY, "Salida:");
+
+
+	wxArrayString cmbOpciones;
+	cmbOpciones.push_back(wxString("base64Encode"));
+	cmbOpciones.push_back(wxString("base64Decode"));
+
+	this->cmbOpcion = new wxComboBox(this, EditorIDS::ENC_Combo, "Seleccionar funcion", wxDefaultPosition, wxDefaultSize, cmbOpciones, wxCB_READONLY);
+
+	this->txtIn = new wxTextCtrl(this, EditorIDS::ENC_Text_In, wxEmptyString, wxDefaultPosition, wxSize(200,100), wxTE_MULTILINE | wxTE_RICH);
+	this->txtOut = new wxTextCtrl(this, EditorIDS::ENC_Text_Out, wxEmptyString, wxDefaultPosition, wxSize(200, 100), wxTE_MULTILINE | wxTE_RICH);
+	wxButton* btnProcess = new wxButton(this, EditorIDS::ENC_Process, "Procesar", wxDefaultPosition, wxDefaultSize);
+
+	wxBoxSizer* main_sizer = new wxBoxSizer(wxVERTICAL);
+	main_sizer->Add(this->cmbOpcion, 0, wxEXPAND | wxALL, 1);
+	main_sizer->Add(lblIn);
+	main_sizer->Add(this->txtIn);
+	main_sizer->Add(lblOut);
+	main_sizer->Add(this->txtOut);
+	main_sizer->Add(btnProcess, 0, wxEXPAND | wxALL, 1);
+
+	this->SetSizerAndFit(main_sizer);
+	this->SetSizeHints(216, 321, 216, 321);
+}
+
+void wxEncoders::OnProcesar(wxCommandEvent& event) {
+	wxString strOpcion = this->cmbOpcion->GetValue();
+	if (strOpcion != "" && strOpcion != "Seleccionar funcion") {
+		wxString strIn = this->txtIn->GetValue();
+		wxString strOut = this->strProcesar(strIn, strOpcion);
+		this->txtOut->SetValue(strOut);
+	}
+	DEBUG_MSG(strOpcion);
+}
+
+wxString wxEncoders::strProcesar(const wxString& strIn, const wxString& metodo) {
+	wxString strOut = "";
+	if (metodo == "base64Encode") {
+		strOut = base64_encode(strIn.ToStdString());
+	}else if (metodo == "base64Decode") {
+		strOut = base64_decode(strIn.ToStdString());
+	}
+	
+	return strOut;
 }
