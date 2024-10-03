@@ -129,26 +129,41 @@ void wxEditForm::OnBuscarDialog(wxFindDialogEvent& event) {
 	bool isDown =          (flags & wxFR_DOWN)      ? true : false;
 	bool whole_word =      (flags & wxFR_WHOLEWORD) ? true : false;
 	bool isCaseSensitive = (flags & wxFR_MATCHCASE) ? true : false;
+	int posActual = this->p_txtEditor->GetCurrentPos();
+	int posResultado = -1;
 
 	if(type == wxEVT_FIND || type == wxEVT_FIND_NEXT){
-		int posActual = this->p_txtEditor->GetCurrentPos();
 		if (type == wxEVT_FIND_NEXT && isDown) { posActual += str.size(); }
-		int posResultado = -1;
 		if (isDown) {
-			posResultado = this->p_txtEditor->FindText(posActual, this->p_txtEditor->GetLength(), event.GetFindString(), 0, 0);
+			posResultado = this->p_txtEditor->FindText(posActual, this->p_txtEditor->GetLength(), str, 0, 0);
 		}else {
-			posResultado = this->p_txtEditor->FindText(0, posActual, event.GetFindString(), 0, 0);
+			posResultado = this->p_txtEditor->FindText(0, posActual,str, 0, 0);
 		}
 		
 		if (posResultado >= 0) {
 			this->p_txtEditor->SetEmptySelection(posResultado);
 			this->p_txtEditor->SetCurrentPos(posResultado);
 			this->p_txtEditor->SetFocus();
+		}else {
+			wxMessageBox("No se encontraron resultados", "Buscar", wxICON_ERROR);
 		}
 
 	}else if (type == wxEVT_FIND_REPLACE || type == wxEVT_FIND_REPLACE_ALL) {
-		DEBUG_MSG("Replace: ");
-		DEBUG_MSG(event.GetFindString());
-		DEBUG_MSG(event.GetReplaceString());
+		posResultado = this->p_txtEditor->FindText(posActual, this->p_txtEditor->GetLength(), str, 0, 0);
+		if (posResultado >= 0) {
+			int strNewSize = event.GetReplaceString().size();
+			
+			this->p_txtEditor->DeleteRange(posResultado, str.size());
+			this->p_txtEditor->InsertText(posResultado, event.GetReplaceString());
+			this->p_txtEditor->SetEmptySelection(posResultado + strNewSize);
+			this->p_txtEditor->SetCurrentPos(posResultado + strNewSize);
+			if (type == wxEVT_FIND_REPLACE_ALL) {
+				OnBuscarDialog(event);
+			}
+		}else {
+			if (type == wxEVT_FIND_REPLACE) {
+				wxMessageBox("No se encontraron resultados", "Buscar y remplazar", wxICON_ERROR);
+			}
+		}
 	}
 }
