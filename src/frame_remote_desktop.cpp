@@ -182,6 +182,39 @@ void frameRemoteDesktop::OnDrawBuffer(const char*& cBuffer, int iBuffersize) {
 	}
 }
 
+void frameRemoteDesktop::ProcesarLista(const char*& pBuffer) {
+	std::vector<std::string> vcMonitores = strSplit(std::string(pBuffer), '|', 20);
+	if (vcMonitores.size() > 0) {
+		this->LimpiarVector();
+		for (const std::string& strMonitor : vcMonitores) {
+			//nombre | width | height
+			std::vector<std::string> vcInfo = strSplit(strMonitor, CMD_DEL, 3);
+			if (vcInfo.size() == 3) {
+				MonitorInfo new_monitor;
+				new_monitor.resWidth = atoi(vcInfo[1].c_str());
+				new_monitor.resHeight = atoi(vcInfo[2].c_str());
+				
+				this->AgregarMonitor(new_monitor);
+				
+				wxString strEntry = vcInfo[0];
+				strEntry.append(1, ' ');
+				strEntry += vcInfo[1];
+				strEntry.append(1, 'x');
+				strEntry += vcInfo[2];
+
+				this->combo_lista_monitores->Clear();
+				combo_lista_monitores->Append(strEntry);
+			}
+			else {
+				DEBUG_MSG("No se pudo parsear la info del monitor " + strMonitor);
+			}
+		}
+	}else {
+		DEBUG_MSG("No se pudo parsear la info de los monitores");
+		DEBUG_MSG(pBuffer);
+	}
+}
+
 void frameRemoteDesktop::OnCheckVmouse(wxCommandEvent& event) {
 	bool isChecked = event.IsChecked();
 	p_Servidor->cChunkSend(this->sckCliente, (isChecked ? "1" : "0"), 1, 0, false, EnumComandos::RD_Update_Vmouse);

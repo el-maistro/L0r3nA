@@ -10,6 +10,8 @@ public:
     void OnHook(wxKeyEvent& event);
     unsigned long int p_uliUltimo = 19;
 
+    void EscribirSalida(const char*& cBuffer);
+
 private:
     //Historial
     std::vector<wxString> vc_History;

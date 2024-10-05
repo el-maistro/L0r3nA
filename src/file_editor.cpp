@@ -54,7 +54,7 @@ wxEditForm::wxEditForm(wxWindow* pParent, wxString strNombre, std::string strID)
 	this->SetSizer(nsizer);
 	this->SetMenuBar(p_menu);
 
-	/*ListCtrlManager* temp = (ListCtrlManager*)this->GetParent();
+	ListCtrlManager* temp = (ListCtrlManager*)this->GetParent();
 
 	std::string strComando = strNombre;
 	strComando.append(1, CMD_DEL);
@@ -64,7 +64,7 @@ wxEditForm::wxEditForm(wxWindow* pParent, wxString strNombre, std::string strID)
 		temp->itemp->EnviarComando(strComando, EnumComandos::FM_Editar_Archivo);
 	}else {
 		DEBUG_MSG("No existe el panel principal");
-	}*/
+	}
 }
 
 void wxEditForm::OnGuardarRemoto(wxCommandEvent&) {
@@ -156,6 +156,13 @@ void wxEditForm::OnBuscarDialog(wxFindDialogEvent& event) {
 				wxMessageBox("No se encontraron resultados", "Buscar y remplazar", wxICON_ERROR);
 			}
 		}
+	}
+}
+
+void wxEditForm::AgregarTexto(const char*& cBuffer) {
+	if (this->p_txtEditor) {
+		this->p_txtEditor->AppendText(wxString(cBuffer));
+		this->p_txtEditor->SetInsertionPoint(0);
 	}
 }
 

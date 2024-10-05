@@ -27,6 +27,8 @@ class panelFileManager: public wxPanel{
 		std::string strIP = "";  //IP del cliente
 		SOCKET sckCliente = INVALID_SOCKET;
 
+		void ActualizarRuta(const char*& pBuffer);
+
 	private:
 		wxToolBar* p_ToolBar = nullptr;
 		

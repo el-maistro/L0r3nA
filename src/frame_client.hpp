@@ -31,7 +31,6 @@ class FrameCliente : public wxFrame {
         wxButton* btn_Test;
         
         //Eventos
-        void OnTest(wxCommandEvent& event);
         void OnClose(wxCloseEvent& event);
 
         void OnClosePage(wxAuiNotebookEvent& event);
@@ -42,37 +41,10 @@ class FrameCliente : public wxFrame {
 
 };
 
-class panelTest : public wxPanel {
-    public:
-        panelTest(wxWindow* pParent);
-        wxStaticText* lblOutputTest;
-    private:
-        
-};
-
 class panelTransferencias : public wxPanel {
     public:
         panelTransferencias(wxWindow* pParent);
     private:
 
-};
-
-class panelMicrophone : public wxPanel {
-    public:
-        panelMicrophone(wxWindow* pParent);
-
-    private:
-
-        wxComboBox* mic_devices = nullptr;
-
-        std::string strID = "";
-        SOCKET sckSocket = INVALID_SOCKET;
-        void OnRefrescarDispositivos(wxCommandEvent& event);
-        void OnEscuchar(wxCommandEvent& event);
-        void OnDetener(wxCommandEvent& event);
-
-        void EnviarComando(std::string pComando, int iComando);
-        
-        wxDECLARE_EVENT_TABLE();
 };
 #endif

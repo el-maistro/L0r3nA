@@ -229,6 +229,20 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 	p_Servidor->cChunkSend(this->sckCliente, strID.c_str(), strID.size(), 0, true, EnumComandos::FM_Descargar_Archivo_End);
 }
 
+void panelFileManager::ActualizarRuta(const char*& pBuffer) {
+	if (this->p_RutaActual) {
+		this->p_RutaActual->SetLabel(wxString(pBuffer));
+		this->c_RutaActual.clear();
+
+		std::vector<std::string> vcNuevaRuta = strSplit(std::string(pBuffer), CMD_DEL, 100);
+		for (std::string& sub_path : vcNuevaRuta) {
+			if (sub_path == "\\") { continue; }
+			sub_path += "\\";
+			this->c_RutaActual.push_back(sub_path);
+		}
+	}
+}
+
 wxString panelFileManager::RutaActual() {
 	wxString strOut = "";
 	for (auto item : this->c_RutaActual) {

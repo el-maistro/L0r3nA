@@ -8,6 +8,7 @@ namespace EnumCamMenu {
 	enum Enum {
 		ID_SingleShot = 10000,
 		ID_Close,
+		ID_Main_Panel,
 		ID_Combo_Devices,
 		ID_Refrescar_Lista,
 		ID_Spawn_Frame,
@@ -27,7 +28,10 @@ class panelPictureBox : public wxFrame {
 		u_int uiHeight = 300;
 		SOCKET sckCliente = INVALID_SOCKET;
 
-		void OnDrawBuffer(const char* cBuffer, int iBufferSize);
+
+		void OnDrawBuffer(const char*& cBuffer, int iBufferSize);
+		
+		//Eventos
 		void OnSingleShot(wxCommandEvent& event);
 		void OnLive(wxCommandEvent& event);
 		void OnStopLive(wxCommandEvent& event);
@@ -46,6 +50,7 @@ class panelCamara : public wxPanel{
 	public:
 		panelCamara(wxWindow* pParent);
 
+		void ProcesarLista(const char*& pBuffer);
 		void OnRefrescarLista(wxCommandEvent& event);
 		void OnManageCam(wxCommandEvent& event);
 

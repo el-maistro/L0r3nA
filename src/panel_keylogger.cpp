@@ -71,7 +71,6 @@ void panelKeylogger::OnLimpiar(wxCommandEvent& event) {
 	}
 }
 
-
 void panelKeylogger::OnToggle(wxCommandEvent& event) {
 	bool isSel = this->btn_Iniciar->GetValue();
 	std::string strComando = "";
@@ -83,5 +82,11 @@ void panelKeylogger::OnToggle(wxCommandEvent& event) {
 		//Apagar keylogger
 		p_Servidor->cChunkSend(this->sckCliente, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, false, EnumComandos::KL_Detener);
 		this->btn_Iniciar->SetLabelText(wxT("Iniciar"));
+	}
+}
+
+void panelKeylogger::AgregarData(const char*& pBuffer) {
+	if (this->txt_Data) {
+		this->txt_Data->AppendText(wxString(pBuffer));
 	}
 }

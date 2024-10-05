@@ -90,3 +90,10 @@ void panelReverseShell::OnHook(wxKeyEvent& event) {
         event.Skip();
     }
 }
+
+void panelReverseShell::EscribirSalida(const char*& pBuffer) {
+    if (this->txtConsole) {
+        this->txtConsole->AppendText(wxString(pBuffer));
+        this->p_uliUltimo = this->txtConsole->GetLastPosition();
+    }
+}

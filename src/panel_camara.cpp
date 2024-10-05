@@ -46,7 +46,7 @@ panelPictureBox::panelPictureBox(wxWindow* pParent, wxString strTitle, int iCamI
 	this->SetMenuBar(menuBar);
 }
 
-void panelPictureBox::OnDrawBuffer(const char* cBuffer, int iBufferSize) {
+void panelPictureBox::OnDrawBuffer(const char*& cBuffer, int iBufferSize) {
 	if (iBufferSize > 0) {
 		wxMemoryInputStream imgStream(cBuffer, iBufferSize);
 		wxImage::AddHandler(new wxJPEGHandler);
@@ -117,7 +117,7 @@ void panelPictureBox::OnGuardarFrame(wxCommandEvent& event) {
 }
 
 panelCamara::panelCamara(wxWindow* pParent):
-	wxPanel(pParent, wxID_ANY){
+	wxPanel(pParent, EnumCamMenu::ID_Main_Panel){
 
 	wxWindow* wxTree = (MyTreeCtrl*)this->GetParent();
 	if (wxTree) {
@@ -142,6 +142,23 @@ panelCamara::panelCamara(wxWindow* pParent):
 	nSizer->Add(btn_ManageCam, 0, wxALL, 1);
 	
 	this->SetSizerAndFit(nSizer);
+}
+
+void panelCamara::ProcesarLista(const char*& pBuffer) {
+	std::vector<std::string> vcCams = strSplit(std::string(pBuffer), '|', 10); //quien tiene mas de 10 camaras?
+	if (vcCams.size() > 0) {
+		if (this->cam_Devices) {
+			wxArrayString arrCams;
+			for (const std::string& cCam : vcCams) {
+				arrCams.push_back(cCam);
+			}
+			this->cam_Devices->Clear();
+			this->cam_Devices->Append(arrCams);
+		}
+	}else {
+		DEBUG_MSG("No se pudo parsear la informacion");
+		DEBUG_MSG(pBuffer);
+	}
 }
 
 void panelCamara::OnRefrescarLista(wxCommandEvent& event) {

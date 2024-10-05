@@ -142,7 +142,7 @@ class Cliente_Handler {
         void Command_Handler();
         void Spawn_Threads();
         void CrearFrame(const std::string strTitle, const std::string strID);
-        void EscribirSalidShell(const std::string strSalida);
+        void EscribirSalidaShell(const char*& cBuffer);
         bool OpenPlayer();
         void ClosePlayer() { waveOutClose(wo);}
         void PlayBuffer(char* pBuffer, size_t iLen);

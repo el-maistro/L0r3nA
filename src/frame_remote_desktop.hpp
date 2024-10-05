@@ -56,6 +56,7 @@ class frameRemoteDesktop : public wxFrame {
 		MonitorInfo GetCopy(int index);
 
 		void OnDrawBuffer(const char*& cBuffer, int iBuffersize);
+		void ProcesarLista(const char*& pBuffer);
 	private:
 		std::mutex mtx_vector;
 		bool isRemoteControl   =     	  false;
@@ -66,12 +67,8 @@ class frameRemoteDesktop : public wxFrame {
 		std::vector<MonitorInfo> vcMonitor;                  //Aloja resoluciones de cada monitor
 
 		void OnRemoteControl(wxCommandEvent&);               //Habilitar control remoto (toggle)
-		
-		//Mouse remoto
-		void OnRemoteMouse(wxMouseEvent& event);
-
-		//Teclado remoto
-		void OnRemoteKey(wxKeyEvent& event);
+		void OnRemoteMouse(wxMouseEvent& event);             //Mouse remoto
+		void OnRemoteKey(wxKeyEvent& event);                 //Teclado remoto
 	
 		void OnCheckVmouse(wxCommandEvent&);                 //Mostrar mouse remoto
 		void OnComboChange(wxCommandEvent&);	             //Cambiar calidad de imagen

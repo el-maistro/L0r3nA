@@ -34,6 +34,9 @@ class wxEditForm : public wxFrame {
 
 		//Dialog busqueda y remplazo
 		void OnBuscarDialog(wxFindDialogEvent& event);
+
+		//Agregar texto
+		void AgregarTexto(const char*& cBuffer);
 	private:
 		wxFindReplaceData m_findData;
 		std::string strFilename = "";

