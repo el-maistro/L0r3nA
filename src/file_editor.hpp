@@ -53,6 +53,7 @@ class wxEncoders : public wxFrame {
 		wxTextCtrl* txtOut = nullptr;
 		wxComboBox* cmbOpcion = nullptr;
 		wxString strProcesar(const wxString& in, const wxString& metodo);
+		wxString ROT13(const wxString& in);
 		wxDECLARE_EVENT_TABLE();
 };
 

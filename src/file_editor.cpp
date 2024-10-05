@@ -174,6 +174,7 @@ wxEncoders::wxEncoders(wxWindow* pParent) :
 	wxArrayString cmbOpciones;
 	cmbOpciones.push_back(wxString("base64Encode"));
 	cmbOpciones.push_back(wxString("base64Decode"));
+	cmbOpciones.push_back(wxString("ROT13"));
 
 	this->cmbOpcion = new wxComboBox(this, EditorIDS::ENC_Combo, "Seleccionar funcion", wxDefaultPosition, wxDefaultSize, cmbOpciones, wxCB_READONLY);
 
@@ -209,7 +210,29 @@ wxString wxEncoders::strProcesar(const wxString& strIn, const wxString& metodo) 
 		strOut = base64_encode(strIn.ToStdString());
 	}else if (metodo == "base64Decode") {
 		strOut = base64_decode(strIn.ToStdString());
+	}else if (metodo == "ROT13") {
+		strOut = this->ROT13(strIn);
 	}
-	
+	DEBUG_MSG(strOut);
 	return strOut;
+}
+
+wxString wxEncoders::ROT13(const wxString& in) {
+	// rot13.com
+	// (c <= 'Z' ? 90 : 122) >= (c = c.charCodeAt(0) + i) ? c : c - 26)
+		
+	wxString out = "";
+	for (int i = 0; i < in.size(); i++) {
+		char c = in[i];
+		int iLetra = static_cast<int>(c);
+		if (iLetra == 32) {
+			out += " ";
+		}else {
+			int iLimit = c <= 'Z' ? 90 : 122;
+			int iLowest = iLimit == 90 ? 64 : 96;
+			int nuevo = (iLimit) >= (iLetra + 13) ? iLetra + 13 : iLowest + ((iLetra + 13) - iLimit);
+			out += static_cast<char>(nuevo);
+		}
+	}
+	return out;
 }
