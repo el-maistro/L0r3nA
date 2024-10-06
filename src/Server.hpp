@@ -284,6 +284,8 @@ class Servidor{
         }
 
         //thread "safe" para modificar y acceder al vector
+        void m_BorrarCliente(std::mutex& mtx, int iIndex, bool isEnd = false);
+
         int m_NumeroClientes(std::mutex& mtx) {
             std::unique_lock<std::mutex> lock(mtx);
             return static_cast<int>(vc_Clientes.size());
@@ -298,22 +300,7 @@ class Servidor{
             }
             return INVALID_SOCKET;
         }
-
-        void m_BorrarCliente(std::mutex& mtx, int iIndex, bool isEnd = false) {
-            std::unique_lock<std::mutex> lock(mtx);
-            if (iIndex < static_cast<int>(vc_Clientes.size()) && iIndex >= 0) {
-                if (vc_Clientes[iIndex]) {
-                    vc_Clientes[iIndex]->JoinThread();
-                    m_CerrarConexion(vc_Clientes[iIndex]->p_Cliente._sckCliente);
-                    delete vc_Clientes[iIndex];
-                    vc_Clientes[iIndex] = nullptr;
-                    
-                    if (!isEnd) { vc_Clientes.erase(vc_Clientes.begin() + iIndex); }
-                }
-            }
-
-        }
-
+    
         std::string m_ClienteID(std::mutex& mtx, int iIndex) {
             std::unique_lock<std::mutex> lock(mtx);
             if (iIndex < static_cast<int>(vc_Clientes.size())) {

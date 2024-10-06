@@ -1071,6 +1071,21 @@ bool Servidor::m_DeserializarPaquete(const char* cBuffer, Paquete& paquete, int 
     return true;
 }
 
+void Servidor::m_BorrarCliente(std::mutex& mtx, int iIndex, bool isEnd) {
+    std::unique_lock<std::mutex> lock(mtx);
+    if (iIndex < static_cast<int>(this->vc_Clientes.size()) && iIndex >= 0) {
+        if (this->vc_Clientes[iIndex]) {
+            this->vc_Clientes[iIndex]->JoinThread();
+            m_CerrarConexion(this->vc_Clientes[iIndex]->p_Cliente._sckCliente);
+            this->vc_Clientes[iIndex]->m_setFrameVisible(false);
+            delete this->vc_Clientes[iIndex];
+            this->vc_Clientes[iIndex] = nullptr;
+
+            if (!isEnd) { this->vc_Clientes.erase(vc_Clientes.begin() + iIndex); }
+        }
+    }
+}
+
 //AES256
 ByteArray Servidor::bEnc(const unsigned char* pInput, size_t pLen) {
     ByteArray bOutput;
@@ -1149,7 +1164,7 @@ void MyListCtrl::OnContextMenu(wxContextMenuEvent& event){
 }
 
 void MyListCtrl::OnInteractuar(wxCommandEvent& event) {
-    std::vector<std::string> vcOut = strSplit(strTmp.ToStdString(), '/', 1);
+    std::vector<std::string> vcOut = strSplit(this->strTmp.ToStdString(), '/', 1);
     int iCliIndex = p_Servidor->IndexOf(vcOut[0]);
     
     if (iCliIndex != -1) {

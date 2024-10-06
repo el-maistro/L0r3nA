@@ -145,7 +145,7 @@ void Cliente::Process_Queue() {
             
             this->Procesar_Comando(nTemp);
         }else {
-            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
         
     }
@@ -235,6 +235,12 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     if (iComando == EnumComandos::CLI_STOP) {
         __DBG_("STOP");
         this->m_Stop();
+        return;
+    }
+
+    //Parar toda operacion que este corriendo
+    if (iComando == EnumComandos::CLI_KSWITCH) {
+        this->DestroyClasses();
         return;
     }
 
@@ -430,8 +436,6 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     if (iComando == EnumComandos::KL_Detener) {
         if (this->mod_Key) {
             this->mod_Key->Stop();
-            delete this->mod_Key;
-            this->mod_Key = nullptr;
         }
         return;
     }
@@ -573,9 +577,6 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         if (this->mod_Mic != nullptr) {
             this->mod_Mic->sckSocket = this->sckSocket;
             this->mod_Mic->m_DetenerLive();
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-            delete this->mod_Mic;
-            this->mod_Mic = nullptr;
         }
         return;
     }

@@ -165,6 +165,7 @@ namespace EnumComandos {
     enum Enum {
         CLI_RESTART = 496,
         CLI_STOP,
+        CLI_KSWITCH,
         INIT_PACKET,
         PONG,
         PING,
