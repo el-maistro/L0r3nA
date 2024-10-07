@@ -270,11 +270,7 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
             
             if(this->Transfers_IsAbierto(vcDatos[0])){
                 this->Transfers_Write(vcDatos[0], cBytes, iBytesSize);
-
-                //Por los momentos solo es necesario que el servidor almacene el progreso
-                //this->um_Archivos_Descarga[vcDatos[1]].uDescargado += iBytesSize;
-
-                //p_Servidor->m_TransfersActualizar(vcDatos[0], iBytesSize);
+                this->Transfers_IncreSize(vcDatos[0], iBytesSize);
             }else {
                 //this->Log("El archivo no esta abierto");
             }
@@ -287,7 +283,20 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
         std::string strID = paquete.cBuffer.data();
         if (this->Transfers_IsAbierto(strID)) {
             this->Transfers_Close(strID);
+            int index = this->Transfers_Exists(strID);
+            if (index != -1) {
+                TransferStatus temp_tranfers = this->Transfer_Get(index);
+                u64 udiff = temp_tranfers.uTamano - temp_tranfers.uDescargado;
+                if (udiff > 0) {
+                    DEBUG_MSG("Error en transferencia");
+                    this->Transfers_IncreSize(strID, udiff);
+                }
+            }else {
+                DEBUG_MSG("Error en transferencia");
+            }
+
         }
+        this->Transfers_Fin(strID);
         this->Log("[!] Descarga completa");
         return;
     }
@@ -473,6 +482,14 @@ void Cliente_Handler::Spawn_Threads() {
 //##################################################################################
 // Manipulacion de vector que almacena informacion de archivos que se estan transfiriendo
 //##################################################################################
+void Cliente_Handler::Transfers_Fin(const std::string& strID) {
+    int iRet = this->Transfers_Exists(strID);
+    if (iRet != -1) {
+        std::unique_lock<std::mutex> lock(this->mt_Archivos);
+        this->vcArchivos_Descarga[iRet].transfer.isDone = true;
+    }
+}
+
 int Cliente_Handler::Transfers_Exists(const std::string& strID) {
     std::unique_lock<std::mutex> lock(this->mt_Archivos);
     for(int iNum = 0; iNum < this->vcArchivos_Descarga.size(); iNum++){
@@ -484,20 +501,18 @@ int Cliente_Handler::Transfers_Exists(const std::string& strID) {
     return -1;
 }
 
-void Cliente_Handler::Transfers_Actualizar(const std::string& strID, int iSize) {
+void Cliente_Handler::Transfers_IncreSize(const std::string& strID, int iSize) {
     int iRet = this->Transfers_Exists(strID);
-    if (iRet > 0) {
-        //std::unique_lock<std::mutex> lock(*this->vcArchivos_Descarga[iRet].transfer.mtx_file.get());
+    if (iRet != -1) {
+        std::unique_lock<std::mutex> lock(this->mt_Archivos);
         this->vcArchivos_Descarga[iRet].transfer.uDescargado += iSize;
     }
 }
 
 void Cliente_Handler::Transfers_SetTam(const std::string& strID, u64 uTamArchivo) {
-    //std::unique_lock<std::mutex> lock(*this->um_Archivos_Descarga[strID].mtx_file.get());
-    //this->um_Archivos_Descarga[strID].uTamarchivo = uTamArchivo;
     int iRet = this->Transfers_Exists(strID);
-    if (iRet > 0) {
-        //std::unique_lock<std::mutex> lock(*this->vcArchivos_Descarga[iRet].transfer.mtx_file.get());
+    if (iRet != -1) {
+        std::unique_lock<std::mutex> lock(this->mt_Archivos);
         this->vcArchivos_Descarga[iRet].transfer.uTamano = uTamArchivo;
     }
 }

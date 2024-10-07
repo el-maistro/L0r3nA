@@ -18,7 +18,7 @@ struct Paquete_Queue {
 struct TransferStatus {
     std::string strNombre;
     bool isUpload = false;
-    //std::shared_ptr<std::mutex> mtx_file = std::make_shared<std::mutex>();
+    bool isDone = false;
     u64 uTamano = 0;
     u64 uDescargado = 0;
 };
@@ -134,10 +134,14 @@ class Cliente_Handler {
             isFrameVisible = val;
         }
 
-        //Manipulacion de vector que almacena informacion de archivos que se estan transfiriendo
+        //Manipulacion "segura" de vector que almacena informacion de archivos que se estan transfiriendo
+        void Transfers_Fin(const std::string& strID);
         int Transfers_Exists(const std::string& strID);
-        void Transfers_Actualizar(const std::string& strID, int iSize);
+        //Incrementar size del valor descargado
+        void Transfers_IncreSize(const std::string& strID, int iSize);
+        //Setear el tamano total
         void Transfers_SetTam(const std::string& strID, u64 uTamArchivo);
+        //Agregar la info al mapa y vector
         void Transfers_Insertar(std::string& strID, Archivo_Descarga& nuevo_archivo, TransferStatus& transferencia);
         bool Transfers_IsAbierto(const std::string& strID);
         void Transfers_Write(const std::string& strID, const char*& cBuffer, int iSize);

@@ -38,8 +38,6 @@ FrameCliente::FrameCliente(std::string strID, SOCKET sckID, std::string strIP)
     this->strClienteID = strID.substr(0, npos);
     this->strIP = strIP;
 
-    std::cout<<this->strClienteID<<"\n";
-
     wxString strTitle = "[";
     strTitle.append(strID.c_str());
     strTitle.append("] - Admin");

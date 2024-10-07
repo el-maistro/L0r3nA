@@ -79,28 +79,38 @@ void panelTransferencias::thMonitor() {
 
 void panelTransferencias::m_InsertarTransfer(const TransferStatus& transferencia){
     std::unique_lock<std::mutex> lock(this->mtx_global);
-    DEBUG_MSG("Insertando " + transferencia.strNombre);
+    
     if (this->listView) {
         int iRowCount = this->listView->GetItemCount();
 
         //Porcentaje de transferencia
-        double dPercentage = (transferencia.uDescargado > 0 && transferencia.uTamano > 0) ? (transferencia.uDescargado / transferencia.uTamano) * 100 : 0;
-        wxString strPor = std::to_string(dPercentage);
+        double dPercentage = 0;
+        try {
+            double dDescargado = static_cast<double>(transferencia.uDescargado);
+            double duTamano = static_cast<double>(transferencia.uTamano);
+            dPercentage = (dDescargado / duTamano) * 100;
+        }catch (const std::exception& e) {
+            DEBUG_MSG(e.what());
+        }
+       
+        std::istringstream strnum(std::to_string(dPercentage));
+        std::string strPor = "";
+        strnum >> std::setw(5) >> strPor;
         strPor.append(1, '%');
 
         long lFound = this->listView->FindItem(0, wxString(transferencia.strNombre));
         if (lFound != wxNOT_FOUND) {
-            //Ya existe, solo actualizar
-            this->listView->SetItem(lFound, 1, wxString(transferencia.uDescargado >= transferencia.uTamano ? "TRANSFERIDO" : (transferencia.isUpload ? "SUBIENDO" : "DESCARGANDO")));
-            this->listView->SetItem(lFound, 2, wxString(strPor));
-            DEBUG_MSG("Ya existe " + transferencia.strNombre);
+            //Ya existe, solo actualizar si no ha finalizado
+            if (!transferencia.isDone) {
+                this->listView->SetItem(lFound, 1, wxString(dPercentage >= 100 ? "TRANSFERIDO" : (transferencia.isUpload ? "SUBIENDO" : "DESCARGANDO")));
+                this->listView->SetItem(lFound, 2, wxString(strPor));
+            }
         }
         else {
             //No se ha agregado el item
             this->listView->InsertItem(iRowCount, wxString(transferencia.strNombre));
-            this->listView->SetItem(iRowCount, 1, wxString(transferencia.uDescargado >= transferencia.uTamano ? "TRANSFERIDO" : (transferencia.isUpload ? "SUBIENDO" : "DESCARGANDO")));
+            this->listView->SetItem(iRowCount, 1, wxString(dPercentage >= 100 ? "TRANSFERIDO" : (transferencia.isUpload ? "SUBIENDO" : "DESCARGANDO")));
             this->listView->SetItem(iRowCount, 2, wxString(strPor));
-            DEBUG_MSG("No existe " + transferencia.strNombre);
         }
     }
 }
