@@ -7,13 +7,14 @@ class MyTreeCtrl : public wxTreeCtrl {
     public:
         //Eventos
         MyTreeCtrl(wxWindow* parent, const wxWindowID id,
-            const wxPoint& pos, const wxSize& size) : wxTreeCtrl(parent, id, pos, size) {};
+            const wxPoint& pos, const wxSize& size, std::string strID) : wxTreeCtrl(parent, id, pos, size), strClienteID(strID){};
         virtual ~MyTreeCtrl() {}
 
         void OnItemActivated(wxTreeEvent& event);
 
         wxAuiNotebook* p_Notebook;
     private:
+        std::string strClienteID = "";
         wxDECLARE_EVENT_TABLE();
 };
 
@@ -35,16 +36,7 @@ class FrameCliente : public wxFrame {
 
         void OnClosePage(wxAuiNotebookEvent& event);
 
-        void MonitorTransferencias();
-
         wxDECLARE_EVENT_TABLE();
-
-};
-
-class panelTransferencias : public wxPanel {
-    public:
-        panelTransferencias(wxWindow* pParent);
-    private:
 
 };
 #endif

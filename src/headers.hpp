@@ -45,6 +45,7 @@
 #include<thread>
 #include<map>
 #include<unordered_map> 
+#include<map>
 #include<random>
 #include<fcntl.h>
 #include<fstream>
@@ -142,7 +143,8 @@ namespace EnumIDS {
         ID_KL_BTN_Clear,
         ID_KL_Text_Out,
         ID_CM_Test,
-        ID_CM_PictureBox
+        ID_CM_PictureBox,
+        ID_Panel_Transfer
     };
 }
 

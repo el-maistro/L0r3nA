@@ -9,24 +9,10 @@ extern Servidor* p_Servidor;
 
 const wxString strTitle = "L0r3nA v0.1";
 
-class TransferFrame : public wxFrame {
-    public:
-        TransferFrame();
- 
-        void OnClose(wxCloseEvent& event);
-    private:
-        wxDECLARE_EVENT_TABLE();
-};
-
-wxBEGIN_EVENT_TABLE(TransferFrame, wxFrame)
-    EVT_CLOSE(TransferFrame::OnClose)
-wxEND_EVENT_TABLE()
-
 wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
     EVT_BUTTON(EnumIDS::ID_LimpiarLog, MyFrame::OnLimpiar)
     EVT_TOGGLEBUTTON(EnumIDS::ID_Toggle, MyFrame::OnToggle)
     EVT_BUTTON(EnumIDS::ID_Mostrar_CryptDB, MyFrame::OnCryptDB)
-    EVT_BUTTON(EnumIDS::ID_Mostrar_Transfers, MyFrame::OnMostrarTransferencias)
     EVT_CLOSE(MyFrame::OnClose)
 wxEND_EVENT_TABLE()
 
@@ -125,55 +111,10 @@ MyFrame::MyFrame()
     
 }
 
-TransferFrame::TransferFrame() 
-    :wxFrame(nullptr, EnumIDS::ID_Panel_Transferencias, wxT("Transferencias"), wxDefaultPosition, wxSize(FRAME_CLIENT_SIZE_WIDTH, 450))
-{
-    wxListCtrl* listView = DBG_NEW wxListCtrl(this, EnumIDS::ID_Panel_Transferencias_List, wxDefaultPosition, wxSize(FRAME_CLIENT_SIZE_WIDTH, 450), wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES | wxEXPAND);
-
-    wxListItem itemCol;
-    itemCol.SetText("Cliente");
-    itemCol.SetWidth(100);
-    itemCol.SetAlign(wxLIST_FORMAT_CENTRE);
-    listView->InsertColumn(0, itemCol);
-
-    itemCol.SetText("Nombre");
-    itemCol.SetWidth(160);
-    listView->InsertColumn(1, itemCol);
-
-    itemCol.SetText("Estado");
-    itemCol.SetWidth(120);
-    listView->InsertColumn(2, itemCol);
-
-    itemCol.SetText("Progreso");
-    itemCol.SetWidth(140);
-    listView->InsertColumn(3, itemCol);
-}
-
-void TransferFrame::OnClose(wxCloseEvent& event){
-    std::unique_lock<std::mutex> lock(p_Servidor->p_transfers);
-    p_Servidor->p_Transferencias = false;
-    lock.unlock();
-    Sleep(500);
-    if (p_Servidor->thTransfers.joinable()) {
-        p_Servidor->thTransfers.join();
-    }
-    event.Skip();
-}
-
 void MyFrame::OnCryptDB(wxCommandEvent& event) {
     frameCryptDB* frame_crypt = DBG_NEW frameCryptDB();
 
     frame_crypt->Show();
-}
-
-void MyFrame::OnMostrarTransferencias(wxCommandEvent& event){
-    
-    p_Servidor->p_Transferencias = true;
-
-    p_Servidor->thTransfers = std::thread(&Servidor::m_MonitorTransferencias, p_Servidor);
-    
-    TransferFrame* wxTransfers = DBG_NEW TransferFrame();
-    wxTransfers->Show();
 }
 
 void MyFrame::OnToggle(wxCommandEvent& event) {
@@ -214,14 +155,11 @@ void MyFrame::CrearControlesPanelIzquierdo(){
 
     btn_size = this->btn_toggle->GetSize();
      
-    this->btn_Transfers = DBG_NEW wxButton(this->m_LPanel, EnumIDS::ID_Mostrar_Transfers, "Transferencias", wxDefaultPosition, btn_size);
     this->btn_CryptDB = DBG_NEW wxButton(this->m_LPanel, EnumIDS::ID_Mostrar_CryptDB, "Crypt DB", wxDefaultPosition, btn_size);
     
     wxBoxSizer *m_paneSizer = DBG_NEW wxBoxSizer(wxVERTICAL);
     m_paneSizer->AddSpacer(20);    
     m_paneSizer->Add(this->btn_toggle, 0, wxALIGN_CENTER | wxALL, 3);
-    m_paneSizer->AddSpacer(10);
-    m_paneSizer->Add(this->btn_Transfers, 0, wxALIGN_CENTER | wxALL, 3);
     m_paneSizer->AddSpacer(10);
     m_paneSizer->Add(this->btn_CryptDB, 0, wxALIGN_CENTER | wxALL, 3);
     
@@ -295,3 +233,4 @@ void MyFrame::OnLimpiar(wxCommandEvent& event) {
 void MyFrame::OnAbout(wxCommandEvent& event){
     wxMessageBox(wxT("L0r3na v0.1"), wxT("About"));
 }
+

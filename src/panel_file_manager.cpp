@@ -172,12 +172,11 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 	struct TransferStatus nuevo_transfer;
 	nuevo_transfer.isUpload = true;
 	nuevo_transfer.uTamano = uTamArchivo;
-	nuevo_transfer.strCliente = strCliente;
 	nuevo_transfer.strNombre = lPath;
 	nuevo_transfer.uDescargado = 0;
-	std::unique_lock<std::mutex> lock(p_Servidor->p_transfers);
-	p_Servidor->vcTransferencias.insert({ strCliente, nuevo_transfer });
-	lock.unlock();
+	
+	//p_Servidor->vcTransferencias.insert({ strCliente, nuevo_transfer });
+	//p_Servidor->vc_Clientes[iClienteID]->Transfers_Insertar(strID, nuevo_archivo, nuevo_transfer);
 	///////////////////////////////////////////////////////////////////////
 
 	std::string strID = RandomID(4);
@@ -215,8 +214,8 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 			if (iEnviado == -1 || iEnviado == WSAECONNRESET) {
 				break;
 			}
-			std::unique_lock<std::mutex> lock(p_Servidor->p_transfers);
-			p_Servidor->vcTransferencias[strCliente].uDescargado += iBytesLeidos;
+			//std::unique_lock<std::mutex> lock(p_Servidor->p_transfers);
+			//p_Servidor->vcTransferencias[strCliente].uDescargado += iBytesLeidos;
 		}else {
 			break;
 		}
@@ -306,10 +305,9 @@ void ListCtrlManager::OnDescargarArchivo(wxCommandEvent& event) {
 
 	struct TransferStatus nuevo_transfer;
 	struct Archivo_Descarga nuevo_archivo;
-	nuevo_archivo.ssOutFile = std::make_shared < std::ofstream>(dialog.GetPath().ToStdString(), std::ios::binary);
+	nuevo_archivo.ssOutFile = std::make_shared <std::ofstream>(dialog.GetPath().ToStdString(), std::ios::binary);
 	nuevo_transfer.uDescargado = nuevo_transfer.uTamano = nuevo_archivo.uTamarchivo = nuevo_archivo.uDescargado = 0;
 	nuevo_transfer.strNombre = nuevo_archivo.strNombre = this->GetItemText(item, 1);
-	nuevo_transfer.strCliente = this->itemp->strID;
 	nuevo_transfer.isUpload = false;
 	if(!nuevo_archivo.ssOutFile.get()->is_open()) {
 		DEBUG_MSG("[X] No se pudo abrir el archivo " + strNombre);
@@ -322,13 +320,7 @@ void ListCtrlManager::OnDescargarArchivo(wxCommandEvent& event) {
 		return;
 	}
 
-	std::unique_lock<std::mutex> lock(p_Servidor->vc_Clientes[iClienteID]->mt_Archivos);
-	p_Servidor->vc_Clientes[iClienteID]->um_Archivos_Descarga.insert(std::make_pair(strID, nuevo_archivo));
-	lock.unlock();
-
-	std::unique_lock<std::mutex> lock2(p_Servidor->p_transfers);
-	p_Servidor->vcTransferencias.insert({ strID, nuevo_transfer });
-	lock2.unlock();
+	p_Servidor->vc_Clientes[iClienteID]->Transfers_Insertar(strID, nuevo_archivo, nuevo_transfer);
 
 	this->itemp->EnviarComando(strComando, EnumComandos::FM_Descargar_Archivo);
 }

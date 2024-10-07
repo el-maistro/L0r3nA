@@ -887,7 +887,7 @@ int Cliente::cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFla
             nPaquete.cBuffer.resize(iChunkSize);
             if (nPaquete.cBuffer.size() < iChunkSize) {
                 _DBG_("[CHUNK] No se pudo reservar memoria", GetLastError());
-                break;
+                return SOCKET_ERROR;
             }
 
             memcpy(nPaquete.cBuffer.data(), pBuffer + iBytePos, iChunkSize);
@@ -901,7 +901,7 @@ int Cliente::cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFla
             iChunkEnviado = this->cSend(pSocket, cPaqueteSer, iFinalSize, pFlags, isBlock, err_code);
             if (iChunkEnviado == SOCKET_ERROR || iChunkEnviado == WSAECONNRESET) {
                 __DBG_("[CHUNK] Error enviando el chunk");
-                break;
+                return iChunkEnviado;
             }
             iEnviado += iChunkEnviado;
             iBytePos += iChunkSize;

@@ -16,23 +16,29 @@ struct Paquete_Queue {
 };
 
 struct TransferStatus {
-    std::string strCliente;
     std::string strNombre;
     bool isUpload = false;
-    double uTamano = 0;
-    double uDescargado = 0;
+    //std::shared_ptr<std::mutex> mtx_file = std::make_shared<std::mutex>();
+    u64 uTamano = 0;
+    u64 uDescargado = 0;
 };
 
 struct Archivo_Descarga {
     std::string strNombre;
     std::shared_ptr<std::ofstream> ssOutFile;
-    double uTamarchivo;
-    double uDescargado;
+    std::shared_ptr<std::mutex> mtx_file;
+    u64 uTamarchivo;
+    u64 uDescargado;
 
     Archivo_Descarga() :
-        ssOutFile(nullptr), uTamarchivo(0), uDescargado(0), strNombre("dummy") {}
-    
+        ssOutFile(nullptr), mtx_file(std::make_shared<std::mutex>()), uTamarchivo(0), uDescargado(0), strNombre("dummy") {}
+
     ~Archivo_Descarga() = default;
+};
+
+struct Entry_Archivo_Descarga {
+    std::string strID;
+    TransferStatus transfer;
 };
 
 struct Cliente{
@@ -100,13 +106,19 @@ class Cliente_Handler {
         
         std::mutex mt_Queue;
         std::mutex mt_FrameVisible; 
+        std::mutex mt_Archivos;
 
         std::map<int, std::vector<char>> paquetes_Acumulados;
-        
+       
+        //Mapa que alamacena informacion de cada archivo que se descarga del cliente
+        std::map<const std::string, struct Archivo_Descarga> um_Archivos_Descarga;
+
+        //Vector que almacena el estado de cada transferencia
+        std::vector<Entry_Archivo_Descarga> vcArchivos_Descarga;
+
         std::queue<Paquete_Queue> queue_Comandos;
 
     public:
-        std::mutex mt_Archivos;
         std::mutex mt_Running;
 
         FrameCliente* n_Frame = nullptr;
@@ -122,8 +134,17 @@ class Cliente_Handler {
             isFrameVisible = val;
         }
 
-        std::map<const std::string, struct Archivo_Descarga> um_Archivos_Descarga;
-        
+        //Manipulacion de vector que almacena informacion de archivos que se estan transfiriendo
+        int Transfers_Exists(const std::string& strID);
+        void Transfers_Actualizar(const std::string& strID, int iSize);
+        void Transfers_SetTam(const std::string& strID, u64 uTamArchivo);
+        void Transfers_Insertar(std::string& strID, Archivo_Descarga& nuevo_archivo, TransferStatus& transferencia);
+        bool Transfers_IsAbierto(const std::string& strID);
+        void Transfers_Write(const std::string& strID, const char*& cBuffer, int iSize);
+        void Transfers_Close(const std::string& strID);
+        int Transfers_Size();
+        TransferStatus Transfer_Get(int index);
+
         struct Cliente p_Cliente;
         bool isRunning = true;
 
@@ -244,8 +265,7 @@ class Servidor{
         void m_Escucha();
         void m_Ping();
         void m_CleanVector();
-        void m_MonitorTransferencias();
-
+        
         //Info
         int IndexOf(std::string strID);
 

@@ -220,7 +220,7 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID, bool isEdit
 	int iHeaderSize = strHeader.size();
 	int iBytesLeidos = 0;
 
-	std::vector<char> nSendBuffer(CHUNK_FILE_TRANSFER_SIZE + iHeaderSize);
+	std::vector<char> nSendBuffer(PAQUETE_BUFFER_SIZE + iHeaderSize);
 	if (nSendBuffer.size() == 0) {
 		__DBG_("[FM]No se pudo reservar memoria para enviar el archivo - 2");
 		return;
@@ -229,7 +229,7 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID, bool isEdit
 	memcpy(nSendBuffer.data(), strHeader.c_str(), iHeaderSize);
 
 	while (1) {
-		localFile.read(nSendBuffer.data() + iHeaderSize, CHUNK_FILE_TRANSFER_SIZE);
+		localFile.read(nSendBuffer.data() + iHeaderSize, PAQUETE_BUFFER_SIZE);
 		iBytesLeidos = localFile.gcount();
 		if (iBytesLeidos > 0) {
 			iBytesLeidos += iHeaderSize;
@@ -238,7 +238,7 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID, bool isEdit
 
 			uBytesEnviados += iEnviado;
 
-			if (iEnviado == -1 || iEnviado == WSAECONNRESET) {
+			if (iEnviado == SOCKET_ERROR || iEnviado == WSAECONNRESET) {
 				//No se pudo enviar el paquete
 				break;
 			}

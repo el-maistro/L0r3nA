@@ -173,6 +173,7 @@ void Cliente_Handler::Process_Queue() {
     }
 }
 
+//Procesar paquete completo
 void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
     std::vector<std::string> vcDatos;
     int iRecibido = paquete.cBuffer.size();
@@ -251,11 +252,7 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
             //Tama�o del archivo recibido
             u64 uTamArchivo = StrToUint(vcDatos[1].c_str());
 
-            this->um_Archivos_Descarga[vcDatos[0]].uTamarchivo = uTamArchivo;
-
-            std::unique_lock<std::mutex> lock(p_Servidor->p_transfers);
-            p_Servidor->vcTransferencias[vcDatos[0]].uTamano = uTamArchivo;
-            lock.unlock();
+            this->Transfers_SetTam(vcDatos[0], uTamArchivo);
 
             DEBUG_MSG("[ID-" + vcDatos[0] + "]Tam archivo: ");
             DEBUG_MSG(uTamArchivo);
@@ -271,15 +268,15 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
             int iBytesSize = iRecibido - iHeader - 1; //1 byte del delimitador y otro del \0 agregado al procesar el paquete
             const char* cBytes = paquete.cBuffer.data() + iHeader;
             
-            if (this->um_Archivos_Descarga[vcDatos[0]].ssOutFile.get()->is_open()) {
-                this->um_Archivos_Descarga[vcDatos[0]].ssOutFile.get()->write(cBytes, iBytesSize);
+            if(this->Transfers_IsAbierto(vcDatos[0])){
+                this->Transfers_Write(vcDatos[0], cBytes, iBytesSize);
+
                 //Por los momentos solo es necesario que el servidor almacene el progreso
                 //this->um_Archivos_Descarga[vcDatos[1]].uDescargado += iBytesSize;
 
-                std::unique_lock<std::mutex> lock(p_Servidor->p_transfers);
-                p_Servidor->vcTransferencias[vcDatos[0]].uDescargado += iBytesSize;
+                //p_Servidor->m_TransfersActualizar(vcDatos[0], iBytesSize);
             }else {
-                this->Log("El archivo no esta abierto");
+                //this->Log("El archivo no esta abierto");
             }
         }
         return;
@@ -288,8 +285,8 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
     //Se termino la descarga del archivo
     if (iComando == EnumComandos::FM_Descargar_Archivo_End) {
         std::string strID = paquete.cBuffer.data();
-        if (this->um_Archivos_Descarga[strID].ssOutFile->is_open()) {
-            this->um_Archivos_Descarga[strID].ssOutFile->close();
+        if (this->Transfers_IsAbierto(strID)) {
+            this->Transfers_Close(strID);
         }
         this->Log("[!] Descarga completa");
         return;
@@ -473,7 +470,84 @@ void Cliente_Handler::Spawn_Threads() {
     this->p_thQueue = std::thread(&Cliente_Handler::Process_Queue, this);
 }
 
-//funcion que crea el frame principal para interactuar con el cliente
+//##################################################################################
+// Manipulacion de vector que almacena informacion de archivos que se estan transfiriendo
+//##################################################################################
+int Cliente_Handler::Transfers_Exists(const std::string& strID) {
+    std::unique_lock<std::mutex> lock(this->mt_Archivos);
+    for(int iNum = 0; iNum < this->vcArchivos_Descarga.size(); iNum++){
+        if (this->vcArchivos_Descarga[iNum].strID == strID) {
+            return iNum;
+        }
+    }
+    DEBUG_MSG("No se encontro: " + strID);
+    return -1;
+}
+
+void Cliente_Handler::Transfers_Actualizar(const std::string& strID, int iSize) {
+    int iRet = this->Transfers_Exists(strID);
+    if (iRet > 0) {
+        //std::unique_lock<std::mutex> lock(*this->vcArchivos_Descarga[iRet].transfer.mtx_file.get());
+        this->vcArchivos_Descarga[iRet].transfer.uDescargado += iSize;
+    }
+}
+
+void Cliente_Handler::Transfers_SetTam(const std::string& strID, u64 uTamArchivo) {
+    //std::unique_lock<std::mutex> lock(*this->um_Archivos_Descarga[strID].mtx_file.get());
+    //this->um_Archivos_Descarga[strID].uTamarchivo = uTamArchivo;
+    int iRet = this->Transfers_Exists(strID);
+    if (iRet > 0) {
+        //std::unique_lock<std::mutex> lock(*this->vcArchivos_Descarga[iRet].transfer.mtx_file.get());
+        this->vcArchivos_Descarga[iRet].transfer.uTamano = uTamArchivo;
+    }
+}
+
+void Cliente_Handler::Transfers_Insertar(std::string& strID, Archivo_Descarga& nuevo_archivo, TransferStatus& transferencia) {
+    std::unique_lock<std::mutex> lock(this->mt_Archivos);
+    Entry_Archivo_Descarga nuevo_entry;
+    nuevo_entry.transfer = transferencia;
+    nuevo_entry.strID = strID;
+    this->vcArchivos_Descarga.push_back(nuevo_entry);
+    this->um_Archivos_Descarga.insert({ strID, nuevo_archivo });
+}
+
+bool Cliente_Handler::Transfers_IsAbierto(const std::string& strID) {
+    int iRet = this->Transfers_Exists(strID);
+    if (iRet != -1) {
+        std::unique_lock<std::mutex> lock(*this->um_Archivos_Descarga[strID].mtx_file.get());
+        return this->um_Archivos_Descarga[strID].ssOutFile.get()->is_open();
+    }
+    return false;
+}
+
+void Cliente_Handler::Transfers_Write(const std::string& strID, const char*& cBuffer, int iSize) {
+    int iRet = this->Transfers_Exists(strID);
+    if (iRet != -1) {
+        std::unique_lock<std::mutex> lock(*this->um_Archivos_Descarga[strID].mtx_file.get());
+        this->um_Archivos_Descarga[strID].ssOutFile.get()->write(cBuffer, iSize);
+    }
+}
+
+void Cliente_Handler::Transfers_Close(const std::string& strID) {
+    int iRet = this->Transfers_Exists(strID);
+    if (iRet != -1) {
+        std::unique_lock<std::mutex> lock(*this->um_Archivos_Descarga[strID].mtx_file.get());
+        this->um_Archivos_Descarga[strID].ssOutFile.get()->close();
+    }
+}
+
+int Cliente_Handler::Transfers_Size() {
+    std::unique_lock<std::mutex> lock(this->mt_Archivos);
+    return this->vcArchivos_Descarga.size();
+}
+
+TransferStatus Cliente_Handler::Transfer_Get(int index) {
+    std::unique_lock<std::mutex> lock(this->mt_Archivos);
+    return this->vcArchivos_Descarga[index].transfer;
+}
+//##################################################################################
+
+//Crear el frame principal para interactuar con el cliente
 void Cliente_Handler::CrearFrame(const std::string strTitle,const std::string strID) {
     this->m_setFrameVisible(true);
     this->n_Frame = DBG_NEW FrameCliente(strTitle, this->p_Cliente._sckCliente, this->p_Cliente._strIp);
@@ -683,43 +757,6 @@ void Servidor::m_CleanVector() {
     this->vc_Clientes.clear();
 }
 
-void Servidor::m_MonitorTransferencias() {
-    while (true){
-        std::unique_lock<std::mutex> lock(this->p_transfers);
-        if (!this->p_Transferencias) {
-            break;
-        }
-        lock.unlock();
-
-        auto parent = (wxFrame*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Transferencias);
-        if (parent) {
-            auto list_transfer = (wxListCtrl*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Transferencias_List, parent);
-            if (list_transfer) {
-                list_transfer->DeleteAllItems();
-
-                std::unique_lock<std::mutex> lock2(this->p_transfers);
-                int iRowCount = 0;
-                for (auto& tc : this->vcTransferencias) {
-                    list_transfer->InsertItem(iRowCount, wxString(tc.second.strCliente));
-                    list_transfer->SetItem(iRowCount, 1, wxString(tc.second.strNombre));
-                    list_transfer->SetItem(iRowCount, 2, wxString(tc.second.uDescargado >= tc.second.uTamano ? "TRANSFERIDO" : (tc.second.isUpload ? "SUBIENDO" : "DESCARGANDO")));
-
-                    double dPercentage = (tc.second.uDescargado / tc.second.uTamano) * 100;
-                    wxString strPor = std::to_string(dPercentage);
-                    strPor.append(1, '%');
-                    list_transfer->SetItem(iRowCount++, 3, wxString(strPor));
-                }
-            } else {
-               DEBUG_MSG("No se pudo encontrar el list abierto");
-            }
-        }else {
-            DEBUG_MSG("No se pudo encontrar el panel abierto");
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    }
-    
-}
-
 void Servidor::m_Escucha(){
     this->m_txtLog->LogThis("Thread LISTENER iniciada", LogType::LogMessage);
     
@@ -858,7 +895,7 @@ int Servidor::cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFl
             nPaquete.cBuffer.resize( iChunkSize );
             if (nPaquete.cBuffer.size() < iChunkSize) {
                 DEBUG_MSG("[CHUNK] No se pudo reservar memoria");
-                break;
+                return SOCKET_ERROR;
             }
 
             int iFinalSize = (sizeof(int) * 3) + iChunkSize;
@@ -872,7 +909,7 @@ int Servidor::cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFl
             iChunkEnviado = this->cSend(pSocket, cPaqueteSer, iFinalSize, pFlags, isBlock, 0);
             if (iChunkEnviado == SOCKET_ERROR || iChunkEnviado == WSAECONNRESET) {
                 DEBUG_MSG("[CHUNK] Error enviando el chunk");
-                break;
+                return iChunkEnviado;
             }
             iEnviado += iChunkEnviado;
             iBytePos +=    iChunkSize;
