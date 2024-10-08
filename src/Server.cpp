@@ -672,8 +672,12 @@ ClientConInfo Servidor::m_Aceptar(){
         
         this->m_txtLog->LogThis(strTmp, LogType::LogMessage);
 
-        DWORD timeout = CLI_TIMEOUT_MILSECS; //100 miliseconds timeout
-        setsockopt(tmpSck, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof timeout);
+        //DWORD timeout = CLI_TIMEOUT_MILSECS; //100 miliseconds timeout
+        //setsockopt(tmpSck, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof timeout);
+        unsigned long int iBlock = 0;
+        if (ioctlsocket(tmpSck, FIONBIO, &iBlock) != 0) {
+            DEBUG_MSG("Error configurando el socket NON_BLOCK");
+        }
         
         structNuevo._strPuerto = std::to_string(ntohs(structCliente.sin_port));
         structNuevo._sckSocket = tmpSck;
@@ -940,11 +944,24 @@ int Servidor::send_all(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlag
     int iEnviado = 0;
     int iTotalEnviado = 0;
     while (iTotalEnviado < pLen) {
+        std::cout << "S-";
         iEnviado = send(pSocket, pBuffer + iTotalEnviado, pLen - iTotalEnviado, pFlags);
+        std::cout << "DS-";
         if (iEnviado == 0) {
             break;
-        }else if (iEnviado == SOCKET_ERROR || iEnviado == WSAECONNRESET) {
-            return iEnviado;
+        }else if (iEnviado == SOCKET_ERROR) {
+            int error = WSAGetLastError();
+            if (error == WSAEWOULDBLOCK) {
+                //Aun no se puede escribir
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                continue;
+            }else if(error == WSAECONNRESET){
+                //Error en el envio
+                return SOCKET_ERROR;
+            }else {
+                //Error en el envio
+                return SOCKET_ERROR;
+            }
         }
         iTotalEnviado += iEnviado;
     }
@@ -955,7 +972,7 @@ int Servidor::send_all(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlag
 int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock, int iTipoPaquete) {
     // 1 non block
     // 0 block
-
+    std::cout << "L-";
     std::unique_lock<std::mutex> lock(this->p_sckmutex);
 
     //Tamaño del buffer
@@ -996,6 +1013,7 @@ int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, 
         }
     }
     
+    std::cout << "R-";
     return iEnviado;
 }
 
@@ -1008,10 +1026,19 @@ int Servidor::recv_all(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags) {
             //Se cerro el socket
             break;
         }else if (iRecibido == SOCKET_ERROR) {
-            //Ocurrio un error
-            return iRecibido;
+            int error = WSAGetLastError();
+            if (error == WSAEWOULDBLOCK) {
+                //Aun no se puede leer
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                continue;
+            }else if(error == WSAECONNRESET){
+                //Ocurrio un error
+                return SOCKET_ERROR;
+            }else {
+                //Ocurrio un error
+                return SOCKET_ERROR;
+            }
         }
-
         iTotalRecibido += iRecibido;
     }
 
@@ -1043,7 +1070,6 @@ int Servidor::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, boo
     }
     if (iPaqueteSize == sizeof(int)) {
         memcpy(&iPaqueteSize, cBuffSize, sizeof(int));
-        //Establecer un limite para evitar buffer demasiado grande 
         if (iPaqueteSize > 0 && iPaqueteSize < MAX_PAQUETE_SIZE) {
             cRecvBuffer.resize(iPaqueteSize);
             iRecibido = this->recv_all(pSocket, cRecvBuffer.data(), iPaqueteSize, pFlags);
@@ -1072,7 +1098,7 @@ int Servidor::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, boo
         }
     }
 
-    if (bErrorFlag || iRecibido == WSAECONNRESET || iRecibido == SOCKET_ERROR) {
+    if (bErrorFlag || iRecibido == SOCKET_ERROR) {
         return iRecibido;
     }
 
@@ -1126,6 +1152,7 @@ void Servidor::m_BorrarCliente(std::mutex& mtx, int iIndex, bool isEnd) {
     std::unique_lock<std::mutex> lock(mtx);
     if (iIndex < static_cast<int>(this->vc_Clientes.size()) && iIndex >= 0) {
         if (this->vc_Clientes[iIndex]) {
+            this->cChunkSend(this->vc_Clientes[iIndex]->p_Cliente._sckCliente, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, false, EnumComandos::CLI_KSWITCH);
             this->vc_Clientes[iIndex]->JoinThread();
             m_CerrarConexion(this->vc_Clientes[iIndex]->p_Cliente._sckCliente);
             this->vc_Clientes[iIndex]->m_setFrameVisible(false);

@@ -110,9 +110,9 @@ bool Cliente::bConectar(const char* cIP, const char* cPuerto) {
         return false;
 	}
 
-    unsigned long int iBlock = 1;
+    unsigned long int iBlock = 0;
     if (ioctlsocket(this->sckSocket, FIONBIO, &iBlock) != 0) {
-        __DBG_( "[X] No se pudo hacer block" );
+        __DBG_( "[X] No se pudo hacer non_block" );
     }
 
     freeaddrinfo(sServer);
@@ -166,8 +166,6 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     int iRecibido = paquete.cBuffer.size(); // esto -1 con datos binarios
     int iComando = paquete.uiTipoPaquete;
 
-    _DBG_("[PQ] Procesando comando ", iComando);
-
     if (iComando == EnumComandos::FM_Descargar_Archivo_Recibir) {
         strIn = strSplit(std::string(paquete.cBuffer.data()), CMD_DEL, 1);
         //strIn[0] = id archivo
@@ -177,6 +175,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
             const char* cBytes = paquete.cBuffer.data() + iHeadsize;
             if (this->map_Archivos_Descarga[strIn[0]].ssOutfile.get()->is_open()) {
                 this->map_Archivos_Descarga[strIn[0]].ssOutfile.get()->write(cBytes, iBytesSize);
+                __DBG_("Ejcribiendoj");
                 this->map_Archivos_Descarga[strIn[0]].uDescargado += iBytesSize;
             }else {
                 _DBG_("[X] El archivo no esta abierto", GetLastError());
@@ -779,7 +778,6 @@ void Cliente::Procesar_Paquete(const Paquete& paquete) {
     memcpy(acumulador.data() + oldsize, paquete.cBuffer.data(), paquete.uiTamBuffer);
 
     if (paquete.uiIsUltimo == 1) {
-        _DBG_("[PP] Paquete completo ", paquete.uiTipoPaquete);
         //Agregar al queue de comandos
         acumulador.push_back('\0'); //Borrar este byte al trabajar con datos binarios
         Paquete_Queue nNuevo;
@@ -804,7 +802,7 @@ void Cliente::MainLoop() {
 
         int iRecibido = this->cRecv(this->sckSocket, cBuffer, 0, false, &error_code);
         
-        if ((iRecibido == SOCKET_ERROR && error_code != WSAEWOULDBLOCK) || iRecibido == WSAECONNRESET) {
+        if (iRecibido == SOCKET_ERROR && error_code != WSAEWOULDBLOCK) {
             //No se recibio nada
             // o
             //Hubo un error diferente a blocking en el socket
@@ -920,8 +918,20 @@ int Cliente::send_all(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags
         iEnviado = send(pSocket, pBuffer + iTotalEnviado, pLen - iTotalEnviado, pFlags);
         if (iEnviado == 0) {
             break;
-        }else if (iEnviado == SOCKET_ERROR || iEnviado == WSAECONNRESET) {
-            return iEnviado;
+        }else if (iEnviado == SOCKET_ERROR) {
+            int error = WSAGetLastError();
+            if (error == WSAEWOULDBLOCK) {
+                //Aun no se puede escribir
+                //Usar select en lugar de sleep?
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                continue;
+            }else if (error == WSAECONNRESET) {
+                //Error en el envio
+                return SOCKET_ERROR;
+            }else {
+                //Error en el envio
+                return SOCKET_ERROR;
+            }
         }
         iTotalEnviado += iEnviado;
     }
@@ -988,9 +998,19 @@ int Cliente::recv_all(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags) {
         if (iRecibido == 0) {
             //Se cerro el socket
             break;
-        }else if (iRecibido == SOCKET_ERROR || iRecibido == WSAECONNRESET) {
-            //Ocurrio un error
-            return iRecibido;
+        }else if (iRecibido == SOCKET_ERROR) {
+            int error = WSAGetLastError();
+            if (error == WSAEWOULDBLOCK) {
+                //Aun no se puede leer
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                continue;
+            }else if(error == WSAECONNRESET){
+                //Ocurrio un error
+                return SOCKET_ERROR;
+            }else {
+                //Ocurrio un error
+                return SOCKET_ERROR;
+            }
         }
         iTotalRecibido += iRecibido;
     }
@@ -1050,7 +1070,7 @@ int Cliente::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, bool
         }
     }
 
-    if (bErrorFlag || iRecibido == SOCKET_ERROR || iRecibido == WSAECONNRESET) { 
+    if (bErrorFlag || iRecibido == SOCKET_ERROR) { 
         return iRecibido; 
     }
     
