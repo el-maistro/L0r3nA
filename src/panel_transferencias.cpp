@@ -16,21 +16,17 @@ panelTransferencias::~panelTransferencias() {
 panelTransferencias::panelTransferencias(wxWindow* pParent, std::string strID) :
 	wxPanel(pParent, EnumIDS::ID_Panel_Transfer) {
     this->strClienteID = strID;
-    this->listView = DBG_NEW wxListCtrl(this, EnumIDS::ID_Panel_Transferencias_List, wxDefaultPosition, wxSize(FRAME_CLIENT_SIZE_WIDTH, 450), wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES | wxEXPAND);
+    this->dataView = new wxDataViewListCtrl(this, EnumIDS::ID_Panel_Transferencias_List, wxDefaultPosition, wxDefaultSize, wxDV_HORIZ_RULES | wxDV_VERT_RULES);
 
-    wxListItem itemCol;
-    
-    itemCol.SetText("Nombre de archivo");
-    itemCol.SetWidth(200);
-    this->listView->InsertColumn(0, itemCol);
+    this->dataView->AppendTextColumn("Nombre de archivo")->SetWidth(200);
+    this->dataView->AppendTextColumn("Estado");
+    this->dataView->AppendTextColumn("-")->SetWidth(30);
+    this->dataView->AppendProgressColumn("Progreso")->SetMinWidth(FromDIP(100));
 
-    itemCol.SetText("Estado");
-    itemCol.SetWidth(120);
-    this->listView->InsertColumn(1, itemCol);
+    wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
+    sizer->Add(this->dataView, 1, wxALL | wxEXPAND, 1);
 
-    itemCol.SetText("Progreso");
-    itemCol.SetWidth(140);
-    this->listView->InsertColumn(2, itemCol);
+    this->SetSizer(sizer);
 
     this->SetActive(true);
     this->SpawnThread();
@@ -79,38 +75,54 @@ void panelTransferencias::thMonitor() {
 
 void panelTransferencias::m_InsertarTransfer(const TransferStatus& transferencia){
     std::unique_lock<std::mutex> lock(this->mtx_global);
-    
-    if (this->listView) {
-        int iRowCount = this->listView->GetItemCount();
-
-        //Porcentaje de transferencia
-        double dPercentage = 0;
+    if (this->dataView) {
+        double dPorcentaje = 0;
+        int iPorcentajeEntero = 0;
         try {
             double dDescargado = static_cast<double>(transferencia.uDescargado);
             double duTamano = static_cast<double>(transferencia.uTamano);
-            dPercentage = (dDescargado / duTamano) * 100;
-        }catch (const std::exception& e) {
+            dPorcentaje = (dDescargado / duTamano) * 100;
+        }
+        catch (const std::exception& e) {
             DEBUG_MSG(e.what());
         }
-       
-        std::istringstream strnum(std::to_string(dPercentage));
+        std::istringstream strnum(std::to_string(dPorcentaje));
         std::string strPor = "";
         strnum >> std::setw(5) >> strPor;
         strPor.append(1, '%');
 
-        long lFound = this->listView->FindItem(0, wxString(transferencia.strNombre));
-        if (lFound != wxNOT_FOUND) {
-            //Ya existe, solo actualizar si no ha finalizado
+        iPorcentajeEntero = static_cast<int>(dPorcentaje);
+
+        int index_pos = this->m_IndexOf(wxString(transferencia.strNombre));
+        if (index_pos != wxNOT_FOUND) {
+            //Ya existe solo actualizar si no ha finalizado
             if (!transferencia.isDone) {
-                this->listView->SetItem(lFound, 1, wxString(dPercentage >= 100 ? "TRANSFERIDO" : (transferencia.isUpload ? "SUBIENDO" : "DESCARGANDO")));
-                this->listView->SetItem(lFound, 2, wxString(strPor));
+                this->dataView->SetValue(dPorcentaje >= 100 ? "TRANSFERIDO" : (transferencia.isUpload ? "SUBIENDO" : "DESCARGANDO"), index_pos, 1);
+                this->dataView->SetValue(strPor, index_pos, 2);
+                this->dataView->SetValue(iPorcentajeEntero, index_pos, 3);
             }
-        }
-        else {
+        }else {
             //No se ha agregado el item
-            this->listView->InsertItem(iRowCount, wxString(transferencia.strNombre));
-            this->listView->SetItem(iRowCount, 1, wxString(dPercentage >= 100 ? "TRANSFERIDO" : (transferencia.isUpload ? "SUBIENDO" : "DESCARGANDO")));
-            this->listView->SetItem(iRowCount, 2, wxString(strPor));
+            wxVector<wxVariant> data;
+            data.push_back(transferencia.strNombre);
+            data.push_back(dPorcentaje >= 100 ? "TRANSFERIDO" : (transferencia.isUpload ? "SUBIENDO" : "DESCARGANDO"));
+            data.push_back(strPor);
+            data.push_back(iPorcentajeEntero);
+            this->dataView->AppendItem(data);
         }
     }
+}
+
+int panelTransferencias::m_IndexOf(const wxString& strID) {
+    if (this->dataView) {
+        int iCount = this->dataView->GetItemCount();
+        if (iCount > 0) {
+            for (int iIndex = 0; iIndex < iCount; iIndex++) {
+                if (this->dataView->GetTextValue(iIndex, 0) == strID) {
+                    return iIndex;
+                }
+            }
+        }
+    }
+    return wxNOT_FOUND;
 }

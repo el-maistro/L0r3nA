@@ -73,8 +73,8 @@ panelFileManager::panelFileManager(wxWindow* pParent) :
 	sizer->Add(this->p_ToolBar, 0, wxEXPAND | wxALL);
 	
 	wxBoxSizer* sizer2 = new wxBoxSizer(wxVERTICAL);
-	sizer2->Add(this->listManager, 1, wxEXPAND | wxALL, 2);
-	sizer2->Add(this->p_RutaActual, 0, wxEXPAND | wxALL, 2);
+	sizer2->Add(this->listManager, 1, wxEXPAND | wxALL, 1);
+	sizer2->Add(this->p_RutaActual, 0, wxEXPAND | wxALL, 1);
 
 	sizer->Add(sizer2);
 	SetSizer(sizer);
@@ -169,17 +169,24 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 
 	//////     AGREGAR TRANSFER AL VECTOR DEL SERVIDOR       /////////////
 	// Solo para monitorear transferencia
-	struct TransferStatus nuevo_transfer;
+	TransferStatus nuevo_transfer;
+	Archivo_Descarga nuevo_archivo; //NULL
 	nuevo_transfer.isUpload = true;
 	nuevo_transfer.uTamano = uTamArchivo;
 	nuevo_transfer.strNombre = lPath;
 	nuevo_transfer.uDescargado = 0;
 	
-	//p_Servidor->vcTransferencias.insert({ strCliente, nuevo_transfer });
-	//p_Servidor->vc_Clientes[iClienteID]->Transfers_Insertar(strID, nuevo_archivo, nuevo_transfer);
+	int iClienteID = p_Servidor->IndexOf(strCliente);
+	if (iClienteID == -1) {
+		DEBUG_MSG("[X] No se pudo encontrar el cliente " + strCliente);
+		return;
+	}
+	
+	std::string strID = RandomID(4);
+
+	p_Servidor->vc_Clientes[iClienteID]->Transfers_Insertar(strID, nuevo_archivo, nuevo_transfer);
 	///////////////////////////////////////////////////////////////////////
 
-	std::string strID = RandomID(4);
 	std::string strComando = rPath;
 	strComando.append(1, CMD_DEL);
 	strComando += std::to_string(uTamArchivo);
@@ -196,7 +203,7 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 
 	int iHeaderSize = strHeader.size();
 
-	std::vector<char> nSendBuffer(CHUNK_FILE_TRANSFER_SIZE + iHeaderSize);
+	std::vector<char> nSendBuffer(PAQUETE_BUFFER_SIZE + iHeaderSize);
 	if (nSendBuffer.size() == 0) {
 		DEBUG_MSG("[0]No se pudo reservar memoria para enviar el archivo.");
 		return;
@@ -205,23 +212,34 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 	memcpy(nSendBuffer.data(), strHeader.c_str(), iHeaderSize);
 
 	while (1) {
-		localFile.read(nSendBuffer.data() + iHeaderSize, CHUNK_FILE_TRANSFER_SIZE);
+		localFile.read(nSendBuffer.data() + iHeaderSize, PAQUETE_BUFFER_SIZE);
 		iBytesLeidos = localFile.gcount();
 		if (iBytesLeidos > 0) {
 			iBytesLeidos += iHeaderSize;
 			int iEnviado = p_Servidor->cChunkSend(this->sckCliente, nSendBuffer.data(), iBytesLeidos, 0, true, EnumComandos::FM_Descargar_Archivo_Recibir);
 			uBytesEnviados += iEnviado;
-			if (iEnviado == -1 || iEnviado == WSAECONNRESET) {
+			if (iEnviado == SOCKET_ERROR || iEnviado == WSAECONNRESET) {
 				break;
 			}
-			//std::unique_lock<std::mutex> lock(p_Servidor->p_transfers);
-			//p_Servidor->vcTransferencias[strCliente].uDescargado += iBytesLeidos;
+			p_Servidor->vc_Clientes[iClienteID]->Transfers_IncreSize(strID, iEnviado);
 		}else {
 			break;
 		}
 	}
-
+	
 	localFile.close();
+
+	int index = p_Servidor->vc_Clientes[iClienteID]->Transfers_Exists(strID);
+	if (index != -1) {
+		TransferStatus temp_tranfers = p_Servidor->vc_Clientes[iClienteID]->Transfer_Get(index);
+		u64 udiff = temp_tranfers.uTamano - temp_tranfers.uDescargado;
+		if (udiff > 0) {
+			DEBUG_MSG("Error en transferencia");
+			p_Servidor->vc_Clientes[iClienteID]->Transfers_IncreSize(strID, udiff);
+		}
+	}
+
+	p_Servidor->vc_Clientes[iClienteID]->Transfers_Close(strID);
 
 	//Ya se envio todo, cerrar el archivo
 	std::this_thread::sleep_for(std::chrono::milliseconds(500));

@@ -21,12 +21,14 @@ class panelTransferencias : public wxPanel {
 		std::thread th_monitor;
 		std::mutex mtx_global;
 		std::mutex mtx_vector;
-		wxListCtrl* listView = nullptr;
+		wxDataViewListCtrl* dataView = nullptr;
 
 		//Thread monitor
 		void SpawnThread();
 		void JoinThread();
 		void thMonitor();
+
+		int m_IndexOf(const wxString& strID);
 
 		void m_InsertarTransfer(const TransferStatus& transferencia);
 		

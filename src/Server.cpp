@@ -267,7 +267,6 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
             int iHeader = vcDatos[0].size() + 1;
             int iBytesSize = iRecibido - iHeader - 1; //1 byte del delimitador y otro del \0 agregado al procesar el paquete
             const char* cBytes = paquete.cBuffer.data() + iHeader;
-            
             if(this->Transfers_IsAbierto(vcDatos[0])){
                 this->Transfers_Write(vcDatos[0], cBytes, iBytesSize);
                 this->Transfers_IncreSize(vcDatos[0], iBytesSize);
@@ -917,7 +916,7 @@ int Servidor::cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFl
             
             memcpy(nPaquete.cBuffer.data(), pBuffer + iBytePos, iChunkSize);
 
-            Print_Packet(nPaquete);
+            //Print_Packet(nPaquete);
 
             this->m_SerializarPaquete(nPaquete, cPaqueteSer);
 
