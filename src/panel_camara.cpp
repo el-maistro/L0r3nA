@@ -18,10 +18,11 @@ wxBEGIN_EVENT_TABLE(panelPictureBox, wxPanel)
 	EVT_MENU(EnumCamMenu::ID_Guardar_Frame, panelPictureBox::OnGuardarFrame)
 wxEND_EVENT_TABLE()
 
-panelPictureBox::panelPictureBox(wxWindow* pParent, wxString strTitle, int iCamIndex ) :
+panelPictureBox::panelPictureBox(wxWindow* pParent, wxString strTitle, int iCamIndex, SOCKET sck) :
 	wxFrame(pParent, EnumCamMenu::ID_Picture_Frame, strTitle + " - Index " + std::to_string(iCamIndex), wxDefaultPosition, wxDefaultSize, wxDD_DEFAULT_STYLE, "CAM" + std::to_string(iCamIndex)) {
 	
 	this->imageCtrl = new wxStaticBitmap(this, wxID_ANY, wxBitmap(600, 300));
+	this->sckCliente = sck;
 
 	wxMenuBar* menuBar = new wxMenuBar();
 	
@@ -116,20 +117,10 @@ void panelPictureBox::OnGuardarFrame(wxCommandEvent& event) {
 	}
 }
 
-panelCamara::panelCamara(wxWindow* pParent):
+panelCamara::panelCamara(wxWindow* pParent, SOCKET sck):
 	wxPanel(pParent, EnumCamMenu::ID_Main_Panel){
 
-	wxWindow* wxTree = (MyTreeCtrl*)this->GetParent();
-	if (wxTree) {
-		wxPanel* panel_cliente = (wxPanel*)wxTree->GetParent();
-		if (panel_cliente) {
-			FrameCliente* frame_cliente = (FrameCliente*)panel_cliente->GetParent();
-			if (frame_cliente) {
-				this->sckCliente = frame_cliente->sckCliente;
-				this->strID = frame_cliente->strClienteID;
-			}
-		}
-	}
+	this->sckCliente = sck;
 
 	this->cam_Devices = new wxComboBox(this, EnumCamMenu::ID_Combo_Devices, "...", wxDefaultPosition, wxSize(200, 20));
 	wxButton* btn_Listar = new wxButton(this, EnumCamMenu::ID_Refrescar_Lista, "Refrescar lista");
@@ -169,8 +160,7 @@ void panelCamara::OnRefrescarLista(wxCommandEvent& event) {
 void panelCamara::OnManageCam(wxCommandEvent& event) {
 	//Abrir nueva frame para administrar la camara seleccionada en el combo box
 	if (this->cam_Devices->GetStringSelection() != "") {
-		this->pictureBox = new panelPictureBox(this, this->cam_Devices->GetStringSelection(), this->cam_Devices->GetSelection());
-		this->pictureBox->sckCliente = this->sckCliente;
+		this->pictureBox = new panelPictureBox(this, this->cam_Devices->GetStringSelection(), this->cam_Devices->GetSelection(), this->sckCliente);
 		this->pictureBox->Show(true);
 	}
 

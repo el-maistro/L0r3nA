@@ -18,20 +18,11 @@ wxBEGIN_EVENT_TABLE(frameRemoteDesktop, wxFrame)
 	EVT_CHECKBOX(EnumRemoteDesktop::ID_CHK_Vmouse, frameRemoteDesktop::OnCheckVmouse)
 wxEND_EVENT_TABLE()
 
-frameRemoteDesktop::frameRemoteDesktop(wxWindow* pParent) :
+frameRemoteDesktop::frameRemoteDesktop(wxWindow* pParent, SOCKET sck) :
 	wxFrame(pParent, EnumRemoteDesktop::ID_Main_Frame, "Escritorio Remoto", wxDefaultPosition, wxSize(900, 500)) {
 	
-	wxWindow* wxTree = (MyTreeCtrl*)this->GetParent();
-	if (wxTree) {
-		wxPanel* panel_cliente = (wxPanel*)wxTree->GetParent();
-		if (panel_cliente) {
-			FrameCliente* frame_cliente = (FrameCliente*)panel_cliente->GetParent();
-			if (frame_cliente) {
-				this->sckCliente = frame_cliente->sckCliente;
-			}
-		}
-	}
-
+	this->sckCliente = sck;
+	
 	// - - - - - - - - - CONTROLES PRINCIPALES  - - - - - - - - - 
 	wxButton* btn_Lista = new wxButton(this, EnumRemoteDesktop::ID_BTN_Lista, "Obtener Lista");
 	wxButton* btn_Single = new wxButton(this, EnumRemoteDesktop::ID_BTN_Single, "Tomar Captura");

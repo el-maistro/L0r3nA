@@ -8,7 +8,7 @@
 
 class MyNotify: public std::enable_shared_from_this<MyNotify> {
     private:
-        wxStaticBitmap* imageCtrl = nullptr;
+        std::shared_ptr<wxStaticBitmap> imageCtrl;
         std::thread th_close;
         void CloseThread(int iSecs, std::shared_ptr<MyNotify> self);
         int iSecDelay = 0;
@@ -25,12 +25,6 @@ class MyNotify: public std::enable_shared_from_this<MyNotify> {
         }
 
         MyNotify(wxWindow* pParent, const std::string strTitle, const std::string strContent, int iSecDelay);
-        ~MyNotify() {
-            if (imageCtrl) {
-                delete imageCtrl;
-                imageCtrl = nullptr;
-            }
-        }
 };
 
 #endif

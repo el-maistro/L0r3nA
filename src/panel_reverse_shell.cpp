@@ -5,18 +5,11 @@ extern Servidor* p_Servidor;
 extern std::mutex vector_mutex;
 
 //Reverse Shell
-panelReverseShell::panelReverseShell(wxWindow* pParent) :
+panelReverseShell::panelReverseShell(wxWindow* pParent, SOCKET sck) :
     wxPanel(pParent, EnumIDS::ID_Panel_Reverse_Shell) {
-    wxWindow* wxTree = (MyTreeCtrl*)this->GetParent();
-    if (wxTree) {
-        wxPanel* panel_cliente = (wxPanel*)wxTree->GetParent();
-        if (panel_cliente) {
-            FrameCliente* frame_cliente = (FrameCliente*)panel_cliente->GetParent();
-            if (frame_cliente) {
-                this->sckCliente = frame_cliente->sckCliente;
-            }
-        }
-    }
+    
+    this->sckCliente = sck;
+    
     this->txtConsole = new wxTextCtrl(this, EnumIDS::ID_Panel_Reverse_Shell_TxtConsole, "Reverse Shell v0.1\n", wxDefaultPosition, wxSize(FRAME_CLIENT_SIZE_WIDTH * 3, FRAME_CLIENT_SIZE_WIDTH * 3), wxTE_MULTILINE | wxTE_RICH);
     this->txtConsole->SetForegroundColour(*wxWHITE);
     this->txtConsole->SetBackgroundColour(*wxBLACK);

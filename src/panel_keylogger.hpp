@@ -5,14 +5,14 @@
 
 class panelKeylogger : public wxPanel {
 	public:
-		panelKeylogger(wxWindow* pParent);
-		wxToggleButton* btn_Iniciar = nullptr;
-		wxTextCtrl* txt_Data = nullptr;
-		SOCKET sckCliente = INVALID_SOCKET;
-
+		panelKeylogger(wxWindow* pParent, SOCKET sck);
+		
 		void AgregarData(const char*& pBuffer);
 
 	private:
+		wxToggleButton* btn_Iniciar = nullptr;
+		wxTextCtrl* txt_Data = nullptr;
+		SOCKET sckCliente = INVALID_SOCKET;
 
 		void OnToggle(wxCommandEvent& event); 
 		void OnLimpiar(wxCommandEvent& event);

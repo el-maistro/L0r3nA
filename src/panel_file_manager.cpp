@@ -26,23 +26,14 @@ wxBEGIN_EVENT_TABLE(ListCtrlManager, wxListCtrl)
 	EVT_LIST_ITEM_ACTIVATED(EnumIDS::ID_Panel_FM_List, ListCtrlManager::OnActivated)
 wxEND_EVENT_TABLE()
 
-panelFileManager::panelFileManager(wxWindow* pParent) :
+panelFileManager::panelFileManager(wxWindow* pParent, SOCKET sck, std::string _strID, std::string _strIP) :
 	wxPanel(pParent, EnumIDS::ID_Panel_FM) {
 	this->SetBackgroundColour(wxColor(200, 200, 200));
 	
-	wxWindow* wxTree = (MyTreeCtrl*)this->GetParent();
-	if (wxTree) {
-		wxPanel* panel_cliente = (wxPanel*)wxTree->GetParent();
-		if (panel_cliente) {
-			FrameCliente* frame_cliente = (FrameCliente*)panel_cliente->GetParent();
-			if (frame_cliente) {
-				this->sckCliente = frame_cliente->sckCliente;
-				this->strID = frame_cliente->strClienteID;
-				this->strIP = frame_cliente->strIP;
-			}
-		}
-	}
-
+	this->sckCliente = sck;
+	this->strID = _strID;
+	this->strIP = _strIP;
+	
 	this->p_ToolBar = new wxToolBar(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTB_VERTICAL | wxTB_LEFT);
 	
 	wxBitmap pcBitmap(wxT(".\\imgs\\computer.png"), wxBITMAP_TYPE_PNG);       //https://www.flaticon.com/authors/nikita-golubev
@@ -146,7 +137,7 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 }
 
 void panelFileManager::CrearLista() {
-	this->listManager = new ListCtrlManager(this, EnumIDS::ID_Panel_FM_List, wxDefaultPosition,  wxSize(FRAME_CLIENT_SIZE_WIDTH*3, FRAME_CLIENT_SIZE_WIDTH*3), wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES);
+	this->listManager = new ListCtrlManager(this, EnumIDS::ID_Panel_FM_List, wxDefaultPosition,  wxSize(FRAME_CLIENT_SIZE_WIDTH*3, FRAME_CLIENT_SIZE_WIDTH*3), wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES, this->strID, this->strIP, this->sckCliente);
 	this->listManager->m_indicator = new wxActivityIndicator(this->listManager, wxID_ANY, wxDefaultPosition, wxDefaultSize);
 	this->listManager->m_indicator->Show(false);
 }
@@ -311,7 +302,7 @@ void ListCtrlManager::OnDescargarArchivo(wxCommandEvent& event) {
 	//Agregar el archivo al vector del cliente pero solo el id
 	//actualizar el tamaño al obtener la info del cliente
 	long item = this->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
-	std::string strNombre = this->itemp->strID;
+	std::string strNombre = this->strID;
 	strNombre.append(1, '-');
 	strNombre += this->GetItemText(item, 1);
 	
@@ -332,9 +323,9 @@ void ListCtrlManager::OnDescargarArchivo(wxCommandEvent& event) {
 		return;
 	}
 
-	int iClienteID = p_Servidor->IndexOf(this->itemp->strID);
+	int iClienteID = p_Servidor->IndexOf(this->strID);
 	if (iClienteID == -1) {
-		DEBUG_MSG("[X] No se pudo encontrar el cliente " + this->itemp->strID);
+		DEBUG_MSG("[X] No se pudo encontrar el cliente " + this->strID);
 		return;
 	}
 
@@ -380,7 +371,7 @@ void ListCtrlManager::OnRenombrarArchivo(wxCommandEvent& event) {
 }
 
 void ListCtrlManager::OnEncriptarArchivo(wxCommandEvent& event) {
-	frameEncryption* frm_crypt = new frameEncryption(this, this->ArchivoSeleccionado());
+	frameEncryption* frm_crypt = new frameEncryption(this, this->ArchivoSeleccionado(), this->strID, this->strIP, this->sckCliente);
 	frm_crypt->Show(true);
 }
 

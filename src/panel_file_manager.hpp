@@ -14,22 +14,22 @@ class panelFileManager: public wxPanel{
 		void EnviarComando(std::string pComando, int iComando);
 		void EnviarArchivo(const std::string cPath, const char* rPath, std::string strCliente);
 
-		panelFileManager(wxWindow* pParent);
+		panelFileManager(wxWindow* pParent, SOCKET sck, std::string _strID, std::string _strIP);
 
 		//Eventos
 		void OnToolBarClick(wxCommandEvent& event);
 		
-		//Variables
 		int iMODE = -1;
 		wxStaticText* p_RutaActual = nullptr;
 		std::vector<wxString> c_RutaActual;
-		std::string strID = "";  //ID del cliente
-		std::string strIP = "";  //IP del cliente
-		SOCKET sckCliente = INVALID_SOCKET;
-
+		
 		void ActualizarRuta(const char*& pBuffer);
 
 	private:
+		std::string strID = "";
+		std::string strIP = "";
+		SOCKET sckCliente = INVALID_SOCKET;
+
 		wxToolBar* p_ToolBar = nullptr;
 		
 		wxDECLARE_EVENT_TABLE();
@@ -42,8 +42,12 @@ class ListCtrlManager : public wxListCtrl {
 		wxActivityIndicator* m_indicator = nullptr;
 
 		ListCtrlManager(wxWindow* parent, const wxWindowID id, 
-			            const wxPoint& pos, const wxSize& size, long style)
-			: wxListCtrl(parent, id, pos, size, style) {}
+			            const wxPoint& pos, const wxSize& size, long style, std::string _strID, std::string _strIP, SOCKET _sck)
+			: wxListCtrl(parent, id, pos, size, style){
+			strIP = _strIP;
+			strID = _strID; 
+			sckCliente = _sck;
+		}
 
 		void ListarDir(const char* strData);
 		void ListarEquipo(const std::vector<std::string> vcDrives);
@@ -55,6 +59,7 @@ class ListCtrlManager : public wxListCtrl {
 	private:
 		std::mutex mtx_fm;
 		std::mutex mtx_carga;
+		SOCKET sckCliente = INVALID_SOCKET;
 
 		void OnActivated(wxListEvent& event);
 
@@ -63,6 +68,8 @@ class ListCtrlManager : public wxListCtrl {
 
 		std::string ArchivoSeleccionado();
 		std::string CarpetaActual();
+		std::string strID = "";
+		std::string strIP = "";
 		
 		//Eventos acciones menu contextual
 		void OnCrearFolder(wxCommandEvent& event);

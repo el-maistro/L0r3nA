@@ -43,7 +43,7 @@ namespace EnumRemoteMouse {
 
 class frameRemoteDesktop : public wxFrame {
 	public:
-		frameRemoteDesktop(wxWindow* pParent);
+		frameRemoteDesktop(wxWindow* pParent, SOCKET sck);
 
 		wxStaticBitmap* imageCtrl		  = nullptr;
 		wxComboBox* quality_options       = nullptr;

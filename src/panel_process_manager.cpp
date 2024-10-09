@@ -12,20 +12,11 @@ wxBEGIN_EVENT_TABLE(ListCtrlManager2, wxListCtrl)
 	EVT_CONTEXT_MENU(ListCtrlManager2::OnContextMenu)
 wxEND_EVENT_TABLE()
 
-panelProcessManager::panelProcessManager(wxWindow* pParent) :
+panelProcessManager::panelProcessManager(wxWindow* pParent, SOCKET sck) :
 	wxPanel(pParent, EnumIDS::ID_PM_Panel) {
 
-	wxWindow* wxTree = (MyTreeCtrl*)this->GetParent();
-	if (wxTree) {
-		wxPanel* panel_cliente = (wxPanel*)wxTree->GetParent();
-		if (panel_cliente) {
-			FrameCliente* frame_cliente = (FrameCliente*)panel_cliente->GetParent();
-			if (frame_cliente) {
-				this->sckCliente = frame_cliente->sckCliente;
-			}
-		}
-	}
-
+	this->sckCliente = sck;
+	
 	this->CrearListview();
 
 }

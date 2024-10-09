@@ -41,17 +41,18 @@ MyNotify::MyNotify(wxWindow* pParent, const std::string strTitle, const std::str
 
         nPanel->SetSizer(sizer);
 
-        this->imageCtrl = new wxStaticBitmap(this->m_frame, wxID_ANY, wxBitmap(W_HEIGHT, W_HEIGHT));
+        this->imageCtrl = std::make_shared<wxStaticBitmap>(this->m_frame, wxID_ANY, wxBitmap(W_HEIGHT, W_HEIGHT));
+        //this->imageCtrl = new wxStaticBitmap(this->m_frame, wxID_ANY, wxBitmap(W_HEIGHT, W_HEIGHT));
 
         wxImage img("./imgs/logo_512x512.jpg", wxBITMAP_TYPE_ANY);
         if (img.IsOk()) {
             img.Rescale(W_HEIGHT, W_HEIGHT);
             wxBitmap bmp_Obj(img);
-            this->imageCtrl->SetBitmap(bmp_Obj);
+            this->imageCtrl.get()->SetBitmap(bmp_Obj);
         }
 
         wxBoxSizer* sizer2 = new wxBoxSizer(wxHORIZONTAL);
-        sizer2->Add(this->imageCtrl, 0, wxEXPAND | wxALL, 0);
+        sizer2->Add(this->imageCtrl.get(), 0, wxEXPAND | wxALL, 0);
         sizer2->Add(nPanel, 1, wxEXPAND | wxALL, 1);
 
         this->m_frame->SetSizer(sizer2);

@@ -5,7 +5,7 @@
 
 class panelReverseShell : public wxPanel {
 public:
-    panelReverseShell(wxWindow* pParent);
+    panelReverseShell(wxWindow* pParent, SOCKET sck);
     wxTextCtrl* txtConsole;
     void OnHook(wxKeyEvent& event);
     unsigned long int p_uliUltimo = 19;

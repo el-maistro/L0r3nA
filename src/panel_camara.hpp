@@ -21,13 +21,12 @@ namespace EnumCamMenu {
 
 class panelPictureBox : public wxFrame {
 	public:
-		panelPictureBox(wxWindow* parent, wxString cTitle, int iCamIndex);
+		panelPictureBox(wxWindow* parent, wxString cTitle, int iCamIndex, SOCKET sck);
 
 		bool isCalled = false;
 		u_int uiWidth = 600;
 		u_int uiHeight = 300;
-		SOCKET sckCliente = INVALID_SOCKET;
-
+		
 
 		void OnDrawBuffer(const char*& cBuffer, int iBufferSize);
 		
@@ -40,6 +39,8 @@ class panelPictureBox : public wxFrame {
 		wxStaticBitmap* imageCtrl = nullptr;
 
 	private:
+		SOCKET sckCliente = INVALID_SOCKET;
+
 		void OnClose(wxCloseEvent& event);
 
 		wxDECLARE_EVENT_TABLE();
@@ -48,17 +49,18 @@ class panelPictureBox : public wxFrame {
 
 class panelCamara : public wxPanel{
 	public:
-		panelCamara(wxWindow* pParent);
+		panelCamara(wxWindow* pParent, SOCKET sck);
 
 		void ProcesarLista(const char*& pBuffer);
 		void OnRefrescarLista(wxCommandEvent& event);
 		void OnManageCam(wxCommandEvent& event);
 
-		SOCKET sckCliente = INVALID_SOCKET;
-		wxComboBox* cam_Devices = nullptr;
 		panelPictureBox* pictureBox = nullptr;
 
 	private:
+		SOCKET sckCliente = INVALID_SOCKET;
+		wxComboBox* cam_Devices = nullptr;
+
 		std::string strID = "";
 		wxDECLARE_EVENT_TABLE();
 
