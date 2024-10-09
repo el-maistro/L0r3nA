@@ -208,7 +208,6 @@ class Cliente_Handler {
 
         void JoinThread() {
             if (p_thHilo.joinable()) {
-                Stop();
                 p_thHilo.join();
             }
             if (p_thQueue.joinable()) {

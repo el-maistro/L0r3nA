@@ -216,7 +216,7 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 		iBytesLeidos = localFile.gcount();
 		if (iBytesLeidos > 0) {
 			iBytesLeidos += iHeaderSize;
-			int iEnviado = p_Servidor->cChunkSend(this->sckCliente, nSendBuffer.data(), iBytesLeidos, 0, true, EnumComandos::FM_Descargar_Archivo_Recibir);
+			int iEnviado = p_Servidor->cChunkSend(this->sckCliente, nSendBuffer.data(), iBytesLeidos, 0, false, EnumComandos::FM_Descargar_Archivo_Recibir);
 			uBytesEnviados += iEnviado;
 			if (iEnviado == SOCKET_ERROR || iEnviado == WSAECONNRESET) {
 				break;
@@ -239,7 +239,7 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 		}
 	}
 
-	p_Servidor->vc_Clientes[iClienteID]->Transfers_Close(strID);
+	p_Servidor->vc_Clientes[iClienteID]->Transfers_Fin(strID);
 
 	//Ya se envio todo, cerrar el archivo
 	std::this_thread::sleep_for(std::chrono::milliseconds(500));

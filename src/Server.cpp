@@ -101,7 +101,7 @@ void Cliente_Handler::Command_Handler(){
         /*Desconexion del cliente
         Si no recibio nada y el error no es timeout o se cerro repentinamente*/
         if ((iTempRecibido == SOCKET_ERROR && (error_code != WSAETIMEDOUT || error_code != WSAEWOULDBLOCK)) ||
-            iTempRecibido == WSAECONNRESET) {
+            error_code == WSAECONNRESET) {
             if (this->m_isFrameVisible()) {
                 this->n_Frame->SetTitle("DESCONECTADO...");
             }
@@ -158,7 +158,7 @@ void Cliente_Handler::Process_Queue() {
 
         std::unique_lock<std::mutex> lock(this->mt_Queue);
 
-        if (this->queue_Comandos.size() > 0) {
+        if (!this->queue_Comandos.empty()) {
             Paquete_Queue nTemp = this->queue_Comandos.front();
             this->queue_Comandos.pop(); 
             lock.unlock();
@@ -674,7 +674,7 @@ ClientConInfo Servidor::m_Aceptar(){
 
         //DWORD timeout = CLI_TIMEOUT_MILSECS; //100 miliseconds timeout
         //setsockopt(tmpSck, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof timeout);
-        unsigned long int iBlock = 0;
+        unsigned long int iBlock = 1;
         if (ioctlsocket(tmpSck, FIONBIO, &iBlock) != 0) {
             DEBUG_MSG("Error configurando el socket NON_BLOCK");
         }
@@ -944,9 +944,7 @@ int Servidor::send_all(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlag
     int iEnviado = 0;
     int iTotalEnviado = 0;
     while (iTotalEnviado < pLen) {
-        std::cout << "S-";
         iEnviado = send(pSocket, pBuffer + iTotalEnviado, pLen - iTotalEnviado, pFlags);
-        std::cout << "DS-";
         if (iEnviado == 0) {
             break;
         }else if (iEnviado == SOCKET_ERROR) {
@@ -972,7 +970,6 @@ int Servidor::send_all(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlag
 int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock, int iTipoPaquete) {
     // 1 non block
     // 0 block
-    std::cout << "L-";
     std::unique_lock<std::mutex> lock(this->p_sckmutex);
 
     //Tamaño del buffer
@@ -1013,7 +1010,6 @@ int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, 
         }
     }
     
-    std::cout << "R-";
     return iEnviado;
 }
 
@@ -1152,9 +1148,10 @@ void Servidor::m_BorrarCliente(std::mutex& mtx, int iIndex, bool isEnd) {
     std::unique_lock<std::mutex> lock(mtx);
     if (iIndex < static_cast<int>(this->vc_Clientes.size()) && iIndex >= 0) {
         if (this->vc_Clientes[iIndex]) {
-            this->cChunkSend(this->vc_Clientes[iIndex]->p_Cliente._sckCliente, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, false, EnumComandos::CLI_KSWITCH);
-            this->vc_Clientes[iIndex]->JoinThread();
+            //this->cChunkSend(this->vc_Clientes[iIndex]->p_Cliente._sckCliente, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, false, EnumComandos::CLI_KSWITCH);
             m_CerrarConexion(this->vc_Clientes[iIndex]->p_Cliente._sckCliente);
+            this->vc_Clientes[iIndex]->Stop();
+            this->vc_Clientes[iIndex]->JoinThread();
             this->vc_Clientes[iIndex]->m_setFrameVisible(false);
             delete this->vc_Clientes[iIndex];
             this->vc_Clientes[iIndex] = nullptr;
