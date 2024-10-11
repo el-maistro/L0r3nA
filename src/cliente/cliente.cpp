@@ -647,8 +647,9 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         }
         return;
     }
+    
     //Single
-    if (iComando == EnumComandos::RD_Single) {
+    /*if (iComando == EnumComandos::RD_Single) {
         //Enviar solo una captura
         if (!this->mod_RemoteDesk) {
             this->mod_RemoteDesk = new mod_RemoteDesktop();
@@ -676,6 +677,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         }
         return;
     }
+    */
 
     //Iniciar live
     if (iComando == EnumComandos::RD_Start) {

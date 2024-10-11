@@ -134,6 +134,62 @@ void mod_RemoteDesktop::m_RemoteTeclado(char key, bool isDown) {
     SendInput(1, inputs, sizeof(INPUT));
 }
 
+int mod_RemoteDesktop::BitmapDiff(std::shared_ptr<Gdiplus::Bitmap>& _oldBitmap, std::shared_ptr<Gdiplus::Bitmap>& _newBitmap, std::vector<Pixel_Data>& _outPixels) {
+    if (_newBitmap.get() == nullptr || _oldBitmap.get() == nullptr) {
+        __DBG_("Uno de los bitmaps es nulo");
+        return -1;
+    }
+
+    UINT width = _oldBitmap.get()->GetWidth();
+    UINT height = _oldBitmap.get()->GetHeight();
+
+    if (width != _newBitmap.get()->GetWidth() || height != _newBitmap.get()->GetHeight()) {
+        __DBG_("Los bitmaps no son del mismo tamanio");
+        return -1;
+    }
+
+    Gdiplus::BitmapData bmpData1, bmpData2;
+    Gdiplus::Rect rect(0, 0, width, height);
+
+    _oldBitmap.get()->LockBits(&rect, Gdiplus::ImageLockMode::ImageLockModeRead, PixelFormat24bppRGB, &bmpData1);
+    _newBitmap.get()->LockBits(&rect, Gdiplus::ImageLockMode::ImageLockModeRead, PixelFormat24bppRGB, &bmpData2);
+
+    BYTE* oldBitmapPixels = static_cast<BYTE*>(bmpData1.Scan0);
+    BYTE* newBitmapPixels = static_cast<BYTE*>(bmpData2.Scan0);
+
+    int outCantidad = 0;
+
+    for (UINT y = 0; y < height; y++) {
+        for (UINT x = 0; x < width; x++) {
+            UINT index = y * bmpData1.Stride + x * 3; //3 bytes por pixel en formato RGB
+            if (oldBitmapPixels[index    ] != newBitmapPixels[index    ] || //Canal Red
+                oldBitmapPixels[index + 1] != newBitmapPixels[index + 1] || //Canal Green
+                oldBitmapPixels[index + 2] != newBitmapPixels[index + 2]) { //Canal Blue
+                
+                //Pixel diferente
+                outCantidad++;
+                Pixel_Data nPixel;
+                nPixel.x = x;
+                nPixel.y = y;
+                nPixel.data.R = newBitmapPixels[index    ];
+                nPixel.data.G = newBitmapPixels[index + 1];
+                nPixel.data.B = newBitmapPixels[index + 2];
+                _outPixels.push_back(nPixel);
+
+                oldBitmapPixels[index    ] = newBitmapPixels[index    ];
+                oldBitmapPixels[index + 1] = newBitmapPixels[index + 1];
+                oldBitmapPixels[index + 2] = newBitmapPixels[index + 2];
+
+            }
+        }
+    }
+
+    _oldBitmap.get()->UnlockBits(&bmpData1);
+    _newBitmap.get()->UnlockBits(&bmpData2);
+
+    return outCantidad;
+}
+
 void mod_RemoteDesktop::InitGDI() {
     if (Gdiplus::GdiplusStartup(&this->gdiplusToken, &this->gdiplusStartupInput, NULL) == Gdiplus::Status::Ok) {
         this->isGDIon = true;
@@ -165,13 +221,13 @@ mod_RemoteDesktop::~mod_RemoteDesktop() {
     return;
 }
 
-std::vector<char> mod_RemoteDesktop::getFrameBytes(ULONG quality, int index) {
-    std::vector<char> cBuffer;
+std::shared_ptr<Gdiplus::Bitmap> mod_RemoteDesktop::getFrameBitmap(ULONG quality, int index) {
+    std::shared_ptr<Gdiplus::Bitmap> outBitmap = nullptr;
 
     Monitor monitor = this->m_GetMonitor(index);
     if (monitor.rectData.resHeight == 0) {
         __DBG_("[X] El monitor no es valido o no se ha obtenido al lista");
-        return cBuffer;
+        return outBitmap;
     }
     
     if (!this->isGDIon) {
@@ -179,7 +235,7 @@ std::vector<char> mod_RemoteDesktop::getFrameBytes(ULONG quality, int index) {
         this->InitGDI();
         if (!this->isGDIon) {
             __DBG_("[X] No se pudo iniciar...");
-            return cBuffer;
+            return outBitmap;
         }
     }
     
@@ -189,7 +245,7 @@ std::vector<char> mod_RemoteDesktop::getFrameBytes(ULONG quality, int index) {
     HBITMAP hmpScreen = NULL;
 
     Gdiplus::Bitmap* pScreenShot = nullptr;
-    IStream* oStream;
+    IStream* oStream = nullptr;
     HRESULT hr = S_OK;
     
     //Cursor
@@ -251,7 +307,6 @@ std::vector<char> mod_RemoteDesktop::getFrameBytes(ULONG quality, int index) {
         goto EndSec;
     }
 
-    STATSTG statstg;
     CLSID imageCLSID;
     
     Gdiplus::EncoderParameters encoderParams;
@@ -275,18 +330,14 @@ std::vector<char> mod_RemoteDesktop::getFrameBytes(ULONG quality, int index) {
         goto EndSec;
     }
 
-    hr = oStream->Stat(&statstg, STATFLAG_NONAME);
-    if (hr == S_OK) {
-        ULONG bytes_read = 0;
-        unsigned long long int uiBuffsize = statstg.cbSize.LowPart;
-        cBuffer.resize(uiBuffsize);
-        if (cBuffer.size() == uiBuffsize) {
-            oStream->Seek({ 0 }, STREAM_SEEK_SET, NULL);
-            hr = oStream->Read(cBuffer.data(), uiBuffsize, &bytes_read);
-        }
-    }
+    oStream->Seek({ 0 }, STREAM_SEEK_SET, NULL);
+
+    outBitmap = std::make_shared<Gdiplus::Bitmap>(oStream);
 
 EndSec:
+    if (oStream) {
+        oStream->Release();
+    }
 
     if (pScreenShot) {
         delete pScreenShot;
@@ -300,12 +351,64 @@ EndSec:
     if (hdcMemDC) {
         DeleteDC(hdcMemDC);
     }
+
     if (hmpScreen) {
         DeleteObject(hmpScreen);
     }
 
-    return cBuffer;
+    return outBitmap;
 
+}
+
+std::vector<char> mod_RemoteDesktop::getBitmapBytes(std::shared_ptr<Gdiplus::Bitmap>& _in) {
+    std::vector<char> vcOut;
+
+    IStream* oStream = nullptr;
+    HRESULT hr = S_OK;
+    STATSTG statstg;
+
+    HGLOBAL hGlobalMem = GlobalAlloc(GHND | GMEM_DDESHARE, 0);
+
+    if (hGlobalMem == NULL) {
+        goto EndSec;
+    }
+
+    hr = CreateStreamOnHGlobal(hGlobalMem, TRUE, &oStream);
+    if (hr != S_OK) {
+        __DBG_("CreateStreamOnHGlobal error\n");
+        goto EndSec;
+    }
+
+    hr = oStream->Stat(&statstg, STATFLAG_NONAME);
+    if (hr == S_OK) {
+        ULONG bytes_read = 0;
+        unsigned long long int uiBuffsize = statstg.cbSize.LowPart;
+        vcOut.resize(uiBuffsize);
+        if (vcOut.size() == uiBuffsize) {
+            oStream->Seek({ 0 }, STREAM_SEEK_SET, NULL);
+            hr = oStream->Read(vcOut.data(), uiBuffsize, &bytes_read);
+        }
+    }
+
+EndSec:
+    if (oStream != nullptr) {
+        oStream->Release();
+    }
+    return vcOut;
+}
+
+void mod_RemoteDesktop::pixelSerialize(const std::vector<Pixel_Data>& _vcin, std::vector<char>& _vcout) {
+    int nsize = sizeof(Pixel_Data) * _vcin.size();
+    _vcout.resize(nsize);
+    if (_vcout.size() == nsize) {
+        int iPos = 0;
+        for (const Pixel_Data& pixel : _vcin) {
+            memcpy(_vcout.data() + iPos, &pixel, sizeof(Pixel_Data));
+            iPos += sizeof(Pixel_Data);
+        }
+    }else {
+        __DBG_("No se pudo alojar memoria para el buffer de salida");
+    }
 }
 
 void mod_RemoteDesktop::SpawnThread(int quality, int monitor_index) {
@@ -327,44 +430,57 @@ void mod_RemoteDesktop::DetenerLive() {
 void mod_RemoteDesktop::IniciarLive(int quality, int monitor_index) {
     this->isRunning = true;
     this->m_UpdateQuality(quality);
-    std::vector<char> cOldBuffer;
+    std::shared_ptr<Gdiplus::Bitmap> oldBitmap = nullptr;
     while (this->m_isRunning()) {
         
-        std::vector<char> scrBuffer = this->getFrameBytes(this->m_Quality(), monitor_index);
-        if (scrBuffer.size() > 0) {
-            if(this->m_AreEqual(scrBuffer, cOldBuffer)){
-                //buffers are equal
-                std::this_thread::sleep_for(std::chrono::milliseconds(30));
-                continue;
+        std::shared_ptr<Gdiplus::Bitmap> newBitmap = this->getFrameBitmap(this->m_Quality(), monitor_index);
+
+        std::vector<Pixel_Data> vcPixels;
+        int iDiff = this->BitmapDiff(oldBitmap, newBitmap, vcPixels);
+
+        if (iDiff == -1) {
+            //Hubo un error o uno de los buffers es nulo
+            if (newBitmap.get() != nullptr) {
+                Gdiplus::Rect rect(0, 0, newBitmap.get()->GetWidth(), newBitmap.get()->GetHeight());
+                Gdiplus::Bitmap* temp_bitmap = newBitmap.get()->Clone(rect, newBitmap.get()->GetPixelFormat());
+                oldBitmap = std::shared_ptr<Gdiplus::Bitmap>(temp_bitmap);
+                //Obtener bytes del newBitmap
+                //Enviar bytes
+                __DBG_("Asignando newBitmap a oldBitmap");
+            }else {
+                __DBG_("newBitmap es nulo");
             }
-            cOldBuffer = scrBuffer;
-            int iSent = cCliente->cChunkSend(cCliente->sckSocket, scrBuffer.data(), scrBuffer.size(), 0, true, nullptr, EnumComandos::RD_Salida);
-            if (iSent == -1) {
-                break;
+
+        }else if (iDiff > 0) {
+            //Hubo un cambio, enviar diferencia
+            //oldBitmap aqui ya tiene los pixeles modificados
+                       
+            //Vale la pena enviar el cambio de pixeles?
+            if ((sizeof(Pixel_Data) * iDiff) < 80000) {
+                //Serializar el vector a un std::vector<char> y mandarlo
+                std::vector<char> cBuffer;
+                this->pixelSerialize(vcPixels, cBuffer);
+                int c = 1;
+                int b = 2;
+                _DBG_("Enviando diferencia: ", iDiff);
+            }else {
+                //Obtener bytes de oldbitmap y mandarlo completo
+                int v = 2;
+                int aa = 12;
+                __DBG_("Enviando original, nuevo es casi lo mismo");
             }
+
         }else {
-            __DBG_("Hubo un error creando el buffer. Esperando...");
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            //No hubo cambios
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
-    }
-}
 
-bool mod_RemoteDesktop::m_AreEqual(const std::vector<char>& cBuffer1, const std::vector<char>& cBuffer2) {
-    if (cBuffer1.size() == cBuffer2.size()) {
-        int iSize = cBuffer1.size();
-        for (int iPos = 0; iPos < iSize; iPos++) {
-            if (cBuffer1[iPos] != cBuffer2[iPos]) {
-                return false;
-            }
-        }
-        return true;
+        //int iSent = cCliente->cChunkSend(cCliente->sckSocket, scrBuffer.data(), scrBuffer.size(), 0, true, nullptr, EnumComandos::RD_Salida);
+        //if (iSent == -1) {
+        //    break;
+        //}
+        
     }
-    return false;
-}
-
-std::vector<char> mod_RemoteDesktop::m_Diff(const std::vector<char>& cBuffer1, const std::vector<char>& cBuffer2) {
-    std::vector<char> cOutput;
-    return cOutput;
 }
 
 std::vector<Monitor> mod_RemoteDesktop::m_ListaMonitores() {

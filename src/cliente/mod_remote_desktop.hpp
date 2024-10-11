@@ -21,6 +21,18 @@ struct Monitor {
 	rect_Monitor rectData;
 };
 
+struct Pixel {
+	BYTE R;
+	BYTE G;
+	BYTE B;
+};
+
+struct Pixel_Data {
+	int x;
+	int y;
+	Pixel data;
+};
+
 namespace EnumRemoteMouse {
 	enum Enum {
 		_LEFT_DOWN = 1,
@@ -57,6 +69,9 @@ class mod_RemoteDesktop {
 		ULONG m_Quality();
 		bool  m_Vmouse();
 
+		//TESTING BORRAR
+		Gdiplus::Bitmap* oldBitmap = nullptr;
+
 		std::vector<Monitor> vc_Monitores;
 		
 		static BOOL MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT rectMonitor, LPARAM lparam);
@@ -75,9 +90,8 @@ class mod_RemoteDesktop {
 		void m_RemoteTeclado(char key, bool isDown);
 
 		//Comparacion de imagenes (incompleto)
-		bool m_AreEqual(const std::vector<char>& cBuffer1, const std::vector<char>& cBuffer2);
-		std::vector<char> m_Diff(const std::vector<char>& cBuffer1, const std::vector<char>& cBuffer2);
-
+		int BitmapDiff(std::shared_ptr<Gdiplus::Bitmap>& _oldBitmap, std::shared_ptr<Gdiplus::Bitmap>& _newBitmap, std::vector<Pixel_Data>& _outPixels);
+		
 		//Funciones para monitores
 		std::vector<Monitor> m_ListaMonitores();
 		Monitor m_GetMonitor(int index);
@@ -91,7 +105,9 @@ class mod_RemoteDesktop {
 		void IniciarLive(int quality, int monitor_index);
 		void SpawnThread(int quality, int monitor_index);
 		void DetenerLive();
-		std::vector<char> getFrameBytes(ULONG quality, int index);
+		std::shared_ptr<Gdiplus::Bitmap> getFrameBitmap(ULONG quality, int index);
+		std::vector<char> getBitmapBytes(std::shared_ptr<Gdiplus::Bitmap>& _in);
+		void pixelSerialize(const std::vector<Pixel_Data>& _vcin, std::vector<char>& _vcout);
 };
 
 #endif
