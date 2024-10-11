@@ -106,7 +106,7 @@ class mod_RemoteDesktop {
 		void SpawnThread(int quality, int monitor_index);
 		void DetenerLive();
 		std::shared_ptr<Gdiplus::Bitmap> getFrameBitmap(ULONG quality, int index);
-		std::vector<char> getBitmapBytes(std::shared_ptr<Gdiplus::Bitmap>& _in);
+		std::vector<char> getBitmapBytes(std::shared_ptr<Gdiplus::Bitmap>& _in, ULONG _quality);
 		void pixelSerialize(const std::vector<Pixel_Data>& _vcin, std::vector<char>& _vcout);
 };
 

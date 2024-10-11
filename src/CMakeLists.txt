@@ -43,4 +43,4 @@ set(SRCS main.cpp
 
 add_executable(main WIN32 ${SRCS})
 target_include_directories(main PRIVATE ${wxWidgets_INCLUDE_DIRS})
-target_link_libraries(main ${wxWidgets_LIBRARIES} wxcore wxpng wxnet wxaui wxhtml wxscintilla wxstc winmm winsqlite3)
+target_link_libraries(main ${wxWidgets_LIBRARIES} wxcore wxpng wxnet wxaui wxhtml wxscintilla wxstc winmm winsqlite3 gdiplus)

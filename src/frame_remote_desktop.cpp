@@ -142,18 +142,54 @@ void frameRemoteDesktop::OnComboChange(wxCommandEvent& event) {
 }
 
 void frameRemoteDesktop::OnDrawBuffer(const char*& cBuffer, int iBuffersize) {
+	//wxIMAGE_QUALITY_FAST   Fast but same as wxIMAGE_QUALITY_NEAREST 
+	//wxIMAGE_QUALITY_HIGH   best quality
 	if (iBuffersize > 0) {
 		wxLogNull noerrormessages;
 		wxMemoryInputStream imgStream(cBuffer, iBuffersize);
-		wxImage img(imgStream, wxBITMAP_TYPE_JPEG);
+		//wxImage img(imgStream, wxBITMAP_TYPE_JPEG);
 
-		//wxIMAGE_QUALITY_FAST   Fast but same as wxIMAGE_QUALITY_NEAREST 
-		//wxIMAGE_QUALITY_HIGH   best quality
+		this->oldBitmap = std::make_shared<wxImage>(imgStream, wxBITMAP_TYPE_JPEG);
+		
 		int x = this->GetSize().GetWidth() - 30;
 		int y = this->GetSize().GetHeight() - 90;
-		if (img.IsOk()) {
-			img.Rescale(x, y, this->quality_options->GetValue() == "KK" ? wxIMAGE_QUALITY_NORMAL : wxIMAGE_QUALITY_HIGH);
-			wxBitmap bmp_Obj(img);
+		if (this->oldBitmap.get()->IsOk()) {
+			this->oldBitmap.get()->Rescale(x, y, this->quality_options->GetValue() == "KK" ? wxIMAGE_QUALITY_NORMAL : wxIMAGE_QUALITY_HIGH);
+			wxBitmap bmp_Obj(*this->oldBitmap.get());
+			
+			if (bmp_Obj.IsOk()) {
+				try {
+					if (this->imageCtrl) {
+						this->imageCtrl->SetBitmap(bmp_Obj);
+						this->imageCtrl->Refresh();
+					}
+				}
+				catch (const std::exception& e) {
+					DEBUG_MSG("exception:");
+					DEBUG_MSG(e.what());
+				}
+				catch (...) {
+					throw;
+				}
+			}
+		}
+
+	}
+}
+
+void frameRemoteDesktop::ProcesaPixelData(const char*& cBuffer, int iBuffersize) {
+	if (iBuffersize % sizeof(Pixel_Data) != 0) {
+		DEBUG_MSG("Error en transferencia de pixeles");
+		return;
+	}
+
+	if (this->BitmapUpdate(this->DeserializePixels(cBuffer, iBuffersize))) {
+
+		int x = this->GetSize().GetWidth() - 30;
+		int y = this->GetSize().GetHeight() - 90;
+		if (this->oldBitmap.get()->IsOk()) {
+			this->oldBitmap.get()->Rescale(x, y, this->quality_options->GetValue() == "KK" ? wxIMAGE_QUALITY_NORMAL : wxIMAGE_QUALITY_HIGH);
+			wxBitmap bmp_Obj(*this->oldBitmap.get());
 
 			if (bmp_Obj.IsOk()) {
 				try {
@@ -161,15 +197,16 @@ void frameRemoteDesktop::OnDrawBuffer(const char*& cBuffer, int iBuffersize) {
 						this->imageCtrl->SetBitmap(bmp_Obj);
 						this->imageCtrl->Refresh();
 					}
-				}catch (const std::exception& e) {
+				}
+				catch (const std::exception& e) {
 					DEBUG_MSG("exception:");
 					DEBUG_MSG(e.what());
-				}catch (...) {
+				}
+				catch (...) {
 					throw;
 				}
 			}
 		}
-		
 	}
 }
 
@@ -349,4 +386,40 @@ void frameRemoteDesktop::AgregarMonitor(MonitorInfo& monitor) {
 MonitorInfo frameRemoteDesktop::GetCopy(int index) {
 	std::unique_lock<std::mutex> lock(this->mtx_vector);
 	return this->vcMonitor[index];
+}
+
+std::vector<Pixel_Data> frameRemoteDesktop::DeserializePixels(const char*& cBuffer, int iBufferSize) {
+	std::vector<Pixel_Data> vcOut;
+	for(int iPos = 0; iPos < iBufferSize; iPos+=sizeof(Pixel_Data)){
+		Pixel_Data nPixel;
+		memcpy(&nPixel, cBuffer + iPos, sizeof(Pixel_Data));
+		if (nPixel.data.R <= 255 && nPixel.data.G <= 255 && nPixel.data.B <= 255) {
+			vcOut.push_back(nPixel);
+		}
+	}
+	return vcOut;
+}
+
+bool frameRemoteDesktop::BitmapUpdate(std::vector<Pixel_Data>& vcin) {
+	if (this->oldBitmap.get() != nullptr) {
+		UINT width = this->oldBitmap.get()->GetWidth();
+		UINT height = this->oldBitmap.get()->GetHeight();
+		
+		Gdiplus::Rect rect(0, 0, width, height);
+
+		//this->oldBitmap.get()->LockBits(&rect, Gdiplus::ImageLockMode::ImageLockModeRead, PixelFormat24bppRGB, &bmpData1);
+		unsigned char* data = this->oldBitmap.get()->GetData();
+
+		
+		for (const Pixel_Data& pixel : vcin) {
+			int index = (pixel.y * width + pixel.x) * 3;
+			data[index    ] = pixel.data.R;
+			data[index + 1] = pixel.data.G;
+			data[index + 2] = pixel.data.B;
+		}
+		return true;
+	}else {
+		DEBUG_MSG("Bitmap viejo es invalido. Detener y volver a iniciar");
+	}
+	return false;
 }

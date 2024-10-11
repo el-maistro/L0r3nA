@@ -360,7 +360,7 @@ EndSec:
 
 }
 
-std::vector<char> mod_RemoteDesktop::getBitmapBytes(std::shared_ptr<Gdiplus::Bitmap>& _in) {
+std::vector<char> mod_RemoteDesktop::getBitmapBytes(std::shared_ptr<Gdiplus::Bitmap>& _in, ULONG _quality) {
     std::vector<char> vcOut;
 
     IStream* oStream = nullptr;
@@ -378,6 +378,22 @@ std::vector<char> mod_RemoteDesktop::getBitmapBytes(std::shared_ptr<Gdiplus::Bit
         __DBG_("CreateStreamOnHGlobal error\n");
         goto EndSec;
     }
+
+    // if (pScreenShot->Save(oStream, &imageCLSID, &encoderParams) != Gdiplus::Status::Ok) {
+     ///   DebugPrint("No se pudo guardar el buffer al stream");
+      //  goto EndSec;
+    //}
+    CLSID imageCLSID;
+
+    Gdiplus::EncoderParameters encoderParams;
+    encoderParams.Count = 1;
+    encoderParams.Parameter[0].NumberOfValues = 1;
+    encoderParams.Parameter[0].Guid = Gdiplus::EncoderQuality;
+    encoderParams.Parameter[0].Type = Gdiplus::EncoderParameterValueTypeLong;
+    encoderParams.Parameter[0].Value = &_quality;
+
+    GetEncoderClsid(L"image/jpeg", &imageCLSID);
+    _in.get()->Save(oStream, &imageCLSID, &encoderParams);
 
     hr = oStream->Stat(&statstg, STATFLAG_NONAME);
     if (hr == S_OK) {
@@ -441,45 +457,44 @@ void mod_RemoteDesktop::IniciarLive(int quality, int monitor_index) {
         if (iDiff == -1) {
             //Hubo un error o uno de los buffers es nulo
             if (newBitmap.get() != nullptr) {
+                __DBG_("Asignando newBitmap a oldBitmap");
                 Gdiplus::Rect rect(0, 0, newBitmap.get()->GetWidth(), newBitmap.get()->GetHeight());
                 Gdiplus::Bitmap* temp_bitmap = newBitmap.get()->Clone(rect, newBitmap.get()->GetPixelFormat());
                 oldBitmap = std::shared_ptr<Gdiplus::Bitmap>(temp_bitmap);
                 //Obtener bytes del newBitmap
-                //Enviar bytes
-                __DBG_("Asignando newBitmap a oldBitmap");
+                std::vector<char> imgBuffer = this->getBitmapBytes(newBitmap, quality);
+                int iSent = cCliente->cChunkSend(cCliente->sckSocket, imgBuffer.data(), imgBuffer.size(), 0, true, nullptr, EnumComandos::RD_Salida);
+                if (iSent == -1) {
+                    break;
+                }
             }else {
                 __DBG_("newBitmap es nulo");
             }
-
         }else if (iDiff > 0) {
             //Hubo un cambio, enviar diferencia
             //oldBitmap aqui ya tiene los pixeles modificados
-                       
             //Vale la pena enviar el cambio de pixeles?
             if ((sizeof(Pixel_Data) * iDiff) < 80000) {
                 //Serializar el vector a un std::vector<char> y mandarlo
-                std::vector<char> cBuffer;
-                this->pixelSerialize(vcPixels, cBuffer);
-                int c = 1;
-                int b = 2;
-                _DBG_("Enviando diferencia: ", iDiff);
+                std::vector<char> vcData;
+                this->pixelSerialize(vcPixels, vcData);
+                int iSent = cCliente->cChunkSend(cCliente->sckSocket, vcData.data(), vcData.size(), 0, true, nullptr, EnumComandos::RD_Salida_Pixel);
+                if (iSent == -1) {
+                    break;
+                }
             }else {
-                //Obtener bytes de oldbitmap y mandarlo completo
-                int v = 2;
-                int aa = 12;
-                __DBG_("Enviando original, nuevo es casi lo mismo");
+                //Obtener bytes de newbitmap/oldbitmap y mandarlo completo
+                __DBG_("Enviando completo, nuevo es casi lo mismo");
+                std::vector<char> imgBuffer = this->getBitmapBytes(oldBitmap, quality);
+                int iSent = cCliente->cChunkSend(cCliente->sckSocket, imgBuffer.data(), imgBuffer.size(), 0, true, nullptr, EnumComandos::RD_Salida);
+                if (iSent == -1) {
+                    break;
+                }
             }
-
         }else {
             //No hubo cambios
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
-
-        //int iSent = cCliente->cChunkSend(cCliente->sckSocket, scrBuffer.data(), scrBuffer.size(), 0, true, nullptr, EnumComandos::RD_Salida);
-        //if (iSent == -1) {
-        //    break;
-        //}
-        
     }
 }
 

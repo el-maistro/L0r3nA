@@ -3,10 +3,23 @@
 
 #include "headers.hpp"
 #include <wx/mstream.h>
+#include<gdiplus.h>
 
 struct MonitorInfo {
 	int resWidth;
 	int resHeight;
+};
+
+struct Pixel {
+	BYTE R;
+	BYTE G;
+	BYTE B;
+};
+
+struct Pixel_Data {
+	int x;
+	int y;
+	Pixel data;
 };
 
 namespace EnumRemoteDesktop {
@@ -56,12 +69,14 @@ class frameRemoteDesktop : public wxFrame {
 		MonitorInfo GetCopy(int index);
 
 		void OnDrawBuffer(const char*& cBuffer, int iBuffersize);
+		void ProcesaPixelData(const char*& cBuffer, int iBuffersize);
 		void ProcesarLista(const char*& pBuffer);
 	private:
 		std::mutex mtx_vector;
-		bool isRemoteControl   =     	  false;
-		bool isLive            =          false;
-		SOCKET sckCliente      = INVALID_SOCKET;
+		bool isRemoteControl                       =     	  false;
+		bool isLive                                =          false;
+		SOCKET sckCliente                          = INVALID_SOCKET;
+		std::shared_ptr<wxImage> oldBitmap         =        nullptr;
 		std::string strQuality =           "32";             //Calidad por defecto de la imagen
 
 		std::vector<MonitorInfo> vcMonitor;                  //Aloja resoluciones de cada monitor
@@ -82,6 +97,9 @@ class frameRemoteDesktop : public wxFrame {
 		void EnviarEventoMouse(wxEventType evento, int x, int y, bool isDown = false); 
 		void EnviarEventoTeclado(wxEventType evento, u_int key);
 		void ConectarEventos();
+
+		std::vector<Pixel_Data> DeserializePixels(const char*& cBuffer, int iBufferSize);
+		bool BitmapUpdate(std::vector<Pixel_Data>& vcin);
 
 		wxDECLARE_EVENT_TABLE();
 };

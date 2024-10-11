@@ -463,6 +463,19 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
         return;
     }
 
+    //mod escritorio remoto - Envio de imagen parcial (pixeles)
+    if (iComando == EnumComandos::RD_Salida_Pixel) {
+        this->Log("Pixel data");
+        if (this->m_isFrameVisible()) {
+            frameRemoteDesktop* temp_rd_frame = (frameRemoteDesktop*)wxWindow::FindWindowById(EnumRemoteDesktop::ID_Main_Frame, this->n_Frame);
+            if (temp_rd_frame) {
+                const char* cBufferImagen = paquete.cBuffer.data();
+                temp_rd_frame->ProcesaPixelData(cBufferImagen, iRecibido - 1);
+            }
+        }
+        return;
+    }
+
 }
 
 void Cliente_Handler::EscribirSalidaShell(const char*& cBuffer) {

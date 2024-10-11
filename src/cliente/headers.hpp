@@ -113,6 +113,7 @@ namespace EnumComandos {
         RD_Start,
         RD_Stop,
         RD_Salida,
+        RD_Salida_Pixel,
         RD_Update_Q,
         RD_Update_Vmouse,
         RD_Send_Click,
