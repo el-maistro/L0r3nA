@@ -53,13 +53,38 @@ namespace EnumRemoteMouse {
 	};
 }
 
+class MyPanel : public wxPanel {
+public:
+	MyPanel(wxWindow* parent)
+		: wxPanel(parent) {
+		Bind(wxEVT_PAINT, &MyPanel::OnPaint, this);
+	}
+
+	void SetBitmap(const wxBitmap& bitmap) {
+		this->bitmap = bitmap;
+		Refresh();
+		Update(); 
+	}
+
+private:
+	wxBitmap bitmap;
+
+	void OnPaint(wxPaintEvent& event) {
+		wxPaintDC dc(this);
+
+		if (bitmap.IsOk()) {
+			dc.DrawBitmap(bitmap, 0, 0, false);
+		}
+	}
+};
+
 class frameRemoteDesktop : public wxFrame {
 	public:
 		frameRemoteDesktop(wxWindow* pParent, SOCKET sck);
 		~frameRemoteDesktop() {
 			StopGDI();
 		}
-
+		MyPanel* pnl_main                 = nullptr;
 		wxStaticBitmap* imageCtrl		  = nullptr;
 		wxComboBox* quality_options       = nullptr;
 		wxComboBox* combo_lista_monitores = nullptr;
@@ -98,6 +123,8 @@ class frameRemoteDesktop : public wxFrame {
 		void OnStop(wxCommandEvent&);			             //Detener live
 		void OnSave(wxCommandEvent&);			             //Guardar captura
 		void Onclose(wxCloseEvent&);
+
+		void OnDrawBitmap(wxPaintEvent& event);
 
 		void EnviarEventoMouse(wxEventType evento, int x, int y, bool isDown = false); 
 		void EnviarEventoTeclado(wxEventType evento, u_int key);

@@ -32,6 +32,8 @@ frameRemoteDesktop::frameRemoteDesktop(wxWindow* pParent, SOCKET sck) :
 	wxButton* btn_Detener = new wxButton(this, EnumRemoteDesktop::ID_BTN_Stop, "Detener");
 	wxButton* btn_Guardar = new wxButton(this, EnumRemoteDesktop::ID_BTN_Save, "Guardar Captura");
 	
+	this->pnl_main = new MyPanel(this);
+	
 	wxArrayString qOptions;
 	qOptions.push_back(wxString("KK"));    //8  kk
 	qOptions.push_back(wxString("Baja"));  //16 Baja
@@ -59,15 +61,16 @@ frameRemoteDesktop::frameRemoteDesktop(wxWindow* pParent, SOCKET sck) :
 
 	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
-	this->imageCtrl = new wxStaticBitmap(this, EnumRemoteDesktop::ID_Bitmap, wxBitmap(10,10));
-	this->imageCtrl->SetScaleMode(wxStaticBitmap::ScaleMode::Scale_Fill);
+	//this->imageCtrl = new wxStaticBitmap(this, EnumRemoteDesktop::ID_Bitmap, wxBitmap(10,10));
+	//this->imageCtrl->SetScaleMode(wxStaticBitmap::ScaleMode::Scale_Fill);
 
-	this->ConectarEventos();
+	//this->ConectarEventos();
 		
 	wxBoxSizer* main_sizer = new wxBoxSizer(wxVERTICAL);
 
 	main_sizer->Add(sizer_controles, 0, wxEXPAND | wxALL, 2);
-	main_sizer->Add(this->imageCtrl, 1, wxEXPAND | wxALL, 2);
+	//main_sizer->Add(this->imageCtrl, 1, wxEXPAND | wxALL, 2);
+	main_sizer->Add(this->pnl_main, 1,  wxEXPAND | wxALL, 2);
 
 	this->SetSizer(main_sizer);
 	this->Layout();
@@ -357,7 +360,8 @@ void frameRemoteDesktop::DrawImage(std::shared_ptr<wxImage>& _img) {
 			wxBitmap bmp_Obj(tmp_img);
 
 			if (bmp_Obj.IsOk()) {
-				try {
+				this->pnl_main->SetBitmap(bmp_Obj);
+				/*try {
 					if (this->imageCtrl) {
 						this->imageCtrl->SetBitmap(bmp_Obj);
 						this->imageCtrl->Refresh();
@@ -369,9 +373,8 @@ void frameRemoteDesktop::DrawImage(std::shared_ptr<wxImage>& _img) {
 				}
 				catch (...) {
 					throw;
-				}
-			}
-			else {
+				}*/
+			}else {
 				DEBUG_MSG("La imagen es invalida");
 			}
 		}
