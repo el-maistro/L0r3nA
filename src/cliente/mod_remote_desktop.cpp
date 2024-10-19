@@ -151,8 +151,8 @@ int mod_RemoteDesktop::BitmapDiff(std::shared_ptr<Gdiplus::Bitmap>& _oldBitmap, 
     Gdiplus::BitmapData bmpData1, bmpData2;
     Gdiplus::Rect rect(0, 0, width, height);
 
-    _oldBitmap.get()->LockBits(&rect, Gdiplus::ImageLockMode::ImageLockModeRead, PixelFormat24bppRGB, &bmpData1);
-    _newBitmap.get()->LockBits(&rect, Gdiplus::ImageLockMode::ImageLockModeRead, PixelFormat24bppRGB, &bmpData2);
+    _oldBitmap.get()->LockBits(&rect, Gdiplus::ImageLockMode::ImageLockModeRead | Gdiplus::ImageLockMode::ImageLockModeWrite, PixelFormat24bppRGB, &bmpData1);
+    _newBitmap.get()->LockBits(&rect, Gdiplus::ImageLockMode::ImageLockModeRead | Gdiplus::ImageLockMode::ImageLockModeWrite, PixelFormat24bppRGB, &bmpData2);
 
     BYTE* oldBitmapPixels = static_cast<BYTE*>(bmpData1.Scan0);
     BYTE* newBitmapPixels = static_cast<BYTE*>(bmpData2.Scan0);
@@ -484,7 +484,6 @@ void mod_RemoteDesktop::IniciarLive(int quality, int monitor_index) {
                 }
             }else {
                 //Obtener bytes de newbitmap/oldbitmap y mandarlo completo
-                __DBG_("Enviando completo, nuevo es casi lo mismo");
                 std::vector<char> imgBuffer = this->getBitmapBytes(oldBitmap, quality);
                 int iSent = cCliente->cChunkSend(cCliente->sckSocket, imgBuffer.data(), imgBuffer.size(), 0, true, nullptr, EnumComandos::RD_Salida);
                 if (iSent == -1) {

@@ -45,7 +45,8 @@
 #include<atomic>
 #include<thread>
 #include<map>
-#include<unordered_map> 
+#include<unordered_map>
+#include<gdiplus.h>
 #include<map>
 #include<random>
 #include<fcntl.h>

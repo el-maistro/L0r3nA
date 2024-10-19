@@ -228,7 +228,6 @@ class Cliente_Handler {
 
 class Servidor{
     private:
-        
         SOCKET sckSocket = INVALID_SOCKET;
         u_int uiPuertoLocal = 0;
         WSADATA wsa;
@@ -241,6 +240,7 @@ class Servidor{
         void Init_Key();
         int p_PingTime = 1000 * 60; //60 segundos
         std::mutex p_sckmutex;   //mutex para enviar
+
     public:
         Servidor();
 

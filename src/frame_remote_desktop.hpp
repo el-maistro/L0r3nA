@@ -3,7 +3,6 @@
 
 #include "headers.hpp"
 #include <wx/mstream.h>
-#include<gdiplus.h>
 
 struct MonitorInfo {
 	int resWidth;
@@ -57,6 +56,9 @@ namespace EnumRemoteMouse {
 class frameRemoteDesktop : public wxFrame {
 	public:
 		frameRemoteDesktop(wxWindow* pParent, SOCKET sck);
+		~frameRemoteDesktop() {
+			StopGDI();
+		}
 
 		wxStaticBitmap* imageCtrl		  = nullptr;
 		wxComboBox* quality_options       = nullptr;
@@ -72,10 +74,13 @@ class frameRemoteDesktop : public wxFrame {
 		void ProcesaPixelData(const char*& cBuffer, int iBuffersize);
 		void ProcesarLista(const char*& pBuffer);
 	private:
+		Gdiplus::GdiplusStartupInput gdiplusStartupInput;
+		ULONG_PTR gdiplusToken;
 		std::mutex mtx_vector;
 		bool isRemoteControl                       =     	  false;
 		bool isLive                                =          false;
 		SOCKET sckCliente                          = INVALID_SOCKET;
+		//Gdiplus::Bitmap* oldBitmap                 =	    nullptr;
 		std::shared_ptr<wxImage> oldBitmap         =        nullptr;
 		std::string strQuality =           "32";             //Calidad por defecto de la imagen
 
@@ -98,8 +103,13 @@ class frameRemoteDesktop : public wxFrame {
 		void EnviarEventoTeclado(wxEventType evento, u_int key);
 		void ConectarEventos();
 
+		void DrawImage(std::shared_ptr<wxImage>& _img);
 		std::vector<Pixel_Data> DeserializePixels(const char*& cBuffer, int iBufferSize);
 		bool BitmapUpdate(std::vector<Pixel_Data>& vcin);
+		wxImage GDIPlusBitmapToWxImage(Gdiplus::Bitmap*& gdiBitmap);
+
+		void InitGDI();
+		void StopGDI();
 
 		wxDECLARE_EVENT_TABLE();
 };

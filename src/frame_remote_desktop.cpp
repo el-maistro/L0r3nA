@@ -22,6 +22,8 @@ frameRemoteDesktop::frameRemoteDesktop(wxWindow* pParent, SOCKET sck) :
 	wxFrame(pParent, EnumRemoteDesktop::ID_Main_Frame, "Escritorio Remoto", wxDefaultPosition, wxSize(900, 500)) {
 	
 	this->sckCliente = sck;
+
+	this->InitGDI();
 	
 	// - - - - - - - - - CONTROLES PRINCIPALES  - - - - - - - - - 
 	wxButton* btn_Lista = new wxButton(this, EnumRemoteDesktop::ID_BTN_Lista, "Obtener Lista");
@@ -147,33 +149,8 @@ void frameRemoteDesktop::OnDrawBuffer(const char*& cBuffer, int iBuffersize) {
 	if (iBuffersize > 0) {
 		wxLogNull noerrormessages;
 		wxMemoryInputStream imgStream(cBuffer, iBuffersize);
-		//wxImage img(imgStream, wxBITMAP_TYPE_JPEG);
-
 		this->oldBitmap = std::make_shared<wxImage>(imgStream, wxBITMAP_TYPE_JPEG);
-		
-		int x = this->GetSize().GetWidth() - 30;
-		int y = this->GetSize().GetHeight() - 90;
-		if (this->oldBitmap.get()->IsOk()) {
-			this->oldBitmap.get()->Rescale(x, y, this->quality_options->GetValue() == "KK" ? wxIMAGE_QUALITY_NORMAL : wxIMAGE_QUALITY_HIGH);
-			wxBitmap bmp_Obj(*this->oldBitmap.get());
-			
-			if (bmp_Obj.IsOk()) {
-				try {
-					if (this->imageCtrl) {
-						this->imageCtrl->SetBitmap(bmp_Obj);
-						this->imageCtrl->Refresh();
-					}
-				}
-				catch (const std::exception& e) {
-					DEBUG_MSG("exception:");
-					DEBUG_MSG(e.what());
-				}
-				catch (...) {
-					throw;
-				}
-			}
-		}
-
+		this->DrawImage(this->oldBitmap);
 	}
 }
 
@@ -184,29 +161,11 @@ void frameRemoteDesktop::ProcesaPixelData(const char*& cBuffer, int iBuffersize)
 	}
 
 	if (this->BitmapUpdate(this->DeserializePixels(cBuffer, iBuffersize))) {
+		//wxImage nBitmap = this->GDIPlusBitmapToWxImage(this->oldBitmap);
+		this->DrawImage(this->oldBitmap);
 
-		int x = this->GetSize().GetWidth() - 30;
-		int y = this->GetSize().GetHeight() - 90;
-		if (this->oldBitmap.get()->IsOk()) {
-			this->oldBitmap.get()->Rescale(x, y, this->quality_options->GetValue() == "KK" ? wxIMAGE_QUALITY_NORMAL : wxIMAGE_QUALITY_HIGH);
-			wxBitmap bmp_Obj(*this->oldBitmap.get());
-
-			if (bmp_Obj.IsOk()) {
-				try {
-					if (this->imageCtrl) {
-						this->imageCtrl->SetBitmap(bmp_Obj);
-						this->imageCtrl->Refresh();
-					}
-				}
-				catch (const std::exception& e) {
-					DEBUG_MSG("exception:");
-					DEBUG_MSG(e.what());
-				}
-				catch (...) {
-					throw;
-				}
-			}
-		}
+	}else {
+		DEBUG_MSG("No se pudo actualizar el bitmap existente");
 	}
 }
 
@@ -388,6 +347,39 @@ MonitorInfo frameRemoteDesktop::GetCopy(int index) {
 	return this->vcMonitor[index];
 }
 
+void frameRemoteDesktop::DrawImage(std::shared_ptr<wxImage>& _img) {
+	int x = this->GetSize().GetWidth() - 30;
+	int y = this->GetSize().GetHeight() - 90;
+	if (_img.get()->IsOk() && _img.get()->GetType() != wxBitmapType::wxBITMAP_TYPE_INVALID) {
+		wxImage tmp_img(*_img.get());
+		if (tmp_img.IsOk()) {
+			tmp_img.Rescale(x, y, this->quality_options->GetValue() == "KK" ? wxIMAGE_QUALITY_NORMAL : wxIMAGE_QUALITY_HIGH);
+			wxBitmap bmp_Obj(tmp_img);
+
+			if (bmp_Obj.IsOk()) {
+				try {
+					if (this->imageCtrl) {
+						this->imageCtrl->SetBitmap(bmp_Obj);
+						this->imageCtrl->Refresh();
+					}
+				}
+				catch (const std::exception& e) {
+					DEBUG_MSG("exception:");
+					DEBUG_MSG(e.what());
+				}
+				catch (...) {
+					throw;
+				}
+			}
+			else {
+				DEBUG_MSG("La imagen es invalida");
+			}
+		}
+	}else {
+		DEBUG_MSG("Bitmap invalido");
+	}
+}
+
 std::vector<Pixel_Data> frameRemoteDesktop::DeserializePixels(const char*& cBuffer, int iBufferSize) {
 	std::vector<Pixel_Data> vcOut;
 	for(int iPos = 0; iPos < iBufferSize; iPos+=sizeof(Pixel_Data)){
@@ -401,25 +393,71 @@ std::vector<Pixel_Data> frameRemoteDesktop::DeserializePixels(const char*& cBuff
 }
 
 bool frameRemoteDesktop::BitmapUpdate(std::vector<Pixel_Data>& vcin) {
-	if (this->oldBitmap.get() != nullptr) {
-		UINT width = this->oldBitmap.get()->GetWidth();
-		UINT height = this->oldBitmap.get()->GetHeight();
-		
-		Gdiplus::Rect rect(0, 0, width, height);
-
-		//this->oldBitmap.get()->LockBits(&rect, Gdiplus::ImageLockMode::ImageLockModeRead, PixelFormat24bppRGB, &bmpData1);
-		unsigned char* data = this->oldBitmap.get()->GetData();
-
-		
-		for (const Pixel_Data& pixel : vcin) {
-			int index = (pixel.y * width + pixel.x) * 3;
-			data[index    ] = pixel.data.R;
-			data[index + 1] = pixel.data.G;
-			data[index + 2] = pixel.data.B;
+	if (this->oldBitmap) {
+		std::cout << "PIXELS: " << vcin.size() << "\n";
+		//DEBUG_MSG(vcin.size());
+		UINT width = this->oldBitmap->GetWidth();
+		UINT height = this->oldBitmap->GetHeight();
+		if (width == 0 || height == 0) {
+			DEBUG_MSG("dimensiones invalidas");
+			return false;
 		}
+
+		for (Pixel_Data& pixel : vcin) {
+			this->oldBitmap->SetRGB(pixel.x, pixel.y, pixel.data.R, pixel.data.G, pixel.data.B);
+		}
+
 		return true;
 	}else {
 		DEBUG_MSG("Bitmap viejo es invalido. Detener y volver a iniciar");
+		return false;
 	}
-	return false;
+}
+
+wxImage frameRemoteDesktop::GDIPlusBitmapToWxImage(Gdiplus::Bitmap*& gdiBitmap) {
+	if (!gdiBitmap) {
+		DEBUG_MSG("El objeto Gdibitmap es invalido");
+		return wxImage();
+	}
+
+	int width = gdiBitmap->GetWidth();
+	int height = gdiBitmap->GetHeight();
+
+	// Acceder a los datos del bitmap de GDI+
+	Gdiplus::BitmapData bitmapData;
+	Gdiplus::Rect rect(0, 0, width, height);
+	if (gdiBitmap->LockBits(&rect, Gdiplus::ImageLockModeRead, PixelFormat24bppRGB, &bitmapData) == Gdiplus::Status::Ok) {
+
+		wxImage wxImg(width, height);
+		wxImg.SetType(wxBitmapType::wxBITMAP_TYPE_JPEG);
+
+		// Copiar los datos de GDI+ a wxImage
+		BYTE* srcPixels = static_cast<BYTE*>(bitmapData.Scan0);
+		BYTE* dstPixels = wxImg.GetData(); // wxImage solo maneja RGB (no alpha)
+
+		for (int y = 0; y < height; ++y) {
+			for (int x = 0; x < width; ++x) {
+				int srcIndex = y * bitmapData.Stride + x * 3;
+				dstPixels[srcIndex    ] = srcPixels[srcIndex    ]; // R
+				dstPixels[srcIndex + 1] = srcPixels[srcIndex + 1]; // G
+				dstPixels[srcIndex + 2] = srcPixels[srcIndex + 2]; // B
+			}
+		}
+
+		// Desbloquear los bits de GDI+
+		gdiBitmap->UnlockBits(&bitmapData);
+		return wxImg;
+	}
+
+	
+	// Convertir wxImage a wxBitmap
+	return wxImage();
+}
+
+void frameRemoteDesktop::InitGDI() {
+	Gdiplus::GdiplusStartup(&this->gdiplusToken, &this->gdiplusStartupInput, NULL);
+}
+
+void frameRemoteDesktop::StopGDI() {
+	Gdiplus::GdiplusShutdown(this->gdiplusToken);
 }

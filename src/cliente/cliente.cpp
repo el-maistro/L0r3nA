@@ -649,7 +649,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     }
     
     //Single
-    /*if (iComando == EnumComandos::RD_Single) {
+    if (iComando == EnumComandos::RD_Single) {
         //Enviar solo una captura
         if (!this->mod_RemoteDesk) {
             this->mod_RemoteDesk = new mod_RemoteDesktop();
@@ -662,13 +662,11 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
                 int iMonitorIndex = atoi(strIn[1].c_str());
                 _DBG_("Enviando captura de pantalla. Index:", iMonitorIndex);
                 _DBG_("Calidad:", iQuality);
-                std::vector<char> vcDeskBuffer = this->mod_RemoteDesk->getFrameBytes(iQuality, iMonitorIndex);
+                std::vector<char> vcDeskBuffer = this->mod_RemoteDesk->getBitmapBytes(this->mod_RemoteDesk->getFrameBitmap(iQuality, iMonitorIndex), iQuality);
                 int iBufferSize = vcDeskBuffer.size();
                 if (iBufferSize > 0) {
                     this->cChunkSend(this->sckSocket, vcDeskBuffer.data(), iBufferSize, 0, true, nullptr, EnumComandos::RD_Salida);
-
-                }
-                else {
+                }else {
                     __DBG_("El buffer de remote_desk es 0");
                 }
             }
@@ -677,7 +675,6 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         }
         return;
     }
-    */
 
     //Iniciar live
     if (iComando == EnumComandos::RD_Start) {
