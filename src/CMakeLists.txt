@@ -24,6 +24,7 @@ set(SRCS main.cpp
          panel_microfono.cpp
          panel_keylogger.cpp
          panel_camara.cpp
+         panel_wmanager.cpp
          frame_crypt_db.cpp
          aes256/aes256.cpp
          notify.cpp

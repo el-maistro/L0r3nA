@@ -7,6 +7,7 @@
 #include "panel_transferencias.hpp"
 #include "panel_keylogger.hpp"
 #include "panel_camara.hpp"
+#include "panel_wmanager.hpp"
 #include "server.hpp"
 #include "misc.hpp"
 
@@ -55,6 +56,7 @@ FrameCliente::FrameCliente(std::string strID, SOCKET sckID, std::string strIP)
 
     this->m_tree->AppendItem(rootAdmin, wxT("Admin de Archivos"));
     this->m_tree->AppendItem(rootAdmin, wxT("Admin de Procesos"));
+    this->m_tree->AppendItem(rootAdmin, wxT("Admin de Ventanas"));
     this->m_tree->AppendItem(rootAdmin, wxT("Reverse Shell"));
     this->m_tree->AppendItem(rootAdmin, wxT("Transferencias"));
 
@@ -164,6 +166,8 @@ void MyTreeCtrl::OnItemActivated(wxTreeEvent& event) {
             frm_temp->Show(true);
         }else if (wStr == "Transferencias") {
             this->p_Notebook->AddPage(new panelTransferencias(this, this->strClienteID), wStr, true);
+        }else if (wStr == "Admin de Ventanas") {
+            this->p_Notebook->AddPage(new panelWManager(this, this->sckCliente), wStr, true);
         }
 
         this->p_Notebook->Thaw();

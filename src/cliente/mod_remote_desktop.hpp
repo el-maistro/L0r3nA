@@ -2,9 +2,6 @@
 #define __MOD_REMOTE_DESKTOP
 
 #include "headers.hpp"
-#include<shlwapi.h>
-#include<gdiplus.h>
-
 #define KEYEVENTF_KEDOWN 0x0000
 
 struct rect_Monitor {

