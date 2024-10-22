@@ -22,6 +22,7 @@ BOOL CALLBACK EnumwindowsProc(HWND hwnd, LPARAM lParam) {
 
 std::vector<VentanaInfo> mod_AdminVentanas::m_ListaVentanas(){
     std::vector<VentanaInfo> vcOut;
+    this->vcVentanas.clear();
     if (::EnumWindows(EnumwindowsProc, (LPARAM)this)) {
         vcOut = this->vcVentanas;
     }
@@ -40,6 +41,9 @@ int mod_AdminVentanas::m_IndexOf(const std::string strTitle) {
 }
 
 void mod_AdminVentanas::m_WindowMSG(const std::string strTitle, int iMessage) {
+    __DBG_("WM: " + strTitle);
+    __DBG_(iMessage);
+
     int index = this->m_IndexOf(strTitle);
     HWND temp_hwnd = NULL;
     if (index == -1) {

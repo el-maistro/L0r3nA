@@ -147,7 +147,8 @@ namespace EnumIDS {
         ID_CM_Test,
         ID_CM_PictureBox,
         ID_Panel_Transfer,
-        ID_Panel_WM
+        ID_Panel_WM,
+        ID_Panel_WM_ListView
     };
 }
 
