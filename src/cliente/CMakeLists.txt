@@ -21,6 +21,7 @@ set(SRCS main.cpp
          mod_mic.cpp
          mod_remote_desktop.cpp
          mod_ventanas.cpp
+         mod_info.cpp
          ../aes256/aes256.cpp
          ../zlib/compress.c 
          ../zlib/inflate.c 
