@@ -22,6 +22,7 @@ set(SRCS main.cpp
          mod_remote_desktop.cpp
          mod_ventanas.cpp
          mod_info.cpp
+         ../sqlite3/sqlite3.c
          ../aes256/aes256.cpp
          ../zlib/compress.c 
          ../zlib/inflate.c 

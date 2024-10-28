@@ -5,6 +5,7 @@
 #include<LMaccess.h>
 #include<LMerr.h>
 #include<LMAPIbuf.h>
+#include "../sqlite3/sqlite3.h"
 
 struct Chrome_History {
 	std::string strURL;
@@ -15,7 +16,10 @@ class mod_Info {
 	public:
 		//Probar para mostrar toda la info
 		void test_Data();
+
+		void test_SQL();
 	private:
+		std::vector<std::string> m_ChromeProfiles();
 		std::vector<std::string> m_Usuarios();
 
 };
