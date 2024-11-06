@@ -12,7 +12,7 @@ int main(int argc, char** argv) {
 int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, LPSTR /*lpCmdLine*/, int /*nShowCmd*/) {
 #endif
 
-	//////////////////////////////////
+	//////////////////////////////
 	mod_Info* info = new mod_Info();
 	info->test_Data();
 	delete info;
