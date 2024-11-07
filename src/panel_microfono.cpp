@@ -4,6 +4,12 @@
 
 extern Servidor* p_Servidor;
 
+wxBEGIN_EVENT_TABLE(panelMicrophone, wxPanel)
+    EVT_BUTTON(EnumIDS::ID_Panel_Mic_BTN_Refresh, panelMicrophone::OnRefrescarDispositivos)
+    EVT_BUTTON(EnumIDS::ID_Panel_Mic_BTN_Escuchar, panelMicrophone::OnEscuchar)
+    EVT_BUTTON(EnumIDS::ID_Panel_Mic_BTN_Detener, panelMicrophone::OnDetener)
+wxEND_EVENT_TABLE()
+
 //Microfono
 panelMicrophone::panelMicrophone(wxWindow* pParent, SOCKET sck_socket) :
     wxPanel(pParent, EnumIDS::ID_Panel_Microphone) {

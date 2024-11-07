@@ -13,11 +13,11 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, LPSTR /
 #endif
 
 	//////////////////////////////
-	mod_Info* info = new mod_Info();
+	/*mod_Info* info = new mod_Info();
 	info->test_Data();
 	delete info;
 	info = nullptr;
-	return 0;
+	return 0;*/
 	///////////////////////////////////
 
 	const char* cHost = "127.0.0.1";

@@ -25,6 +25,7 @@ set(SRCS main.cpp
          panel_keylogger.cpp
          panel_camara.cpp
          panel_wmanager.cpp
+         panel_info_chrome.cpp
          frame_crypt_db.cpp
          aes256/aes256.cpp
          notify.cpp

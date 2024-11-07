@@ -193,8 +193,8 @@ namespace EnumComandos {
         FM_Crear_Archivo,
         FM_Borrar_Archivo,
         FM_Descargar_Archivo,
-        FM_Descargar_Archivo_Recibir, 
-        FM_Descargar_Archivo_Init, 
+        FM_Descargar_Archivo_Recibir,
+        FM_Descargar_Archivo_Init,
         FM_Descargar_Archivo_End,
         FM_Ejecutar_Archivo,
         FM_Editar_Archivo,
@@ -227,7 +227,11 @@ namespace EnumComandos {
         RD_Send_Click,
         RD_Send_Teclado,
         WM_Lista,
-        WM_CMD
+        WM_CMD,
+        INF_Chrome_Profiles,
+        INF_Chrome_Profile_Data,
+        INF_Chrome_Profiles_Out,
+        INF_Chrome_Profile_Data_Out
     };
 }
 
