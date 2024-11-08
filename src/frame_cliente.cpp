@@ -63,6 +63,8 @@ FrameCliente::FrameCliente(std::string strID, SOCKET sckID, std::string strIP)
     this->m_tree->AppendItem(rootSurveilance, wxT("Microfono"));
     this->m_tree->AppendItem(rootSurveilance, wxT("Escritorio Remoto"));
 
+    this->m_tree->AppendItem(rootInformation, wxT("Usuarios"));
+
     wxTreeItemId rootBrowsers = this->m_tree->AppendItem(rootInformation, wxT("Navegadores"));
     this->m_tree->AppendItem(rootBrowsers, wxT("Chrome"));
 

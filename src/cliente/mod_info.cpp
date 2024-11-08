@@ -262,10 +262,15 @@ std::vector<Chrome_Profile> mod_Info::m_ChromeProfiles() {
 				Chrome_Profile nProfile;
 				nProfile.strPath = temp_Path;
 				nProfile.strName         = itm.value()["name"         ];
+				if (nProfile.strName.size() == 0) { nProfile.strName = "-"; }
 				nProfile.strGaiaName     = itm.value()["gaia_name"    ];
+				if (nProfile.strGaiaName.size() == 0) { nProfile.strGaiaName = "-"; }
 				nProfile.strShortCutName = itm.value()["shortcut_name"];
+				if (nProfile.strShortCutName.size() == 0) { nProfile.strShortCutName = "-"; }
 				nProfile.strUserName     = itm.value()["user_name"    ];
+				if (nProfile.strUserName.size() == 0) { nProfile.strUserName = "-"; }
 				nProfile.strHostedDomain = itm.value()["hosted_domain"];
+				if (nProfile.strHostedDomain.size() == 0) { nProfile.strHostedDomain = "-"; }
 				vcOut.push_back(nProfile);
 
 				this->vcChromeProfiles.push_back(nProfile);

