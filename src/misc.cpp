@@ -62,6 +62,25 @@ std::vector<std::string> strSplit(const std::string& strString, char cDelimiter,
 	return vcOut;
 }
 
+std::vector<std::string> strSplit(const std::string& strString, std::string strDelimited, int iMax) {
+	std::vector<std::string> vcOut;
+	std::string strTemp = strString;
+	while (iMax-- > 0) {
+		size_t newpos = strTemp.find(strDelimited);
+		if (newpos == std::string::npos) {
+			if (strTemp.size() > 0) {
+				vcOut.push_back(strTemp);
+			}
+			break;
+		}
+		std::string temp = strTemp.substr(0, newpos);
+		vcOut.push_back(temp);
+
+		strTemp.erase(0, newpos + strDelimited.size());
+	}
+	return vcOut;
+}
+
 u64 StrToUint(const char* strString) {
 	u_int uiLen = strlen(strString);
 	u_int uiLen2 = uiLen;

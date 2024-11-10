@@ -38,6 +38,7 @@
 #define ___DBG__
 #define MAX_CAMS 5
 #define CMD_DEL '~'
+#define CMD_DEL_2 ":[<->]:"
 #define PAQUETE_BUFFER_SIZE 1024 * 5
 #define CHUNK_FILE_TRANSFER_SIZE 1024 * 10
 #define DUMMY_PARAM "0"
