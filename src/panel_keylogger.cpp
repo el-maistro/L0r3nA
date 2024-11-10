@@ -51,7 +51,7 @@ void panelKeylogger::OnGuardarLog(wxCommandEvent& event) {
 			outFile.flush();
 			outFile.close();
 		}else {
-			ERROR("[X] No se pudo abrir el archivo " << dialog.GetPath());
+			ERROR_EW("[X] No se pudo abrir el archivo " << dialog.GetPath());
 		}
 	}
 }

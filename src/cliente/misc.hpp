@@ -5,6 +5,7 @@ std::string strCpu();
 std::string strUserName();
 std::string strOS();
 std::vector<std::string> strSplit(const std::string& strString, char cDelimiter, int iMax);
+std::vector<std::string> strSplit(const std::string& strString, std::string strDelimited, int iMax);
 u64 GetFileSize(c_char* cPath);
 bool Execute(const char *cCmdLine, int iOpt);
 bool EndProcess(int iPID);

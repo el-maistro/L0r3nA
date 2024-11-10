@@ -88,7 +88,7 @@
 
 
 //extern bool bSignalFlag;
-#define ERROR(x) std::cout<<__FILE__<<":"<<__LINE__<<"ERR["<<GetLastError()<<"] "<<x<<"\n";
+#define ERROR_EW(x) std::cout<<__FILE__<<":"<<__LINE__<<"ERR["<<GetLastError()<<"] "<<x<<"\n";
 #define DEBUG_MSG(x) std::cout<<__FILE__<<":"<<__LINE__<<"+[DBG] "<<x<<"\n";
 
 typedef unsigned int u_int;
@@ -232,7 +232,8 @@ namespace EnumComandos {
         INF_Chrome_Profiles,
         INF_Chrome_Profile_Data,
         INF_Chrome_Profiles_Out,
-        INF_Chrome_Profile_Data_Out
+        INF_Chrome_Profile_Data_Out,
+        INF_Error
     };
 }
 

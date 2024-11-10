@@ -97,7 +97,7 @@ void wxEditForm::OnGuardarLocal(wxCommandEvent&) {
 			outFile.flush();
 			outFile.close();
 		}else {
-			ERROR("[X] No se pudo abrir el archivo " << dialog.GetPath());
+			ERROR_EW("[X] No se pudo abrir el archivo " << dialog.GetPath());
 		}
 	}
 	
