@@ -151,7 +151,7 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 
 	std::ifstream localFile(lPath, std::ios::binary);
 	if (!localFile.is_open()) {
-		ERROR("No se pudo abrir el archivo " + lPath);
+		ERROR_EW("No se pudo abrir el archivo " + lPath);
 		return;
 	}
 

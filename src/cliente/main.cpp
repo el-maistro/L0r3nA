@@ -12,13 +12,11 @@ int main(int argc, char** argv) {
 int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, LPSTR /*lpCmdLine*/, int /*nShowCmd*/) {
 #endif
 
-	//////////////////////////////
-	/*mod_Info* info = new mod_Info();
-	info->test_Data();
-	delete info;
-	info = nullptr;
-	return 0;*/
-	///////////////////////////////////
+	mod_Info* mod_ = new mod_Info();
+	mod_->testData();
+	delete mod_;
+	mod_ = nullptr;
+	return 0;
 
 	const char* cHost = "127.0.0.1";
 	const char* cPort = "65500";

@@ -31,6 +31,7 @@ class panelInfoChrome : public wxPanel {
 		
 		void OnProcesarBoton(wxCommandEvent& event);
 		std::string GetSelectedUserPath();
+		std::string GetSelectedUserName();
 		std::string strDelim1 = ":[<>]:";
 		std::string strDelim2 = ":[<->]:";
 
@@ -41,6 +42,13 @@ class panelInfoChrome : public wxPanel {
 		wxListCtrl* listCtrlHistorialD = nullptr;
 		wxListCtrl* listCtrlSearchT    = nullptr;
 		wxListCtrl* listCtrlCookies    = nullptr;
+
+		wxStaticText* lblUsers         = nullptr;
+		wxStaticText* lblPasswords     = nullptr;
+		wxStaticText* lblHistorialN    = nullptr;
+		wxStaticText* lblHistorialD    = nullptr;
+		wxStaticText* lblSearchT       = nullptr;
+		wxStaticText* lblCookies       = nullptr;
 
 		void m_CrearListCtrls();
 		void m_InsertarColumnas(std::vector<ColumnData>& columns, wxListCtrl*& list_ctrl);

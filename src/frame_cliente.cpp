@@ -9,6 +9,7 @@
 #include "panel_camara.hpp"
 #include "panel_wmanager.hpp"
 #include "panel_info_chrome.hpp"
+#include "panel_usuarios.hpp"
 #include "server.hpp"
 #include "misc.hpp"
 
@@ -171,6 +172,8 @@ void MyTreeCtrl::OnItemActivated(wxTreeEvent& event) {
             this->p_Notebook->AddPage(new panelWManager(this, this->sckCliente), wStr, true);
         } else if (wStr == "Chrome") {
             this->p_Notebook->AddPage(new panelInfoChrome(this, this->sckCliente), wStr, true);
+        }else if (wStr == "Usuarios") {
+            this->p_Notebook->AddPage(new panelUsuarios(this, this->sckCliente), wStr, true);
         }
 
         this->p_Notebook->Thaw();

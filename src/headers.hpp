@@ -149,7 +149,8 @@ namespace EnumIDS {
         ID_Panel_Transfer,
         ID_Panel_WM,
         ID_Panel_WM_ListView,
-        ID_Panel_Info
+        ID_Panel_Info,
+        ID_Panel_Info_Usuarios
     };
 }
 
@@ -233,6 +234,7 @@ namespace EnumComandos {
         INF_Chrome_Profile_Data,
         INF_Chrome_Profiles_Out,
         INF_Chrome_Profile_Data_Out,
+        INF_Users,
         INF_Error
     };
 }

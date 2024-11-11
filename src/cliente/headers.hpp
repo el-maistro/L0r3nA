@@ -127,6 +127,7 @@ namespace EnumComandos {
         INF_Chrome_Profile_Data,
         INF_Chrome_Profiles_Out,
         INF_Chrome_Profile_Data_Out,
+        INF_Users,
         INF_Error
     };
 }

