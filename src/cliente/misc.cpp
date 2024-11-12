@@ -70,6 +70,32 @@ std::string strOS() {
 	return strOut;
 }
 
+std::string TimeToDays(const unsigned long long& ulltime) {
+	int days = ((ulltime / 60) / 60) / 24;
+
+	return std::to_string(days) + " dias";
+}
+
+std::string TimeToDays(const std::string& strtime) {
+	unsigned long long time = atoll(strtime.c_str());
+	return TimeToDays(time);
+}
+
+std::string TimeToString(unsigned long long ullTime) {
+	std::string strOut = "";
+	std::time_t timestamp = ullTime;
+
+	std::tm* timeInfo = std::localtime(&timestamp);
+	if (timeInfo != NULL) {
+		char buffer[80];
+		std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", timeInfo);
+
+		strOut = std::string(buffer);
+	}
+
+	return strOut;
+}
+
 std::vector<std::string> strSplit(const std::string& strString, char cDelimiter, int iMax) {
 	std::vector<std::string> vcOut;
 	int istrLen = static_cast<int>(strString.size()), iIt = 0, iCounter = 0, iTmp = 0;

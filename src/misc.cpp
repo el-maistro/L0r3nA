@@ -45,6 +45,17 @@ std::string RandomPass(int iLongitud) {
 	return strSalida;
 }
 
+std::string TimeToString(unsigned long long ullTime) {
+	std::time_t timestamp = ullTime;
+
+	std::tm* timeInfo = std::localtime(&timestamp);
+
+	char buffer[80];
+	std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", timeInfo);
+
+	return std::string(buffer);
+}
+
 std::vector<std::string> strSplit(const std::string& strString, char cDelimiter, int iMax) {
 	std::vector<std::string> vcOut;
 	int istrLen = strString.length(), iIt = 0, iCounter = 0, iTmp = 0;
