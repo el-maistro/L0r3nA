@@ -6,6 +6,7 @@ src/build*
 src/cliente/build*
 src/out*
 src/zlib
+src/sqlite3
 src/wxWidgets
 .vs*
 *.json
