@@ -1,6 +1,7 @@
 #include "headers.hpp"
 void printHex(const char* data, int length);
 std::string RandomID(int iLongitud);
+int RandomID();
 std::string strCpu();
 std::string strUserName();
 std::string strOS();

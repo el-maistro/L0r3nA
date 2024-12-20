@@ -27,6 +27,13 @@ std::string RandomID(int iLongitud) {
 	return strSalida;
 }
 
+int RandomID() {
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_int_distribution<> dis(10000, 99999);
+	return dis(gen);
+}
+
 std::string strUserName() {
 	std::string strOutput = "";
 	char cUser[UNLEN + 1];

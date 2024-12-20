@@ -13,6 +13,7 @@ add_subdirectory(wxWidgets)
 set(SRCS main.cpp
          misc.cpp
          server.cpp
+         mod_reverse_proxy.cpp
          frame_cliente.cpp
          frame_remote_desktop.cpp
          panel_file_manager.cpp

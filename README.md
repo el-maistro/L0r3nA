@@ -2,16 +2,15 @@
 </p>
 
 # L0r3nA
- Herramienta de administracion remota escrita en C++
+ Herramienta de administracion remota escrita en C++ y usando wxWidgets para la interfaz grafica.
 
 ### Funciones
 - Shell Inversa
-- Administrador de archivos
-- Administrador de procesos
-- Administrador de ventanas
 - Keylogger
 - Captura de microfono y camara en tiempo real
 - Escritorio Remoto
+- Proxy Inversa (SOCKS4, SOCKS5, HTTP, HTTPS)
+- Administrador de archivos, procesos, ventanas
 - Recoleccion de informacion (Usuarios, Perfiles de Chrome)
 
 ### Descargo de responsabilidad (DISCLAIMER)

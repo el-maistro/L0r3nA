@@ -2,6 +2,7 @@
 #define _SERVER_H
 #include "headers.hpp"
 #include "frame_client.hpp"
+#include "mod_reverse_proxy.hpp"
 
 struct Paquete {
     u_int uiTipoPaquete;
@@ -259,8 +260,10 @@ class Servidor{
         std::thread thPing;
         std::thread thCleanVC;
         std::thread thTransfers;
-      
 
+        //modulo reverse proxy
+        ReverseProxy* modRerverseProxy = nullptr;
+      
         //Hilos
         void m_Handler();
         void m_StopHandler();
@@ -379,6 +382,11 @@ class Servidor{
             if (m_txtLog != nullptr) {
                 delete m_txtLog;
                 m_txtLog = nullptr;
+            }
+
+            if (modRerverseProxy) {
+                delete modRerverseProxy;
+                modRerverseProxy = nullptr;
             }
        
         }
