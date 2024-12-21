@@ -240,16 +240,18 @@ class Servidor{
         ByteArray bKey;
         void Init_Key();
         int p_PingTime = 1000 * 60; //60 segundos
-        std::mutex p_sckmutex;   //mutex para enviar
-
+        
     public:
         Servidor();
+        ~Servidor();
 
         std::mutex p_mutex;
         std::mutex p_transfers;
         std::mutex count_mutex;
-        
+        std::mutex mtx_map;   //mutex para mapa de mutexes
+
         std::map<std::string, struct TransferStatus> vcTransferencias;
+		std::map<SOCKET, std::shared_ptr<std::mutex>> vcMutex; //Mapa que almacena mutex para cada socket
 
         std::vector<Cliente_Handler*> vc_Clientes;
         
@@ -284,7 +286,7 @@ class Servidor{
         //Socket wraps
         int send_all(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags);
         int recv_all(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags);
-        int cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock = false, int iTipoPaquete = 0);
+        int cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, std::mutex*& mtx_obj, bool isBlock = false, int iTipoPaquete = 0);
         int cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, bool isBlock, DWORD* err_code);
         void m_SerializarPaquete(const Paquete& paquete, char* cBuffer);
         bool m_DeserializarPaquete(const char* cBuffer, Paquete& paquete, int bufer_size);
@@ -300,6 +302,11 @@ class Servidor{
         ClientConInfo m_Aceptar();
         void m_CerrarConexiones();
         void m_CerrarConexion(SOCKET pSocket);
+
+        //Mapa mutex
+        std::shared_ptr<std::mutex> m_GetMutex(SOCKET pSocket);
+		void m_InsertMutex(SOCKET pSocket);
+        void m_DeleteMutex(SOCKET pSocket);
         
         void charFree(char*& nBuffer, int pLen) {
             if (nBuffer) {
@@ -309,60 +316,14 @@ class Servidor{
             }
         }
 
-        //thread "safe" para modificar y acceder al vector
+        //thread safe para modificar y acceder al vector
         void m_BorrarCliente(std::mutex& mtx, int iIndex, bool isEnd = false);
-
-        int m_NumeroClientes(std::mutex& mtx) {
-            std::unique_lock<std::mutex> lock(mtx);
-            return static_cast<int>(vc_Clientes.size());
-        }
-
-        SOCKET m_SocketCliente(std::mutex& mtx, int iIndex) {
-            std::unique_lock<std::mutex> lock(mtx);
-            if (iIndex < static_cast<int>(vc_Clientes.size())) {
-                if (vc_Clientes[iIndex]) {
-                    return vc_Clientes[iIndex]->p_Cliente._sckCliente;
-                }
-            }
-            return INVALID_SOCKET;
-        }
-    
-        std::string m_ClienteID(std::mutex& mtx, int iIndex) {
-            std::unique_lock<std::mutex> lock(mtx);
-            if (iIndex < static_cast<int>(vc_Clientes.size())) {
-                if (vc_Clientes[iIndex]) {
-                    return vc_Clientes[iIndex]->p_Cliente._id;
-                }
-            }
-            return std::string("sofocante");
-        }
-
-        std::string m_ClienteIP(std::mutex& mtx, int iIndex) {
-            std::unique_lock<std::mutex> lock(mtx);
-            if (iIndex < static_cast<int>(vc_Clientes.size())) {
-                if (vc_Clientes[iIndex]) {
-                    return vc_Clientes[iIndex]->p_Cliente._strIp;
-                }
-            }
-            return std::string("sofocante");
-        }
-        
-        bool m_IsRunning(std::mutex& mtx, int iIndex) {
-            std::unique_lock<std::mutex> lock(mtx);
-            bool bFlag = false;
-            if (iIndex < static_cast<int>(vc_Clientes.size())) {
-                if (vc_Clientes[iIndex]) {
-                    bFlag = vc_Clientes[iIndex]->isfRunning();
-
-                }
-            }
-            return bFlag;
-        }
-
-        bool m_Running() {
-            std::unique_lock<std::mutex> lock(p_mutex);
-            return p_Escuchando;
-        }
+        int m_NumeroClientes(std::mutex& mtx);
+        SOCKET m_SocketCliente(std::mutex& mtx, int iIndex);
+        std::string m_ClienteID(std::mutex& mtx, int iIndex);
+        std::string m_ClienteIP(std::mutex& mtx, int iIndex);
+        bool m_IsRunning(std::mutex& mtx, int iIndex);
+        bool m_Running();
 
         u_int m_lPuerto(){
             return uiPuertoLocal;
@@ -370,25 +331,6 @@ class Servidor{
 
         void m_sPuerto(int pNuevoPuerto){
             uiPuertoLocal = pNuevoPuerto;
-        }
-
-        ~Servidor(){
-
-            if(sckSocket != INVALID_SOCKET){
-                closesocket(sckSocket);
-                sckSocket = INVALID_SOCKET;
-            }
-
-            if (m_txtLog != nullptr) {
-                delete m_txtLog;
-                m_txtLog = nullptr;
-            }
-
-            if (modRerverseProxy) {
-                delete modRerverseProxy;
-                modRerverseProxy = nullptr;
-            }
-       
         }
 };
 

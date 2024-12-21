@@ -858,7 +858,6 @@ void Servidor::m_CleanVector() {
 void Servidor::m_Escucha(){
     this->m_txtLog->LogThis("Thread LISTENER iniciada", LogType::LogMessage);
     
-    //Crear descriptor and setearlo a zero
     struct timeval timeout;
     timeout.tv_sec = 1;
     timeout.tv_usec = 0;
@@ -909,6 +908,7 @@ void Servidor::m_Escucha(){
                 this->vc_Clientes.push_back(DBG_NEW Cliente_Handler(structNuevoCliente));
                 this->vc_Clientes[this->vc_Clientes.size() - 1]->Spawn_Threads();
                 
+                this->m_InsertMutex(sckNuevoCliente._sckSocket);
             }
 
         }
@@ -970,6 +970,8 @@ int Servidor::cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFl
     struct Paquete nPaquete;
     int iPaquet_Size = (sizeof(int) * 3) + PAQUETE_BUFFER_SIZE;
     char cPaqueteSer[(sizeof(int) * 3) + PAQUETE_BUFFER_SIZE];
+    
+    std::mutex* ntemp_mutex = this->m_GetMutex(pSocket).get();
 
     while (true) {
         iRestante = (iDataSize > iPaquet_Size) ? iDataSize - iPaquet_Size : iDataSize;
@@ -1004,7 +1006,7 @@ int Servidor::cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFl
 
             this->m_SerializarPaquete(nPaquete, cPaqueteSer);
 
-            iChunkEnviado = this->cSend(pSocket, cPaqueteSer, iFinalSize, pFlags, isBlock, 0);
+            iChunkEnviado = this->cSend(pSocket, cPaqueteSer, iFinalSize, pFlags, ntemp_mutex, isBlock, 0);
             if (iChunkEnviado == SOCKET_ERROR || iChunkEnviado == WSAECONNRESET) {
                 DEBUG_MSG("[CHUNK] Error enviando el chunk");
                 return iChunkEnviado;
@@ -1047,10 +1049,16 @@ int Servidor::send_all(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlag
     return iTotalEnviado;
 }
 
-int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock, int iTipoPaquete) {
+int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, std::mutex*& mtx_obj, bool isBlock, int iTipoPaquete) {
     // 1 non block
     // 0 block
-    std::unique_lock<std::mutex> lock(this->p_sckmutex);
+    std::mutex* tmp_mutex;
+    if (!mtx_obj) {
+        tmp_mutex = &this->p_mutex; //mutex por defecto
+    }else {
+        tmp_mutex = mtx_obj;
+    }
+    std::unique_lock<std::mutex> lock(*tmp_mutex);
 
     //Tamaño del buffer
     int iDataSize = pLen;
@@ -1229,6 +1237,8 @@ void Servidor::m_BorrarCliente(std::mutex& mtx, int iIndex, bool isEnd) {
     if (iIndex < static_cast<int>(this->vc_Clientes.size()) && iIndex >= 0) {
         if (this->vc_Clientes[iIndex]) {
             //this->cChunkSend(this->vc_Clientes[iIndex]->p_Cliente._sckCliente, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, false, EnumComandos::CLI_KSWITCH);
+            this->m_DeleteMutex(this->vc_Clientes[iIndex]->p_Cliente._sckCliente);
+
             m_CerrarConexion(this->vc_Clientes[iIndex]->p_Cliente._sckCliente);
             this->vc_Clientes[iIndex]->Stop();
             this->vc_Clientes[iIndex]->JoinThread();
@@ -1237,6 +1247,7 @@ void Servidor::m_BorrarCliente(std::mutex& mtx, int iIndex, bool isEnd) {
             this->vc_Clientes[iIndex] = nullptr;
 
             if (!isEnd) { this->vc_Clientes.erase(vc_Clientes.begin() + iIndex); }
+
         }
     }
 }
@@ -1260,6 +1271,98 @@ ByteArray Servidor::bDec(const unsigned char* pInput, size_t pLen) {
         DEBUG_MSG(pInput);
     }
     return bOutput;
+}
+
+std::shared_ptr<std::mutex> Servidor::m_GetMutex(SOCKET pSocket) {
+    std::unique_lock<std::mutex> lock(this->mtx_map);
+    if (this->vcMutex.find(pSocket) != this->vcMutex.end()) {
+        return this->vcMutex[pSocket];
+    }
+    return nullptr;
+}
+
+void Servidor::m_InsertMutex(SOCKET pSocket) {
+    std::unique_lock<std::mutex> lock(this->mtx_map);
+    std::shared_ptr<std::mutex> th = std::make_shared<std::mutex>();
+	this->vcMutex.insert({ pSocket, th });
+}
+
+void Servidor::m_DeleteMutex(SOCKET pSocket) {
+    std::unique_lock<std::mutex> lock(this->mtx_map);
+    if (this->vcMutex.find(pSocket) != this->vcMutex.end()) {
+        this->vcMutex.erase(pSocket);
+    }
+}
+
+int Servidor::m_NumeroClientes(std::mutex& mtx) {
+    std::unique_lock<std::mutex> lock(mtx);
+    return static_cast<int>(this->vc_Clientes.size());
+}
+
+SOCKET Servidor::m_SocketCliente(std::mutex& mtx, int iIndex) {
+    std::unique_lock<std::mutex> lock(mtx);
+    if (iIndex < static_cast<int>(this->vc_Clientes.size())) {
+        if (this->vc_Clientes[iIndex]) {
+            return this->vc_Clientes[iIndex]->p_Cliente._sckCliente;
+        }
+    }
+    return INVALID_SOCKET;
+}
+
+std::string Servidor::m_ClienteID(std::mutex& mtx, int iIndex) {
+    std::unique_lock<std::mutex> lock(mtx);
+    if (iIndex < static_cast<int>(this->vc_Clientes.size())) {
+        if (this->vc_Clientes[iIndex]) {
+            return this->vc_Clientes[iIndex]->p_Cliente._id;
+        }
+    }
+    return std::string("sofocante");
+}
+
+std::string Servidor::m_ClienteIP(std::mutex& mtx, int iIndex) {
+    std::unique_lock<std::mutex> lock(mtx);
+    if (iIndex < static_cast<int>(this->vc_Clientes.size())) {
+        if (this->vc_Clientes[iIndex]) {
+            return this->vc_Clientes[iIndex]->p_Cliente._strIp;
+        }
+    }
+    return std::string("sofocante");
+}
+
+bool Servidor::m_IsRunning(std::mutex& mtx, int iIndex) {
+    std::unique_lock<std::mutex> lock(mtx);
+    bool bFlag = false;
+    if (iIndex < static_cast<int>(this->vc_Clientes.size())) {
+        if (this->vc_Clientes[iIndex]) {
+            bFlag = this->vc_Clientes[iIndex]->isfRunning();
+
+        }
+    }
+    return bFlag;
+}
+
+bool Servidor::m_Running() {
+    std::unique_lock<std::mutex> lock(this->p_mutex);
+    return this->p_Escuchando;
+}
+
+Servidor::~Servidor() {
+    if (sckSocket != INVALID_SOCKET) {
+        closesocket(sckSocket);
+        sckSocket = INVALID_SOCKET;
+    }
+
+    if (m_txtLog != nullptr) {
+        delete m_txtLog;
+        m_txtLog = nullptr;
+    }
+
+    if (modRerverseProxy) {
+        delete modRerverseProxy;
+        modRerverseProxy = nullptr;
+    }
+    
+    WSACleanup();
 }
 
 //Mostrar menu contextual frame princiopal
