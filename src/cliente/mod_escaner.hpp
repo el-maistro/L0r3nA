@@ -2,8 +2,8 @@
 #define __MOD_ESCANER_HPP__ 1
 
 #include "headers.hpp"
-#include<icmpapi.h>
 #include<iphlpapi.h>
+#include<icmpapi.h>
 
 struct Host_Entry {
 	std::string strip;

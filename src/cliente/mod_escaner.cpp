@@ -1,6 +1,8 @@
 #include "mod_escaner.hpp"
 
 std::vector<Host_Entry> mod_Escaner::m_Escanear(const char* _host_base) {
+    this->vcIps.clear();
+
     std::thread th[255];
     for (int i = 1; i <= 255; i++) {
         th[i - 1] = std::thread(&mod_Escaner::m_thPing, this, _host_base, i);

