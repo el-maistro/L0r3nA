@@ -71,6 +71,7 @@ FrameCliente::FrameCliente(std::string strID, SOCKET sckID, std::string strIP)
     this->m_tree->AppendItem(rootBrowsers, wxT("Chrome"));
 
     this->m_tree->AppendItem(rootNetwork, wxT("Proxy Inversa"));
+    this->m_tree->AppendItem(rootNetwork, wxT("Escaner de Red"));
 
     //Sizer para hacer el treeview dinamico al hacer resize
     wxBoxSizer* pnl_left_Sizer = new wxBoxSizer(wxHORIZONTAL);
@@ -88,7 +89,7 @@ FrameCliente::FrameCliente(std::string strID, SOCKET sckID, std::string strIP)
     //----------------------------------------------
 
     wxHtmlWindow* html = new wxHtmlWindow(this->m_tree->p_Notebook, wxID_ANY, wxDefaultPosition, wxSize(200, 200));
-    wxString htmlsource = "<center><p>L0R3NA v0.1</p></center>";
+    wxString htmlsource = "<center><h2>L0R3NA v0.1</h2><br>#Honduras</center>";
     html->SetPage(htmlsource);
     html->SetSize(wxSize(200, 200));
 
