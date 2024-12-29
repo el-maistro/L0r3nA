@@ -6,7 +6,12 @@
 namespace EnumEscanerIDS {
 	enum Enum {
 		Main_Window = 100,
-		BTN_Scan
+		ListCtrl,
+		BTN_Scan,
+		BTN_SynScan,
+		BTN_SckScan,
+		BTN_FullScan_Syn,
+		BTN_FullScan_Sck
 	};
 }
 
@@ -16,17 +21,25 @@ class panelEscaner : public wxPanel {
 
 		void AddData(const char* _buffer);
 	private:
+		wxDataViewColumn* m_col;
 		wxTextCtrl* txtHostBase = nullptr;
-		wxButton* btnScan = nullptr;
-		wxListCtrl* list_ctrl = nullptr;
+		wxListCtrl* list_ctrl   = nullptr;
+		wxComboBox* cmb_Subnet  = nullptr;
+		wxComboBox* cmb_Tipo    = nullptr;
 
 		void CrearListView();
 		void OnScan(wxCommandEvent& event);
+		void OnMostrarPuertos(wxListEvent& event);
 
 		SOCKET sckSocket = INVALID_SOCKET;
 
 		wxDECLARE_EVENT_TABLE();
 
+};
+
+class framePorts : public wxFrame {
+	public:
+		framePorts(wxWindow* pParent, wxString _ports, wxString _title);
 };
 
 #endif

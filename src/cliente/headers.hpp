@@ -130,7 +130,11 @@ namespace EnumComandos {
         INF_Users,
         INF_Error,
         PROXY_CMD,
-        Net_Scan
+        Net_Scan,
+        Net_Scan_Syn,
+        Net_Scan_Sck,
+        Net_Scan_Full_Syn,
+        Net_Scan_Full_Sck
     };
 }
 

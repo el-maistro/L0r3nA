@@ -543,7 +543,8 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
     }
 
     //mod escaner red
-    if (iComando == EnumComandos::Net_Scan) {
+    if (iComando == EnumComandos::Net_Scan || iComando == EnumComandos::Net_Scan_Sck || iComando == EnumComandos::Net_Scan_Syn ||
+        iComando == EnumComandos::Net_Scan_Full_Syn || iComando == EnumComandos::Net_Scan_Full_Sck) {
         if (this->m_isFrameVisible()) {
             panelEscaner* temp_pn = (panelEscaner*)wxWindow::FindWindowById(EnumEscanerIDS::Main_Window, this->n_Frame);
             if (temp_pn) {
