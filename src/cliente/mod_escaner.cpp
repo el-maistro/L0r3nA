@@ -1,6 +1,13 @@
 #include "mod_escaner.hpp"
 
-std::vector<Host_Entry> mod_Escaner::m_Escanear(const char* _cidr, bool _is_full_scan, bool _is_port_scan, int _scan_type) {
+mod_Escaner::mod_Escaner() {
+    WSADATA wsa;
+    if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
+        error();
+    }
+}
+
+std::vector<Host_Entry> mod_Escaner::m_Escanear(const char* _cidr, bool _is_full_scan, bool _is_port_scan, int _scan_type, int _puerto_inicio, int _puerto_fin) {
     this->vcIps.clear();
 
     //Parse CIDR y escanear vector con ips
@@ -10,11 +17,11 @@ std::vector<Host_Entry> mod_Escaner::m_Escanear(const char* _cidr, bool _is_full
 
     for (int i = 0; i < valid_ips.size(); i++) {
         if (_is_full_scan) {
-            th.push_back(std::make_unique<std::thread>(&mod_Escaner::m_thPing, this, valid_ips[i], true, _scan_type));
+            th.push_back(std::make_unique<std::thread>(&mod_Escaner::m_thPing, this, valid_ips[i], true, _scan_type, _puerto_inicio, _puerto_fin));
         } else if (_is_port_scan) {
-            th.push_back(std::make_unique<std::thread>(&mod_Escaner::m_EscanearPuertos, this, valid_ips[i].c_str(), _scan_type));
+            th.push_back(std::make_unique<std::thread>(&mod_Escaner::m_EscanearPuertos, this, valid_ips[i].c_str(), _scan_type, _puerto_inicio, _puerto_fin));
         }else {
-            th.push_back(std::make_unique<std::thread>(&mod_Escaner::m_thPing, this, valid_ips[i], false, 0));
+            th.push_back(std::make_unique<std::thread>(&mod_Escaner::m_thPing, this, valid_ips[i], false, 0, 0, 0));
         }
     }
 
@@ -149,12 +156,12 @@ IP mod_Escaner::m_ParseIP(const char* _cidr) {
     return nout;
 }
 
-void mod_Escaner::m_EscanearPuertos(const char* _host, int _scan_type) {
+void mod_Escaner::m_EscanearPuertos(const char* _host, int _scan_type, int _puerto_inicio, int _puerto_fin) {
     std::vector<int> puertos;
     if (_scan_type == TipoEscanerPuerto::SYN) {
-        puertos = this->m_EscanearSYN(_host);
+        puertos = this->m_EscanearSYN(_host, _puerto_inicio, _puerto_fin);
     }else { 
-        puertos = this->m_EscanearSCK(_host);
+        puertos = this->m_EscanearSCK(_host, _puerto_inicio, _puerto_fin);
     }
 
     if (puertos.size() > 0) {
@@ -170,25 +177,147 @@ void mod_Escaner::m_EscanearPuertos(const char* _host, int _scan_type) {
     }
 }
 
-std::vector<int> mod_Escaner::m_EscanearSYN(const char* _host) {
-    std::vector<int> vcout;
-    //Dummy loop para probar
+std::vector<int> mod_Escaner::m_EscanearSYN(const char* _host, int _puerto_inicio, int _puerto_fin) {
+    //Requiere Admin
+    //Thanks https://marcocetica.com/posts/socket_tutorial_part3/
 
-    for (int i = 1; i <= 100; i += 2) {
-        vcout.push_back(i);
+    this->vcPorts.clear();
+
+    struct in_addr server_ip;
+    const char* ip_addr = "127.0.0.1"; //Local ip address
+
+    server_ip.s_addr = inet_addr(_host);
+
+    SOCKET socket_fd = socket(AF_UNSPEC, SOCK_RAW, IPPROTO_RAW);
+    if (socket_fd == INVALID_SOCKET) {
+        _DBG_("[SYN] Error creando el socket", WSAGetLastError());
+        return this->vcPorts;
     }
 
-    return vcout;
+    //Prepara TCP/IP Header
+    char datagrama[DATAGRAM_BUF_SIZE];
+    struct iphdr* ip_head = (struct iphdr*)datagrama;
+    struct tcphdr* tcp_head = (struct tcphdr*)(datagrama + sizeof(struct iphdr));
+
+    this->m_SetDatagram(datagrama, server_ip, ip_addr, ip_head, tcp_head);
+
+    int flag = 1;
+    if (setsockopt(socket_fd, IPPROTO_IP, IP_HDRINCL, (char*)&flag, sizeof(flag)) == SOCKET_ERROR) {
+        _DBG_("Error configurando IP_HDRINCL", WSAGetLastError());
+        closesocket(socket_fd);
+        return this->vcPorts;
+    }
+
+    std::vector<std::unique_ptr<std::thread>> th;
+    for (size_t puerto = _puerto_inicio; puerto <= _puerto_fin; puerto++) {
+        //Llamar funcion para escanear puerto
+        th.push_back(std::make_unique<std::thread>(&mod_Escaner::m_thCheckPortSYN, this, socket_fd, datagrama, server_ip, ip_addr, tcp_head, puerto));
+    }
+
+    for (auto& it : th) {
+        if (it.get()->joinable()) {
+            it.get()->join();
+
+        }
+    }
+    return this->vcPorts;
 }
 
-std::vector<int> mod_Escaner::m_EscanearSCK(const char* _host) {
-    std::vector<int> vcout;
+std::vector<int> mod_Escaner::m_EscanearSCK(const char* _host, int _puerto_inicio, int _puerto_fin) {
+    __DBG_("Escaneando...");
+    this->vcPorts.clear();
+    
+    std::vector<std::unique_ptr<std::thread>> th;
 
-    for (int i = 100; i <= 200; i += 2) {
-        vcout.push_back(i);
+    for (int i = _puerto_inicio; i <= _puerto_fin; i++) {
+        th.push_back(std::make_unique<std::thread>(&mod_Escaner::m_thCheckPortSCK, this, _host, i));
     }
 
-    return vcout;
+    for (auto& it : th) {
+        if (it.get()->joinable()) {
+            it.get()->join();
+        }
+    }
+
+    std::sort(this->vcPorts.begin(), this->vcPorts.end());
+
+    return this->vcPorts;
+}
+
+void mod_Escaner::m_thCheckPortSCK(const char* _host, int _port) {
+    struct addrinfo sAddress, * sP, * sServer;
+    memset(&sAddress, 0, sizeof(sAddress));
+
+    SOCKET temp_socket = INVALID_SOCKET;
+
+    sAddress.ai_family = AF_UNSPEC;
+    sAddress.ai_socktype = SOCK_STREAM;
+
+    std::string strport = std::to_string(_port);
+    const char* _cport = strport.c_str();
+    
+    int iRes = getaddrinfo(_host, _cport, &sAddress, &sServer);
+    if (iRes != 0) {
+        _DBG_("[X] getaddrinfo error", iRes);
+        _DBG_("HOST_LEN: ", strlen(_host));
+        if (_port == 110) {
+            int dbgg = 12;
+            int sad = 22;
+
+        }
+        __DBG_("HOST: " + std::string(_host) + " PORT:" + std::string(_cport));
+        return;
+    }
+
+    for (sP = sServer; sP != nullptr; sP = sP->ai_next) {
+        if ((temp_socket = socket(sP->ai_family, sP->ai_socktype, sP->ai_protocol)) == INVALID_SOCKET) {
+            //socket error
+            continue;
+        }
+        unsigned long int iBlock = 1;
+        if (ioctlsocket(temp_socket, FIONBIO, &iBlock) != 0) {
+            _DBG_("[X] No se pudo hacer non_block", WSAGetLastError());
+        }
+
+
+        if (connect(temp_socket, sP->ai_addr, sP->ai_addrlen) == -1) {
+            //No se pudo conectar
+            //_DBG_("[X] No se pudo conectar. Host: " + std::string(_host), WSAGetLastError());
+            TIMEVAL Timeout;
+            Timeout.tv_sec = 1;
+            Timeout.tv_usec = 0;
+            iBlock = 0;
+            if (ioctlsocket(temp_socket, FIONBIO, &iBlock) != 0) {
+                _DBG_("[X] No se pudo hacer block", WSAGetLastError());
+            }
+            fd_set Write, Err;
+            FD_ZERO(&Write);
+            FD_ZERO(&Err);
+            FD_SET(temp_socket, &Write);
+            FD_SET(temp_socket, &Err);
+
+            select(0, NULL, &Write, &Err, &Timeout);
+            if (!FD_ISSET(temp_socket, &Write)){
+                continue;
+            }
+        }
+        _DBG_("[!] " + std::string(_host) + " OPEN:", _port);
+        closesocket(temp_socket);
+        break;
+    }
+
+    freeaddrinfo(sServer);
+
+    if (sP == nullptr) {
+        return;
+    }
+    
+    this->m_AddEntryPort(_port);
+}
+
+void mod_Escaner::m_AddEntryPort(int _port) {
+    std::unique_lock<std::mutex> lock(this->mtx_ports);
+    this->vcPorts.push_back(_port);
 }
 
 void mod_Escaner::m_AddEntry(const Host_Entry& _entry) {
@@ -196,7 +325,7 @@ void mod_Escaner::m_AddEntry(const Host_Entry& _entry) {
 	this->vcIps.push_back(_entry);
 }
 
-void mod_Escaner::m_thPing(const std::string _strip, bool _is_port_scan, int _scan_type) {
+void mod_Escaner::m_thPing(const std::string _strip, bool _is_port_scan, int _scan_type, int _puerto_inicio, int _puerto_fin) {
 	const char* _host = _strip.c_str();
 
     HANDLE hIcmpFile;
@@ -232,9 +361,9 @@ void mod_Escaner::m_thPing(const std::string _strip, bool _is_port_scan, int _sc
         if (_is_port_scan) {
             std::vector<int> puertos;
             if (_scan_type == TipoEscanerPuerto::SYN) {
-                puertos = this->m_EscanearSYN(_host);
+                puertos = this->m_EscanearSYN(_host, _puerto_inicio, _puerto_fin);
             }else {
-                puertos = this->m_EscanearSCK(_host);
+                puertos = this->m_EscanearSCK(_host, _puerto_inicio, _puerto_fin);
             }
 
             if (puertos.size() > 0) {
@@ -295,5 +424,130 @@ std::string mod_Escaner::m_GetHostName(const char* _host) {
     }
     else {
         return "Desconocido";
+    }
+}
+
+//SYN
+
+void mod_Escaner::m_SetDatagram(char* datagram, in_addr server_ip, const char* client_ip, iphdr* ip_head, tcphdr* tcp_head) {
+    memset(datagram, 0, DATAGRAM_BUF_SIZE);
+
+    //Cabecera IP
+    ip_head->ihl = 5; //HELEN
+    ip_head->version = 4;
+    ip_head->tos = 0; //type of service
+    ip_head->tot_len = (sizeof(iphdr) + sizeof(tcphdr));
+    ip_head->id = htons(36521);
+    ip_head->frag_off = htons(16384);
+    ip_head->ttl = 64;
+    ip_head->protocol = IPPROTO_TCP;
+    ip_head->saddr = inet_addr(client_ip);
+    ip_head->daddr = server_ip.s_addr;
+    ip_head->check = this->checksum((unsigned short*)datagram, ip_head->tot_len >> 1);
+
+    //Cabecera TCP
+    tcp_head->source = htons(46300);
+    tcp_head->dest = htons(80);
+    tcp_head->seq = htonl(1105024978);
+    tcp_head->ack_seq = 0;
+    tcp_head->doff = (sizeof(tcphdr) / 4);
+    tcp_head->fin = 0;
+    tcp_head->syn = 1;
+    tcp_head->rst = 0;
+    tcp_head->psh = 0;
+    tcp_head->ack = 0;
+    tcp_head->urg = 0;
+    tcp_head->window = htons(14600);
+    tcp_head->check = 0;
+    tcp_head->urg_ptr = 0;
+}
+
+unsigned short mod_Escaner::checksum(void* buffer, int len) {
+    unsigned short* buf = (unsigned short*)buffer;
+    unsigned int sum = 0;
+    unsigned short result;
+
+    for (sum = 0; len > 1; len -= 2)
+        sum += *buf++;
+    if (len == 1)
+        sum += *(unsigned char*)buf;
+
+    sum = (sum >> 16) + (sum & 0xFFFF);
+    sum += (sum >> 16);
+    result = (unsigned short)~sum;
+    return result;
+}
+
+void mod_Escaner::m_thCheckPortSYN(SOCKET sock_fd, char* datagram, in_addr server_ip, const char* client_ip, tcphdr* tcp_head, u_int target_port) {
+    //Enviar paquete y leer respuesta
+
+    pseudo_header psh;
+    sockaddr_in ip_dest;
+    target_header target;
+
+    target.target_ip = server_ip;
+    target.target_port = target_port;
+
+    
+    ip_dest.sin_family = AF_INET;
+    ip_dest.sin_addr.s_addr = server_ip.s_addr;
+
+    //Cabecera TCP
+    tcp_head->dest = htons(target_port);
+    tcp_head->check = 0;
+
+    //Pseaudo header for checksum
+    psh.source_addr = inet_addr(client_ip);
+    psh.dest_addr = ip_dest.sin_addr.s_addr;
+    psh.plc = 0;
+    psh.prt = IPPROTO_TCP;
+    psh.tcp_len = htons(sizeof(tcphdr));
+
+    memcpy(&psh.tcp, tcp_head, sizeof(tcphdr));
+    tcp_head->check = this->checksum((unsigned short*)&psh, sizeof(pseudo_header));
+
+    if (sendto(sock_fd, datagram, sizeof(iphdr) + sizeof(tcphdr), 0, (sockaddr*)&ip_dest, sizeof(ip_dest)) < 0) {
+        _DBG_("[X] sendto error:", WSAGetLastError());
+        return;
+    }
+
+    //LEER RESPUESTA
+    SOCKET sock_raw;
+    int saddr_size, data_size;
+
+    struct sockaddr saddr;
+    //std::vector<char> buf(BUF_SIZE);
+    std::vector<char> buf(BUF_SIZE);
+
+    sock_raw = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
+    if (sock_raw == INVALID_SOCKET) {
+        _DBG_("Error creando el socket raw", WSAGetLastError());
+        return;
+    }
+
+    saddr_size = sizeof(saddr);
+
+    data_size = recvfrom(sock_raw, buf.data(), BUF_SIZE, 0, (struct sockaddr*)&saddr, (socklen_t*)&saddr_size);
+    if (data_size < 0) {
+        _DBG_("Error recibiendo paquetes", WSAGetLastError());
+        return;
+    }
+    __DBG_("DATA...");
+
+    iphdr* ip_head = (struct iphdr*)buf.data();
+    sockaddr_in source;
+    
+    unsigned short ip_head_len = ip_head->ihl * 4;
+    tcphdr* tcp_head2 = (tcphdr*)(buf.data() + ip_head_len);
+    
+    memset(&source, 0, sizeof(source));
+    source.sin_addr.s_addr = ip_head->saddr;
+
+    if (ip_head->protocol == IPPROTO_TCP) {
+        if (tcp_head2->syn == 1 && tcp_head2->ack == 1 && source.sin_addr.s_addr == server_ip.s_addr) {
+            //Puerto abiero
+            this->m_AddEntryPort(target_port);
+            _DBG_("PUERTO ABIERTO: ", target_port);
+        }
     }
 }

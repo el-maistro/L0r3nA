@@ -2,7 +2,7 @@
 #include "cliente.hpp"
 #include "misc.hpp"
 
-#include "mod_info.hpp"
+#include "mod_escaner.hpp"
 
 Cliente* cCliente;
 

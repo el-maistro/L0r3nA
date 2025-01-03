@@ -109,11 +109,11 @@ MyFrame::MyFrame()
     this->m_LPanel->SetBackgroundColour(wxColor(255, 0, 0));
 #endif
 
-   /* SOCKET nsocket = INVALID_SOCKET;
-    std::string strip = "127.0.0.1";
-    std::string title_ = "Random";
-    FrameCliente* nframe = new FrameCliente(title_, nsocket, strip);
-    nframe->Show(true);*/
+    //SOCKET nsocket = INVALID_SOCKET;
+    //std::string strip = "127.0.0.1";
+    //std::string title_ = "Random";
+    //FrameCliente* nframe = new FrameCliente(title_, nsocket, strip);
+    //nframe->Show(true);
 }
 
 void MyFrame::OnCryptDB(wxCommandEvent& event) {

@@ -23,6 +23,8 @@ class panelEscaner : public wxPanel {
 	private:
 		wxDataViewColumn* m_col;
 		wxTextCtrl* txtHostBase = nullptr;
+		wxTextCtrl* txtPortFrom = nullptr;
+		wxTextCtrl* txtPortTo   = nullptr;
 		wxListCtrl* list_ctrl   = nullptr;
 		wxComboBox* cmb_Subnet  = nullptr;
 		wxComboBox* cmb_Tipo    = nullptr;

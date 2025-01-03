@@ -17,13 +17,17 @@ panelEscaner::panelEscaner(wxWindow* pParent, SOCKET _sck)
 	wxStaticText* lblEscaner = new wxStaticText(this, wxID_ANY, "Tipo escaneo:");
 	
 	this->txtHostBase = new wxTextCtrl(this, wxID_ANY);
+	this->txtPortFrom = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(50, 25));
+	this->txtPortTo = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(50, 25));
+
 
 	wxArrayString arrSubnets;
 	for (int i = 1; i <= 24; i++) {
 		arrSubnets.push_back("/" + std::to_string(i));
 	}
+	arrSubnets.push_back(" ");
 
-	this->cmb_Subnet = new wxComboBox(this, wxID_ANY, "/24", wxDefaultPosition, wxDefaultSize, arrSubnets);
+	this->cmb_Subnet = new wxComboBox(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, arrSubnets, wxCB_READONLY);
 
 	arrSubnets.Clear();
 
@@ -33,7 +37,7 @@ panelEscaner::panelEscaner(wxWindow* pParent, SOCKET _sck)
 	arrSubnets.push_back("Full (SYN)");
 	arrSubnets.push_back("Full (SCK)");
 
-	this->cmb_Tipo = new wxComboBox(this, wxID_ANY, "Ping", wxDefaultPosition, wxDefaultSize, arrSubnets);
+	this->cmb_Tipo = new wxComboBox(this, wxID_ANY, "Ping", wxDefaultPosition, wxDefaultSize, arrSubnets, wxCB_READONLY);
 
 	wxButton* btnScan = new wxButton(this, EnumEscanerIDS::BTN_Scan, ">>>");
 
@@ -44,6 +48,11 @@ panelEscaner::panelEscaner(wxWindow* pParent, SOCKET _sck)
 	controles_up->Add(this->cmb_Subnet);
 	controles_up->Add(lblEscaner);
 	controles_up->Add(this->cmb_Tipo);
+	controles_up->AddSpacer(10);
+	controles_up->Add(new wxStaticText(this, wxID_ANY, "Rango puertos:"));
+	controles_up->Add(this->txtPortFrom);
+	controles_up->Add(new wxStaticText(this, wxID_ANY, "-"));
+	controles_up->Add(this->txtPortTo);
 	controles_up->Add(btnScan);
 
 	this->CrearListView();
@@ -111,8 +120,12 @@ void panelEscaner::OnScan(wxCommandEvent& event) {
 
 	int iComando = 0;
 
+	wxString strFrom = this->txtPortFrom->GetValue() != "" ? this->txtPortFrom->GetValue() : "1";
+	wxString strTo = this->txtPortTo->GetValue() != "" ? this->txtPortTo->GetValue() : "65535";
+
 	wxString strHostBase = this->txtHostBase->GetValue();
-	strHostBase += this->cmb_Subnet->GetValue();
+	strHostBase += this->cmb_Subnet->GetValue() + "|";
+	strHostBase += strFrom + "|" + strTo;
 
 	int iTipoEscaner = this->cmb_Tipo->GetSelection();
 

@@ -922,16 +922,21 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         if (!this->mod_Scan) {
             this->mod_Scan = new mod_Escaner();
         }
-        bool isFullScan = (iComando == EnumComandos::Net_Scan_Full_Sck || iComando == EnumComandos::Net_Scan_Full_Syn) ? true : false;
-        int iTipoEscaner = iComando == EnumComandos::Net_Scan_Sck ? TipoEscanerPuerto::SCK : TipoEscanerPuerto::SYN;
+        std::vector<std::string> vcData = strSplit(std::string(paquete.cBuffer.data()), "|", 3);
+        if (vcData.size() == 3) {
+            bool isFullScan = (iComando == EnumComandos::Net_Scan_Full_Sck || iComando == EnumComandos::Net_Scan_Full_Syn) ? true : false;
+            int iTipoEscaner = iComando == EnumComandos::Net_Scan_Sck ? TipoEscanerPuerto::SCK : TipoEscanerPuerto::SYN;
+            int iPuertoI = atoi(vcData[1].c_str());
+            int iPuertoF = atoi(vcData[2].c_str());
 
-        std::string strPaquete = "";
-        for (Host_Entry& host : this->mod_Scan->m_Escanear(paquete.cBuffer.data(), isFullScan, true, iTipoEscaner)) {
-            strPaquete += host.strip + "|" + host.strmac + "|" + host.strhostname + "|" + host.strports + "<||>";
+            std::string strPaquete = "";
+            for (Host_Entry& host : this->mod_Scan->m_Escanear(vcData[0].c_str(), isFullScan, true, iTipoEscaner, iPuertoI, iPuertoF)) {
+                strPaquete += host.strip + "|" + host.strmac + "|" + host.strhostname + "|" + host.strports + "<||>";
+            }
+            strPaquete = strPaquete.substr(0, strPaquete.size() - 4);
+
+            this->cChunkSend(this->sckSocket, strPaquete.c_str(), strPaquete.size(), 0, false, nullptr, iComando);
         }
-        strPaquete = strPaquete.substr(0, strPaquete.size() - 4);
-
-        this->cChunkSend(this->sckSocket, strPaquete.c_str(), strPaquete.size(), 0, false, nullptr, iComando);
         return;
     }
     
