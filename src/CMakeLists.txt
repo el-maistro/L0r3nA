@@ -30,6 +30,7 @@ set(SRCS main.cpp
          panel_usuarios.cpp
          panel_reverse_proxy.cpp
          panel_escaner.cpp
+         panel_fun.cpp
          frame_crypt_db.cpp
          aes256/aes256.cpp
          notify.cpp

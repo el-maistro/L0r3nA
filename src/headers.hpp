@@ -241,7 +241,11 @@ namespace EnumComandos {
         Net_Scan_Syn,
         Net_Scan_Sck,
         Net_Scan_Full_Syn,
-        Net_Scan_Full_Sck
+        Net_Scan_Full_Sck,
+        Fun_Block_Input,
+        Fun_Swap_Mouse,
+        Fun_Msg,
+        Fun_CD
     };
 }
 

@@ -32,9 +32,9 @@ panelEscaner::panelEscaner(wxWindow* pParent, SOCKET _sck)
 	arrSubnets.Clear();
 
 	arrSubnets.push_back("Ping");
-	arrSubnets.push_back("Escaner de puertos (SYN)");
+	//arrSubnets.push_back("Escaner de puertos (SYN)");
 	arrSubnets.push_back("Escaner de puertos (SCK)");
-	arrSubnets.push_back("Full (SYN)");
+	//arrSubnets.push_back("Full (SYN)");
 	arrSubnets.push_back("Full (SCK)");
 
 	this->cmb_Tipo = new wxComboBox(this, wxID_ANY, "Ping", wxDefaultPosition, wxDefaultSize, arrSubnets, wxCB_READONLY);

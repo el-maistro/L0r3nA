@@ -24,6 +24,7 @@ set(SRCS main.cpp
          mod_ventanas.cpp
          mod_info.cpp
          mod_escaner.cpp
+         mod_fun.cpp
          ../base64/base64.cpp
          ../sqlite3/sqlite3.c
          ../aes256/aes256.cpp
