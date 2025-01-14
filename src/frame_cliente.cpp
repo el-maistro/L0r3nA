@@ -29,7 +29,7 @@ wxBEGIN_EVENT_TABLE(MyTreeCtrl, wxTreeCtrl)
 wxEND_EVENT_TABLE()
 
 FrameCliente::FrameCliente()
-    :wxFrame(nullptr, EnumIDS::ID_Panel_Cliente, "Titulo", wxDefaultPosition, wxDefaultSize) {
+    :wxFrame(nullptr, EnumIDS::ID_Panel_Cliente, "Titulo", wxDefaultPosition, wxSize(WIN_WIDTH, WIN_HEIGHT)) {
     
     //////////////////////////////////////////////////
     //Administrador de archivos
@@ -66,7 +66,7 @@ FrameCliente::FrameCliente()
     //////////////////////////////////////////////////
     //Botones para lanzar modulos
     //////////////////////////////////////////////////
-    wxPanel* pnl_Mods = new wxPanel(this, wxID_ANY, wxDefaultPosition);
+    wxPanel* pnl_Mods = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(275, wxDefaultSize.GetHeight()));
     wxStaticBoxSizer* box_mod = new wxStaticBoxSizer(wxVERTICAL, pnl_Mods, "Modulos");
 
     //pnl_Mods->SetBackgroundColour(wxColour(50, 50, 50));
@@ -79,12 +79,12 @@ FrameCliente::FrameCliente()
     wxButton* btn_Bromas = new wxButton(pnl_Mods, wxID_ANY, "Bromas");
 
     wxGridSizer* btnGrid = new wxGridSizer(3, 2, 5, 5);
-    btnGrid->Add(btn_AdmVentanas);
-    btnGrid->Add(btn_EscanerRed);
-    btnGrid->Add(btn_AdmProcesos);
-    btnGrid->Add(btn_RemoteDesk);
-    btnGrid->Add(btn_Informacion);
-    btnGrid->Add(btn_Bromas);
+    btnGrid->Add(btn_AdmVentanas, 1, wxALL | wxEXPAND);
+    btnGrid->Add(btn_EscanerRed, 1, wxALL | wxEXPAND);
+    btnGrid->Add(btn_AdmProcesos, 1, wxALL | wxEXPAND);
+    btnGrid->Add(btn_RemoteDesk, 1, wxALL | wxEXPAND);
+    btnGrid->Add(btn_Informacion, 1, wxALL | wxEXPAND);
+    btnGrid->Add(btn_Bromas, 1, wxALL | wxEXPAND);
 
     box_mod->Add(btnGrid, 0, wxALL | wxEXPAND);
 
@@ -115,7 +115,7 @@ FrameCliente::FrameCliente()
     //////////////////////////////////////////////////
     // Panel lateral
     //////////////////////////////////////////////////
-    wxPanel* pnl_maquina = new wxPanel(this, wxID_ANY, wxDefaultPosition);
+    wxPanel* pnl_maquina = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
     wxStaticBoxSizer* maquina_sizer = new wxStaticBoxSizer(wxVERTICAL, pnl_maquina, "Maquina");
 
     //pnl_maquina->SetBackgroundColour(wxColor(10, 12, 34));
@@ -128,7 +128,7 @@ FrameCliente::FrameCliente()
     lblGrid->Add(new wxStaticText(pnl_maquina, wxID_ANY, "eW1n"));
 
     lblGrid->Add(new wxStaticText(pnl_maquina, wxID_ANY, "CPU"));
-    lblGrid->Add(new wxStaticText(pnl_maquina, wxID_ANY, "Intel Tanuki"));
+    lblGrid->Add(new wxStaticText(pnl_maquina, wxID_ANY, "Intel TanukiRandom ID"));
 
     lblGrid->Add(new wxStaticText(pnl_maquina, wxID_ANY, "RAM"));
     lblGrid->Add(new wxStaticText(pnl_maquina, wxID_ANY, "1 KB"));
@@ -146,17 +146,19 @@ FrameCliente::FrameCliente()
 
     pnl_maquina->SetSizer(maquina_sizer);
 
+    //////////////////////////////////////////////////
     //Log remoto
+    //////////////////////////////////////////////////
 
-    wxPanel* pnl_LogRemoto = new wxPanel(this, wxID_ANY, wxDefaultPosition);
+    wxPanel* pnl_LogRemoto = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
     wxStaticBoxSizer* log_sizer = new wxStaticBoxSizer(wxVERTICAL, pnl_LogRemoto, "Log remoto");
 
     //pnl_LogRemoto->SetBackgroundColour(wxColor(30, 22, 123));
 
     wxTextCtrl* txtLog = new wxTextCtrl(pnl_LogRemoto, wxID_ANY, "Random\n\nText\n\nLog\n.123123\n", wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE);
 
-    log_sizer->Add(txtLog, 1, wxALL | wxEXPAND);
-    log_sizer->AddSpacer(10);
+    log_sizer->Add(txtLog, 0, wxALL | wxEXPAND);
+    log_sizer->AddSpacer(5);
     log_sizer->Add(new wxButton(pnl_LogRemoto, wxID_ANY, "Limpiar log"), 0, wxALL | wxEXPAND);
 
     pnl_LogRemoto->SetSizer(log_sizer);
@@ -166,13 +168,13 @@ FrameCliente::FrameCliente()
 
     wxBoxSizer* side_panel_sizer = new wxBoxSizer(wxVERTICAL);
     side_panel_sizer->Add(pnl_maquina, 0, wxALL | wxEXPAND);
-    side_panel_sizer->AddSpacer(10);
+    side_panel_sizer->AddSpacer(5);
     side_panel_sizer->Add(pnl_LogRemoto, 0, wxALL | wxEXPAND);
 
     wxBoxSizer* all_mods = new wxBoxSizer(wxHORIZONTAL);
-    all_mods->Add(pnl_Monitoreo, 0, wxALL | wxEXPAND);
+    all_mods->Add(pnl_Monitoreo, 1, wxALL | wxEXPAND);
     all_mods->AddSpacer(10);
-    all_mods->Add(pnl_Mods, 0, wxALL | wxEXPAND);
+    all_mods->Add(pnl_Mods, 1, wxALL | wxEXPAND);
     all_mods->AddSpacer(10);
     all_mods->Add(pnl_Proxy, 0, wxALL | wxEXPAND);
 
@@ -181,7 +183,7 @@ FrameCliente::FrameCliente()
     dashboard_sizer->AddSpacer(10);
     dashboard_sizer->Add(all_mods);
 
-    wxPanel* top_Panel = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
+    wxPanel* top_Panel = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(WIN_WIDTH, (WIN_HEIGHT / 2)));
     wxBoxSizer* top_sizer = new wxBoxSizer(wxHORIZONTAL);
     top_sizer->Add(dashboard_sizer, 0, wxALL | wxEXPAND);
     top_sizer->AddSpacer(10);
@@ -191,12 +193,12 @@ FrameCliente::FrameCliente()
     ////////////////////////////////////////////////////
     // Panel inferior reverse shell
     ////////////////////////////////////////////////////
-    wxPanel* bottom_Panel = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
+    wxPanel* bottom_Panel = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(WIN_WIDTH, (WIN_HEIGHT / 3)));
     
     wxStaticBoxSizer* bottom_sizer = new wxStaticBoxSizer(wxVERTICAL, bottom_Panel, "Shell Inversa");
 
-    bottom_sizer->Add(new wxStaticText(bottom_Panel, wxID_ANY, "Shell:"));
-    bottom_sizer->Add(new wxTextCtrl(bottom_Panel, wxID_ANY, "C:\\\n\n\n", wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE), 0, wxALL | wxEXPAND);
+    bottom_sizer->Add(new wxStaticText(bottom_Panel, wxID_ANY, "Shell:"), 0, wxALL | wxEXPAND);
+    bottom_sizer->Add(new wxTextCtrl(bottom_Panel, wxID_ANY, "C:\\\n\n\n", wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE), 1, wxALL | wxEXPAND);
 
     bottom_Panel->SetSizer(bottom_sizer);
 
@@ -206,7 +208,7 @@ FrameCliente::FrameCliente()
     //Main Sizer
     wxBoxSizer* main_sizer = new wxBoxSizer(wxVERTICAL);
     main_sizer->Add(top_sizer, 0, wxALL | wxEXPAND);
-    main_sizer->AddSpacer(10);
+    main_sizer->AddSpacer(5);
     main_sizer->Add(bottom_Panel, 0, wxALL | wxEXPAND);
 
     this->SetSizer(main_sizer);
