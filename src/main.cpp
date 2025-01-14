@@ -115,6 +115,8 @@ MyFrame::MyFrame()
     //FrameCliente* nframe = new FrameCliente(title_, nsocket, strip);
     FrameCliente* nframe = new FrameCliente();
     nframe->Show(true);
+
+    nframe->SetFocus();
 }
 
 void MyFrame::OnCryptDB(wxCommandEvent& event) {
