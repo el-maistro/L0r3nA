@@ -28,6 +28,108 @@ wxBEGIN_EVENT_TABLE(MyTreeCtrl, wxTreeCtrl)
     EVT_TREE_ITEM_ACTIVATED(EnumIDS::TreeCtrl_ID, MyTreeCtrl::OnItemActivated)
 wxEND_EVENT_TABLE()
 
+FrameCliente::FrameCliente()
+    :wxFrame(nullptr, EnumIDS::ID_Panel_Cliente, "Titulo", wxDefaultPosition, wxDefaultSize) {
+    //Main Sizer
+    wxBoxSizer* main_sizer = new wxBoxSizer(wxVERTICAL);
+
+    //////////////////////////////////////////////////
+    //Administrador de archivos
+    //////////////////////////////////////////////////
+    wxPanel* pnl_AdminArchivos = new wxPanel(this, wxID_ANY, wxDefaultPosition);
+    wxStaticBoxSizer* box_admin = new wxStaticBoxSizer(wxVERTICAL, pnl_AdminArchivos, "Administrador de archivos");
+    
+    pnl_AdminArchivos->SetBackgroundColour(wxColour(200, 200, 200));
+    
+    pnl_AdminArchivos->SetSizer(box_admin);
+    //////////////////////////////////////////////////
+    //////////////////////////////////////////////////
+
+    
+    //////////////////////////////////////////////////
+    //Panel Monitoreo
+    //////////////////////////////////////////////////
+    wxPanel* pnl_Monitoreo = new wxPanel(this, wxID_ANY, wxDefaultPosition);
+    wxStaticBoxSizer* box_monitoreo = new wxStaticBoxSizer(wxVERTICAL, pnl_Monitoreo, "Monitoreo");
+
+    pnl_Monitoreo->SetBackgroundColour(wxColour(100, 100, 100));
+    
+    wxStaticText* lbl1 = new wxStaticText(pnl_Monitoreo, wxID_ANY, "Label");
+    wxButton* btn_1 = new wxButton(pnl_Monitoreo, wxID_ANY, "Test");
+
+    box_monitoreo->Add(lbl1, 0);
+    box_monitoreo->Add(btn_1, 0, wxALL | wxEXPAND);
+    pnl_Monitoreo->SetSizer(box_monitoreo);
+    //////////////////////////////////////////////////
+    //////////////////////////////////////////////////
+
+
+
+    //////////////////////////////////////////////////
+    //Botones para lanzar modulos
+    //////////////////////////////////////////////////
+    wxPanel* pnl_Mods = new wxPanel(this, wxID_ANY, wxDefaultPosition);
+    wxStaticBoxSizer* box_mod = new wxStaticBoxSizer(wxVERTICAL, pnl_Mods, "Modulos");
+
+    pnl_Mods->SetBackgroundColour(wxColour(50, 50, 50));
+
+    wxButton* btn_AdmVentanas = new wxButton(pnl_Mods, wxID_ANY, "Adm. Ventanas");
+    wxButton* btn_EscanerRed = new wxButton(pnl_Mods, wxID_ANY, "Escaner de Red");
+    wxButton* btn_AdmProcesos = new wxButton(pnl_Mods, wxID_ANY, "Adm. Procesos");
+    wxButton* btn_RemoteDesk = new wxButton(pnl_Mods, wxID_ANY, "Escritorio Remoto");
+    wxButton* btn_Informacion = new wxButton(pnl_Mods, wxID_ANY, "Informacion");
+    wxButton* btn_Bromas = new wxButton(pnl_Mods, wxID_ANY, "Bromas");
+
+    wxGridSizer* btnGrid = new wxGridSizer(3, 2, 1, 1);
+    btnGrid->Add(btn_AdmVentanas);
+    btnGrid->Add(btn_EscanerRed);
+    btnGrid->Add(btn_AdmProcesos);
+    btnGrid->Add(btn_RemoteDesk);
+    btnGrid->Add(btn_Informacion);
+    btnGrid->Add(btn_Bromas);
+
+    box_mod->Add(btnGrid, 1, wxALL | wxEXPAND);
+
+    pnl_Mods->SetSizer(box_mod);
+    //////////////////////////////////////////////////
+    //////////////////////////////////////////////////
+
+
+
+    //////////////////////////////////////////////////
+    //proxy inversa
+    //////////////////////////////////////////////////
+    wxPanel* pnl_Proxy = new wxPanel(this, wxID_ANY, wxDefaultPosition);
+    wxStaticBoxSizer* box_proxy = new wxStaticBoxSizer(wxVERTICAL, pnl_Proxy, "Proxy Inversa");
+
+    pnl_Proxy->SetBackgroundColour(wxColour(150, 150, 150));
+
+    box_proxy->Add(new wxStaticText(pnl_Proxy, wxID_ANY, "Puerto local"), 0, wxALL | wxEXPAND);
+    box_proxy->Add(new wxTextCtrl(pnl_Proxy, wxID_ANY, "8080"), 0, wxALL | wxEXPAND);
+    box_proxy->Add(new wxButton(pnl_Proxy, wxID_ANY, "Iniciar"), 0, wxALL | wxEXPAND);
+    box_proxy->Add(new wxButton(pnl_Proxy, wxID_ANY, "Detener"), 0, wxALL | wxEXPAND);
+
+    pnl_Proxy->SetSizer(box_proxy);
+    //////////////////////////////////////////////////
+    //////////////////////////////////////////////////
+
+
+    wxBoxSizer* dashboard_sizer = new wxBoxSizer(wxVERTICAL);
+    dashboard_sizer->Add(pnl_AdminArchivos, 0, wxALL | wxEXPAND);
+
+
+    wxBoxSizer* all_mods = new wxBoxSizer(wxHORIZONTAL);
+    all_mods->Add(pnl_Monitoreo, 0, wxALL | wxEXPAND);
+    all_mods->Add(pnl_Mods, 0, wxALL | wxEXPAND);
+    all_mods->Add(pnl_Proxy, 0, wxALL | wxEXPAND);
+    
+    main_sizer->Add(dashboard_sizer, 0, wxALL | wxEXPAND);
+    main_sizer->Add(all_mods, 0, wxALL | wxEXPAND);
+
+    this->SetSizer(main_sizer);
+}
+
+
 FrameCliente::FrameCliente(std::string strID, SOCKET sckID, std::string strIP)
     : wxFrame(nullptr, EnumIDS::ID_Panel_Cliente, ":v", wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE, strID.substr(0, strID.find('/'))) {
 
