@@ -29,7 +29,7 @@ wxBEGIN_EVENT_TABLE(MyTreeCtrl, wxTreeCtrl)
 wxEND_EVENT_TABLE()
 
 FrameCliente::FrameCliente()
-    :wxFrame(nullptr, EnumIDS::ID_Panel_Cliente, "Titulo", wxDefaultPosition, wxSize(WIN_WIDTH, WIN_HEIGHT)) {
+    :wxFrame(nullptr, EnumIDS::ID_Panel_Cliente, "Titulo", wxDefaultPosition, wxSize(WIN_WIDTH, WIN_HEIGHT), wxDEFAULT_FRAME_STYLE & ~(wxRESIZE_BORDER | wxMAXIMIZE_BOX)) {
     
     //////////////////////////////////////////////////
     //Administrador de archivos
@@ -115,12 +115,12 @@ FrameCliente::FrameCliente()
     //////////////////////////////////////////////////
     // Panel lateral
     //////////////////////////////////////////////////
-    wxPanel* pnl_maquina = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
+    wxPanel* pnl_maquina = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(wxDefaultSize.GetWidth(), 170));
     wxStaticBoxSizer* maquina_sizer = new wxStaticBoxSizer(wxVERTICAL, pnl_maquina, "Maquina");
 
     //pnl_maquina->SetBackgroundColour(wxColor(10, 12, 34));
 
-    wxGridSizer* lblGrid = new wxGridSizer(7, 2, 5, 5);
+    wxGridSizer* lblGrid = new wxGridSizer(7, 2, 1, 1);
     lblGrid->Add(new wxStaticText(pnl_maquina, wxID_ANY, "OS"));
     lblGrid->Add(new wxStaticText(pnl_maquina, wxID_ANY, "Windows"));
 
@@ -155,8 +155,8 @@ FrameCliente::FrameCliente()
 
     //pnl_LogRemoto->SetBackgroundColour(wxColor(30, 22, 123));
 
-    wxTextCtrl* txtLog = new wxTextCtrl(pnl_LogRemoto, wxID_ANY, "Random\n\nText\n\nLog\n.123123\n", wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE);
-
+    wxTextCtrl* txtLog = new wxTextCtrl(pnl_LogRemoto, wxID_ANY, "Happy Hacking!!!", wxDefaultPosition, wxSize(wxDefaultSize.GetWidth(), 150), wxTE_MULTILINE | wxTE_READONLY | wxTE_WORDWRAP);
+    
     log_sizer->Add(txtLog, 0, wxALL | wxEXPAND);
     log_sizer->AddSpacer(5);
     log_sizer->Add(new wxButton(pnl_LogRemoto, wxID_ANY, "Limpiar log"), 0, wxALL | wxEXPAND);

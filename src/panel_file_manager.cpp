@@ -27,8 +27,8 @@ wxBEGIN_EVENT_TABLE(ListCtrlManager, wxListCtrl)
 wxEND_EVENT_TABLE()
 
 panelFileManager::panelFileManager(wxWindow* pParent, SOCKET sck, std::string _strID, std::string _strIP) :
-	wxPanel(pParent, EnumIDS::ID_Panel_FM) {
-	this->SetBackgroundColour(wxColor(200, 200, 200));
+	wxPanel(pParent, EnumIDS::ID_Panel_FM, wxDefaultPosition, wxDefaultSize) {
+	this->SetBackgroundColour(wxColor(210, 100, 200));
 	
 	this->sckCliente = sck;
 	this->strID = _strID;
@@ -58,17 +58,19 @@ panelFileManager::panelFileManager(wxWindow* pParent, SOCKET sck, std::string _s
 
 	this->CrearLista();
 
-	this->p_RutaActual = new wxStaticText(this, EnumIDS::ID_Panel_FM_LblRuta, wxT("\\"), wxDefaultPosition, wxSize(FRAME_CLIENT_SIZE_WIDTH, 10));
+	this->p_RutaActual = new wxStaticText(this, EnumIDS::ID_Panel_FM_LblRuta, wxT("\\"), wxDefaultPosition, wxDefaultSize);
+	
+	wxBoxSizer* sizer2 = new wxBoxSizer(wxVERTICAL);
+	sizer2->Add(this->listManager, 1, wxEXPAND | wxALL);
+	sizer2->AddSpacer(5);
+	sizer2->Add(this->p_RutaActual, 0, wxEXPAND | wxALL);
 
 	wxBoxSizer* sizer = new wxBoxSizer(wxHORIZONTAL);
 	sizer->Add(this->p_ToolBar, 0, wxEXPAND | wxALL);
-	
-	wxBoxSizer* sizer2 = new wxBoxSizer(wxVERTICAL);
-	sizer2->Add(this->listManager, 1, wxEXPAND | wxALL, 1);
-	sizer2->Add(this->p_RutaActual, 0, wxEXPAND | wxALL, 1);
+	sizer->AddSpacer(5);
+	sizer->Add(sizer2, 1, wxEXPAND | wxALL);
 
-	sizer->Add(sizer2);
-	SetSizer(sizer);
+	this->SetSizer(sizer);
 
 }
 
@@ -138,6 +140,8 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 
 void panelFileManager::CrearLista() {
 	this->listManager = new ListCtrlManager(this, EnumIDS::ID_Panel_FM_List, wxDefaultPosition,  wxDefaultSize/*wxSize(FRAME_CLIENT_SIZE_WIDTH*3, FRAME_CLIENT_SIZE_WIDTH*3)*/, wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES, this->strID, this->strIP, this->sckCliente);
+	//Spining circle
+
 	this->listManager->m_indicator = new wxActivityIndicator(this->listManager, wxID_ANY, wxDefaultPosition, wxDefaultSize);
 	this->listManager->m_indicator->Show(false);
 }
@@ -650,6 +654,11 @@ void ListCtrlManager::ListarEquipo(const std::vector<std::string> vcDrives) {
 
 void ListCtrlManager::MostrarCarga() {
 	std::unique_lock<std::mutex> lock(this->mtx_carga);
+	wxSize list_size = this->GetSize();
+	wxSize objsize = this->m_indicator->GetSize();
+	wxPoint pos((list_size.GetWidth() / 2) - (objsize.GetWidth() /2), (list_size.GetHeight() / 2) - (objsize.GetHeight() / 2));
+
+	this->m_indicator->SetPosition(pos);
 	this->m_indicator->Show(true);
 	this->m_indicator->Start();
 }

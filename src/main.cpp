@@ -44,7 +44,7 @@ bool MyApp::OnInit(){
     wxImage::AddHandler(new wxPNGHandler);
 
     this->frame = DBG_NEW MyFrame();
-    this->frame->Show(true);
+    this->frame->Show(false);
 
     return true;
 }
