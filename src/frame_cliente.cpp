@@ -36,6 +36,8 @@ FrameCliente::FrameCliente()
     //////////////////////////////////////////////////
     wxPanel* pnl_AdminArchivos = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
     wxStaticBoxSizer* box_admin = new wxStaticBoxSizer(wxVERTICAL, pnl_AdminArchivos, "Administrador de archivos");
+
+    //pnl_AdminArchivos->SetBackgroundColour(wxColour(100, 100, 100));
     
     box_admin->Add(new panelFileManager(pnl_AdminArchivos, INVALID_SOCKET, "ID", "127.0.0.1"), 0, wxALL | wxEXPAND);
     
@@ -115,33 +117,91 @@ FrameCliente::FrameCliente()
     //////////////////////////////////////////////////
     // Panel lateral
     //////////////////////////////////////////////////
-    wxPanel* pnl_maquina = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(wxDefaultSize.GetWidth(), 170));
+    wxPanel* pnl_maquina = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(180, wxDefaultSize.GetHeight()));
     wxStaticBoxSizer* maquina_sizer = new wxStaticBoxSizer(wxVERTICAL, pnl_maquina, "Maquina");
+
+    wxImage imgCPU("./intel.png", wxBITMAP_TYPE_PNG);
+    wxBitmap bmpCPU;
+    if (imgCPU.IsOk()) {
+        imgCPU.Rescale(64, 64, wxIMAGE_QUALITY_HIGH);
+        bmpCPU = wxBitmap(imgCPU);
+    }
+
+    wxStaticBitmap* bmp = new wxStaticBitmap(pnl_maquina, wxID_ANY, bmpCPU);
 
     //pnl_maquina->SetBackgroundColour(wxColor(10, 12, 34));
 
-    wxGridSizer* lblGrid = new wxGridSizer(7, 2, 1, 1);
-    lblGrid->Add(new wxStaticText(pnl_maquina, wxID_ANY, "OS"));
-    lblGrid->Add(new wxStaticText(pnl_maquina, wxID_ANY, "Windows"));
+    wxFlexGridSizer* lblGrid = new wxFlexGridSizer(7, 2, 1, 1);
 
-    lblGrid->Add(new wxStaticText(pnl_maquina, wxID_ANY, "Usuario"));
-    lblGrid->Add(new wxStaticText(pnl_maquina, wxID_ANY, "eW1n"));
+    wxFont font(7, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_THIN);
+    wxFont font2(7, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_SEMIBOLD);
 
-    lblGrid->Add(new wxStaticText(pnl_maquina, wxID_ANY, "CPU"));
-    lblGrid->Add(new wxStaticText(pnl_maquina, wxID_ANY, "Intel TanukiRandom ID"));
 
-    lblGrid->Add(new wxStaticText(pnl_maquina, wxID_ANY, "RAM"));
-    lblGrid->Add(new wxStaticText(pnl_maquina, wxID_ANY, "1 KB"));
+    wxStaticText* lblOS = new wxStaticText(pnl_maquina, wxID_ANY, "Windows", wxDefaultPosition, wxDefaultSize);
+    lblOS->SetFont(font);
 
-    lblGrid->Add(new wxStaticText(pnl_maquina, wxID_ANY, "IP Local"));
-    lblGrid->Add(new wxStaticText(pnl_maquina, wxID_ANY, "192.168.0.2"));
+    wxStaticText* lblUser = new wxStaticText(pnl_maquina, wxID_ANY, "eW1n", wxDefaultPosition, wxDefaultSize);
+    lblUser->SetFont(font);
 
-    lblGrid->Add(new wxStaticText(pnl_maquina, wxID_ANY, "IP Externa"));
-    lblGrid->Add(new wxStaticText(pnl_maquina, wxID_ANY, "187.2.36.98"));
 
-    lblGrid->Add(new wxStaticText(pnl_maquina, wxID_ANY, "Estado"));
-    lblGrid->Add(new wxStaticText(pnl_maquina, wxID_ANY, "Conectado"));
+    wxStaticText* lblCPU = new wxStaticText(pnl_maquina, wxID_ANY, "Intel Tanuki", wxDefaultPosition, wxDefaultSize);
+    lblCPU->SetFont(font);
 
+    wxStaticText* lblRam = new wxStaticText(pnl_maquina, wxID_ANY, "8 GB", wxDefaultPosition, wxDefaultSize);
+    lblRam->SetFont(font);
+
+    wxStaticText* lblIPlocal = new wxStaticText(pnl_maquina, wxID_ANY, "192.168.0.2", wxDefaultPosition, wxDefaultSize);
+    lblIPlocal->SetFont(font);
+
+    wxStaticText* lblIPExterna = new wxStaticText(pnl_maquina, wxID_ANY, "172.92.65.88", wxDefaultPosition, wxDefaultSize);
+    lblIPExterna->SetFont(font);
+
+    wxStaticText* lblestado = new wxStaticText(pnl_maquina, wxID_ANY, "Conectado", wxDefaultPosition, wxDefaultSize);
+    lblestado->SetFont(font);
+
+    wxStaticText* _lblOS = new wxStaticText(pnl_maquina, wxID_ANY, "OS:", wxDefaultPosition, wxDefaultSize);
+    _lblOS->SetFont(font2);
+
+    wxStaticText* _lblUser = new wxStaticText(pnl_maquina, wxID_ANY, "Usuario:", wxDefaultPosition, wxDefaultSize);
+    _lblUser->SetFont(font2);
+
+    wxStaticText* _lblCPU = new wxStaticText(pnl_maquina, wxID_ANY, "Procesador:", wxDefaultPosition, wxDefaultSize);
+    _lblCPU->SetFont(font2);
+
+    wxStaticText* _lblRam = new wxStaticText(pnl_maquina, wxID_ANY, "RAM:", wxDefaultPosition, wxDefaultSize);
+    _lblRam->SetFont(font2);
+
+    wxStaticText* _lblIPlocal = new wxStaticText(pnl_maquina, wxID_ANY, "IP Interna:", wxDefaultPosition, wxDefaultSize);
+    _lblIPlocal->SetFont(font2);
+
+    wxStaticText* _lblIPExterna = new wxStaticText(pnl_maquina, wxID_ANY, "IP Externa:", wxDefaultPosition, wxDefaultSize);
+    _lblIPExterna->SetFont(font2);
+
+    wxStaticText* _lblestado = new wxStaticText(pnl_maquina, wxID_ANY, "Estado:", wxDefaultPosition, wxDefaultSize);
+    _lblestado->SetFont(font2);
+
+    lblGrid->Add(_lblOS, 0);
+    lblGrid->Add(lblOS, 1, wxALL | wxEXPAND);
+
+    lblGrid->Add(_lblUser, 0);
+    lblGrid->Add(lblUser, 0, wxALL | wxEXPAND);
+
+    lblGrid->Add(_lblCPU, 0);
+    lblGrid->Add(lblCPU, 1, wxALL | wxEXPAND);
+
+    lblGrid->Add(_lblRam, 0);
+    lblGrid->Add(lblRam, 1, wxALL | wxEXPAND);
+
+    lblGrid->Add(_lblIPlocal, 0);
+    lblGrid->Add(lblIPlocal, 1, wxALL | wxEXPAND);
+
+    lblGrid->Add(_lblIPExterna, 0);
+    lblGrid->Add(lblIPExterna, 1, wxALL | wxEXPAND);
+
+    lblGrid->Add(_lblestado, 0);
+    lblGrid->Add(lblestado, 1, wxALL | wxEXPAND);
+
+    maquina_sizer->Add(bmp, 0, wxALIGN_CENTER);
     maquina_sizer->Add(lblGrid, 0, wxALL | wxEXPAND);
 
     pnl_maquina->SetSizer(maquina_sizer);
@@ -168,7 +228,7 @@ FrameCliente::FrameCliente()
 
     wxBoxSizer* side_panel_sizer = new wxBoxSizer(wxVERTICAL);
     side_panel_sizer->Add(pnl_maquina, 0, wxALL | wxEXPAND);
-    side_panel_sizer->AddSpacer(5);
+    //side_panel_sizer->AddSpacer(5);
     side_panel_sizer->Add(pnl_LogRemoto, 0, wxALL | wxEXPAND);
 
     wxBoxSizer* all_mods = new wxBoxSizer(wxHORIZONTAL);
@@ -197,7 +257,10 @@ FrameCliente::FrameCliente()
     
     wxStaticBoxSizer* bottom_sizer = new wxStaticBoxSizer(wxVERTICAL, bottom_Panel, "Shell Inversa");
 
-    bottom_sizer->Add(new wxStaticText(bottom_Panel, wxID_ANY, "Shell:"), 0, wxALL | wxEXPAND);
+    wxBoxSizer* controls_sizer = new wxBoxSizer(wxHORIZONTAL);
+    wxStaticText* lblShell = new wxStaticText(bottom_Panel, wxID_ANY, "Shell:");
+
+    bottom_sizer->Add(controls_sizer, 0, wxALL | wxEXPAND);
     bottom_sizer->Add(new wxTextCtrl(bottom_Panel, wxID_ANY, "C:\\\n\n\n", wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE), 1, wxALL | wxEXPAND);
 
     bottom_Panel->SetSizer(bottom_sizer);
