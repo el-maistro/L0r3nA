@@ -4,12 +4,12 @@
 
 extern Servidor* p_Servidor;
 
-wxBEGIN_EVENT_TABLE(panelInfoChrome, wxPanel)
+wxBEGIN_EVENT_TABLE(panelInfoChrome, wxFrame)
 	EVT_BUTTON(wxID_ANY, panelInfoChrome::OnProcesarBoton)
 wxEND_EVENT_TABLE()
 
 panelInfoChrome::panelInfoChrome(wxWindow* pParent, SOCKET sck_socket)
-	: wxPanel(pParent, EnumIDS::ID_Panel_Info) {
+	: wxFrame(pParent, EnumIDS::ID_Panel_Info, "Recoleccion de informacion [Google Chrome]") {
 	
 	this->sckSocket = sck_socket;
 

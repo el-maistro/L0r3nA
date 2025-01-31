@@ -11,7 +11,7 @@ wxBEGIN_EVENT_TABLE(ListWmManager, wxListCtrl)
 wxEND_EVENT_TABLE()
 
 panelWManager::panelWManager(wxWindow* pParent, SOCKET sckCliente)
-	: wxPanel(pParent, EnumIDS::ID_Panel_WM){
+	: wxFrame(pParent, EnumIDS::ID_Panel_WM, "Administrador de Ventanas") {
 	this->sckCliente = sckCliente;
 	this->m_CrearListView();
 }

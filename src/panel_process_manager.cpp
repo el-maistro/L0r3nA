@@ -13,7 +13,7 @@ wxBEGIN_EVENT_TABLE(ListCtrlManager2, wxListCtrl)
 wxEND_EVENT_TABLE()
 
 panelProcessManager::panelProcessManager(wxWindow* pParent, SOCKET sck) :
-	wxPanel(pParent, EnumIDS::ID_PM_Panel) {
+	wxFrame(pParent, EnumIDS::ID_PM_Panel, "Administrador de procesos") {
 
 	this->sckCliente = sck;
 	

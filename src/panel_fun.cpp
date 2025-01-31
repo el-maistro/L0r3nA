@@ -3,13 +3,13 @@
 
 extern Servidor* p_Servidor;
 
-wxBEGIN_EVENT_TABLE(panelFun, wxPanel)
+wxBEGIN_EVENT_TABLE(panelFun, wxFrame)
 	EVT_BUTTON(EnumFunIDS::ID_BTN_Msg, panelFun::OnMsg)
 	EVT_TOGGLEBUTTON(wxID_ANY, panelFun::OnToggle)
 wxEND_EVENT_TABLE()
 
 panelFun::panelFun(wxWindow* pParent, SOCKET _socket)
-	:wxPanel(pParent, EnumFunIDS::ID_Main_Window) {
+	:wxFrame(pParent, EnumFunIDS::ID_Main_Window, "Kaizer mode") {
 	this->sckSocket = _socket;
 
 	//Mouse y teclado

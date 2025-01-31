@@ -4,13 +4,13 @@
 
 extern Servidor* p_Servidor;
 
-wxBEGIN_EVENT_TABLE(panelEscaner, wxPanel)
+wxBEGIN_EVENT_TABLE(panelEscaner, wxFrame)
 	EVT_BUTTON(wxID_ANY, panelEscaner::OnScan)
 wxEND_EVENT_TABLE()
 
 
 panelEscaner::panelEscaner(wxWindow* pParent, SOCKET _sck)
-	: wxPanel(pParent, EnumEscanerIDS::Main_Window) {
+	: wxFrame(pParent, EnumEscanerIDS::Main_Window, "Escaner de red") {
 	this->sckSocket = _sck;
 
 	wxStaticText* lblHost = new wxStaticText(this, wxID_ANY, "Host(s):");

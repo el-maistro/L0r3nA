@@ -5,12 +5,12 @@
 
 extern Servidor* p_Servidor;
 
-wxBEGIN_EVENT_TABLE(panelCamara, wxPanel)
+wxBEGIN_EVENT_TABLE(panelCamara, wxFrame)
 	EVT_BUTTON(EnumCamMenu::ID_Refrescar_Lista, panelCamara::OnRefrescarLista)
 	EVT_BUTTON(EnumCamMenu::ID_Spawn_Frame, panelCamara::OnManageCam)
 wxEND_EVENT_TABLE()
 
-wxBEGIN_EVENT_TABLE(panelPictureBox, wxPanel)
+wxBEGIN_EVENT_TABLE(panelPictureBox, wxFrame)
 	EVT_CLOSE(panelPictureBox::OnClose)
 	EVT_MENU(EnumCamMenu::ID_SingleShot, panelPictureBox::OnSingleShot)
 	EVT_MENU(EnumCamMenu::ID_Iniciar_Live, panelPictureBox::OnLive)
@@ -118,7 +118,7 @@ void panelPictureBox::OnGuardarFrame(wxCommandEvent& event) {
 }
 
 panelCamara::panelCamara(wxWindow* pParent, SOCKET sck):
-	wxPanel(pParent, EnumCamMenu::ID_Main_Panel){
+	wxFrame(pParent, EnumCamMenu::ID_Main_Panel, "Camara") {
 
 	this->sckCliente = sck;
 

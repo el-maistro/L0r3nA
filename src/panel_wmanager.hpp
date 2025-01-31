@@ -25,7 +25,7 @@ class ListWmManager : public wxListCtrl {
 		wxDECLARE_EVENT_TABLE();
 };
 
-class panelWManager : public wxPanel {
+class panelWManager : public wxFrame {
 	public:
 		panelWManager(wxWindow* pParent, SOCKET sckCliente);
 

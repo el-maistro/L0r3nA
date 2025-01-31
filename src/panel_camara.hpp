@@ -47,7 +47,7 @@ class panelPictureBox : public wxFrame {
 };
 
 
-class panelCamara : public wxPanel{
+class panelCamara : public wxFrame {
 	public:
 		panelCamara(wxWindow* pParent, SOCKET sck);
 

@@ -106,9 +106,6 @@ void Cliente_Handler::Command_Handler(){
         Si no recibio nada y el error no es timeout o se cerro repentinamente*/
         if ((iTempRecibido == SOCKET_ERROR && (error_code != WSAETIMEDOUT || error_code != WSAEWOULDBLOCK)) ||
             error_code == WSAECONNRESET) {
-            if (this->m_isFrameVisible()) {
-                this->n_Frame->SetTitle("DESCONECTADO...");
-            }
             std::unique_lock<std::mutex> lock(this->mt_Running);
             this->iRecibido = WSA_FUNADO;
             break;
@@ -656,7 +653,8 @@ TransferStatus Cliente_Handler::Transfer_Get(int index) {
 //Crear el frame principal para interactuar con el cliente
 void Cliente_Handler::CrearFrame(const std::string strTitle,const std::string strID) {
     this->m_setFrameVisible(true);
-    this->n_Frame = DBG_NEW FrameCliente(strTitle, this->p_Cliente._sckCliente, this->p_Cliente._strIp);
+    //this->n_Frame = DBG_NEW FrameCliente(strTitle, this->p_Cliente._sckCliente, this->p_Cliente._strIp);
+    this->n_Frame = DBG_NEW FrameCliente(this->p_Cliente._sckCliente, strTitle, this->p_Cliente._strIp);
     this->n_Frame->Show(true);
 }
 

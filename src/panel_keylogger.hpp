@@ -3,7 +3,7 @@
 
 #include "headers.hpp"
 
-class panelKeylogger : public wxPanel {
+class panelKeylogger : public wxFrame {
 	public:
 		panelKeylogger(wxWindow* pParent, SOCKET sck);
 		

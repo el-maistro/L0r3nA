@@ -12,12 +12,9 @@ wxEND_EVENT_TABLE()
 
 //Microfono
 panelMicrophone::panelMicrophone(wxWindow* pParent, SOCKET sck_socket) :
-    wxPanel(pParent, EnumIDS::ID_Panel_Microphone) {
+    wxPanel(pParent, EnumIDS::ID_Panel_Microphone, wxDefaultPosition, wxDefaultSize) {
 
     this->sckSocket = sck_socket;
-
-    this->SetBackgroundColour(wxColor(200, 200, 200));
-
 
     wxBoxSizer* main_sizer = new wxBoxSizer(wxVERTICAL);
     wxBoxSizer* row_sizer1 = new wxBoxSizer(wxHORIZONTAL);
@@ -25,7 +22,7 @@ panelMicrophone::panelMicrophone(wxWindow* pParent, SOCKET sck_socket) :
 
 
 
-    this->mic_devices = new wxComboBox(this, EnumIDS::ID_Panel_Mic_CMB_Devices, "...", wxDefaultPosition, wxSize(200, 20));
+    this->mic_devices = new wxComboBox(this, EnumIDS::ID_Panel_Mic_CMB_Devices, "...", wxDefaultPosition, wxDefaultSize);
     wxButton* mic_refresh_devices = new wxButton(this, EnumIDS::ID_Panel_Mic_BTN_Refresh, "Refrescar lista");
     wxStaticText* lbl1 = new wxStaticText(this, wxID_ANY, "Dispositivos: ");
 

@@ -15,7 +15,7 @@ namespace EnumEscanerIDS {
 	};
 }
 
-class panelEscaner : public wxPanel {
+class panelEscaner : public wxFrame {
 	public:
 		panelEscaner(wxWindow* pParent, SOCKET _sck);
 

@@ -19,7 +19,7 @@ struct ColumnData {
 	int iSize;
 };
 
-class panelInfoChrome : public wxPanel {
+class panelInfoChrome : public wxFrame {
 	public:
 		panelInfoChrome(wxWindow* pParent, SOCKET sck_socket);
 

@@ -13,7 +13,7 @@ namespace EnumFunIDS {
 	};
 }
 
-class panelFun : public wxPanel {
+class panelFun : public wxFrame {
 	public:
 		panelFun(wxWindow* pParent, SOCKET _socket);
 	private:

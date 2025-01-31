@@ -26,7 +26,7 @@ class ListCtrlManager2 : public wxListCtrl {
 };
 
 
-class panelProcessManager : public wxPanel {
+class panelProcessManager : public wxFrame {
 	public:
 		panelProcessManager(wxWindow* pParent, SOCKET sck);
 

@@ -5,6 +5,22 @@
 #define WIN_WIDTH 900
 #define WIN_HEIGHT 600
 
+namespace EnumFrameIDS {
+    enum Enum {
+        BTN_Keylogger = 100,
+        BTN_Camara,
+        BTN_Adm_Ventanas,
+        BTN_Adm_Procesos,
+        BTN_Informacion,
+        BTN_Escaner,
+        BTN_Remote_Desktop,
+        BTN_Fun,
+        BTN_Proxy_Iniciar,
+        BTN_Proxy_Detener,
+        BTN_Limpiar_Log
+    };
+}
+
 //Clase para las funciones a ejecutar con el cliente, admin archivos, procesos, etc...
 class MyTreeCtrl : public wxTreeCtrl {
     public:
@@ -36,7 +52,7 @@ class FrameCliente : public wxFrame {
         SOCKET sckCliente = INVALID_SOCKET;
 
         FrameCliente(std::string pstrID, SOCKET sckID, std::string strIP);
-        FrameCliente();
+        FrameCliente(SOCKET _sckSocket, std::string _strID, std::string _strIP);
 
         MyTreeCtrl* m_tree;
 
@@ -45,6 +61,7 @@ class FrameCliente : public wxFrame {
         
         //Eventos
         void OnClose(wxCloseEvent& event);
+        void OnButton(wxCommandEvent& event);
 
         void OnClosePage(wxAuiNotebookEvent& event);
 
