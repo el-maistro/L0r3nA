@@ -17,10 +17,17 @@ class panelReverseShell : public wxPanel {
         ~panelReverseShell() {
             DEBUG_MSG("Destruyendo panelReverseShell");
         }
+
         void OnHook(wxKeyEvent& event);
+        void OnAgregarTexto(wxCommandEvent& event);
+
         unsigned long int p_uliUltimo = 19;
 
-        void EscribirSalida(const char*& cBuffer);
+        void EscribirSalida(const char* cBuffer);
+        
+        SOCKET sckCliente = INVALID_SOCKET;
+
+        wxTextCtrl* txtConsole = nullptr;
 
     private:
         //Historial
@@ -28,10 +35,7 @@ class panelReverseShell : public wxPanel {
         int iHistorialPos = 0;
 
         std::string strID = "";
-        SOCKET sckCliente = INVALID_SOCKET;
-
-        wxTextCtrl* txtConsole = nullptr;
-
+        
         void OnButton(wxCommandEvent& event);
 
         wxDECLARE_EVENT_TABLE();

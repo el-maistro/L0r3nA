@@ -555,11 +555,13 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
 }
 
 void Cliente_Handler::EscribirSalidaShell(const char*& cBuffer) {
-    panelReverseShell* panel_shell = (panelReverseShell*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Reverse_Shell, this->n_Frame);
+    if (this->n_Frame->panelShell != nullptr) {
+        this->n_Frame->panelShell->EscribirSalida(cBuffer);
+    }
+    /*panelReverseShell* panel_shell = (panelReverseShell*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Reverse_Shell, this->n_Frame);
     if (panel_shell) {
         panel_shell->EscribirSalida(cBuffer);
-    }
-    return;
+    }*/
 }
 
 void Cliente_Handler::Spawn_Threads() {
@@ -654,7 +656,7 @@ TransferStatus Cliente_Handler::Transfer_Get(int index) {
 void Cliente_Handler::CrearFrame(const std::string strTitle,const std::string strID) {
     this->m_setFrameVisible(true);
     //this->n_Frame = DBG_NEW FrameCliente(strTitle, this->p_Cliente._sckCliente, this->p_Cliente._strIp);
-    this->n_Frame = DBG_NEW FrameCliente(this->p_Cliente._sckCliente, strTitle, this->p_Cliente._strIp);
+    this->n_Frame = new FrameCliente(this->p_Cliente._sckCliente, strTitle, this->p_Cliente._strIp);
     this->n_Frame->Show(true);
 }
 

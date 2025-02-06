@@ -1,6 +1,7 @@
 #ifndef _FRAME_CLIENTE
 #define _FRAME_CLIENTE
 #include "headers.hpp"
+#include "panel_reverse_shell.hpp"
 
 #define WIN_WIDTH 900
 #define WIN_HEIGHT 600
@@ -56,6 +57,7 @@ class FrameCliente : public wxFrame {
 
         MyTreeCtrl* m_tree;
 
+        panelReverseShell* panelShell = nullptr;
     private:
         wxButton* btn_Test;
         
