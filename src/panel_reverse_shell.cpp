@@ -7,14 +7,14 @@ extern std::mutex vector_mutex;
 //Custom event
 wxDEFINE_EVENT(ADD_SHELL_OUTPUT, wxCommandEvent);
 
-wxBEGIN_EVENT_TABLE(panelReverseShell, wxPanel)
+wxBEGIN_EVENT_TABLE(panelReverseShell, wxFrame)
     EVT_BUTTON(wxID_ANY, panelReverseShell::OnButton)
 wxEND_EVENT_TABLE()
 
 
 //Reverse Shell
 panelReverseShell::panelReverseShell(wxWindow* pParent, SOCKET sck) :
-    wxPanel(pParent, EnumIDS::ID_Panel_Reverse_Shell) {
+    wxFrame(pParent, EnumIDS::ID_Panel_Reverse_Shell, "Shell Inversa", wxDefaultPosition, wxSize(600, 500)) {
 
     this->sckCliente = sck;
     

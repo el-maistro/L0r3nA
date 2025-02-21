@@ -10,7 +10,7 @@ namespace EnumReverseShell {
     };
 }
 
-class panelReverseShell : public wxPanel {
+class panelReverseShell : public wxFrame {
     public:
         panelReverseShell(wxWindow* pParent, SOCKET sck);
         

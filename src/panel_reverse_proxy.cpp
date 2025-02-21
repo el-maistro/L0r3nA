@@ -15,7 +15,7 @@ panelReverseProxy::panelReverseProxy(wxWindow* pParent, SOCKET sck) :
 	this->txtPort = new wxTextCtrl(this, EnumIDSProxy::ID_TXT_Port, "6666");
 	this->btnToggle = new wxToggleButton(this, EnumIDSProxy::ID_BTN_Toggle, "Iniciar");
 
-	wxBoxSizer* main_sizer = new wxBoxSizer(wxHORIZONTAL);
+	wxBoxSizer* main_sizer = new wxBoxSizer(wxVERTICAL);
 
 	main_sizer->Add(label1);
 	main_sizer->Add(txtPort);

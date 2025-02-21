@@ -21,7 +21,8 @@ extern std::mutex vector_mutex;
 
 wxBEGIN_EVENT_TABLE(FrameCliente, wxFrame)
     EVT_CLOSE(FrameCliente::OnClose)
-    EVT_BUTTON(EnumFrameIDS::BTN_Keylogger, FrameCliente::OnButton)
+    EVT_BUTTON(wxID_ANY, FrameCliente::OnButton)
+    /*EVT_BUTTON(EnumFrameIDS::BTN_Keylogger, FrameCliente::OnButton)
     EVT_BUTTON(EnumFrameIDS::BTN_Adm_Ventanas, FrameCliente::OnButton)
     EVT_BUTTON(EnumFrameIDS::BTN_Adm_Procesos, FrameCliente::OnButton)
     EVT_BUTTON(EnumFrameIDS::BTN_Informacion, FrameCliente::OnButton)
@@ -30,7 +31,8 @@ wxBEGIN_EVENT_TABLE(FrameCliente, wxFrame)
     EVT_BUTTON(EnumFrameIDS::BTN_Proxy_Iniciar, FrameCliente::OnButton)
     EVT_BUTTON(EnumFrameIDS::BTN_Proxy_Detener, FrameCliente::OnButton)
     EVT_BUTTON(EnumFrameIDS::BTN_Limpiar_Log, FrameCliente::OnButton)
-    EVT_AUINOTEBOOK_PAGE_CLOSE(wxID_ANY, FrameCliente::OnClosePage)
+    EVT_BUTTON(EnumFrameIDS::BTN_Limpiar_Log, FrameCliente::OnButton)
+    */EVT_AUINOTEBOOK_PAGE_CLOSE(wxID_ANY, FrameCliente::OnClosePage)
 wxEND_EVENT_TABLE()
 
 wxBEGIN_EVENT_TABLE(MyTreeCtrl, wxTreeCtrl)
@@ -92,7 +94,7 @@ FrameCliente::FrameCliente(SOCKET _sckSocket, std::string _strID, std::string _s
     //////////////////////////////////////////////////
     //Botones para lanzar modulos
     //////////////////////////////////////////////////
-    wxPanel* pnl_Mods = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(275, wxDefaultSize.GetHeight()));
+    wxPanel* pnl_Mods = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(200, wxDefaultSize.GetHeight()));
     wxStaticBoxSizer* box_mod = new wxStaticBoxSizer(wxVERTICAL, pnl_Mods, "Modulos");
 
     //pnl_Mods->SetBackgroundColour(wxColour(50, 50, 50));
@@ -104,15 +106,17 @@ FrameCliente::FrameCliente(SOCKET _sckSocket, std::string _strID, std::string _s
     wxButton* btn_RemoteDesk = new wxButton(pnl_Mods, EnumFrameIDS::BTN_Remote_Desktop, "Escritorio Remoto");
     wxButton* btn_Informacion = new wxButton(pnl_Mods, EnumFrameIDS::BTN_Informacion, "Informacion");
     wxButton* btn_Bromas = new wxButton(pnl_Mods, EnumFrameIDS::BTN_Fun, "Bromas");
+    wxButton* btn_Shell = new wxButton(pnl_Mods, EnumFrameIDS::BNT_Shell, "Shell Inversa");
     //btn_Bromas->SetBitmap(wxBitmap(wxT("./prank.png"), wxBITMAP_TYPE_PNG));
 
-    wxGridSizer* btnGrid = new wxGridSizer(3, 2, 5, 5);
+    wxGridSizer* btnGrid = new wxGridSizer(4, 2, 5, 5);
     btnGrid->Add(btn_AdmVentanas, 1, wxALL | wxEXPAND);
     btnGrid->Add(btn_EscanerRed, 1, wxALL | wxEXPAND);
     btnGrid->Add(btn_AdmProcesos, 1, wxALL | wxEXPAND);
     btnGrid->Add(btn_RemoteDesk, 1, wxALL | wxEXPAND);
     btnGrid->Add(btn_Informacion, 1, wxALL | wxEXPAND);
     btnGrid->Add(btn_Bromas, 1, wxALL | wxEXPAND);
+    btnGrid->Add(btn_Shell, 1, wxALL | wxEXPAND);
 
     box_mod->Add(btnGrid, 0, wxALL | wxEXPAND);
 
@@ -157,8 +161,6 @@ FrameCliente::FrameCliente(SOCKET _sckSocket, std::string _strID, std::string _s
 
     wxStaticBitmap* bmp = new wxStaticBitmap(pnl_maquina, wxID_ANY, bmpCPU);
 
-    //pnl_maquina->SetBackgroundColour(wxColor(10, 12, 34));
-
     wxFlexGridSizer* lblGrid = new wxFlexGridSizer(7, 2, 1, 1);
 
     wxFont font(7, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_THIN);
@@ -184,8 +186,8 @@ FrameCliente::FrameCliente(SOCKET _sckSocket, std::string _strID, std::string _s
     wxStaticText* lblIPExterna = new wxStaticText(pnl_maquina, wxID_ANY, "172.92.65.88", wxDefaultPosition, wxDefaultSize);
     lblIPExterna->SetFont(font);
 
-    wxStaticText* lblestado = new wxStaticText(pnl_maquina, wxID_ANY, "Conectado", wxDefaultPosition, wxDefaultSize);
-    lblestado->SetFont(font);
+    this->lblestado = new wxStaticText(pnl_maquina, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize);
+    this->lblestado->SetFont(font);
 
     wxStaticText* _lblOS = new wxStaticText(pnl_maquina, wxID_ANY, "OS:", wxDefaultPosition, wxDefaultSize);
     _lblOS->SetFont(font2);
@@ -207,6 +209,8 @@ FrameCliente::FrameCliente(SOCKET _sckSocket, std::string _strID, std::string _s
 
     wxStaticText* _lblestado = new wxStaticText(pnl_maquina, wxID_ANY, "Estado:", wxDefaultPosition, wxDefaultSize);
     _lblestado->SetFont(font2);
+
+    this->m_SetEstado("Conectado");
 
     lblGrid->Add(_lblOS, 0);
     lblGrid->Add(lblOS, 1, wxALL | wxEXPAND);
@@ -240,8 +244,6 @@ FrameCliente::FrameCliente(SOCKET _sckSocket, std::string _strID, std::string _s
 
     wxPanel* pnl_LogRemoto = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
     wxStaticBoxSizer* log_sizer = new wxStaticBoxSizer(wxVERTICAL, pnl_LogRemoto, "Log remoto");
-
-    //pnl_LogRemoto->SetBackgroundColour(wxColor(30, 22, 123));
 
     wxTextCtrl* txtLog = new wxTextCtrl(pnl_LogRemoto, wxID_ANY, "Happy Hacking!!!", wxDefaultPosition, wxSize(wxDefaultSize.GetWidth(), 150), wxTE_MULTILINE | wxTE_READONLY | wxTE_WORDWRAP);
     
@@ -277,28 +279,9 @@ FrameCliente::FrameCliente(SOCKET _sckSocket, std::string _strID, std::string _s
     top_sizer->AddSpacer(10);
     top_sizer->Add(side_panel_sizer);
 
-
-    ////////////////////////////////////////////////////
-    // Panel inferior reverse shell
-    ////////////////////////////////////////////////////
-    wxPanel* bottom_Panel = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(WIN_WIDTH, (WIN_HEIGHT / 3)));
-    
-    wxStaticBoxSizer* bottom_sizer = new wxStaticBoxSizer(wxVERTICAL, bottom_Panel, "Shell Inversa");
-
-    this->panelShell = new panelReverseShell(bottom_Panel, this->sckCliente);
-
-    bottom_sizer->Add(this->panelShell, 1, wxALL | wxEXPAND);
-
-    bottom_Panel->SetSizer(bottom_sizer);
-
-    ////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////
-
     //Main Sizer
     wxBoxSizer* main_sizer = new wxBoxSizer(wxVERTICAL);
     main_sizer->Add(top_sizer, 0, wxALL | wxEXPAND);
-    main_sizer->AddSpacer(5);
-    main_sizer->Add(bottom_Panel, 0, wxALL | wxEXPAND);
 
     this->SetSizer(main_sizer);
 }
@@ -396,6 +379,10 @@ FrameCliente::FrameCliente(std::string strID, SOCKET sckID, std::string strIP)
     
 }
 
+void FrameCliente::m_SetEstado(const wxString _str) {
+    this->lblestado->SetLabelText(_str);
+}
+
 void FrameCliente::OnClosePage(wxAuiNotebookEvent& event) {
     int closedPage = event.GetSelection();
     wxString pageTitle = this->m_tree->p_Notebook->GetPageText(closedPage);
@@ -445,6 +432,13 @@ void FrameCliente::OnButton(wxCommandEvent& event) {
     } else if (btnID == EnumFrameIDS::BTN_Fun) {
         panelFun* panelF = new panelFun(this, this->sckCliente);
         panelF->Show();
+    } else if (btnID == EnumFrameIDS::BNT_Shell) {
+        if (this->panelShell) {
+            delete this->panelShell;
+            this->panelShell = nullptr;
+        }
+        this->panelShell = new panelReverseShell(this, this->sckCliente);
+        this->panelShell->Show();
     }
     
 }
