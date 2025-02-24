@@ -204,7 +204,7 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
     //Termino la shell
     if (iComando == EnumComandos::Reverse_Shell_Finish) {
         if (this->m_isFrameVisible()) {
-            const char* cBuff = "Sapeeeee";
+            const char* cBuff = "\r\nzero cool was here";
             this->EscribirSalidaShell(cBuff);
         }
         return;
@@ -552,16 +552,20 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
         }
         return;
     }
+
+    //Log Remoto
+    if (iComando == EnumComandos::LOG) {
+        if (this->m_isFrameVisible()) {
+            this->n_Frame->m_AddRemoteLog(paquete.cBuffer.data());
+        }
+        return;
+    }
 }
 
 void Cliente_Handler::EscribirSalidaShell(const char*& cBuffer) {
     if (this->n_Frame->panelShell != nullptr) {
         this->n_Frame->panelShell->EscribirSalida(cBuffer);
     }
-    /*panelReverseShell* panel_shell = (panelReverseShell*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Reverse_Shell, this->n_Frame);
-    if (panel_shell) {
-        panel_shell->EscribirSalida(cBuffer);
-    }*/
 }
 
 void Cliente_Handler::Spawn_Threads() {

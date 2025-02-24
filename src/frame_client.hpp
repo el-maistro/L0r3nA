@@ -58,13 +58,14 @@ class FrameCliente : public wxFrame {
 
         void m_SetEstado(const wxString _str);
 
+        void m_AddRemoteLog(const char* _buffer);
+
         MyTreeCtrl* m_tree;
         panelReverseShell* panelShell = nullptr;
     private:
         wxButton* btn_Test;
+        wxTextCtrl* txtLog = nullptr;
         wxStaticText* lblestado = nullptr;
-
-       
         
         //Eventos
         void OnClose(wxCloseEvent& event);

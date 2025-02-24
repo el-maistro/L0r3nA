@@ -245,7 +245,8 @@ namespace EnumComandos {
         Fun_Block_Input,
         Fun_Swap_Mouse,
         Fun_Msg,
-        Fun_CD
+        Fun_CD,
+        LOG
     };
 }
 

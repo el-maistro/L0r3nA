@@ -111,6 +111,9 @@ class Cliente {
 		ByteArray bDec(const unsigned char* pInput, size_t pLen);
 		ByteArray bEnc(const unsigned char* pInput, size_t pLen);
 
+		//Log Remoto
+		void m_RemoteLog(const std::string _strMsg);
+
 		void iniPacket();
 
 		//Proceso de paquetes

