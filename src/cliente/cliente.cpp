@@ -197,12 +197,12 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
             int iHeadsize = strIn[0].size() + 1;
             int iBytesSize = iRecibido - iHeadsize - 1; // -1 por el \0 agregado al armar el paquete
             const char* cBytes = paquete.cBuffer.data() + iHeadsize;
-            __DBG_("Ejcribiendoj");
+            //__DBG_("Ejcribiendoj");
             if (this->map_Archivos_Descarga[strIn[0]].ssOutfile.get()->is_open()) {
                 this->map_Archivos_Descarga[strIn[0]].ssOutfile.get()->write(cBytes, iBytesSize);
                 this->map_Archivos_Descarga[strIn[0]].uDescargado += iBytesSize;
             }else {
-                _DBG_("[X] El archivo no esta abierto", GetLastError());
+                //_DBG_("[X] El archivo no esta abierto", GetLastError());
             }
         } else {
             __DBG_("[X] Error parseando comando: " + std::string(paquete.cBuffer.data()));
@@ -216,7 +216,9 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
             this->map_Archivos_Descarga[strID].ssOutfile.get()->close();
         }
         __DBG_("[!] Descarga completa");
+        cCliente->m_RemoteLog("[DESCARGA] Subida completa!");
         if (this->map_Archivos_Descarga[strID].uDescargado != this->map_Archivos_Descarga[strID].uTamArchivo) {
+            cCliente->m_RemoteLog("[DESCARGA] Error en transferencia");
             __DBG_("[X] Error en la tranferencia");
         }
         return;

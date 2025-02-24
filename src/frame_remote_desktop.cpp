@@ -64,7 +64,7 @@ frameRemoteDesktop::frameRemoteDesktop(wxWindow* pParent, SOCKET sck) :
 	//this->imageCtrl = new wxStaticBitmap(this, EnumRemoteDesktop::ID_Bitmap, wxBitmap(10,10));
 	//this->imageCtrl->SetScaleMode(wxStaticBitmap::ScaleMode::Scale_Fill);
 
-	//this->ConectarEventos();
+	this->ConectarEventos();
 		
 	wxBoxSizer* main_sizer = new wxBoxSizer(wxVERTICAL);
 
@@ -118,9 +118,28 @@ void frameRemoteDesktop::OnStop(wxCommandEvent&) {
 void frameRemoteDesktop::OnSave(wxCommandEvent&) {
 	wxFileDialog dialog(this, "Guardar frame", wxEmptyString, "captura.jpg", wxFileSelectorDefaultWildcardStr, wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
 	if (dialog.ShowModal() == wxID_OK) {
-		if (!this->imageCtrl->GetBitmap().SaveFile(dialog.GetPath(), wxBITMAP_TYPE_JPEG)) {
+		wxSize panelSize = this->pnl_main->GetSize();
+
+		// Create a bitmap with the same size as the panel
+		wxBitmap bitmap(panelSize.GetWidth(), panelSize.GetHeight());
+
+		// Create a memory device context to draw on the bitmap
+		wxMemoryDC memDC;
+		memDC.SelectObject(bitmap);
+
+		// Create a client device context to get the panel's content
+		wxClientDC clientDC(this->pnl_main);
+
+		// Blit (copy) the panel's content to the memory device context
+		memDC.Blit(0, 0, panelSize.GetWidth(), panelSize.GetHeight(), &clientDC, 0, 0);
+
+		// Deselect the bitmap from the memory device context
+		memDC.SelectObject(wxNullBitmap);
+
+		if (!bitmap.SaveFile(dialog.GetPath(), wxBITMAP_TYPE_JPEG)) {
 			wxMessageBox("No se pudo guardar " + dialog.GetPath(), "Error", wxID_OK);
 		}
+		
 	}
 }
 
@@ -223,7 +242,7 @@ void frameRemoteDesktop::OnRemoteControl(wxCommandEvent&) {
 
 void frameRemoteDesktop::OnRemoteMouse(wxMouseEvent& event) {
 	wxEventType evento = event.GetEventType();
-	this->imageCtrl->SetFocus();
+	this->pnl_main->SetFocus();
 	if (evento == wxEVT_MOUSEWHEEL) {
 		this->EnviarEventoMouse(evento, event.GetX(), event.GetY(), event.GetWheelRotation() < 0 ? true : false);
 	}else {
@@ -268,8 +287,8 @@ void frameRemoteDesktop::EnviarEventoMouse(wxEventType evento, int x, int y, boo
 			int localx = x;
 			int localy = y;
 
-			int localres_Width = this->imageCtrl->GetSize().GetWidth();
-			int localres_Height = this->imageCtrl->GetSize().GetHeight();
+			int localres_Width = this->pnl_main->GetSize().GetWidth();
+			int localres_Height = this->pnl_main->GetSize().GetHeight();
 
 			MonitorInfo monitor = this->GetCopy(monitor_index);
 			int remote_res_Width = monitor.resWidth;
@@ -314,24 +333,24 @@ void frameRemoteDesktop::EnviarEventoTeclado(wxEventType evento, u_int key) {
 void frameRemoteDesktop::ConectarEventos() {
 	//Mouse
 	//Click izquierdo 
-	this->imageCtrl->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse), NULL, this);
-	this->imageCtrl->Connect(wxEVT_LEFT_UP, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse), NULL, this);
+	this->pnl_main->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse), NULL, this);
+	this->pnl_main->Connect(wxEVT_LEFT_UP, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse), NULL, this);
 	//Click derecho
-	this->imageCtrl->Connect(wxEVT_RIGHT_DOWN, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse), NULL, this);
-	this->imageCtrl->Connect(wxEVT_RIGHT_UP, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse), NULL, this);
+	this->pnl_main->Connect(wxEVT_RIGHT_DOWN, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse), NULL, this);
+	this->pnl_main->Connect(wxEVT_RIGHT_UP, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse), NULL, this);
 	//Click boton central
-	this->imageCtrl->Connect(wxEVT_MIDDLE_DOWN, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse), NULL, this);
-	this->imageCtrl->Connect(wxEVT_MIDDLE_UP, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse), NULL, this);
+	this->pnl_main->Connect(wxEVT_MIDDLE_DOWN, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse), NULL, this);
+	this->pnl_main->Connect(wxEVT_MIDDLE_UP, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse), NULL, this);
 	//Double click
-	this->imageCtrl->Connect(wxEVT_LEFT_DCLICK, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse), NULL, this);
-	this->imageCtrl->Connect(wxEVT_RIGHT_DCLICK, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse), NULL, this);
-	this->imageCtrl->Connect(wxEVT_MIDDLE_DCLICK, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse), NULL, this);
+	this->pnl_main->Connect(wxEVT_LEFT_DCLICK, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse), NULL, this);
+	this->pnl_main->Connect(wxEVT_RIGHT_DCLICK, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse), NULL, this);
+	this->pnl_main->Connect(wxEVT_MIDDLE_DCLICK, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse), NULL, this);
 	//wheel
-	this->imageCtrl->Connect(wxEVT_MOUSEWHEEL, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse), NULL, this);
+	this->pnl_main->Connect(wxEVT_MOUSEWHEEL, wxMouseEventHandler(frameRemoteDesktop::OnRemoteMouse), NULL, this);
 
 	//Teclado 
-	this->imageCtrl->Connect(wxEVT_KEY_DOWN, wxKeyEventHandler(frameRemoteDesktop::OnRemoteKey), NULL, this);
-	this->imageCtrl->Connect(wxEVT_KEY_UP, wxKeyEventHandler(frameRemoteDesktop::OnRemoteKey), NULL, this);
+	this->pnl_main->Connect(wxEVT_KEY_DOWN, wxKeyEventHandler(frameRemoteDesktop::OnRemoteKey), NULL, this);
+	this->pnl_main->Connect(wxEVT_KEY_UP, wxKeyEventHandler(frameRemoteDesktop::OnRemoteKey), NULL, this);
 
 }
 

