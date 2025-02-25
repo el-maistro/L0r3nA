@@ -12,8 +12,10 @@ const wxString strTitle = "L0r3nA v0.1";
 
 wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
     EVT_BUTTON(EnumIDS::ID_LimpiarLog, MyFrame::OnLimpiar)
-    EVT_TOGGLEBUTTON(EnumIDS::ID_Toggle, MyFrame::OnToggle)
-    EVT_BUTTON(EnumIDS::ID_Mostrar_CryptDB, MyFrame::OnCryptDB)
+    EVT_MENU(EnumIDS::ID_Iniciar_Servidor, MyFrame::OnToggle)
+    EVT_MENU(EnumIDS::ID_Detener_Servidor, MyFrame::OnToggle)
+    EVT_MENU(EnumIDS::ID_Mostrar_CryptDB, MyFrame::OnCryptDB)
+    EVT_MENU(EnumIDS::ID_About, MyFrame::OnAbout)
     EVT_CLOSE(MyFrame::OnClose)
 wxEND_EVENT_TABLE()
 
@@ -66,7 +68,7 @@ MyFrame::MyFrame()
     this->m_RPanel = DBG_NEW wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize); // wxSize(700, 450));
 
     //Panel izquierdo controles servidor
-    this->m_LPanel = DBG_NEW wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);//wxSize(110, 600));
+    //this->m_LPanel = DBG_NEW wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);//wxSize(110, 600));
 
     //Panel inferior log
     this->m_BPanel = DBG_NEW wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
@@ -78,7 +80,7 @@ MyFrame::MyFrame()
     this->m_RPanel->SetSizer(sizerlist);
 
     //Crear controles panel izquierdo
-    this->CrearControlesPanelIzquierdo();
+    //this->CrearControlesPanelIzquierdo();
 
     //Crear txt para log
     p_Servidor->m_txtLog->p_txtCtrl = DBG_NEW wxTextCtrl(this->m_BPanel, wxID_ANY, ":v\n", wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE | wxTE_READONLY);
@@ -88,7 +90,7 @@ MyFrame::MyFrame()
     this->m_BPanel->SetSizer(sizertxt);
 
     wxBoxSizer *sizer = DBG_NEW wxBoxSizer(wxHORIZONTAL);
-    sizer->Add(this->m_LPanel, 0, wxEXPAND | wxALL, 2);
+    //sizer->Add(this->m_LPanel, 0, wxEXPAND | wxALL, 2);
 
     wxBoxSizer *sizer2 = DBG_NEW wxBoxSizer(wxVERTICAL);
     sizer2->Add(this->m_RPanel, 1, wxEXPAND | wxALL, 2);
@@ -98,10 +100,50 @@ MyFrame::MyFrame()
 
     this->SetSizerAndFit(sizer);
 
-    SetClientSize(800,300);
-    
-    CreateStatusBar();
-    SetStatusText("IDLE");
+    wxMenuBar* main_Menu = new wxMenuBar();
+    wxMenu* p_server = new wxMenu();
+
+    this->detenerMenu->Enable(false);
+    p_server->Append(this->iniciarMenu);
+    p_server->Append(this->detenerMenu);
+    p_server->Append(EnumIDS::ID_Mostrar_CryptDB, "Crypt DB");
+    p_server->Append(EnumIDS::ID_Builder, "Generar Cliente");
+   
+    wxMenu* p_help = new wxMenu();
+    p_help->Append(EnumIDS::ID_About, "Acerca de")->SetBitmap(wxArtProvider::GetBitmapBundle(wxART_INFORMATION, wxART_MENU));
+
+    main_Menu->Append(p_server, "Servidor");
+    main_Menu->Append(p_help, "Ayuda");
+
+    //Iconos de menu
+    //item->SetBitmap(wxArtProvider::GetBitmapBundle(wxART_DELETE, wxART_MENU));
+    //btn_EscanerRed->SetBitmap(wxBitmap(wxT("./scan.png"), wxBITMAP_TYPE_PNG));
+    {
+        wxImage imgMenu("./imgs/iconos/play-button.png", wxBITMAP_TYPE_PNG);
+        wxBitmap bmpMenu;
+        if (imgMenu.IsOk()) {
+            imgMenu.Rescale(16, 16, wxIMAGE_QUALITY_HIGH);
+            bmpMenu = wxBitmap(imgMenu);
+        }
+        this->iniciarMenu->SetBitmap(bmpMenu);
+    }
+
+    {
+        wxImage imgMenu("./imgs/iconos/stop.png", wxBITMAP_TYPE_PNG);
+        wxBitmap bmpMenu;
+        if (imgMenu.IsOk()) {
+            imgMenu.Rescale(16, 16, wxIMAGE_QUALITY_HIGH);
+            bmpMenu = wxBitmap(imgMenu);
+        }
+        this->detenerMenu->SetBitmap(bmpMenu);
+    }
+
+
+
+    this->SetMenuBar(main_Menu);
+    this->SetClientSize(800,300);
+    this->CreateStatusBar();
+    this->SetStatusText("IDLE");
     
 #ifdef DEBUG_DESIGN_LIMITS
     SetBackgroundColour(wxColour(255, 255, 255, 128)); // Establecer el color de fondo con transparencia
@@ -127,13 +169,16 @@ void MyFrame::OnCryptDB(wxCommandEvent& event) {
 }
 
 void MyFrame::OnToggle(wxCommandEvent& event) {
-    bool isSel = this->btn_toggle->GetValue();
-    if (isSel) {
+    int id = event.GetId();
+    
+    if (id == EnumIDS::ID_Iniciar_Servidor) {
         //Iniciar escucha
         
         if (p_Servidor->m_Iniciar()) {
             p_Servidor->m_Handler();
-            this->btn_toggle->SetLabelText("Detener Servidor");
+            //this->btn_toggle->SetLabelText("Detener Servidor");
+            this->iniciarMenu->Enable(false);
+            this->detenerMenu->Enable(true);
             SetStatusText("Esperando clientes...");
         }else {
             std::string strTmp = "Error escuchando ";
@@ -153,24 +198,30 @@ void MyFrame::OnToggle(wxCommandEvent& event) {
         p_Servidor->m_listCtrl->DeleteAllItems();
         SetStatusText("IDLE");
         SetTitle(strTitle);
-        this->btn_toggle->SetLabelText("Iniciar Servidor");
+        //this->btn_toggle->SetLabelText("Iniciar Servidor");
+        this->iniciarMenu->Enable(true);
+        this->detenerMenu->Enable(false);
     }
     Sleep(500);
 }
 
 void MyFrame::CrearControlesPanelIzquierdo(){
     wxSize btn_size;
-    this->btn_toggle = DBG_NEW wxToggleButton(this->m_LPanel, EnumIDS::ID_Toggle, "Iniciar Servidor");
+    this->btn_toggle = new wxToggleButton(this->m_LPanel, EnumIDS::ID_Toggle, "Iniciar Servidor");
 
     btn_size = this->btn_toggle->GetSize();
      
-    this->btn_CryptDB = DBG_NEW wxButton(this->m_LPanel, EnumIDS::ID_Mostrar_CryptDB, "Crypt DB", wxDefaultPosition, btn_size);
+    this->btn_CryptDB = new wxButton(this->m_LPanel, EnumIDS::ID_Mostrar_CryptDB, "Crypt DB", wxDefaultPosition, btn_size);
+
+    this->btn_Builder = new wxButton(this->m_LPanel, EnumIDS::ID_Builder, "Generar cliente", wxDefaultPosition, btn_size);
     
     wxBoxSizer *m_paneSizer = DBG_NEW wxBoxSizer(wxVERTICAL);
     m_paneSizer->AddSpacer(20);    
-    m_paneSizer->Add(this->btn_toggle, 0, wxALIGN_CENTER | wxALL, 3);
-    m_paneSizer->AddSpacer(10);
-    m_paneSizer->Add(this->btn_CryptDB, 0, wxALIGN_CENTER | wxALL, 3);
+    m_paneSizer->Add(this->btn_toggle, 0, wxEXPAND | wxALL, 1);
+    m_paneSizer->AddSpacer(5);
+    m_paneSizer->Add(this->btn_CryptDB, 0, wxEXPAND | wxALL, 1);
+    m_paneSizer->AddSpacer(5);
+    m_paneSizer->Add(this->btn_Builder, 0, wxEXPAND | wxALL, 1);
     
     this->m_LPanel->SetSizerAndFit(m_paneSizer);
 }
@@ -240,6 +291,6 @@ void MyFrame::OnLimpiar(wxCommandEvent& event) {
 }
 
 void MyFrame::OnAbout(wxCommandEvent& event){
-    wxMessageBox(wxT("L0r3na v0.1"), wxT("About"));
+    wxMessageBox(wxT("L0r3na v0.1"), wxT("Acerca de"));
 }
 

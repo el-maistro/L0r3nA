@@ -36,6 +36,7 @@
 #include<wx/image.h>
 #include<wx/wxhtml.h>
 #include<wx/activityindicator.h>
+#include<wx/artprov.h>
 #include<wx/stc/stc.h>
 #include<wx/aui/aui.h>
 #include<winsqlite/winsqlite3.h>
@@ -128,8 +129,12 @@ namespace EnumIDS {
         ID_Panel_Transferencias,
         ID_Panel_Transferencias_List,
         ID_Toggle,
+        ID_Iniciar_Servidor,
+        ID_Detener_Servidor,
         ID_Mostrar_Transfers,
         ID_Mostrar_CryptDB,
+        ID_Builder,
+        ID_About,
         ID_CryptDB_Refrescar,
         ID_CryptDB_Copiar,
         ID_CryptDB_Eliminar,
