@@ -51,6 +51,8 @@ struct Cliente{
     std::string _strUser;
     std::string _strCpu;
     std::string _strPID;
+    std::string _strRAM;
+    std::string _strIPS;
     bool _isBusy = false;
     bool _isRunningShell = false;
     std::unordered_map<std::string, struct Archivo_Descarga> um_Archivos_Descarga2;

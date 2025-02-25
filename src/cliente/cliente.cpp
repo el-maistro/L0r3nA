@@ -992,6 +992,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         this->mod_Fun->m_CD(_open);
         return;
     }
+
 }
 
 void Cliente::Procesar_Paquete(const Paquete& paquete) {
@@ -1076,6 +1077,20 @@ void Cliente::iniPacket() {
     strOut += std::to_string(GetCurrentProcessId());
     strOut.append(1, CMD_DEL);
     strOut += strCpu();
+    strOut.append(1, CMD_DEL);
+    strOut += std::to_string(RAM());
+    strOut.append(1, CMD_DEL);
+
+    std::string strIPS = "";
+    for (std::string _ip : IPSlocales()) {
+        strIPS += _ip;
+        strIPS += CMD_DEL_2;
+    }
+    strIPS = strIPS.substr(0, strIPS.length() - 7);
+
+    strOut += strIPS;
+
+    _DBG_(strOut, 0);
     
     int iEnviado = this->cChunkSend(this->sckSocket, strOut.c_str(), strOut.size(), 0, true, nullptr, EnumComandos::INIT_PACKET);
     

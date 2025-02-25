@@ -109,11 +109,11 @@ MyFrame::MyFrame()
     this->m_LPanel->SetBackgroundColour(wxColor(255, 0, 0));
 #endif
 
-    //SOCKET nsocket = INVALID_SOCKET;
-    //std::string strip = "127.0.0.1";
-    //std::string title_ = "Random";
-    ////FrameCliente* nframe = new FrameCliente(title_, nsocket, strip);
-    //FrameCliente* nframe = new FrameCliente();
+    /*SOCKET nsocket = INVALID_SOCKET;
+    std::string strip = "127.0.0.1";
+    std::string title_ = "Random";
+    *///FrameCliente* nframe = new FrameCliente(title_, nsocket, strip);
+    //FrameCliente* nframe = new FrameCliente(nsocket, title_, strip, "eW1n", "Amd x86", "Guindows :v", "16");
     //nframe->Show(true);
 
     //nframe->SetFocus();

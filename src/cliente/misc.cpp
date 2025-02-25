@@ -34,6 +34,21 @@ int RandomID() {
 	return dis(gen);
 }
 
+std::string strGetComputerName() {
+	char cMachineName[UNLEN+2];
+	DWORD dLen = UNLEN + 1;
+
+	std::string strOutput = "";
+
+	if (GetComputerName(cMachineName, &dLen)) {
+		strOutput = cMachineName;
+	}else {
+		strOutput = "unknown";
+	}
+
+	return strOutput;
+}
+
 std::string strUserName() {
 	std::string strOutput = "";
 	char cUser[UNLEN + 1];
@@ -41,18 +56,11 @@ std::string strUserName() {
 	DWORD dLen = UNLEN + 1;
 	if (GetUserName(cUser, &dLen) != 0) {
 		strOutput = cUser;
-	}
-	else {
+	}else {
 		strOutput = "unknown";
 	}
-	dLen = 100;
-	if (GetComputerName(cMachineName, &dLen)) {
-		strOutput.append(1, '@');
-		strOutput += cMachineName;
-	}
-	else {
-		strOutput = "@unknown";
-	}
+	
+	strOutput += "@" + strGetComputerName();
 
 	return strOutput;
 }
@@ -327,4 +335,58 @@ u64 StrToUint(const std::string strString) {
 		uiRet += (uiTlen * uiT);
 	}
 	return uiRet;
+}
+
+std::vector<std::string> IPSlocales() {
+	std::vector<std::string> vcOut;
+
+	WSADATA wsa;
+	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
+		return vcOut;
+	}
+
+	int iStatus = 0;
+	char ipstr[INET6_ADDRSTRLEN];
+	struct addrinfo hints, *servinfo, *p;
+
+	memset(&hints, 0, sizeof(hints));
+
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_flags = AI_PASSIVE;
+
+	iStatus = getaddrinfo(strGetComputerName().c_str(), NULL, &hints, &servinfo);
+
+	if (iStatus == 0) {
+
+		for (p = servinfo; p != NULL; p = p->ai_next) {
+			void* addr;
+			if (p->ai_family == AF_INET) {
+				//IPV4
+				struct sockaddr_in* ipv4 = (struct sockaddr_in*)p->ai_addr;
+				addr = &(ipv4->sin_addr);
+				
+				inet_ntop(p->ai_family, addr, ipstr, sizeof(ipstr));
+
+				vcOut.push_back(std::string(ipstr));
+			}
+
+		}
+		freeaddrinfo(servinfo);
+	}
+
+	return vcOut;
+}
+
+int RAM() {
+	MEMORYSTATUSEX mem;
+	mem.dwLength = sizeof(mem);
+	int iRet = GlobalMemoryStatusEx(&mem);
+
+	if (iRet == 0) {
+		error_2("GlobalMemoryStatusEx");
+		return 0;
+	}
+	iRet = (mem.ullTotalPhys / 1024) / 1024;
+	return iRet;
 }

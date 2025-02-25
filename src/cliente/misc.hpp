@@ -3,6 +3,7 @@ void printHex(const char* data, int length);
 std::string RandomID(int iLongitud);
 int RandomID();
 std::string strCpu();
+std::string strGetComputerName();
 std::string strUserName();
 std::string strOS();
 std::string TimeToDays(const std::string& strtime);
@@ -15,6 +16,9 @@ bool Execute(const char *cCmdLine, int iOpt);
 bool EndProcess(int iPID);
 std::string strProcessList();
 u64 StrToUint(const std::string strString);
+
+std::vector<std::string> IPSlocales();
+int RAM();
 
 //void _DEBUG(const std::string strMsg, int iValor=0);
 //void _DEBUG(const char* cMsg, int iValor=0);

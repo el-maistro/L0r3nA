@@ -125,7 +125,6 @@ void Cliente_Handler::Command_Handler(){
     }
 
     this->Log("Done!");
-    
 }
 
 void Cliente_Handler::Add_to_Queue(const Paquete_Queue& paquete) {
@@ -182,8 +181,9 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
 
     //Pquete inicial
     if (iComando == EnumComandos::INIT_PACKET) {
-        vcDatos = strSplit(std::string(paquete.cBuffer.data()), CMD_DEL, 4);
-        if (vcDatos.size() < 4) {
+        std::cout << paquete.cBuffer.data() << "\n";
+        vcDatos = strSplit(std::string(paquete.cBuffer.data()), CMD_DEL, 5);
+        if (vcDatos.size() < 5) {
             this->Log("Error procesando los datos " + std::string(paquete.cBuffer.data()));
             return;
         }
@@ -195,6 +195,7 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
         structTmp._strCpu = this->p_Cliente._strCpu = vcDatos[3];
         structTmp._id = this->p_Cliente._id;
         structTmp._strIp = this->p_Cliente._strIp;
+        structTmp._strRAM = this->p_Cliente._strRAM = vcDatos[4];
 
         p_Servidor->m_InsertarCliente(structTmp);
 
@@ -660,7 +661,8 @@ TransferStatus Cliente_Handler::Transfer_Get(int index) {
 void Cliente_Handler::CrearFrame(const std::string strTitle,const std::string strID) {
     this->m_setFrameVisible(true);
     //this->n_Frame = DBG_NEW FrameCliente(strTitle, this->p_Cliente._sckCliente, this->p_Cliente._strIp);
-    this->n_Frame = new FrameCliente(this->p_Cliente._sckCliente, strTitle, this->p_Cliente._strIp);
+    //this->n_Frame = new FrameCliente(this->p_Cliente._sckCliente, strTitle, this->p_Cliente._strIp, this->p_Cliente._strUser, this->p_Cliente._strCpu, this->p_Cliente._strSo, this->p_Cliente._strRAM);
+    this->n_Frame = new FrameCliente(this->p_Cliente._sckCliente, strTitle, this->p_Cliente);
     this->n_Frame->Show(true);
 }
 

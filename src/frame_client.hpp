@@ -1,5 +1,7 @@
 #ifndef _FRAME_CLIENTE
 #define _FRAME_CLIENTE
+
+#include "server.hpp"
 #include "headers.hpp"
 #include "panel_reverse_shell.hpp"
 
@@ -29,7 +31,7 @@ class MyTreeCtrl : public wxTreeCtrl {
         //Eventos
         MyTreeCtrl(wxWindow* parent, const wxWindowID id,
             const wxPoint& pos, const wxSize& size, std::string _strID, std::string _strIP, SOCKET sck) :
-            wxTreeCtrl(parent, id, pos, size) {
+            wxTreeCtrl(parent, id, pos, size), p_Notebook(nullptr) { // Inicializar p_Notebook
             strClienteID = _strID;
             strClienteIP = _strIP; 
             sckCliente = sck;
@@ -50,23 +52,19 @@ class MyTreeCtrl : public wxTreeCtrl {
 class FrameCliente : public wxFrame {
     public:
         std::string strClienteID = "";
-        //std::string strIP = "";
         SOCKET sckCliente = INVALID_SOCKET;
 
-        FrameCliente(std::string pstrID, SOCKET sckID, std::string strIP);
-        FrameCliente(SOCKET _sckSocket, std::string _strID, std::string _strIP);
-
-        void m_SetEstado(const wxString _str);
+        FrameCliente(SOCKET _sckSocket, std::string _strID, struct Cliente& _cliente);
 
         void m_AddRemoteLog(const char* _buffer);
 
-        MyTreeCtrl* m_tree;
+        MyTreeCtrl* m_tree = nullptr;
         panelReverseShell* panelShell = nullptr;
     private:
-        wxButton* btn_Test;
+        wxButton* btn_Test = nullptr;
         wxTextCtrl* txtLog = nullptr;
-        wxStaticText* lblestado = nullptr;
-        
+        wxComboBox* cmdIPS = nullptr;
+
         //Eventos
         void OnClose(wxCloseEvent& event);
         void OnButton(wxCommandEvent& event);
