@@ -181,9 +181,8 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
 
     //Pquete inicial
     if (iComando == EnumComandos::INIT_PACKET) {
-        std::cout << paquete.cBuffer.data() << "\n";
-        vcDatos = strSplit(std::string(paquete.cBuffer.data()), CMD_DEL, 5);
-        if (vcDatos.size() < 5) {
+        vcDatos = strSplit(std::string(paquete.cBuffer.data()), CMD_DEL, 6);
+        if (vcDatos.size() < 6) {
             this->Log("Error procesando los datos " + std::string(paquete.cBuffer.data()));
             return;
         }
@@ -195,7 +194,8 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
         structTmp._strCpu = this->p_Cliente._strCpu = vcDatos[3];
         structTmp._id = this->p_Cliente._id;
         structTmp._strIp = this->p_Cliente._strIp;
-        structTmp._strRAM = this->p_Cliente._strRAM = vcDatos[4];
+        this->p_Cliente._strRAM = vcDatos[4];
+        this->p_Cliente._strIPS = vcDatos[5];
 
         p_Servidor->m_InsertarCliente(structTmp);
 

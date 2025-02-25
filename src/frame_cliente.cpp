@@ -153,8 +153,8 @@ FrameCliente::FrameCliente(SOCKET _sckSocket, std::string _strID, struct Cliente
 
     wxFlexGridSizer* lblGrid = new wxFlexGridSizer(7, 2, 1, 1);
 
-    wxFont font(7, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_THIN);
-    wxFont font2(7, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_SEMIBOLD);
+    wxFont font(8, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_THIN);
+    wxFont font2(8, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_SEMIBOLD);
 
 
     wxStaticText* lblOS = new wxStaticText(pnl_maquina, wxID_ANY, _cliente._strSo, wxDefaultPosition, wxDefaultSize);
@@ -194,7 +194,7 @@ FrameCliente::FrameCliente(SOCKET _sckSocket, std::string _strID, struct Cliente
     wxStaticText* _lblRam = new wxStaticText(pnl_maquina, wxID_ANY, "RAM:", wxDefaultPosition, wxDefaultSize);
     _lblRam->SetFont(font2);
 
-    wxStaticText* _lblIPlocal = new wxStaticText(pnl_maquina, wxID_ANY, "IP Interna:", wxDefaultPosition, wxDefaultSize);
+    wxStaticText* _lblIPlocal = new wxStaticText(pnl_maquina, wxID_ANY, "IPs Locales:", wxDefaultPosition, wxDefaultSize);
     _lblIPlocal->SetFont(font2);
 
     wxStaticText* _lblIPExterna = new wxStaticText(pnl_maquina, wxID_ANY, "IP Externa:", wxDefaultPosition, wxDefaultSize);

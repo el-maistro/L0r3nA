@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef __REMOTE_DESKTOP
 #define __REMOTE_DESKTOP
 

@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef _SERVER_H
 #define _SERVER_H
 #include "headers.hpp"
@@ -10,6 +12,8 @@ struct Paquete {
     u_int uiIsUltimo;
     std::vector<char> cBuffer;
 };
+
+class FrameCliente;
 
 struct Paquete_Queue {
     std::vector<char> cBuffer;
@@ -124,7 +128,7 @@ class Cliente_Handler {
     public:
         std::mutex mt_Running;
 
-        FrameCliente* n_Frame = nullptr;
+        FrameCliente *n_Frame = nullptr;
 
         //Verificar que el frame principal siga activo
         bool m_isFrameVisible() {

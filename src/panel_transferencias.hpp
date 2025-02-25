@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef __TRANSFERS
 #define __TRANSFERS 1
 

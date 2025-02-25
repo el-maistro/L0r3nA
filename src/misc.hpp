@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef _MISC
 #define _MISC
 

@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef __PANEL_FILE_MANAGER
 #define __PANEL_FILE_MANAGER
 

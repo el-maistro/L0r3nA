@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef _PROC_MANAGER
 #define _PROC_MANAGER
 #include "headers.hpp"

@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef _FRAME_CLIENTE
 #define _FRAME_CLIENTE
 

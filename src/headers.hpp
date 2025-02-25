@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef _HEADERS
 #define _HEADERS 1
 

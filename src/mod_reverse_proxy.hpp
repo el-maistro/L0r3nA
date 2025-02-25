@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef _MOD_PROXY
 #define _MOD_PROXY 1
 #define RETRY_COUNT 10
