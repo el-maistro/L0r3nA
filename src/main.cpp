@@ -118,25 +118,25 @@ MyFrame::MyFrame()
     //Iconos de menu
     //item->SetBitmap(wxArtProvider::GetBitmapBundle(wxART_DELETE, wxART_MENU));
     //btn_EscanerRed->SetBitmap(wxBitmap(wxT("./scan.png"), wxBITMAP_TYPE_PNG));
-    {
-        wxImage imgMenu("./imgs/iconos/play-button.png", wxBITMAP_TYPE_PNG);
-        wxBitmap bmpMenu;
-        if (imgMenu.IsOk()) {
-            imgMenu.Rescale(16, 16, wxIMAGE_QUALITY_HIGH);
-            bmpMenu = wxBitmap(imgMenu);
-        }
-        this->iniciarMenu->SetBitmap(bmpMenu);
-    }
+    //{
+    //    wxImage imgMenu("./imgs/iconos/play-button.png", wxBITMAP_TYPE_PNG);
+    //    wxBitmap bmpMenu;
+    //    if (imgMenu.IsOk()) {
+    //        imgMenu.Rescale(16, 16, wxIMAGE_QUALITY_HIGH);
+    //        bmpMenu = wxBitmap(imgMenu);
+    //    }
+    //    this->iniciarMenu->SetBitmap(bmpMenu);
+    //}
 
-    {
-        wxImage imgMenu("./imgs/iconos/stop.png", wxBITMAP_TYPE_PNG);
-        wxBitmap bmpMenu;
-        if (imgMenu.IsOk()) {
-            imgMenu.Rescale(16, 16, wxIMAGE_QUALITY_HIGH);
-            bmpMenu = wxBitmap(imgMenu);
-        }
-        this->detenerMenu->SetBitmap(bmpMenu);
-    }
+    //{
+    //    wxImage imgMenu("./imgs/iconos/stop.png", wxBITMAP_TYPE_PNG);
+    //    wxBitmap bmpMenu;
+    //    if (imgMenu.IsOk()) {
+    //        imgMenu.Rescale(16, 16, wxIMAGE_QUALITY_HIGH);
+    //        bmpMenu = wxBitmap(imgMenu);
+    //    }
+    //    this->detenerMenu->SetBitmap(bmpMenu);
+    //}
 
 
 

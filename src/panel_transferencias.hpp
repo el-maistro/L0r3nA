@@ -7,7 +7,7 @@
 
 extern struct TransferStatus;
 
-class panelTransferencias : public wxPanel {
+class panelTransferencias : public wxFrame {
 	public:
 		panelTransferencias(wxWindow* pParent, std::string strID);
 		~panelTransferencias();

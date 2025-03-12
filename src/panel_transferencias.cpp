@@ -14,8 +14,10 @@ panelTransferencias::~panelTransferencias() {
 }
 
 panelTransferencias::panelTransferencias(wxWindow* pParent, std::string strID) :
-	wxPanel(pParent, EnumIDS::ID_Panel_Transfer) {
-    this->strClienteID = strID;
+	wxFrame(pParent, EnumIDS::ID_Panel_Transfer, "Transferencias", wxDefaultPosition, wxDefaultSize) {
+
+    this->strClienteID = strID.substr(0, strID.find('/', 0));
+    this->SetTitle("[" + this->strClienteID + "] Transferencias");
     this->dataView = new wxDataViewListCtrl(this, EnumIDS::ID_Panel_Transferencias_List, wxDefaultPosition, wxDefaultSize, wxDV_HORIZ_RULES | wxDV_VERT_RULES);
 
     this->dataView->AppendTextColumn("Nombre de archivo")->SetWidth(200);

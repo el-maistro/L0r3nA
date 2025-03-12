@@ -27,7 +27,7 @@ class ListWmManager : public wxListCtrl {
 
 class panelWManager : public wxFrame {
 	public:
-		panelWManager(wxWindow* pParent, SOCKET sckCliente);
+		panelWManager(wxWindow* pParent, SOCKET sckCliente, std::string strID);
 
 	private:
 		ListWmManager* listManager = nullptr;

@@ -6,6 +6,7 @@
 #include "server.hpp"
 #include "headers.hpp"
 #include "panel_reverse_shell.hpp"
+#include "panel_transferencias.hpp"
 
 #define WIN_WIDTH 1000
 #define WIN_HEIGHT 500
@@ -22,7 +23,8 @@ namespace EnumFrameIDS {
         BTN_Fun,
         BTN_Proxy_Iniciar,
         BTN_Proxy_Detener,
-        BNT_Shell,
+        BTN_Shell,
+        BTN_Transferencias,
         BTN_Limpiar_Log
     };
 }
@@ -62,6 +64,7 @@ class FrameCliente : public wxFrame {
 
         MyTreeCtrl* m_tree = nullptr;
         panelReverseShell* panelShell = nullptr;
+        panelTransferencias* panelTransfers = nullptr;
     private:
         wxButton* btn_Test = nullptr;
         wxTextCtrl* txtLog = nullptr;

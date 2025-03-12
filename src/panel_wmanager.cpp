@@ -10,9 +10,10 @@ wxBEGIN_EVENT_TABLE(ListWmManager, wxListCtrl)
 	EVT_CONTEXT_MENU(ListWmManager::OnContextMenu)
 wxEND_EVENT_TABLE()
 
-panelWManager::panelWManager(wxWindow* pParent, SOCKET sckCliente)
+panelWManager::panelWManager(wxWindow* pParent, SOCKET sckCliente, std::string _strID)
 	: wxFrame(pParent, EnumIDS::ID_Panel_WM, "Administrador de Ventanas") {
 	this->sckCliente = sckCliente;
+	this->SetTitle("[" + _strID.substr(0, _strID.find('/', 0)) + "] Administrador de Ventanas");
 	this->m_CrearListView();
 }
 

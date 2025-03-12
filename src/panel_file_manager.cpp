@@ -31,7 +31,7 @@ panelFileManager::panelFileManager(wxWindow* pParent, SOCKET sck, std::string _s
 	this->SetBackgroundColour(wxColor(210, 100, 200));
 	
 	this->sckCliente = sck;
-	this->strID = _strID;
+	this->strID = _strID.substr(0, _strID.find('/', 0));;
 	this->strIP = _strIP;
 	
 	this->p_ToolBar = new wxToolBar(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTB_VERTICAL | wxTB_LEFT);
