@@ -15,6 +15,8 @@ panelWManager::panelWManager(wxWindow* pParent, SOCKET sckCliente, std::string _
 	this->sckCliente = sckCliente;
 	this->SetTitle("[" + _strID.substr(0, _strID.find('/', 0)) + "] Administrador de Ventanas");
 	this->m_CrearListView();
+
+	ChangeMyChildsTheme(this, THEME_BACKGROUND_COLOR, THEME_FOREGROUND_COLOR, THEME_FONT_GLOBAL);
 }
 
 void panelWManager::m_CrearListView() {

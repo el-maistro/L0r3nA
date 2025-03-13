@@ -56,6 +56,8 @@ panelInfoChrome::panelInfoChrome(wxWindow* pParent, SOCKET sck_socket)
 	main_sizer->Add(grid, 1, wxEXPAND | wxALL, 1);
 
 	this->SetSizer(main_sizer);
+
+	ChangeMyChildsTheme(this, THEME_BACKGROUND_COLOR, THEME_FOREGROUND_COLOR, THEME_FONT_GLOBAL);
 }
 
 void panelInfoChrome::OnProcesarBoton(wxCommandEvent& event) {

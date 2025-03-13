@@ -12,13 +12,15 @@ wxBEGIN_EVENT_TABLE(ListCtrlManager2, wxListCtrl)
 	EVT_CONTEXT_MENU(ListCtrlManager2::OnContextMenu)
 wxEND_EVENT_TABLE()
 
-panelProcessManager::panelProcessManager(wxWindow* pParent, SOCKET sck) :
+panelProcessManager::panelProcessManager(wxWindow* pParent, SOCKET sck, std::string _strID) :
 	wxFrame(pParent, EnumIDS::ID_PM_Panel, "Administrador de procesos") {
 
 	this->sckCliente = sck;
+	this->SetTitle("[" + _strID.substr(0, _strID.find('/', 0)) + "] Administrador de procesos");
 	
 	this->CrearListview();
 
+	ChangeMyChildsTheme(this, THEME_BACKGROUND_COLOR, THEME_FOREGROUND_COLOR, THEME_FONT_GLOBAL);
 }
 
 void panelProcessManager::CrearListview() {

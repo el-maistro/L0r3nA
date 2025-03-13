@@ -28,19 +28,19 @@ wxEND_EVENT_TABLE()
 
 panelFileManager::panelFileManager(wxWindow* pParent, SOCKET sck, std::string _strID, std::string _strIP) :
 	wxPanel(pParent, EnumIDS::ID_Panel_FM, wxDefaultPosition, wxDefaultSize) {
-	this->SetBackgroundColour(wxColor(210, 100, 200));
 	
 	this->sckCliente = sck;
 	this->strID = _strID.substr(0, _strID.find('/', 0));;
 	this->strIP = _strIP;
 	
-	this->p_ToolBar = new wxToolBar(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTB_VERTICAL | wxTB_LEFT);
+	this->p_ToolBar = new wxToolBar(this, wxID_ANY, wxDefaultPosition, wxSize(30, wxDefaultSize.GetHeight()), wxTB_VERTICAL | wxTB_LEFT);
 	
-	wxBitmap pcBitmap(wxT(".\\imgs\\computer.png"), wxBITMAP_TYPE_PNG);       //https://www.flaticon.com/authors/nikita-golubev
-	wxBitmap desktopBitmap(wxT(".\\imgs\\desktop.png"), wxBITMAP_TYPE_PNG);   //https://www.flaticon.com/authors/xnimrodx
-	wxBitmap downloadBitmap(wxT(".\\imgs\\download.png"), wxBITMAP_TYPE_PNG); //https://www.flaticon.com/authors/bharat-icons
-	wxBitmap refreshBitmap(wxT(".\\imgs\\refresh.png"), wxBITMAP_TYPE_PNG);   //https://www.flaticon.com/authors/arkinasi
-	wxBitmap uploadBitmap(wxT(".\\imgs\\upload.png"), wxBITMAP_TYPE_PNG);     //https://www.flaticon.com/authors/ilham-fitrotul-hayat
+	//Imagenes por https://www.flaticon.com/authors/freepik
+	wxBitmap pcBitmap(wxT(".\\imgs\\computer.png"), wxBITMAP_TYPE_PNG);      
+	wxBitmap desktopBitmap(wxT(".\\imgs\\desktop.png"), wxBITMAP_TYPE_PNG);  
+	wxBitmap downloadBitmap(wxT(".\\imgs\\download.png"), wxBITMAP_TYPE_PNG);
+	wxBitmap refreshBitmap(wxT(".\\imgs\\refresh.png"), wxBITMAP_TYPE_PNG);  
+	wxBitmap uploadBitmap(wxT(".\\imgs\\upload.png"), wxBITMAP_TYPE_PNG);   
 	
 
 	this->p_ToolBar->AddTool(EnumIDS::ID_Panel_FM_Equipo, wxT("Equipo"), pcBitmap, "Equipo");
@@ -48,8 +48,6 @@ panelFileManager::panelFileManager(wxWindow* pParent, SOCKET sck, std::string _s
 	this->p_ToolBar->AddTool(EnumIDS::ID_Panel_FM_Escritorio, wxT("Escritorio"), desktopBitmap, "Escritorio");
 	this->p_ToolBar->AddSeparator();
 	this->p_ToolBar->AddTool(EnumIDS::ID_Panel_FM_Descargas, wxT("Descargas"), downloadBitmap, "Descargas");
-	this->p_ToolBar->AddSeparator(); 
-	this->p_ToolBar->AddSeparator(); 
 	this->p_ToolBar->AddSeparator();
 	this->p_ToolBar->AddTool(EnumIDS::ID_Panel_FM_Refresh, wxT("Refrescar"), refreshBitmap, wxT("Refrescar"));
 	this->p_ToolBar->AddSeparator();
@@ -140,8 +138,8 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 
 void panelFileManager::CrearLista() {
 	this->listManager = new ListCtrlManager(this, EnumIDS::ID_Panel_FM_List, wxDefaultPosition,  wxDefaultSize/*wxSize(FRAME_CLIENT_SIZE_WIDTH*3, FRAME_CLIENT_SIZE_WIDTH*3)*/, wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES, this->strID, this->strIP, this->sckCliente);
+	
 	//Spining circle
-
 	this->listManager->m_indicator = new wxActivityIndicator(this->listManager, wxID_ANY, wxDefaultPosition, wxDefaultSize);
 	this->listManager->m_indicator->Show(false);
 }

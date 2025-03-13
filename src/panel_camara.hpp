@@ -49,7 +49,7 @@ class panelPictureBox : public wxFrame {
 
 class panelCamara : public wxFrame {
 	public:
-		panelCamara(wxWindow* pParent, SOCKET sck);
+		panelCamara(wxWindow* pParent, SOCKET sck, std::string _strID);
 
 		void ProcesarLista(const char*& pBuffer);
 		void OnRefrescarLista(wxCommandEvent& event);

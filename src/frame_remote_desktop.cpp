@@ -74,6 +74,8 @@ frameRemoteDesktop::frameRemoteDesktop(wxWindow* pParent, SOCKET sck) :
 
 	this->SetSizer(main_sizer);
 	this->Layout();
+
+	ChangeMyChildsTheme(this, THEME_BACKGROUND_COLOR, THEME_FOREGROUND_COLOR, THEME_FONT_GLOBAL);
 	
 }
 

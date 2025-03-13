@@ -1,6 +1,7 @@
 #include "panel_keylogger.hpp"
 #include "frame_client.hpp"
 #include "server.hpp"
+#include "misc.hpp"
 
 extern Servidor* p_Servidor;
 
@@ -10,11 +11,12 @@ wxBEGIN_EVENT_TABLE(panelKeylogger, wxFrame)
 	EVT_BUTTON(EnumIDS::ID_KL_BTN_Save, panelKeylogger::OnGuardarLog)
 wxEND_EVENT_TABLE()
 
-panelKeylogger::panelKeylogger(wxWindow* pParent, SOCKET sck) :
+panelKeylogger::panelKeylogger(wxWindow* pParent, SOCKET sck, std::string _strID) :
 	wxFrame(pParent, EnumIDS::ID_KL_Panel, "Keylogger") {
 
 	this->sckCliente = sck;
-	
+	this->SetTitle("[" + _strID.substr(0, _strID.find('/', 0)) + "] Keylogger");
+
 	this->btn_Iniciar = new wxToggleButton(this, EnumIDS::ID_KL_BTN_Toggle, "Iniciar");
 	
 	wxSize btn_size = this->btn_Iniciar->GetSize();
@@ -36,6 +38,7 @@ panelKeylogger::panelKeylogger(wxWindow* pParent, SOCKET sck) :
 
 	this->SetSizer(sizer2);
 
+	ChangeMyChildsTheme(this, THEME_BACKGROUND_COLOR, THEME_FOREGROUND_COLOR, THEME_FONT_GLOBAL);
 }
 
 void panelKeylogger::OnGuardarLog(wxCommandEvent& event) {

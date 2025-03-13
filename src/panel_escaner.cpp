@@ -9,9 +9,10 @@ wxBEGIN_EVENT_TABLE(panelEscaner, wxFrame)
 wxEND_EVENT_TABLE()
 
 
-panelEscaner::panelEscaner(wxWindow* pParent, SOCKET _sck)
+panelEscaner::panelEscaner(wxWindow* pParent, SOCKET _sck, std::string _strID)
 	: wxFrame(pParent, EnumEscanerIDS::Main_Window, "Escaner de red") {
 	this->sckSocket = _sck;
+	this->SetTitle("[" + _strID.substr(0, _strID.find('/', 0)) + "] Escaner de red");
 
 	wxStaticText* lblHost = new wxStaticText(this, wxID_ANY, "Host(s):");
 	wxStaticText* lblEscaner = new wxStaticText(this, wxID_ANY, "Tipo escaneo:");
@@ -65,6 +66,8 @@ panelEscaner::panelEscaner(wxWindow* pParent, SOCKET _sck)
 	this->Connect(EnumEscanerIDS::ListCtrl, wxEVT_LIST_ITEM_ACTIVATED, wxListEventHandler(panelEscaner::OnMostrarPuertos));
 
 	this->SetSizer(main_sizer);
+
+	ChangeMyChildsTheme(this, THEME_BACKGROUND_COLOR, THEME_FOREGROUND_COLOR, THEME_FONT_GLOBAL);
 }
 
 void panelEscaner::CrearListView() {

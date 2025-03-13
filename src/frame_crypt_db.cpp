@@ -1,4 +1,5 @@
 #include "frame_crypt_db.hpp"
+#include "misc.hpp"
 
 wxBEGIN_EVENT_TABLE(ListCtrlManager3, wxListCtrl)
 	EVT_MENU(EnumIDS::ID_CryptDB_Refrescar, ListCtrlManager3::OnRefrescar)
@@ -154,6 +155,8 @@ frameCryptDB::frameCryptDB():
 	nsizer->Add(this->p_listctrl, 1, wxEXPAND, 1);
 
 	this->SetSizerAndFit(nsizer);
+
+	ChangeMyChildsTheme(this, THEME_BACKGROUND_COLOR, THEME_FOREGROUND_COLOR, THEME_FONT_GLOBAL);
 }
 
 void frameCryptDB::Exec_SQL(const char* cCMD) {

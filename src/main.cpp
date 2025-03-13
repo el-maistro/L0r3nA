@@ -5,6 +5,7 @@
 #include "server.hpp"
 #include "headers.hpp"
 #include "notify.hpp"
+#include "misc.hpp"
 
 extern Servidor* p_Servidor;
 
@@ -145,21 +146,8 @@ MyFrame::MyFrame()
     this->CreateStatusBar();
     this->SetStatusText("IDLE");
     
-#ifdef DEBUG_DESIGN_LIMITS
-    SetBackgroundColour(wxColour(255, 255, 255, 128)); // Establecer el color de fondo con transparencia
-    this->m_BPanel->SetBackgroundColour(wxColor(0, 255, 0));
-    this->m_RPanel->SetBackgroundColour(wxColor(0, 0, 255));
-    this->m_LPanel->SetBackgroundColour(wxColor(255, 0, 0));
-#endif
+    ChangeMyChildsTheme(this, THEME_BACKGROUND_COLOR, THEME_FOREGROUND_COLOR, THEME_FONT_GLOBAL);
 
-    /*SOCKET nsocket = INVALID_SOCKET;
-    std::string strip = "127.0.0.1";
-    std::string title_ = "Random";
-    *///FrameCliente* nframe = new FrameCliente(title_, nsocket, strip);
-    //FrameCliente* nframe = new FrameCliente(nsocket, title_, strip, "eW1n", "Amd x86", "Guindows :v", "16");
-    //nframe->Show(true);
-
-    //nframe->SetFocus();
 }
 
 void MyFrame::OnCryptDB(wxCommandEvent& event) {
@@ -228,8 +216,9 @@ void MyFrame::CrearControlesPanelIzquierdo(){
 
 void MyFrame::CrearLista(long flags, bool withText){
     p_Servidor->m_listCtrl = DBG_NEW MyListCtrl(this->m_RPanel, EnumIDS::ID_Main_List, wxDefaultPosition, wxDefaultSize, flags | wxBORDER_THEME);
-   
+
     wxListItem itemCol;
+    
     itemCol.SetText("ID");
     itemCol.SetWidth(100);
     itemCol.SetAlign(wxLIST_FORMAT_CENTRE);
@@ -254,7 +243,10 @@ void MyFrame::CrearLista(long flags, bool withText){
     itemCol.SetText("CPU");
     itemCol.SetWidth(200);
     p_Servidor->m_listCtrl->InsertColumn(5, itemCol);
+
 }
+
+
 
 void MyFrame::OnClose(wxCloseEvent& event){
     wxMessageDialog dialog(this, "Seguro que quieres salir?", "Salir", wxCENTER | wxYES_NO | wxICON_QUESTION);

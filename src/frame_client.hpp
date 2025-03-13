@@ -8,8 +8,8 @@
 #include "panel_reverse_shell.hpp"
 #include "panel_transferencias.hpp"
 
-#define WIN_WIDTH 1000
-#define WIN_HEIGHT 500
+#define WIN_WIDTH 960
+#define WIN_HEIGHT 380
 
 namespace EnumFrameIDS {
     enum Enum {
@@ -70,9 +70,17 @@ class FrameCliente : public wxFrame {
         wxTextCtrl* txtLog = nullptr;
         wxComboBox* cmdIPS = nullptr;
 
+
+        void ChangeMyChildButtons(wxWindow* parent);
+
         //Eventos
         void OnClose(wxCloseEvent& event);
         void OnButton(wxCommandEvent& event);
+
+        //Eventos de disenio
+        void OnMouseHover(wxMouseEvent& event);
+        void OnMouseLeave(wxMouseEvent& event);
+
 
         void OnClosePage(wxAuiNotebookEvent& event);
 

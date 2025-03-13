@@ -20,9 +20,6 @@ frameEncryption::frameEncryption(wxWindow* pParent, std::string _strPath, std::s
 	wxArrayString selection;
 	selection.Insert("Encriptar", 0);
 	selection.Insert("Desencriptar", 1);
-	//selection->Add("Encriptar");
-	//selection->Add("Desencriptar");
-
 	this->rdio_Options = new wxRadioBox(this, EnumIDS::ID_FM_Radio_Encriptar, wxEmptyString, wxDefaultPosition,
 		wxDefaultSize, selection, 0, wxRA_SPECIFY_COLS);
 
@@ -52,6 +49,7 @@ frameEncryption::frameEncryption(wxWindow* pParent, std::string _strPath, std::s
 
 	this->SetClientSize(400, 150);
 
+	ChangeMyChildsTheme(this, THEME_BACKGROUND_COLOR, THEME_FOREGROUND_COLOR, THEME_FONT_GLOBAL);
 }
 
 void frameEncryption::Exec_SQL(const char* cCMD) {

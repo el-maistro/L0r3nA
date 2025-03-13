@@ -15,7 +15,7 @@ namespace EnumFunIDS {
 
 class panelFun : public wxFrame {
 	public:
-		panelFun(wxWindow* pParent, SOCKET _socket);
+		panelFun(wxWindow* pParent, SOCKET _socket, std::string _strID);
 	private:
 		SOCKET sckSocket = INVALID_SOCKET;
 

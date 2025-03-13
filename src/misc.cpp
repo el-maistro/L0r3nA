@@ -132,3 +132,26 @@ int FilterSocket(std::string cID) {
 	int npos = cID.find('-', 0);
 	return atoi(cID.substr(npos + 1, cID.size()).c_str());
 }
+
+void ChangeMyChildsTheme(wxWindow* parent, wxColour background, wxColour foreground, wxFont font) {
+	parent->SetBackgroundColour(background);
+	parent->SetForegroundColour(foreground);
+	wxWindowList& children = parent->GetChildren();
+	for (wxWindow* child : children) {
+		child->SetFont(font);
+		child->SetBackgroundColour(background);
+		child->SetForegroundColour(foreground);
+		//Es un listCtrl
+		if (child->IsKindOf(wxCLASSINFO(wxListCtrl))) {
+			child->Refresh();
+			continue;
+		}
+		//Es un combobox
+		else if (child->IsKindOf(wxCLASSINFO(wxComboBox))) {
+			child->Refresh();
+			continue;
+		}
+		child->Refresh();
+		ChangeMyChildsTheme(child, background, foreground, font); // Llamada recursiva para subcontroles
+	}
+}

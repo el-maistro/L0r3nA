@@ -1,5 +1,6 @@
 #include "panel_transferencias.hpp"
 #include "server.hpp"
+#include "misc.hpp"
 
 extern Servidor* p_Servidor;
 
@@ -32,6 +33,8 @@ panelTransferencias::panelTransferencias(wxWindow* pParent, std::string strID) :
 
     this->SetActive(true);
     this->SpawnThread();
+
+    ChangeMyChildsTheme(this, THEME_BACKGROUND_COLOR, THEME_FOREGROUND_COLOR, THEME_FONT_GLOBAL);
 }
 
 bool panelTransferencias::isActive() {

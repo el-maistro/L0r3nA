@@ -65,6 +65,8 @@ wxEditForm::wxEditForm(wxWindow* pParent, wxString strNombre, std::string strID)
 	}else {
 		DEBUG_MSG("No existe el panel principal");
 	}
+
+	ChangeMyChildsTheme(this, THEME_BACKGROUND_COLOR, THEME_FOREGROUND_COLOR, THEME_FONT_GLOBAL);
 }
 
 void wxEditForm::OnGuardarRemoto(wxCommandEvent&) {

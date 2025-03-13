@@ -12,7 +12,7 @@ namespace EnumReverseShell {
 
 class panelReverseShell : public wxFrame {
     public:
-        panelReverseShell(wxWindow* pParent, SOCKET sck);
+        panelReverseShell(wxWindow* pParent, SOCKET sck, std::string _strID);
         
         ~panelReverseShell() {
             DEBUG_MSG("Destruyendo panelReverseShell");

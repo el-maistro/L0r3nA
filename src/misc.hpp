@@ -18,4 +18,7 @@ u64 StrToUint(const char* strString);
 u64 GetFileSize(const char* cPath);
 int FilterSocket(std::string cID);
 
+//Tema
+void ChangeMyChildsTheme(wxWindow* parent, wxColour background, wxColour foreground, wxFont font);
+
 #endif

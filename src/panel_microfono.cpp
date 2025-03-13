@@ -42,6 +42,7 @@ panelMicrophone::panelMicrophone(wxWindow* pParent, SOCKET sck_socket) :
 
     this->SetSizer(main_sizer);
 
+
 }
 
 void panelMicrophone::OnRefrescarDispositivos(wxCommandEvent& event) {

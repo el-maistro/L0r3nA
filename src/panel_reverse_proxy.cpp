@@ -11,15 +11,15 @@ panelReverseProxy::panelReverseProxy(wxWindow* pParent, SOCKET sck) :
    wxPanel(pParent, EnumIDSProxy::ID_Main_Window){
 	this->sckSocket = sck;
 
-	wxStaticText* label1 = new wxStaticText(this, wxID_ANY, "Puerto de escucha local:");
+	wxStaticText* label1 = new wxStaticText(this, wxID_ANY, "Puerto:");
 	this->txtPort = new wxTextCtrl(this, EnumIDSProxy::ID_TXT_Port, "6666");
 	this->btnToggle = new wxToggleButton(this, EnumIDSProxy::ID_BTN_Toggle, "Iniciar");
 
 	wxBoxSizer* main_sizer = new wxBoxSizer(wxVERTICAL);
 
 	main_sizer->Add(label1);
-	main_sizer->Add(txtPort);
-	main_sizer->Add(btnToggle);
+	main_sizer->Add(txtPort, 0, wxALIGN_CENTER);
+	main_sizer->Add(btnToggle, 0, wxALIGN_CENTER);
 
 	this->SetSizer(main_sizer);
 }

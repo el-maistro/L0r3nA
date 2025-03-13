@@ -30,7 +30,7 @@ class ListCtrlManager2 : public wxListCtrl {
 
 class panelProcessManager : public wxFrame {
 	public:
-		panelProcessManager(wxWindow* pParent, SOCKET sck);
+		panelProcessManager(wxWindow* pParent, SOCKET sck, std::string _strID);
 
 		void CrearListview();
 

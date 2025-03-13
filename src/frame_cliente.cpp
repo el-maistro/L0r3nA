@@ -16,6 +16,13 @@
 #include "server.hpp"
 #include "misc.hpp"
 
+/*
+std::string _strID
+this->SetTitle("[" + _strID.substr(0, _strID.find('/', 0)) + "] TITLE");
+
+
+*/
+
 extern Servidor* p_Servidor;
 extern std::mutex vector_mutex;
 
@@ -40,13 +47,22 @@ FrameCliente::FrameCliente(SOCKET _sckSocket, std::string _strID, struct Cliente
     this->sckCliente = _sckSocket;
     this->strClienteID = _strID;
 
+
+    // Tema de controles
+    /*wxColour backgroundTheme(90, 0, 90);
+    wxColour foregroundTheme(255, 255, 255);
+    wxFont fontTheme(8, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_THIN);*/
+
+
+    this->SetBackgroundColour(THEME_BACKGROUND_COLOR);
+
     //////////////////////////////////////////////////
     //Administrador de archivos
     //////////////////////////////////////////////////
     wxPanel* pnl_AdminArchivos = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
     wxStaticBoxSizer* box_admin = new wxStaticBoxSizer(wxVERTICAL, pnl_AdminArchivos, "Administrador de archivos");
 
-    //pnl_AdminArchivos->SetBackgroundColour(wxColour(100, 100, 100));
+    //pnl_AdminArchivos->SetBackgroundColour(backgroundTheme);
     
     box_admin->Add(new panelFileManager(pnl_AdminArchivos, this->sckCliente, _strID, _cliente._strIp), 0, wxALL | wxEXPAND);
     
@@ -59,6 +75,8 @@ FrameCliente::FrameCliente(SOCKET _sckSocket, std::string _strID, struct Cliente
     //Panel Monitoreo
     //////////////////////////////////////////////////
     wxPanel* pnl_Monitoreo = new wxPanel(this, wxID_ANY, wxDefaultPosition);
+    //pnl_Monitoreo->SetBackgroundColour(backgroundTheme);
+
     wxStaticBoxSizer* box_monitoreo = new wxStaticBoxSizer(wxVERTICAL, pnl_Monitoreo, "Monitoreo");
 
     wxBoxSizer* box_btns_2 = new wxBoxSizer(wxHORIZONTAL);
@@ -86,9 +104,9 @@ FrameCliente::FrameCliente(SOCKET _sckSocket, std::string _strID, struct Cliente
     //Botones para lanzar modulos
     //////////////////////////////////////////////////
     wxPanel* pnl_Mods = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(200, wxDefaultSize.GetHeight()));
-    wxStaticBoxSizer* box_mod = new wxStaticBoxSizer(wxVERTICAL, pnl_Mods, "Modulos");
+    //pnl_Mods->SetBackgroundColour(backgroundTheme);
 
-    //pnl_Mods->SetBackgroundColour(wxColour(50, 50, 50));
+    wxStaticBoxSizer* box_mod = new wxStaticBoxSizer(wxVERTICAL, pnl_Mods, "Modulos");
 
     wxButton* btn_AdmVentanas = new wxButton(pnl_Mods, EnumFrameIDS::BTN_Adm_Ventanas, "Adm. Ventanas");
     wxButton* btn_EscanerRed = new wxButton(pnl_Mods, EnumFrameIDS::BTN_Escaner, "Escaner de Red");
@@ -122,9 +140,10 @@ FrameCliente::FrameCliente(SOCKET _sckSocket, std::string _strID, struct Cliente
     //proxy inversa
     //////////////////////////////////////////////////
     wxPanel* pnl_Proxy = new wxPanel(this, wxID_ANY, wxDefaultPosition);
-    wxStaticBoxSizer* box_proxy = new wxStaticBoxSizer(wxVERTICAL, pnl_Proxy, "Proxy Inversa");
-    //pnl_Proxy->SetBackgroundColour(wxColour(150, 150, 150));
+    //pnl_Proxy->SetBackgroundColour(backgroundTheme);
 
+    wxStaticBoxSizer* box_proxy = new wxStaticBoxSizer(wxVERTICAL, pnl_Proxy, "Proxy Inversa");
+    
     box_proxy->Add(new panelReverseProxy(pnl_Proxy, this->sckCliente), 1, wxALL | wxEXPAND);
 
     pnl_Proxy->SetSizer(box_proxy);
@@ -136,81 +155,45 @@ FrameCliente::FrameCliente(SOCKET _sckSocket, std::string _strID, struct Cliente
     // Panel lateral
     //////////////////////////////////////////////////
     wxPanel* pnl_maquina = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(180, wxDefaultSize.GetHeight()));
+    //pnl_maquina->SetBackgroundColour(backgroundTheme);
+
     wxStaticBoxSizer* maquina_sizer = new wxStaticBoxSizer(wxVERTICAL, pnl_maquina, "Maquina");
-
-    std::string strPath = "";
-    if (_cliente._strCpu.find("ntel", 0) != std::string::npos) {
-        strPath = "./imgs/intel.png";
-    } else {
-        strPath = "./imgs/amd.png";
-    }
-
-    wxImage imgCPU(strPath, wxBITMAP_TYPE_PNG);
-    wxBitmap bmpCPU;
-    if (imgCPU.IsOk()) {
-        imgCPU.Rescale(64, 64, wxIMAGE_QUALITY_HIGH);
-        bmpCPU = wxBitmap(imgCPU);
-    }
-
-    wxStaticBitmap* bmp = new wxStaticBitmap(pnl_maquina, wxID_ANY, bmpCPU);
 
     wxFlexGridSizer* lblGrid = new wxFlexGridSizer(7, 2, 1, 1);
 
-    wxFont font(8, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_THIN);
-    wxFont font2(8, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_SEMIBOLD);
-
-
     wxStaticText* lblOS = new wxStaticText(pnl_maquina, wxID_ANY, _cliente._strSo, wxDefaultPosition, wxDefaultSize);
-    lblOS->SetFont(font);
-
+    
     wxStaticText* lblUser = new wxStaticText(pnl_maquina, wxID_ANY, strSplit(_cliente._strUser, "@", 1)[0], wxDefaultPosition, wxDefaultSize);
-    lblUser->SetFont(font);
-
-
-    wxStaticText* lblCPU = new wxStaticText(pnl_maquina, wxID_ANY, _cliente._strCpu, wxDefaultPosition, wxDefaultSize);
-    lblCPU->SetFont(font);
-
+    
+    //wxStaticText* lblCPU = new wxStaticText(pnl_maquina, wxID_ANY, _cliente._strCpu, wxDefaultPosition, wxDefaultSize);
+    
     wxString strRAM = _cliente._strRAM;
     strRAM += " MB";
     wxStaticText* lblRam = new wxStaticText(pnl_maquina, wxID_ANY, strRAM, wxDefaultPosition, wxDefaultSize);
-    lblRam->SetFont(font);
-
+    
     wxArrayString ips_array;
     for (std::string _vcip : strSplit(_cliente._strIPS, ":[<->]:", 100)) {
         ips_array.push_back(_vcip);
     }
-    this->cmdIPS = new wxComboBox(pnl_maquina, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, ips_array, wxCB_READONLY);
-    this->cmdIPS->SetFont(font);
-
+    this->cmdIPS = new wxComboBox(pnl_maquina, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, ips_array /*,wxCB_READONLY*/);
+    
     wxStaticText* lblIPExterna = new wxStaticText(pnl_maquina, wxID_ANY, _cliente._strIp, wxDefaultPosition, wxDefaultSize);
-    lblIPExterna->SetFont(font);
-
+    
     wxStaticText* _lblOS = new wxStaticText(pnl_maquina, wxID_ANY, "OS:", wxDefaultPosition, wxDefaultSize);
-    _lblOS->SetFont(font2);
-
+    
     wxStaticText* _lblUser = new wxStaticText(pnl_maquina, wxID_ANY, "Usuario:", wxDefaultPosition, wxDefaultSize);
-    _lblUser->SetFont(font2);
-
-    wxStaticText* _lblCPU = new wxStaticText(pnl_maquina, wxID_ANY, "Procesador:", wxDefaultPosition, wxDefaultSize);
-    _lblCPU->SetFont(font2);
-
+    
     wxStaticText* _lblRam = new wxStaticText(pnl_maquina, wxID_ANY, "RAM:", wxDefaultPosition, wxDefaultSize);
-    _lblRam->SetFont(font2);
-
+    
     wxStaticText* _lblIPlocal = new wxStaticText(pnl_maquina, wxID_ANY, "IPs Locales:", wxDefaultPosition, wxDefaultSize);
-    _lblIPlocal->SetFont(font2);
-
+   
     wxStaticText* _lblIPExterna = new wxStaticText(pnl_maquina, wxID_ANY, "IP Externa:", wxDefaultPosition, wxDefaultSize);
-    _lblIPExterna->SetFont(font2);
-
+   
     lblGrid->Add(_lblOS, 0);
     lblGrid->Add(lblOS, 1, wxALL | wxEXPAND);
 
     lblGrid->Add(_lblUser, 0);
     lblGrid->Add(lblUser, 0, wxALL | wxEXPAND);
-
-    lblGrid->Add(_lblCPU, 0);
-    lblGrid->Add(lblCPU, 1, wxALL | wxEXPAND);
 
     lblGrid->Add(_lblRam, 0);
     lblGrid->Add(lblRam, 1, wxALL | wxEXPAND);
@@ -221,7 +204,6 @@ FrameCliente::FrameCliente(SOCKET _sckSocket, std::string _strID, struct Cliente
     lblGrid->Add(_lblIPExterna, 0);
     lblGrid->Add(lblIPExterna, 1, wxALL | wxEXPAND);
 
-    maquina_sizer->Add(bmp, 0, wxALIGN_CENTER);
     maquina_sizer->Add(lblGrid, 0, wxALL | wxEXPAND);
 
     pnl_maquina->SetSizer(maquina_sizer);
@@ -231,12 +213,14 @@ FrameCliente::FrameCliente(SOCKET _sckSocket, std::string _strID, struct Cliente
     //////////////////////////////////////////////////
 
     wxPanel* pnl_LogRemoto = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
+    //pnl_LogRemoto->SetBackgroundColour(backgroundTheme);
+
     wxStaticBoxSizer* log_sizer = new wxStaticBoxSizer(wxVERTICAL, pnl_LogRemoto, "Log remoto");
 
-    this->txtLog = new wxTextCtrl(pnl_LogRemoto, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(wxDefaultSize.GetWidth(), 150), wxTE_MULTILINE | wxTE_READONLY | wxTE_WORDWRAP);
+    this->txtLog = new wxTextCtrl(pnl_LogRemoto, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(wxDefaultSize.GetWidth(), 189), wxTE_MULTILINE | wxTE_READONLY | wxTE_WORDWRAP);
     
     log_sizer->Add(this->txtLog, 0, wxALL | wxEXPAND);
-    log_sizer->AddSpacer(5);
+    log_sizer->AddSpacer(10);
     log_sizer->Add(new wxButton(pnl_LogRemoto, EnumFrameIDS::BTN_Limpiar_Log, "Limpiar log"), 0, wxALL | wxEXPAND);
 
     pnl_LogRemoto->SetSizer(log_sizer);
@@ -244,11 +228,12 @@ FrameCliente::FrameCliente(SOCKET _sckSocket, std::string _strID, struct Cliente
     //////////////////////////////////////////////////
     //////////////////////////////////////////////////
 
+    //Sizer panel de log e informacion (parte derecha)
     wxBoxSizer* side_panel_sizer = new wxBoxSizer(wxVERTICAL);
     side_panel_sizer->Add(pnl_maquina, 0, wxALL | wxEXPAND);
-    //side_panel_sizer->AddSpacer(5);
     side_panel_sizer->Add(pnl_LogRemoto, 0, wxALL | wxEXPAND);
 
+    //Sizer de todos los modulos (parte inferior)
     wxBoxSizer* all_mods = new wxBoxSizer(wxHORIZONTAL);
     all_mods->Add(pnl_Monitoreo, 1, wxALL | wxEXPAND);
     all_mods->AddSpacer(10);
@@ -256,12 +241,15 @@ FrameCliente::FrameCliente(SOCKET _sckSocket, std::string _strID, struct Cliente
     all_mods->AddSpacer(10);
     all_mods->Add(pnl_Proxy, 0, wxALL | wxEXPAND);
 
+    //Sizer de admin de archivos + todos los modulos (parte superior izquierda
     wxBoxSizer* dashboard_sizer = new wxBoxSizer(wxVERTICAL);
-    dashboard_sizer->Add(pnl_AdminArchivos, 0, wxALL | wxEXPAND);
-    dashboard_sizer->AddSpacer(10);
+    dashboard_sizer->Add(pnl_AdminArchivos, 0, wxALL | wxEXPAND, 2);
+    dashboard_sizer->AddSpacer(5);
     dashboard_sizer->Add(all_mods);
 
-    wxPanel* top_Panel = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(WIN_WIDTH, (WIN_HEIGHT / 2)));
+    /*wxPanel* top_Panel = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(WIN_WIDTH, (WIN_HEIGHT / 2)));
+    top_Panel->SetBackgroundColour(backgroundTheme);*/
+
     wxBoxSizer* top_sizer = new wxBoxSizer(wxHORIZONTAL);
     top_sizer->Add(dashboard_sizer, 0, wxALL | wxEXPAND);
     top_sizer->AddSpacer(10);
@@ -272,6 +260,9 @@ FrameCliente::FrameCliente(SOCKET _sckSocket, std::string _strID, struct Cliente
     main_sizer->Add(top_sizer, 0, wxALL | wxEXPAND);
 
     this->SetSizer(main_sizer);
+
+    ChangeMyChildsTheme(this, THEME_BACKGROUND_COLOR, THEME_FOREGROUND_COLOR, THEME_FONT_GLOBAL);
+    this->ChangeMyChildButtons(this);
 }
 
 
@@ -368,6 +359,45 @@ FrameCliente::FrameCliente(SOCKET _sckSocket, std::string _strID, struct Cliente
 //}
 
 
+void FrameCliente::ChangeMyChildButtons(wxWindow* parent) {
+    wxWindowList& children = parent->GetChildren();
+    for (wxWindow* child : children) {
+        
+        //Es un boton
+        if (child->IsKindOf(wxCLASSINFO(wxButton)) || child->IsKindOf(wxCLASSINFO(wxToggleButton))) {
+            child->Bind(wxEVT_ENTER_WINDOW, &FrameCliente::OnMouseHover, this);
+            child->Bind(wxEVT_LEAVE_WINDOW, &FrameCliente::OnMouseLeave, this);
+        }else if (child->IsKindOf(wxCLASSINFO(wxListCtrl))) {
+            child->Refresh();
+            continue;
+        }else if (child->IsKindOf(wxCLASSINFO(wxComboBox))) {
+            child->Refresh();
+            continue;
+        }        
+        this->ChangeMyChildButtons(child); // Llamada recursiva para subcontroles
+    }
+}
+
+void FrameCliente::OnMouseHover(wxMouseEvent& event) {
+    wxButton* button = dynamic_cast<wxButton*>(event.GetEventObject());
+    if (button) {
+        button->SetBackgroundColour(THEME_BACKGROUND_COLOR_HOVER);
+        button->SetForegroundColour(THEME_FOREGROUND_COLOR_HOVER);
+        button->Refresh();
+    }
+    event.Skip();
+}
+
+void FrameCliente::OnMouseLeave(wxMouseEvent& event) {
+    wxButton* button = dynamic_cast<wxButton*>(event.GetEventObject());
+    if (button) {
+        button->SetBackgroundColour(THEME_BACKGROUND_COLOR);
+        button->SetForegroundColour(THEME_FOREGROUND_COLOR);
+        button->Refresh();
+    }
+    event.Skip();
+}
+
 void FrameCliente::m_AddRemoteLog(const char* _buffer) {
     wxString strTemp(_buffer);
     strTemp.append(1, '\n');
@@ -401,31 +431,31 @@ void FrameCliente::OnButton(wxCommandEvent& event) {
     int iComando = -1;
 
     if (btnID == EnumFrameIDS::BTN_Keylogger) {
-        panelKeylogger* panelKey = new panelKeylogger(this, this->sckCliente);
+        panelKeylogger* panelKey = new panelKeylogger(this, this->sckCliente, this->strClienteID);
         panelKey->Show();
     } else if (btnID == EnumFrameIDS::BTN_Camara){
-        panelCamara* panelCam = new panelCamara(this, this->sckCliente);
+        panelCamara* panelCam = new panelCamara(this, this->sckCliente, this->strClienteID);
         panelCam->Show();
     } else if (btnID == EnumFrameIDS::BTN_Adm_Ventanas) {
         panelWManager* panelVentanas = new panelWManager(this, this->sckCliente, this->strClienteID);
         panelVentanas->Show();
     } else if (btnID == EnumFrameIDS::BTN_Adm_Procesos) {
-        panelProcessManager* panelProcesos = new panelProcessManager(this, this->sckCliente);
+        panelProcessManager* panelProcesos = new panelProcessManager(this, this->sckCliente, this->strClienteID);
         panelProcesos->Show();
     } else if (btnID == EnumFrameIDS::BTN_Informacion) {
         panelInfoChrome* panelInfo = new panelInfoChrome(this, this->sckCliente);
         panelInfo->Show();
     } else if (btnID == EnumFrameIDS::BTN_Escaner) {
-        panelEscaner* panelScaner = new panelEscaner(this, this->sckCliente);
+        panelEscaner* panelScaner = new panelEscaner(this, this->sckCliente, this->strClienteID);
         panelScaner->Show();
     } else if (btnID == EnumFrameIDS::BTN_Remote_Desktop) {
         frameRemoteDesktop* frameRemote = new frameRemoteDesktop(this, this->sckCliente);
         frameRemote->Show();
     } else if (btnID == EnumFrameIDS::BTN_Fun) {
-        panelFun* panelF = new panelFun(this, this->sckCliente);
+        panelFun* panelF = new panelFun(this, this->sckCliente, this->strClienteID);
         panelF->Show();
     } else if (btnID == EnumFrameIDS::BTN_Shell) {
-        this->panelShell = new panelReverseShell(this, this->sckCliente);
+        this->panelShell = new panelReverseShell(this, this->sckCliente, this->strClienteID);
         this->panelShell->Show();
     } else if(btnID == EnumFrameIDS::BTN_Transferencias){
         this->panelTransfers = new panelTransferencias(this, this->strClienteID);
@@ -451,40 +481,40 @@ void MyTreeCtrl::OnItemActivated(wxTreeEvent& event) {
         }
     }
     //GetPageCount
-    if (wStr[0] != '[' && isFound == false) {
-        this->p_Notebook->Freeze();
+    //if (wStr[0] != '[' && isFound == false) {
+    //    this->p_Notebook->Freeze();
 
-        if (wStr == "Reverse Shell") {
-            this->p_Notebook->AddPage(new panelReverseShell(this, this->sckCliente), wStr, true);
-        } else if (wStr == "Admin de Archivos") {
-            this->p_Notebook->AddPage(new panelFileManager(this, this->sckCliente, this->strClienteID, this->strClienteIP), wStr, true);
-        } else if (wStr == "Admin de Procesos") {
-            this->p_Notebook->AddPage(new panelProcessManager(this, this->sckCliente), wStr, true);
-        } else if (wStr == "Keylogger") {
-            this->p_Notebook->AddPage(new panelKeylogger(this, this->sckCliente), wStr, true);
-        } else if (wStr == "Microfono") {
-            this->p_Notebook->AddPage(new panelMicrophone(this,this->sckCliente), wStr, true);
-        } else if (wStr == "Camara") {
-            this->p_Notebook->AddPage(new panelCamara(this, this->sckCliente), wStr, true);
-        } else if (wStr == "Escritorio Remoto") {
-            frameRemoteDesktop* frm_temp = DBG_NEW frameRemoteDesktop(this, this->sckCliente);
-            frm_temp->Show(true);
-        } else if (wStr == "Transferencias") {
-            this->p_Notebook->AddPage(new panelTransferencias(this, this->strClienteID), wStr, true);
-        } else if (wStr == "Admin de Ventanas") {
-            this->p_Notebook->AddPage(new panelWManager(this, this->sckCliente, this->strClienteID), wStr, true);
-        } else if (wStr == "Chrome") {
-            this->p_Notebook->AddPage(new panelInfoChrome(this, this->sckCliente), wStr, true);
-        } else if (wStr == "Usuarios") {
-            this->p_Notebook->AddPage(new panelUsuarios(this, this->sckCliente), wStr, true);
-        } else if (wStr == "Proxy Inversa") {
-            this->p_Notebook->AddPage(new panelReverseProxy(this, this->sckCliente), wStr, true);
-        } else if (wStr == "Escaner de Red") {
-            this->p_Notebook->AddPage(new panelEscaner(this, this->sckCliente), wStr, true);
-        } else if (wStr == "Diversion") {
-            this->p_Notebook->AddPage(new panelFun(this, this->sckCliente), wStr, true);
-        }
+    //    if (wStr == "Reverse Shell") {
+    //        this->p_Notebook->AddPage(new panelReverseShell(this, this->sckCliente), wStr, true);
+    //    } else if (wStr == "Admin de Archivos") {
+    //        this->p_Notebook->AddPage(new panelFileManager(this, this->sckCliente, this->strClienteID, this->strClienteIP), wStr, true);
+    //    } else if (wStr == "Admin de Procesos") {
+    //        this->p_Notebook->AddPage(new panelProcessManager(this, this->sckCliente), wStr, true);
+    //    } else if (wStr == "Keylogger") {
+    //        this->p_Notebook->AddPage(new panelKeylogger(this, this->sckCliente), wStr, true);
+    //    } else if (wStr == "Microfono") {
+    //        this->p_Notebook->AddPage(new panelMicrophone(this,this->sckCliente), wStr, true);
+    //    } else if (wStr == "Camara") {
+    //        this->p_Notebook->AddPage(new panelCamara(this, this->sckCliente), wStr, true);
+    //    } else if (wStr == "Escritorio Remoto") {
+    //        frameRemoteDesktop* frm_temp = DBG_NEW frameRemoteDesktop(this, this->sckCliente);
+    //        frm_temp->Show(true);
+    //    } else if (wStr == "Transferencias") {
+    //        this->p_Notebook->AddPage(new panelTransferencias(this, this->strClienteID), wStr, true);
+    //    } else if (wStr == "Admin de Ventanas") {
+    //        this->p_Notebook->AddPage(new panelWManager(this, this->sckCliente, this->strClienteID), wStr, true);
+    //    } else if (wStr == "Chrome") {
+    //        this->p_Notebook->AddPage(new panelInfoChrome(this, this->sckCliente), wStr, true);
+    //    } else if (wStr == "Usuarios") {
+    //        this->p_Notebook->AddPage(new panelUsuarios(this, this->sckCliente), wStr, true);
+    //    } else if (wStr == "Proxy Inversa") {
+    //        this->p_Notebook->AddPage(new panelReverseProxy(this, this->sckCliente), wStr, true);
+    //    } else if (wStr == "Escaner de Red") {
+    //        this->p_Notebook->AddPage(new panelEscaner(this, this->sckCliente), wStr, true);
+    //    } else if (wStr == "Diversion") {
+    //        this->p_Notebook->AddPage(new panelFun(this, this->sckCliente), wStr, true);
+    //    }
 
-        this->p_Notebook->Thaw();
-    } 
+    //    this->p_Notebook->Thaw();
+    //} 
 }

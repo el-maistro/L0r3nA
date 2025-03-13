@@ -13,10 +13,11 @@ wxEND_EVENT_TABLE()
 
 
 //Reverse Shell
-panelReverseShell::panelReverseShell(wxWindow* pParent, SOCKET sck) :
-    wxFrame(pParent, EnumIDS::ID_Panel_Reverse_Shell, "Shell Inversa", wxDefaultPosition, wxSize(600, 500)) {
+panelReverseShell::panelReverseShell(wxWindow* pParent, SOCKET sck, std::string _strID) :
+    wxFrame(pParent, EnumIDS::ID_Panel_Reverse_Shell, "Shell Inversa", wxDefaultPosition, wxSize(700, 400)) {
 
     this->sckCliente = sck;
+    this->SetTitle("[" + _strID.substr(0, _strID.find('/', 0)) + "] Shell Inversa");
     
     this->txtConsole = new wxTextCtrl(this, EnumIDS::ID_Panel_Reverse_Shell_TxtConsole, "Reverse Shell v0.1\n", wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE | wxTE_RICH);
     if (this->txtConsole == nullptr) {
