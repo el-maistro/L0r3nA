@@ -13,7 +13,7 @@ panelUsuarios::panelUsuarios(wxWindow* pParent, SOCKET _sckSocket)
 	
 	this->sckSocket = _sckSocket;
 
-	wxButton* btn_refrescar = new wxButton(this, EnumPanelUsuarios::BTN_Refrescar, "Refrescar");
+	wxButton* btn_refrescar = new wxButton(this, EnumPanelUsuarios::BTN_Refrescar, "Refrescar lista de usuarios");
 	this->CrearListCtrl();
 
 	wxBoxSizer* main_sizer = new wxBoxSizer(wxVERTICAL);

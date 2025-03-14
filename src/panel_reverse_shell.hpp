@@ -30,6 +30,8 @@ class panelReverseShell : public wxFrame {
         wxTextCtrl* txtConsole = nullptr;
 
     private:
+        wxTextCtrl* txtShellPath = nullptr;
+
         //Historial
         std::vector<wxString> vc_History;
         int iHistorialPos = 0;

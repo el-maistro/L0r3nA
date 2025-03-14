@@ -26,6 +26,7 @@ set(SRCS main.cpp
          panel_keylogger.cpp
          panel_camara.cpp
          panel_wmanager.cpp
+         panel_informacion.cpp
          panel_info_chrome.cpp
          panel_usuarios.cpp
          panel_reverse_proxy.cpp

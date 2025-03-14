@@ -21,7 +21,7 @@ struct ColumnData {
 
 class panelInfoChrome : public wxFrame {
 	public:
-		panelInfoChrome(wxWindow* pParent, SOCKET sck_socket);
+		panelInfoChrome(wxWindow* pParent, SOCKET sck_socket, wxString _strID);
 
 		void m_AgregarDataPerfiles(const std::string& strBuffer);
 		void m_ProcesarInfoPerfil(const std::string& strBuffer);

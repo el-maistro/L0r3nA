@@ -8,7 +8,7 @@
 #include "panel_keylogger.hpp"
 #include "panel_camara.hpp"
 #include "panel_wmanager.hpp"
-#include "panel_info_chrome.hpp"
+#include "panel_informacion.hpp"
 #include "panel_usuarios.hpp"
 #include "panel_reverse_proxy.hpp"
 #include "panel_escaner.hpp"
@@ -443,7 +443,7 @@ void FrameCliente::OnButton(wxCommandEvent& event) {
         panelProcessManager* panelProcesos = new panelProcessManager(this, this->sckCliente, this->strClienteID);
         panelProcesos->Show();
     } else if (btnID == EnumFrameIDS::BTN_Informacion) {
-        panelInfoChrome* panelInfo = new panelInfoChrome(this, this->sckCliente);
+        panelInformacion* panelInfo = new panelInformacion(this, this->sckCliente, this->strClienteID);
         panelInfo->Show();
     } else if (btnID == EnumFrameIDS::BTN_Escaner) {
         panelEscaner* panelScaner = new panelEscaner(this, this->sckCliente, this->strClienteID);

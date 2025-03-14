@@ -1,5 +1,3 @@
-//#include "frame_client.hpp"
-
 #include "frame_crypt_db.hpp"
 #include "frame_main.hpp"
 #include "server.hpp"
@@ -54,8 +52,7 @@ bool MyApp::OnInit(){
 }
 
 MyFrame::MyFrame()
-    : wxFrame(nullptr, EnumIDS::ID_MAIN, strTitle)
-{
+    : wxFrame(nullptr, EnumIDS::ID_MAIN, strTitle){
     //Trace memory leak
     //_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
     //_CrtSetBreakAlloc(40997);
@@ -116,36 +113,11 @@ MyFrame::MyFrame()
     main_Menu->Append(p_server, "Servidor");
     main_Menu->Append(p_help, "Ayuda");
 
-    //Iconos de menu
-    //item->SetBitmap(wxArtProvider::GetBitmapBundle(wxART_DELETE, wxART_MENU));
-    //btn_EscanerRed->SetBitmap(wxBitmap(wxT("./scan.png"), wxBITMAP_TYPE_PNG));
-    //{
-    //    wxImage imgMenu("./imgs/iconos/play-button.png", wxBITMAP_TYPE_PNG);
-    //    wxBitmap bmpMenu;
-    //    if (imgMenu.IsOk()) {
-    //        imgMenu.Rescale(16, 16, wxIMAGE_QUALITY_HIGH);
-    //        bmpMenu = wxBitmap(imgMenu);
-    //    }
-    //    this->iniciarMenu->SetBitmap(bmpMenu);
-    //}
-
-    //{
-    //    wxImage imgMenu("./imgs/iconos/stop.png", wxBITMAP_TYPE_PNG);
-    //    wxBitmap bmpMenu;
-    //    if (imgMenu.IsOk()) {
-    //        imgMenu.Rescale(16, 16, wxIMAGE_QUALITY_HIGH);
-    //        bmpMenu = wxBitmap(imgMenu);
-    //    }
-    //    this->detenerMenu->SetBitmap(bmpMenu);
-    //}
-
-
-
     this->SetMenuBar(main_Menu);
     this->SetClientSize(800,300);
     this->CreateStatusBar();
     this->SetStatusText("IDLE");
-    
+
     ChangeMyChildsTheme(this, THEME_BACKGROUND_COLOR, THEME_FOREGROUND_COLOR, THEME_FONT_GLOBAL);
 
 }
@@ -245,8 +217,6 @@ void MyFrame::CrearLista(long flags, bool withText){
     p_Servidor->m_listCtrl->InsertColumn(5, itemCol);
 
 }
-
-
 
 void MyFrame::OnClose(wxCloseEvent& event){
     wxMessageDialog dialog(this, "Seguro que quieres salir?", "Salir", wxCENTER | wxYES_NO | wxICON_QUESTION);
