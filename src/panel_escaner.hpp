@@ -31,6 +31,7 @@ class panelEscaner : public wxFrame {
 
 		void CrearListView();
 		void OnScan(wxCommandEvent& event);
+		void OnAgregarDatos(wxCommandEvent& event);
 		void OnMostrarPuertos(wxListEvent& event);
 
 		SOCKET sckSocket = INVALID_SOCKET;

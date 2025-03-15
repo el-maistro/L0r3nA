@@ -24,11 +24,8 @@ panelProcessManager::panelProcessManager(wxWindow* pParent, SOCKET sck, std::str
 }
 
 void panelProcessManager::CrearListview() {
-	this->listManager = new ListCtrlManager2(this, EnumIDS::ID_Panel_FM_List, wxDefaultPosition, wxSize(FRAME_CLIENT_SIZE_WIDTH * 3, FRAME_CLIENT_SIZE_WIDTH * 3), wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES);
-	wxBoxSizer* sizer = new wxBoxSizer(wxHORIZONTAL);
-	sizer->Add(this->listManager, 1, wxEXPAND | wxALL, 2);
-	this->SetSizer(sizer);
-
+	this->listManager = new ListCtrlManager2(this, EnumIDS::ID_Panel_FM_List, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES);
+	
 	this->listManager->sckCliente = this->sckCliente;
 
 	wxListItem itemCol;
@@ -47,8 +44,12 @@ void panelProcessManager::CrearListview() {
 	this->listManager->InsertColumn(2, itemCol);
 
 	itemCol.SetText("Ruta");
-	itemCol.SetWidth(900);
+	itemCol.SetWidth(400);
 	this->listManager->InsertColumn(3, itemCol);
+
+	wxBoxSizer* sizer = new wxBoxSizer(wxHORIZONTAL);
+	sizer->Add(this->listManager, 1, wxEXPAND | wxALL, 2);
+	this->SetSizerAndFit(sizer);
 
 }
 

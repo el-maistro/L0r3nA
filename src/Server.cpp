@@ -546,7 +546,7 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
         if (this->m_isFrameVisible()) {
             panelEscaner* temp_pn = (panelEscaner*)wxWindow::FindWindowById(EnumEscanerIDS::Main_Window, this->n_Frame);
             if (temp_pn) {
-                temp_pn->AddData(paquete.cBuffer.data());
+                this->n_Frame->panelScaner->AddData(paquete.cBuffer.data());
             }else {
                 DEBUG_MSG("[!] No se pudo encontrar ventana de escaner de red");
             }

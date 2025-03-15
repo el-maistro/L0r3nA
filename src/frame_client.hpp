@@ -7,6 +7,7 @@
 #include "headers.hpp"
 #include "panel_reverse_shell.hpp"
 #include "panel_transferencias.hpp"
+#include "panel_escaner.hpp"
 
 #define WIN_WIDTH 960
 #define WIN_HEIGHT 380
@@ -65,6 +66,7 @@ class FrameCliente : public wxFrame {
         MyTreeCtrl* m_tree = nullptr;
         panelReverseShell* panelShell = nullptr;
         panelTransferencias* panelTransfers = nullptr;
+        panelEscaner* panelScaner = nullptr;
     private:
         wxButton* btn_Test = nullptr;
         wxTextCtrl* txtLog = nullptr;

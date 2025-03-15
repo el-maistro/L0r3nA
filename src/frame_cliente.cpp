@@ -439,8 +439,8 @@ void FrameCliente::OnButton(wxCommandEvent& event) {
         panelInformacion* panelInfo = new panelInformacion(this, this->sckCliente, this->strClienteID);
         panelInfo->Show();
     } else if (btnID == EnumFrameIDS::BTN_Escaner) {
-        panelEscaner* panelScaner = new panelEscaner(this, this->sckCliente, this->strClienteID);
-        panelScaner->Show();
+        this->panelScaner = new panelEscaner(this, this->sckCliente, this->strClienteID);
+        this->panelScaner->Show();
     } else if (btnID == EnumFrameIDS::BTN_Remote_Desktop) {
         frameRemoteDesktop* frameRemote = new frameRemoteDesktop(this, this->sckCliente);
         frameRemote->Show();

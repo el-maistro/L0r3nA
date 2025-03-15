@@ -4,6 +4,9 @@
 
 extern Servidor* p_Servidor;
 
+//Custom Event
+wxDEFINE_EVENT(ADD_SCAN_OUTPUT, wxCommandEvent);
+
 wxBEGIN_EVENT_TABLE(panelEscaner, wxFrame)
 	EVT_BUTTON(wxID_ANY, panelEscaner::OnScan)
 wxEND_EVENT_TABLE()
@@ -14,13 +17,11 @@ panelEscaner::panelEscaner(wxWindow* pParent, SOCKET _sck, std::string _strID)
 	this->sckSocket = _sck;
 	this->SetTitle("[" + _strID.substr(0, _strID.find('/', 0)) + "] Escaner de red");
 
-	wxStaticText* lblHost = new wxStaticText(this, wxID_ANY, "Host(s):");
-	wxStaticText* lblEscaner = new wxStaticText(this, wxID_ANY, "Tipo escaneo:");
+	//////  Host(s) y prefijo    /////////
+	wxPanel* pnlHost = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
+	wxStaticBoxSizer* boxHost = new wxStaticBoxSizer(wxVERTICAL, pnlHost, "Host y tipo de escaner");
 	
-	this->txtHostBase = new wxTextCtrl(this, wxID_ANY);
-	this->txtPortFrom = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(50, 25));
-	this->txtPortTo = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(50, 25));
-
+	this->txtHostBase = new wxTextCtrl(pnlHost, wxID_ANY);
 
 	wxArrayString arrSubnets;
 	for (int i = 1; i <= 24; i++) {
@@ -28,50 +29,69 @@ panelEscaner::panelEscaner(wxWindow* pParent, SOCKET _sck, std::string _strID)
 	}
 	arrSubnets.push_back(" ");
 
-	this->cmb_Subnet = new wxComboBox(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, arrSubnets, wxCB_READONLY);
+	this->cmb_Subnet = new wxComboBox(pnlHost, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, arrSubnets, wxCB_READONLY);
+
+	boxHost->Add(new wxStaticText(pnlHost, wxID_ANY, "Host(s):"), 0, wxALL | wxEXPAND);
+	boxHost->Add(this->txtHostBase, 0, wxALL | wxEXPAND);
+	boxHost->Add(new wxStaticText(pnlHost, wxID_ANY, "Prefijo:"), 0, wxALL | wxEXPAND);
+	boxHost->Add(this->cmb_Subnet, 0, wxALL | wxEXPAND);
 
 	arrSubnets.Clear();
-
 	arrSubnets.push_back("Ping");
 	//arrSubnets.push_back("Escaner de puertos (SYN)");
 	arrSubnets.push_back("Escaner de puertos (SCK)");
 	//arrSubnets.push_back("Full (SYN)");
 	arrSubnets.push_back("Full (SCK)");
 
-	this->cmb_Tipo = new wxComboBox(this, wxID_ANY, "Ping", wxDefaultPosition, wxDefaultSize, arrSubnets, wxCB_READONLY);
+	this->cmb_Tipo = new wxComboBox(pnlHost, wxID_ANY, "Ping", wxDefaultPosition, wxDefaultSize, arrSubnets, wxCB_READONLY);
 
-	wxButton* btnScan = new wxButton(this, EnumEscanerIDS::BTN_Scan, ">>>");
+	boxHost->Add(new wxStaticText(pnlHost, wxID_ANY, "Tipo escaneo:"), 0, wxALL | wxEXPAND);
+	boxHost->Add(this->cmb_Tipo, 0, wxALL | wxEXPAND);
+	
+	pnlHost->SetSizer(boxHost);
+	////////////////////////////////////////
 
+	/////// Rango de puertos ///////////////
+	wxPanel* pnlPuertos = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
+	wxStaticBoxSizer* boxPuertos = new wxStaticBoxSizer(wxVERTICAL, pnlPuertos, "Rango de puertos");
 
-	wxBoxSizer* controles_up = new wxBoxSizer(wxHORIZONTAL);
-	controles_up->Add(lblHost);
-	controles_up->Add(this->txtHostBase);
-	controles_up->Add(this->cmb_Subnet);
-	controles_up->Add(lblEscaner);
-	controles_up->Add(this->cmb_Tipo);
-	controles_up->AddSpacer(10);
-	controles_up->Add(new wxStaticText(this, wxID_ANY, "Rango puertos:"));
-	controles_up->Add(this->txtPortFrom);
-	controles_up->Add(new wxStaticText(this, wxID_ANY, "-"));
-	controles_up->Add(this->txtPortTo);
-	controles_up->Add(btnScan);
+	this->txtPortFrom = new wxTextCtrl(pnlPuertos, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(50, 25));
+	this->txtPortTo = new wxTextCtrl(pnlPuertos, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(50, 25));
+	
+	boxPuertos->Add(new wxStaticText(pnlPuertos, wxID_ANY, "De:", wxDefaultPosition, wxDefaultSize), 0, wxALL | wxEXPAND);
+	boxPuertos->Add(this->txtPortFrom, 0, wxALL | wxEXPAND);
+	boxPuertos->Add(new wxStaticText(pnlPuertos, wxID_ANY, "Hasta:", wxDefaultPosition, wxDefaultSize), 0, wxALL | wxEXPAND);
+	boxPuertos->Add(this->txtPortTo, 0, wxALL | wxEXPAND);
 
+	pnlPuertos->SetSizer(boxPuertos);
+
+	////////////////////////////////////////
+
+	wxButton* btnScan = new wxButton(this, EnumEscanerIDS::BTN_Scan, "Iniciar");
+
+	wxBoxSizer* top_sizer = new wxBoxSizer(wxHORIZONTAL);
+
+	top_sizer->Add(pnlHost, 0, wxALL | wxEXPAND);
+	top_sizer->Add(pnlPuertos, 0, wxALL | wxEXPAND);
+	
 	this->CrearListView();
 
 	wxBoxSizer* main_sizer = new wxBoxSizer(wxVERTICAL);
-
-	main_sizer->Add(controles_up);
+	
+	main_sizer->Add(top_sizer, 0, wxALIGN_CENTER);
+	main_sizer->Add(btnScan, 0, wxALIGN_CENTER);
 	main_sizer->Add(this->list_ctrl, 1, wxALL|wxEXPAND);
 
 	this->Connect(EnumEscanerIDS::ListCtrl, wxEVT_LIST_ITEM_ACTIVATED, wxListEventHandler(panelEscaner::OnMostrarPuertos));
+	this->Bind(ADD_SCAN_OUTPUT, &panelEscaner::OnAgregarDatos, this);
 
-	this->SetSizer(main_sizer);
+	this->SetSizerAndFit(main_sizer);
 
 	ChangeMyChildsTheme(this, THEME_BACKGROUND_COLOR, THEME_FOREGROUND_COLOR, THEME_FONT_GLOBAL);
 }
 
 void panelEscaner::CrearListView() {
-   this->list_ctrl = new wxListCtrl(this, EnumEscanerIDS::ListCtrl, wxDefaultPosition, wxSize(FRAME_CLIENT_SIZE_WIDTH * 3, FRAME_CLIENT_SIZE_WIDTH * 3), wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES);
+   this->list_ctrl = new wxListCtrl(this, EnumEscanerIDS::ListCtrl, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES);
 
 	wxListItem itemCol;
 
@@ -98,12 +118,22 @@ void panelEscaner::CrearListView() {
 }
 
 void panelEscaner::AddData(const char* _buffer) {
+	wxString strData(_buffer);
+
+	wxCommandEvent evento(ADD_SCAN_OUTPUT, GetId());
+
+	evento.SetString(_buffer);
+
+	wxPostEvent(this, evento);
+}
+
+void panelEscaner::OnAgregarDatos(wxCommandEvent& event) {
 	// IP | MAC | HOST <||>
 	int iCount = 0;
-	for (const std::string& host_entry : strSplit(std::string(_buffer), "<||>", 100000)) {
+	for (const std::string& host_entry : strSplit(event.GetString().ToStdString(), "<||>", 100000)) {
 		std::vector<std::string> host = strSplit(host_entry, '|', 4);
 		size_t dsize = host.size();
-		if (dsize >= 3) { 
+		if (dsize >= 3 && this->list_ctrl) {
 			this->list_ctrl->InsertItem(iCount, host[0]);
 			this->list_ctrl->SetItem(iCount, 1, host[1]);
 			this->list_ctrl->SetItem(iCount, 2, host[2]);
