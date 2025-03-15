@@ -57,16 +57,22 @@ MyFrame::MyFrame()
     //_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
     //_CrtSetBreakAlloc(40997);
 
-    
-    SetTransparent(245);
+    //Agregar Banner
+    wxPanel* pnlBitmap = new wxPanel(this, wxID_ANY);
+    wxStaticBitmap* bmpBanner = new wxStaticBitmap(pnlBitmap, wxID_ANY, wxBitmap(800, 200));
+    wxBitmap bannerBitmap(wxT(".\\imgs\\banner.png"), wxBITMAP_TYPE_PNG);
+    bmpBanner->SetBitmap(bannerBitmap);
+    pnlBitmap->Refresh();
+
+    //SetTransparent(245);
     p_Servidor = DBG_NEW Servidor();
     p_Servidor->m_listCtrl = nullptr;
+
+    //Label para estado
+    this->lblEstado = new wxStaticText(this, wxID_ANY, "IDLE");
     
     //Panel derecho ListCtrl
-    this->m_RPanel = DBG_NEW wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize); // wxSize(700, 450));
-
-    //Panel izquierdo controles servidor
-    //this->m_LPanel = DBG_NEW wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);//wxSize(110, 600));
+    this->m_RPanel = DBG_NEW wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
 
     //Panel inferior log
     this->m_BPanel = DBG_NEW wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
@@ -77,27 +83,26 @@ MyFrame::MyFrame()
     sizerlist->Add(p_Servidor->m_listCtrl, 1, wxEXPAND | wxALL, 2);
     this->m_RPanel->SetSizer(sizerlist);
 
-    //Crear controles panel izquierdo
-    //this->CrearControlesPanelIzquierdo();
-
     //Crear txt para log
-    p_Servidor->m_txtLog->p_txtCtrl = DBG_NEW wxTextCtrl(this->m_BPanel, wxID_ANY, ":v\n", wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE | wxTE_READONLY);
+    p_Servidor->m_txtLog->p_txtCtrl = DBG_NEW wxTextCtrl(this->m_BPanel, wxID_ANY, ":v\n", wxDefaultPosition, wxSize(wxDefaultSize.GetWidth(), 80), wxTE_MULTILINE | wxTE_READONLY);
     wxBoxSizer *sizertxt = DBG_NEW wxBoxSizer(wxVERTICAL);
     sizertxt->Add(DBG_NEW wxButton(this->m_BPanel, EnumIDS::ID_LimpiarLog, "Limpiar Log", wxDefaultPosition, wxDefaultSize), 0, wxALL, 1);
     sizertxt->Add(p_Servidor->m_txtLog->p_txtCtrl, 1, wxEXPAND | wxALL, 1);
     this->m_BPanel->SetSizer(sizertxt);
 
-    wxBoxSizer *sizer = DBG_NEW wxBoxSizer(wxHORIZONTAL);
-    //sizer->Add(this->m_LPanel, 0, wxEXPAND | wxALL, 2);
-
-    wxBoxSizer *sizer2 = DBG_NEW wxBoxSizer(wxVERTICAL);
-    sizer2->Add(this->m_RPanel, 1, wxEXPAND | wxALL, 2);
-    sizer2->Add(this->m_BPanel, 0, wxEXPAND | wxALL, 2);
-
-    sizer->Add(sizer2, 1, wxEXPAND | wxALL, 1);
+    //wxBoxSizer *sizer = DBG_NEW wxBoxSizer(wxHORIZONTAL);
+    
+    wxBoxSizer * sizer = DBG_NEW wxBoxSizer(wxVERTICAL);
+    sizer->Add(pnlBitmap, 0);
+    sizer->Add(this->m_RPanel, 1, wxEXPAND | wxALL);
+    sizer->Add(this->m_BPanel, 0, wxEXPAND | wxALL);
+    sizer->Add(this->lblEstado, 0, wxEXPAND | wxALL, 2);
+    
+    //sizer->Add(sizer2, 1, wxEXPAND | wxALL, 1);
 
     this->SetSizerAndFit(sizer);
 
+    /////// Crear menu de opciones principales ///////
     wxMenuBar* main_Menu = new wxMenuBar();
     wxMenu* p_server = new wxMenu();
 
@@ -114,12 +119,17 @@ MyFrame::MyFrame()
     main_Menu->Append(p_help, "Ayuda");
 
     this->SetMenuBar(main_Menu);
-    this->SetClientSize(800,300);
-    this->CreateStatusBar();
-    this->SetStatusText("IDLE");
+    /////////////////////////////////////////////////
 
+    
     ChangeMyChildsTheme(this, THEME_BACKGROUND_COLOR, THEME_FOREGROUND_COLOR, THEME_FONT_GLOBAL);
+}
 
+void MyFrame::SetEstado(const char* _cestado) {
+    if (this->lblEstado != nullptr) {
+        this->lblEstado->SetLabelText(wxString(_cestado));
+        this->lblEstado->Refresh();
+    }
 }
 
 void MyFrame::OnCryptDB(wxCommandEvent& event) {
@@ -139,12 +149,12 @@ void MyFrame::OnToggle(wxCommandEvent& event) {
             //this->btn_toggle->SetLabelText("Detener Servidor");
             this->iniciarMenu->Enable(false);
             this->detenerMenu->Enable(true);
-            SetStatusText("Esperando clientes...");
+            this->SetEstado("Esperando clientes...");
         }else {
             std::string strTmp = "Error escuchando ";
             strTmp.append(std::to_string(GetLastError()));
             p_Servidor->m_txtLog->LogThis(strTmp, LogType::LogError);
-            SetStatusText("Error");
+            this->SetEstado("Error");
         }
         
     }else {
@@ -156,7 +166,7 @@ void MyFrame::OnToggle(wxCommandEvent& event) {
         DEBUG_MSG(p_Servidor->vc_Clientes.size());
 
         p_Servidor->m_listCtrl->DeleteAllItems();
-        SetStatusText("IDLE");
+        this->SetEstado("IDLE");
         SetTitle(strTitle);
         //this->btn_toggle->SetLabelText("Iniciar Servidor");
         this->iniciarMenu->Enable(true);
@@ -165,29 +175,8 @@ void MyFrame::OnToggle(wxCommandEvent& event) {
     Sleep(500);
 }
 
-void MyFrame::CrearControlesPanelIzquierdo(){
-    wxSize btn_size;
-    this->btn_toggle = new wxToggleButton(this->m_LPanel, EnumIDS::ID_Toggle, "Iniciar Servidor");
-
-    btn_size = this->btn_toggle->GetSize();
-     
-    this->btn_CryptDB = new wxButton(this->m_LPanel, EnumIDS::ID_Mostrar_CryptDB, "Crypt DB", wxDefaultPosition, btn_size);
-
-    this->btn_Builder = new wxButton(this->m_LPanel, EnumIDS::ID_Builder, "Generar cliente", wxDefaultPosition, btn_size);
-    
-    wxBoxSizer *m_paneSizer = DBG_NEW wxBoxSizer(wxVERTICAL);
-    m_paneSizer->AddSpacer(20);    
-    m_paneSizer->Add(this->btn_toggle, 0, wxEXPAND | wxALL, 1);
-    m_paneSizer->AddSpacer(5);
-    m_paneSizer->Add(this->btn_CryptDB, 0, wxEXPAND | wxALL, 1);
-    m_paneSizer->AddSpacer(5);
-    m_paneSizer->Add(this->btn_Builder, 0, wxEXPAND | wxALL, 1);
-    
-    this->m_LPanel->SetSizerAndFit(m_paneSizer);
-}
-
 void MyFrame::CrearLista(long flags, bool withText){
-    p_Servidor->m_listCtrl = DBG_NEW MyListCtrl(this->m_RPanel, EnumIDS::ID_Main_List, wxDefaultPosition, wxDefaultSize, flags | wxBORDER_THEME);
+    p_Servidor->m_listCtrl = DBG_NEW MyListCtrl(this->m_RPanel, EnumIDS::ID_Main_List, wxDefaultPosition, wxSize(wxDefaultSize.GetWidth(), 400), flags | wxBORDER_THEME);
 
     wxListItem itemCol;
     

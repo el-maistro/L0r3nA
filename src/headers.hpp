@@ -30,6 +30,7 @@
 #include<wx/treectrl.h>
 #include<wx/dataview.h>
 #include<wx/display.h>
+#include<wx/statusbr.h>
 #include<wx/stattext.h>
 #include<wx/radiobox.h>
 #include<wx/sizer.h>
@@ -85,13 +86,26 @@
 #define PAQUETE_MINIMUM_SIZE sizeof(unsigned int) * 3
 #define MAX_PAQUETE_SIZE 50000
 
+//#define LORENA_THEME 1
+#define RAVDO_THEME 2
 
-//Tema
-#define THEME_BACKGROUND_COLOR wxColour(90, 0, 90)
-#define THEME_FOREGROUND_COLOR wxColour(255,255,255)
-#define THEME_BACKGROUND_COLOR_HOVER wxColour(100, 0, 0)
-#define THEME_FOREGROUND_COLOR_HOVER THEME_BACKGROUND_COLOR
-#define THEME_FONT_GLOBAL wxFont(8, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_THIN)
+// Lorena theme
+#ifdef LORENA_THEME
+    #define THEME_BACKGROUND_COLOR wxColour(90, 0, 90)
+    #define THEME_FOREGROUND_COLOR wxColour(255,255,255)
+    #define THEME_BACKGROUND_COLOR_HOVER wxColour(100, 0, 0)
+    #define THEME_FOREGROUND_COLOR_HOVER THEME_BACKGROUND_COLOR
+    #define THEME_FONT_GLOBAL wxFont(8, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_THIN)
+#endif
+
+// ravo theme
+#ifdef RAVDO_THEME
+    #define THEME_BACKGROUND_COLOR wxColour(0, 0, 0)
+    #define THEME_FOREGROUND_COLOR wxColour(255,255,255)
+    #define THEME_BACKGROUND_COLOR_HOVER wxColour(100, 0, 0)
+    #define THEME_FOREGROUND_COLOR_HOVER THEME_BACKGROUND_COLOR
+    #define THEME_FONT_GLOBAL wxFont(8, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_THIN)
+#endif
 
 
 //FM Modos

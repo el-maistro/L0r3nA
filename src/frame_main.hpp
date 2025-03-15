@@ -6,10 +6,11 @@ class MyFrame : public wxFrame {
 public:
     MyFrame();
 private:
-    wxPanel* m_RPanel, * m_LPanel, * m_BPanel;
-    wxMenu* menuFile, * menuHelp;
-    wxButton *btn_CryptDB, *btn_Builder;
-    wxToggleButton* btn_toggle;
+    wxPanel *m_RPanel = nullptr, *m_LPanel = nullptr, *m_BPanel = nullptr;
+    wxMenu *menuFile = nullptr, *menuHelp = nullptr;
+    wxButton *btn_CryptDB = nullptr, *btn_Builder = nullptr;
+    wxToggleButton *btn_toggle = nullptr;
+    wxStaticText *lblEstado = nullptr;
 
     wxMenuItem* iniciarMenu = new wxMenuItem(0, EnumIDS::ID_Iniciar_Servidor, "Iniciar Servidor");
     wxMenuItem* detenerMenu = new wxMenuItem(0, EnumIDS::ID_Detener_Servidor, "Detener Servidor");
@@ -20,6 +21,8 @@ private:
     void OnLimpiar(wxCommandEvent& event);
     void OnToggle(wxCommandEvent& event);
     void OnCryptDB(wxCommandEvent& event);
+
+    void SetEstado(const char* _cestado);
     
     void CrearLista(long flags, bool withText = true);
     void CrearControlesPanelIzquierdo();

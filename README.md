@@ -1,8 +1,7 @@
-<p><img src="./imagenes/logo_512x512.jpg" width="150" height="150"/><br>
+<p><img src="./imagenes/banner.png" /><br>
 </p>
 
-# L0r3nA
- Herramienta de administracion remota escrita en C++ y usando wxWidgets para la interfaz grafica.
+ Herramienta de administracion remota escrita en C++ y wxWidgets para la interfaz grafica.
 
 ### Funciones
 - Shell Inversa

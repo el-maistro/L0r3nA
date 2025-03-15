@@ -16,13 +16,6 @@
 #include "server.hpp"
 #include "misc.hpp"
 
-/*
-std::string _strID
-this->SetTitle("[" + _strID.substr(0, _strID.find('/', 0)) + "] TITLE");
-
-
-*/
-
 extern Servidor* p_Servidor;
 extern std::mutex vector_mutex;
 
