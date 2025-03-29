@@ -18,59 +18,61 @@ wxBEGIN_EVENT_TABLE(frameRemoteDesktop, wxFrame)
 	EVT_CHECKBOX(EnumRemoteDesktop::ID_CHK_Vmouse, frameRemoteDesktop::OnCheckVmouse)
 wxEND_EVENT_TABLE()
 
-frameRemoteDesktop::frameRemoteDesktop(wxWindow* pParent, SOCKET sck) :
+frameRemoteDesktop::frameRemoteDesktop(wxWindow* pParent, SOCKET sck, std::string strID) :
 	wxFrame(pParent, EnumRemoteDesktop::ID_Main_Frame, "Escritorio Remoto", wxDefaultPosition, wxSize(900, 500)) {
 	
 	this->sckCliente = sck;
+	this->SetTitle("[" + strID.substr(0, strID.find('/', 0)) + "] Escritorio Remoto");
 
 	this->InitGDI();
 	
 	// - - - - - - - - - CONTROLES PRINCIPALES  - - - - - - - - - 
 	wxButton* btn_Lista = new wxButton(this, EnumRemoteDesktop::ID_BTN_Lista, "Obtener Lista");
+	this->combo_lista_monitores = new wxComboBox(this, EnumRemoteDesktop::ID_CMB_Monitores, "Lista de monitores", wxDefaultPosition, wxSize(200, wxDefaultSize.GetHeight()), wxArrayString(0, ' '), wxCB_READONLY);
+
+	wxBoxSizer* topSizer = new wxBoxSizer(wxHORIZONTAL);
+	topSizer->Add(btn_Lista, 0);
+	topSizer->Add(this->combo_lista_monitores, 1, wxALL | wxEXPAND);
+
+
 	wxButton* btn_Single = new wxButton(this, EnumRemoteDesktop::ID_BTN_Single, "Tomar Captura");
 	wxButton* btn_Iniciar = new wxButton(this, EnumRemoteDesktop::ID_BTN_Start, "Iniciar");
 	wxButton* btn_Detener = new wxButton(this, EnumRemoteDesktop::ID_BTN_Stop, "Detener");
 	wxButton* btn_Guardar = new wxButton(this, EnumRemoteDesktop::ID_BTN_Save, "Guardar Captura");
 	
-	this->pnl_main = new MyPanel(this);
-	
+	wxBoxSizer* middleSizer = new wxBoxSizer(wxHORIZONTAL);
+	middleSizer->Add(btn_Single, 1, wxALL | wxEXPAND);
+	middleSizer->Add(btn_Iniciar, 1, wxALL | wxEXPAND);
+	middleSizer->Add(btn_Detener, 1, wxALL | wxEXPAND);
+	middleSizer->Add(btn_Guardar, 1, wxALL | wxEXPAND);
+
+
 	wxArrayString qOptions;
 	qOptions.push_back(wxString("KK"));    //8  kk
 	qOptions.push_back(wxString("Baja"));  //16 Baja
 	qOptions.push_back(wxString("Media")); //24 Media
 	qOptions.push_back(wxString("Mejor")); //32 Mejor
 
+	this->chk_Control = new wxCheckBox(this, EnumRemoteDesktop::ID_CHK_Control, "Control Remoto");
+	wxCheckBox* chk_Vmouse = new wxCheckBox(this, EnumRemoteDesktop::ID_CHK_Vmouse, "Mostar mouse");
+	this->quality_options = new wxComboBox(this, EnumRemoteDesktop::ID_CMB_Qoptions, "Calidad de imagen", wxDefaultPosition, wxDefaultSize, qOptions, wxCB_READONLY);
 
-	this->chk_Control = new wxCheckBox(this, EnumRemoteDesktop::ID_CHK_Control, "Control Remoto (mouse y teclado)");
-	wxCheckBox* chk_Vmouse = new wxCheckBox(this, EnumRemoteDesktop::ID_CHK_Vmouse, "Mostar mouse remoto");
-	this->quality_options = new wxComboBox(this, EnumRemoteDesktop::ID_CMB_Qoptions, "Seleccionar calidad de imagen", wxDefaultPosition, wxDefaultSize, qOptions, wxCB_READONLY);
-	this->combo_lista_monitores = new wxComboBox(this, EnumRemoteDesktop::ID_CMB_Monitores, "Lista de monitores", wxDefaultPosition, wxSize(200, wxDefaultSize.GetHeight()), wxArrayString(0, ' '), wxCB_READONLY);
+	wxBoxSizer* bottomSizer = new wxBoxSizer(wxHORIZONTAL);
+	bottomSizer->Add(this->chk_Control, 0);
+	bottomSizer->Add(chk_Vmouse, 0);
+	bottomSizer->Add(new wxStaticText(this, wxID_ANY, "Calidad:", wxDefaultPosition, wxDefaultSize), 0);
+	bottomSizer->Add(this->quality_options, 0);
 
-	wxBoxSizer* sizer_controles = new wxBoxSizer(wxHORIZONTAL);
-
-	sizer_controles->Add(btn_Lista);
-	sizer_controles->Add(this->combo_lista_monitores);
-	sizer_controles->Add(btn_Single);
-	sizer_controles->Add(btn_Iniciar);
-	sizer_controles->Add(btn_Detener);
-	sizer_controles->Add(btn_Guardar);
-	sizer_controles->Add(new wxStaticText(this, wxID_ANY, "Calidad:"));
-	sizer_controles->Add(this->quality_options);
-	sizer_controles->Add(chk_Control);
-	sizer_controles->Add(chk_Vmouse);
-
-	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-
-	//this->imageCtrl = new wxStaticBitmap(this, EnumRemoteDesktop::ID_Bitmap, wxBitmap(10,10));
-	//this->imageCtrl->SetScaleMode(wxStaticBitmap::ScaleMode::Scale_Fill);
+	this->pnl_main = new MyPanel(this);
 
 	this->ConectarEventos();
 		
 	wxBoxSizer* main_sizer = new wxBoxSizer(wxVERTICAL);
 
-	main_sizer->Add(sizer_controles, 0, wxEXPAND | wxALL, 2);
-	//main_sizer->Add(this->imageCtrl, 1, wxEXPAND | wxALL, 2);
-	main_sizer->Add(this->pnl_main, 1,  wxEXPAND | wxALL, 2);
+	main_sizer->Add(topSizer, 0, wxALIGN_CENTER_HORIZONTAL);
+	main_sizer->Add(middleSizer, 0, wxALIGN_CENTER_HORIZONTAL);
+	main_sizer->Add(this->pnl_main, 1, wxALL | wxEXPAND);
+	main_sizer->Add(bottomSizer, 0, wxALIGN_CENTER_HORIZONTAL);
 
 	this->SetSizer(main_sizer);
 	this->Layout();
@@ -118,7 +120,16 @@ void frameRemoteDesktop::OnStop(wxCommandEvent&) {
 }
 
 void frameRemoteDesktop::OnSave(wxCommandEvent&) {
-	wxFileDialog dialog(this, "Guardar frame", wxEmptyString, "captura.jpg", wxFileSelectorDefaultWildcardStr, wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+	time_t temp = time(0);
+	struct tm* timeptr = localtime(&temp);
+
+	std::string strLine = this->GetTitle();
+
+	strLine += "[" + std::to_string(timeptr->tm_hour);
+	strLine += "-" + std::to_string(timeptr->tm_min) + "-";
+	strLine += std::to_string(timeptr->tm_sec) + "] captura.jpg";
+
+	wxFileDialog dialog(this, "Guardar frame", wxEmptyString, strLine, wxFileSelectorDefaultWildcardStr, wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
 	if (dialog.ShowModal() == wxID_OK) {
 		wxSize panelSize = this->pnl_main->GetSize();
 

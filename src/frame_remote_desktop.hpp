@@ -82,7 +82,7 @@ private:
 
 class frameRemoteDesktop : public wxFrame {
 	public:
-		frameRemoteDesktop(wxWindow* pParent, SOCKET sck);
+		frameRemoteDesktop(wxWindow* pParent, SOCKET sck, std::string strID);
 		~frameRemoteDesktop() {
 			StopGDI();
 		}

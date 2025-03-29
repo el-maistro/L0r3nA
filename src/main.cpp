@@ -120,8 +120,8 @@ MyFrame::MyFrame()
 
     this->SetMenuBar(main_Menu);
     /////////////////////////////////////////////////
-
     
+
     ChangeMyChildsTheme(this, THEME_BACKGROUND_COLOR, THEME_FOREGROUND_COLOR, THEME_FONT_GLOBAL);
 }
 
