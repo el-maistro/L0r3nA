@@ -93,6 +93,11 @@ std::vector<std::string> vDir(c_char* cPath) {
 		return vcFolders;
 	}
 	do {
+		if (cCliente->isKillSwitch()) {
+			__DBG_("[DIR] kill_switch...");
+			cCliente->setKillSwitch(false);
+			break;
+		}
 		//cFecha tmpdir baia.cFileName win32Archivo.nFilesizeLow
 
 		FileTimeToSystemTime(&win32Archivo.ftCreationTime, &FileDate);
@@ -240,6 +245,11 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID, bool isEdit
 	memcpy(nSendBuffer.data(), strHeader.c_str(), iHeaderSize);
 
 	while (1) {
+		if (cCliente->isKillSwitch()) {
+			__DBG_("[EnviarArchivo] kill_switch");
+			cCliente->setKillSwitch(false);
+			break;
+		}
 		localFile.read(nSendBuffer.data() + iHeaderSize, PAQUETE_BUFFER_SIZE);
 		iBytesLeidos = localFile.gcount();
 		if (iBytesLeidos > 0) {

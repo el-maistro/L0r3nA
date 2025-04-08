@@ -138,6 +138,14 @@ void ChangeMyChildsTheme(wxWindow* parent, wxColour background, wxColour foregro
 	parent->SetForegroundColour(foreground);
 	wxWindowList& children = parent->GetChildren();
 	for (wxWindow* child : children) {
+
+		//spinner
+		if (child->IsKindOf(wxCLASSINFO(wxActivityIndicator))) {
+			child->SetBackgroundColour(foreground);
+			child->Refresh();
+			continue;
+		}
+
 		child->SetFont(font);
 		child->SetBackgroundColour(background);
 		child->SetForegroundColour(foreground);

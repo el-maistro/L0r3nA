@@ -448,7 +448,14 @@ void mod_RemoteDesktop::IniciarLive(int quality, int monitor_index) {
     this->m_UpdateQuality(quality);
     std::shared_ptr<Gdiplus::Bitmap> oldBitmap = nullptr;
     while (this->m_isRunning()) {
-        
+        //Confirmar kill switch
+        if (cCliente->isKillSwitch()) {
+            __DBG_("[RD] kill_switch...");
+            cCliente->setKillSwitch(false);
+            this->DetenerLive();
+            break;
+        }
+
         std::shared_ptr<Gdiplus::Bitmap> newBitmap = this->getFrameBitmap(this->m_Quality(), monitor_index);
 
         std::vector<Pixel_Data> vcPixels;

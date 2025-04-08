@@ -282,7 +282,7 @@ void mod_Escaner::m_thCheckPortSCK(const char* _host, int _port) {
 
         if (connect(temp_socket, sP->ai_addr, sP->ai_addrlen) == -1) {
             //No se pudo conectar
-            //_DBG_("[X] No se pudo conectar. Host: " + std::string(_host), WSAGetLastError());
+            //_DBG_("[X] No se pudo conectar. Puerto: " + std::string(_cport), WSAGetLastError());
             TIMEVAL Timeout;
             Timeout.tv_sec = 1;
             Timeout.tv_usec = 0;
@@ -309,6 +309,7 @@ void mod_Escaner::m_thCheckPortSCK(const char* _host, int _port) {
     freeaddrinfo(sServer);
 
     if (sP == nullptr) {
+
         return;
     }
     

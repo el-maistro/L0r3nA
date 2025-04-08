@@ -21,6 +21,7 @@ class Mod_Mic{
 		int p_DeviceID = WAVE_MAPPER; //Default
 		void m_EmpezarLive();
 		void m_DetenerLive();
+		bool m_IsLive();
 
 		void m_LiveMicTh(); //thread para mandar mic en tiempo real
 		void m_Enviar_Dispositivos();

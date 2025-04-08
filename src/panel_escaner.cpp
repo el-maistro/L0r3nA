@@ -17,6 +17,7 @@ panelEscaner::panelEscaner(wxWindow* pParent, SOCKET _sck, std::string _strID)
 	this->sckSocket = _sck;
 	this->SetTitle("[" + _strID.substr(0, _strID.find('/', 0)) + "] Escaner de red");
 
+	
 	//////  Host(s) y prefijo    /////////
 	wxPanel* pnlHost = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
 	wxStaticBoxSizer* boxHost = new wxStaticBoxSizer(wxVERTICAL, pnlHost, "Host y tipo de escaner");
@@ -115,6 +116,10 @@ void panelEscaner::CrearListView() {
 	itemCol.SetAlign(wxLIST_FORMAT_CENTRE);
 	this->list_ctrl->InsertColumn(3, itemCol);
 
+	//Crear spinner
+	this->m_indicator = new wxActivityIndicator(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
+	this->m_indicator->Show(false);
+
 }
 
 void panelEscaner::AddData(const char* _buffer) {
@@ -146,6 +151,7 @@ void panelEscaner::OnAgregarDatos(wxCommandEvent& event) {
 			iCount++;
 		}
 	}
+	this->OcultarCarga();
 }
 
 void panelEscaner::OnScan(wxCommandEvent& event) {
@@ -183,7 +189,10 @@ void panelEscaner::OnScan(wxCommandEvent& event) {
 			break;
 	}
 	
-	p_Servidor->cChunkSend(this->sckSocket, strHostBase.ToStdString().c_str(), strHostBase.size(), 0, false, iComando);
+	int iSent = p_Servidor->cChunkSend(this->sckSocket, strHostBase.ToStdString().c_str(), strHostBase.size(), 0, false, iComando);
+	if (iSent > 0) {
+		this->MostrarCarga();
+	} // else error enviando el comando
 }
 
 void panelEscaner::OnMostrarPuertos(wxListEvent& event) {
@@ -195,6 +204,26 @@ void panelEscaner::OnMostrarPuertos(wxListEvent& event) {
 		nframe->Show(true);
 	}
 	
+}
+
+void panelEscaner::MostrarCarga() {
+	std::unique_lock<std::mutex> lock(this->mtx_carga);
+	wxSize this_size = this->GetParent()->GetSize();
+	wxSize loader_size = this->m_indicator->GetSize();
+	wxPoint pos((this_size.GetWidth() / 2) - (loader_size.GetWidth() / 2), (this_size.GetHeight() / 2) - (loader_size.GetHeight() /2));
+	
+	this->m_indicator->SetPosition(pos);
+	this->m_indicator->Show(true);
+	this->m_indicator->Start();
+	this->list_ctrl->Enable(false);
+}
+
+void panelEscaner::OcultarCarga() {
+	std::unique_lock<std::mutex> lock(this->mtx_carga);
+
+	this->m_indicator->Stop();
+	this->m_indicator->Show(false);
+	this->list_ctrl->Enable(true);
 }
 
 framePorts::framePorts(wxWindow* pParent, wxString _ports, wxString _title)

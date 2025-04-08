@@ -429,20 +429,24 @@ std::vector<Pixel_Data> frameRemoteDesktop::DeserializePixels(const char*& cBuff
 
 bool frameRemoteDesktop::BitmapUpdate(std::vector<Pixel_Data>& vcin) {
 	if (this->oldBitmap) {
-		std::cout << "PIXELS: " << vcin.size() << "\n";
-		//DEBUG_MSG(vcin.size());
-		UINT width = this->oldBitmap->GetWidth();
-		UINT height = this->oldBitmap->GetHeight();
-		if (width == 0 || height == 0) {
-			DEBUG_MSG("dimensiones invalidas");
+		DEBUG_MSG(vcin.size());
+		try {
+			UINT width = this->oldBitmap->GetWidth();
+			UINT height = this->oldBitmap->GetHeight();
+			if (width == 0 || height == 0) {
+				DEBUG_MSG("dimensiones invalidas");
+				return false;
+			}
+
+			for (Pixel_Data& pixel : vcin) {
+				this->oldBitmap->SetRGB(pixel.x, pixel.y, pixel.data.R, pixel.data.G, pixel.data.B);
+			}
+			return true;
+		}
+		catch (const std::exception& e) {
+			wxMessageBox(e.what(), "Exception");
 			return false;
 		}
-
-		for (Pixel_Data& pixel : vcin) {
-			this->oldBitmap->SetRGB(pixel.x, pixel.y, pixel.data.R, pixel.data.G, pixel.data.B);
-		}
-
-		return true;
 	}else {
 		DEBUG_MSG("Bitmap viejo es invalido. Detener y volver a iniciar");
 		return false;

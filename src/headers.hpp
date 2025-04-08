@@ -67,6 +67,8 @@
 
 #include<iomanip>
 #include<exception>
+#include<stdexcept>
+
 
 #include "aes256/aes256.hpp"
 #include "zlib/zlib.h"
@@ -204,6 +206,7 @@ namespace EnumComandos {
         CLI_RESTART = 496,
         CLI_STOP,
         CLI_KSWITCH,
+        UA_KSWITCH,
         INIT_PACKET,
         PONG,
         PING,

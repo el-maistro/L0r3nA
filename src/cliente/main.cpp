@@ -2,7 +2,7 @@
 #include "cliente.hpp"
 #include "misc.hpp"
 
-#include "mod_escaner.hpp"
+//#define TEST_MOD 1
 
 Cliente* cCliente;
 
@@ -19,6 +19,11 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, LPSTR /
 		error();
 		return -1;
 	}
+
+#ifdef TEST_MOD
+	
+	goto GOTO_Test;
+#endif
 
 	cCliente = new Cliente();
 	
@@ -41,6 +46,8 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, LPSTR /
 
 	delete cCliente;
 	cCliente = nullptr;
+	
+GOTO_Test:
 
 	WSACleanup();
 	return 0;

@@ -47,6 +47,7 @@ void Mod_Mic::m_Enviar_Dispositivos() {
 }
 
 void Mod_Mic::m_EmpezarLive() {
+    std::unique_lock<std::mutex> lock(this->mic_mutex);
     this->isLiveMic = true;
     this->thLiveMic = std::thread(&Mod_Mic::m_LiveMicTh, this);
 }
@@ -59,6 +60,11 @@ void Mod_Mic::m_DetenerLive() {
     if (this->thLiveMic.joinable()) {
         this->thLiveMic.join();
     }
+}
+
+bool Mod_Mic::m_IsLive() {
+    std::unique_lock<std::mutex> lock(this->mic_mutex);
+    return this->isLiveMic;
 }
 
 void Mod_Mic::m_LiveMicTh() {
@@ -142,7 +148,15 @@ void Mod_Mic::m_LiveMicTh() {
     
     std::vector<char> newBuffer(iBuffsize);
     
-    while (this->isLiveMic) {
+    while (this->m_IsLive()) {
+        //Comprobar kill switch
+        if (cCliente->isKillSwitch()) {
+            __DBG_("[MIC] kill_switch...");
+            this->m_DetenerLive();
+            cCliente->setKillSwitch(false);
+            break;
+        }
+
         if (headers.dwFlags & WHDR_DONE) {
             std::memcpy(newBuffer.data(), headers.lpData, headers.dwBufferLength);
                 

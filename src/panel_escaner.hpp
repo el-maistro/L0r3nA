@@ -20,7 +20,10 @@ class panelEscaner : public wxFrame {
 		panelEscaner(wxWindow* pParent, SOCKET _sck, std::string _strID);
 
 		void AddData(const char* _buffer);
+		
 	private:
+		std::mutex mtx_carga;
+		wxActivityIndicator* m_indicator = nullptr;
 		wxDataViewColumn* m_col;
 		wxTextCtrl* txtHostBase = nullptr;
 		wxTextCtrl* txtPortFrom = nullptr;
@@ -33,6 +36,9 @@ class panelEscaner : public wxFrame {
 		void OnScan(wxCommandEvent& event);
 		void OnAgregarDatos(wxCommandEvent& event);
 		void OnMostrarPuertos(wxListEvent& event);
+
+		void MostrarCarga();
+		void OcultarCarga();
 
 		SOCKET sckSocket = INVALID_SOCKET;
 

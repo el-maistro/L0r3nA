@@ -30,7 +30,7 @@ panelFileManager::panelFileManager(wxWindow* pParent, SOCKET sck, std::string _s
 	wxPanel(pParent, EnumIDS::ID_Panel_FM, wxDefaultPosition, wxDefaultSize) {
 	
 	this->sckCliente = sck;
-	this->strID = _strID.substr(0, _strID.find('/', 0));;
+	this->strID = _strID.substr(0, _strID.find('/', 0));
 	this->strIP = _strIP;
 	
 	this->p_ToolBar = new wxToolBar(this, wxID_ANY, wxDefaultPosition, wxSize(30, wxDefaultSize.GetHeight()), wxTB_VERTICAL | wxTB_LEFT);

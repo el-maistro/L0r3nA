@@ -38,7 +38,7 @@ FrameCliente::FrameCliente(SOCKET _sckSocket, std::string _strID, struct Cliente
     this->SetTitle(strTitle);
 
     this->sckCliente = _sckSocket;
-    this->strClienteID = _strID;
+    this->strClienteID = _strID.substr(0, _strID.find('/', 0));;
 
 
     // Tema de controles

