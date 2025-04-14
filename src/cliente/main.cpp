@@ -4,6 +4,7 @@
 
 //#define TEST_MOD 1
 
+
 Cliente* cCliente;
 
 #ifdef ___DBG__
@@ -20,12 +21,17 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, LPSTR /
 		return -1;
 	}
 
+	cCliente = new Cliente();
+
 #ifdef TEST_MOD
-	
+	std::string strComputer = strGetComputerName();
+	std::string strUser = strUserName();
+	std::string strSO = strCpu();
+	EndProcess(8476);
+	std::cout << strComputer << "\n" << strUser << "\n" << strSO << "\n";
 	goto GOTO_Test;
 #endif
 
-	cCliente = new Cliente();
 	
 	while (cCliente->m_isRunning()) {
 #ifdef ___DBG__
@@ -44,10 +50,11 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, LPSTR /
 		}
 	}
 
-	delete cCliente;
-	cCliente = nullptr;
 	
 GOTO_Test:
+
+	delete cCliente;
+	cCliente = nullptr;
 
 	WSACleanup();
 	return 0;

@@ -239,7 +239,7 @@ std::vector<int> mod_Escaner::m_EscanearSCK(const char* _host, int _puerto_inici
         }
     }
 
-    std::sort(this->vcPorts.begin(), this->vcPorts.end());
+    sort(this->vcPorts.begin(), this->vcPorts.end());
 
     return this->vcPorts;
 }

