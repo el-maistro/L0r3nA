@@ -3,6 +3,7 @@
 #include "misc.hpp"
 
 extern Cliente* cCliente;
+mod_RemoteDesktop* mod_Instance = nullptr;
 
 std::vector<Monitor> tmp_Monitores;
 
@@ -56,6 +57,10 @@ bool mod_RemoteDesktop::m_Vmouse() {
 }
 
 void mod_RemoteDesktop::m_RemoteMouse(int x, int y, int monitor_index, int mouse_action) {
+    if(!this->USER32.pSendInput){
+        __DBG_("[user32.dll] SendInput no cargado");
+        return;
+    }
     Print_Mouse_Command(x, y, monitor_index, mouse_action);
     Monitor monitor = this->m_GetMonitor(monitor_index);
     if (monitor.rectData.resWidth > 0) {
@@ -98,7 +103,7 @@ void mod_RemoteDesktop::m_RemoteMouse(int x, int y, int monitor_index, int mouse
         }else if (mouse_action == EnumRemoteMouse::_WHEEL_UP) {
             inputs[0].mi.mouseData = 120;
         }
-        SendInput(1, inputs, sizeof(INPUT));
+        this->USER32.pSendInput(1, inputs, sizeof(INPUT));
         /*
          
         Metodo 2
@@ -124,6 +129,10 @@ void mod_RemoteDesktop::m_RemoteMouse(int x, int y, int monitor_index, int mouse
 }
 
 void mod_RemoteDesktop::m_RemoteTeclado(char key, bool isDown) {
+    if (!this->USER32.pSendInput) {
+        __DBG_("[user32.dll] SendInput no cargado");
+        return;
+    }
     INPUT inputs[1] = {};
     ZeroMemory(inputs, sizeof(inputs));
 
@@ -131,7 +140,7 @@ void mod_RemoteDesktop::m_RemoteTeclado(char key, bool isDown) {
     inputs[0].ki.wVk = key;
     inputs[0].ki.dwFlags = isDown ? KEYEVENTF_KEDOWN : KEYEVENTF_KEYUP;
     
-    SendInput(1, inputs, sizeof(INPUT));
+    this->USER32.pSendInput(1, inputs, sizeof(INPUT));
 }
 
 int mod_RemoteDesktop::BitmapDiff(std::shared_ptr<Gdiplus::Bitmap>& _oldBitmap, std::shared_ptr<Gdiplus::Bitmap>& _newBitmap, std::vector<Pixel_Data>& _outPixels) {
@@ -211,9 +220,22 @@ void mod_RemoteDesktop::m_UpdateQuality(int iNew) {
     this->uQuality = iNew == 0 ? 32 : static_cast<ULONG>(iNew);
 }
 
-mod_RemoteDesktop::mod_RemoteDesktop() {
+mod_RemoteDesktop::mod_RemoteDesktop(HMODULE _user32DLL) {
+    this->hUser32DLL = _user32DLL;
+
+    if (this->hUser32DLL) {
+        this->USER32.pSendInput = (st_User32_RD::LPSENDINPUT)wrapGetProcAddr(this->hUser32DLL, "SendInput");
+        this->USER32.pGetDC = (st_User32_RD::LPGETDC)wrapGetProcAddr(this->hUser32DLL, "GetDC");
+        this->USER32.pGetDesktopWindow = (st_User32_RD::LPGETDESKTOPWINDOW)wrapGetProcAddr(this->hUser32DLL, "GetDesktopWindow");
+        this->USER32.pEnumDisplayMonitors = (st_User32_RD::LPENUMDISPLAYMONITORS)wrapGetProcAddr(this->hUser32DLL, "EnumDisplayMonitors");
+        this->USER32.pGetMonitorInfoA = (st_User32_RD::LPGETMONITORINFOA)wrapGetProcAddr(this->hUser32DLL, "GetMonitorInfoA");
+    }
+
     this->InitGDI();
-	return;
+    
+    mod_Instance = this;
+
+    return;
 }
 
 mod_RemoteDesktop::~mod_RemoteDesktop() {
@@ -239,9 +261,13 @@ std::shared_ptr<Gdiplus::Bitmap> mod_RemoteDesktop::getFrameBitmap(ULONG quality
         }
     }
     
-    HDC hdcMonitor = GetDC(NULL);
+    if (!this->USER32.pGetDC || !this->USER32.pGetDesktopWindow) {
+        return outBitmap;
+    }
+
+    HDC hdcMonitor = this->USER32.pGetDC(NULL);
     HDC hdcMemDC = NULL;
-    HWND hDesktopWnd = GetDesktopWindow();
+    HWND hDesktopWnd = this->USER32.pGetDesktopWindow();
     HBITMAP hmpScreen = NULL;
 
     Gdiplus::Bitmap* pScreenShot = nullptr;
@@ -506,8 +532,13 @@ void mod_RemoteDesktop::IniciarLive(int quality, int monitor_index) {
 
 std::vector<Monitor> mod_RemoteDesktop::m_ListaMonitores() {
     this->m_Clear_Monitores();
+
+    if (!this->USER32.pEnumDisplayMonitors) {
+        __DBG_("[user32.dll] EnumDisplayMonitors no cargado");
+        return;
+    }
     
-    EnumDisplayMonitors(NULL, NULL, this->MonitorEnumProc, 0);
+    this->USER32.pEnumDisplayMonitors(NULL, NULL, this->MonitorEnumProc, 0);
     
     for (Monitor monitor : tmp_Monitores) {
         this->m_Agregar_Monitor(monitor);
@@ -518,6 +549,9 @@ std::vector<Monitor> mod_RemoteDesktop::m_ListaMonitores() {
 }
 
 BOOL mod_RemoteDesktop::MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT rectMonitor, LPARAM lparam) {
+    if (!mod_Instance->USER32.pGetMonitorInfoA) {
+        return FALSE;
+    }
     MONITORINFOEX info;
     Monitor new_Monitor;
     info.cbSize = sizeof(MONITORINFOEX);
@@ -528,7 +562,7 @@ BOOL mod_RemoteDesktop::MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPREC
     new_Monitor.rectData.xStart = rectMonitor->left;
     new_Monitor.rectData.yStart = rectMonitor->top;
     ZeroMemory(new_Monitor.szDevice, sizeof(new_Monitor.szDevice));
-    if (GetMonitorInfo(hMonitor, &info)) {
+    if (mod_Instance->USER32.pGetMonitorInfoA(hMonitor, &info)) {
         memcpy(new_Monitor.szDevice, info.szDevice, sizeof(new_Monitor.szDevice) - 1);
     }
     tmp_Monitores.push_back(new_Monitor);

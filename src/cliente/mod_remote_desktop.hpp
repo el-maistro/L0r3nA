@@ -4,6 +4,28 @@
 #include "headers.hpp"
 #define KEYEVENTF_KEDOWN 0x0000
 
+struct st_User32_RD {
+	//SendInput
+	typedef UINT(WINAPI* LPSENDINPUT)(UINT, LPINPUT, int);
+	LPSENDINPUT pSendInput = nullptr;
+
+	//GetDC
+	typedef HDC(WINAPI* LPGETDC)(HWND);
+	LPGETDC pGetDC = nullptr;
+
+	//GetDesktopWindow
+	typedef HWND(WINAPI* LPGETDESKTOPWINDOW)();
+	LPGETDESKTOPWINDOW pGetDesktopWindow = nullptr;
+
+	//EnumDisplayMonitors
+	typedef BOOL(WINAPI* LPENUMDISPLAYMONITORS)(HDC, LPCRECT, MONITORENUMPROC, LPARAM);
+	LPENUMDISPLAYMONITORS pEnumDisplayMonitors = nullptr;
+
+	//GetMonitorInfoA
+	typedef BOOL(WINAPI* LPGETMONITORINFOA)(HMONITOR, LPMONITORINFO);
+	LPGETMONITORINFOA pGetMonitorInfoA = nullptr;
+};
+
 struct rect_Monitor {
 	int resWidth;
 	int resHeight;
@@ -73,8 +95,11 @@ class mod_RemoteDesktop {
 		
 		static BOOL MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT rectMonitor, LPARAM lparam);
 
+		HMODULE hUser32DLL = NULL;
+		
 	public:
 		bool isRunning = false;
+		st_User32_RD USER32;
 
 		bool m_isRunning();
 
@@ -96,7 +121,7 @@ class mod_RemoteDesktop {
 		void m_Clear_Monitores();
 		std::vector<Monitor> m_GetVectorCopy();
 
-		mod_RemoteDesktop();
+		mod_RemoteDesktop(HMODULE _user32DLL);
 		~mod_RemoteDesktop();
 
 		void IniciarLive(int quality, int monitor_index);
