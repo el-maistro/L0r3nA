@@ -26,6 +26,40 @@ struct st_User32_RD {
 	LPGETMONITORINFOA pGetMonitorInfoA = nullptr;
 };
 
+struct st_Gdi32 {
+	//CreateCompatibleDC
+	typedef HDC(WINAPI* LPCREATECOMPATIBLEDC)(HDC);
+	LPCREATECOMPATIBLEDC pCreateCompatibleDC = nullptr;
+
+	//CreateCompatibleBitmap
+	typedef HBITMAP(WINAPI* LPCREATECOMPATIBLEBITMAP)(HDC, int, int);
+	LPCREATECOMPATIBLEBITMAP pCreateCompatibleBitmap = nullptr;
+
+	//SelectObject
+	typedef HGDIOBJ(WINAPI* LPSELECTOBJECT)(HDC, HGDIOBJ);
+	LPSELECTOBJECT pSelectObject = nullptr;
+
+	//BitBlt
+	typedef BOOL(WINAPI* LPBITBLT)(HDC, int, int, int, int, HDC, int, int, DWORD);
+	LPBITBLT pBitBlt = nullptr;
+};
+
+struct st_Ole32 {
+	//CreateStreamOnHGlobal
+	typedef HRESULT(WINAPI* LPCREATESTREAMONHGLOBAL)(HGLOBAL, BOOL, LPSTREAM*);
+	LPCREATESTREAMONHGLOBAL pCreateStreamOnHGlobal = nullptr;
+};
+
+struct st_GdiPlus {
+	//GdiplusStartup
+	typedef Gdiplus::Status(WINAPI* LPGDIPLUSSTARTUP)(ULONG_PTR*, const Gdiplus::GdiplusStartupInput*, Gdiplus::GdiplusStartupOutput*);
+	LPGDIPLUSSTARTUP pGdiplusStartup = nullptr;
+
+	//GdiplusShutdown
+	typedef void(WINAPI* LPGDIPLUSSHUTDOWN)(ULONG_PTR);
+	LPGDIPLUSSHUTDOWN pGdiplusShutdown = nullptr;
+};
+
 struct rect_Monitor {
 	int resWidth;
 	int resHeight;
@@ -94,12 +128,18 @@ class mod_RemoteDesktop {
 		std::vector<Monitor> vc_Monitores;
 		
 		static BOOL MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT rectMonitor, LPARAM lparam);
-
-		HMODULE hUser32DLL = NULL;
 		
+		HMODULE hUser32DLL = NULL;
+		HMODULE hKernel32 = NULL;
+		HMODULE hGdi32DLL = NULL;
+		HMODULE hOle32 = NULL;
+		HMODULE hGdiPlusDLL = NULL;
 	public:
 		bool isRunning = false;
 		st_User32_RD USER32;
+		st_Gdi32 GDI32;
+		st_GdiPlus GDIPLUS;
+		st_Ole32 OLE32;
 
 		bool m_isRunning();
 

