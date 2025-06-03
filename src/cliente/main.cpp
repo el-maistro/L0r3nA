@@ -1,8 +1,9 @@
 #include "headers.hpp"
 #include "cliente.hpp"
 #include "misc.hpp"
+#include "mod_remote_desktop.hpp"
 
-//#define TEST_MOD 1
+#define TEST_MOD 1
 
 
 Cliente* cCliente;
@@ -24,11 +25,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, LPSTR /
 	cCliente = new Cliente();
 
 #ifdef TEST_MOD
-	std::string strComputer = strGetComputerName();
-	std::string strUser = strUserName();
-	std::string strSO = strCpu();
-	EndProcess(8476);
-	std::cout << strComputer << "\n" << strUser << "\n" << strSO << "\n";
+	
 	goto GOTO_Test;
 #endif
 

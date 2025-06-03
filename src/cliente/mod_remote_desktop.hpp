@@ -24,6 +24,22 @@ struct st_User32_RD {
 	//GetMonitorInfoA
 	typedef BOOL(WINAPI* LPGETMONITORINFOA)(HMONITOR, LPMONITORINFO);
 	LPGETMONITORINFOA pGetMonitorInfoA = nullptr;
+
+	//GetCursorInfo 
+	typedef BOOL(WINAPI* LPGETCURSORINFO)(PCURSORINFO);
+	LPGETCURSORINFO pGetCursorInfo = nullptr;
+	
+	//GetWindowRect 
+	typedef BOOL(WINAPI* LPGETWINDOWRECT)(HWND, LPRECT);
+	LPGETWINDOWRECT pGetWindowRect = nullptr;
+
+	//GetIconInfo
+	typedef BOOL(WINAPI* LPGETICONINFO)(HICON, PICONINFO);
+	LPGETICONINFO pGetIconInfo = nullptr;
+
+	//DrawIconEx
+	typedef BOOL(WINAPI* LPDRAWICONEX)(HDC, int, int, HICON, int, int, UINT, HBRUSH, UINT);
+	LPDRAWICONEX pDrawIconEx = nullptr;
 };
 
 struct st_Gdi32 {
@@ -38,6 +54,10 @@ struct st_Gdi32 {
 	//SelectObject
 	typedef HGDIOBJ(WINAPI* LPSELECTOBJECT)(HDC, HGDIOBJ);
 	LPSELECTOBJECT pSelectObject = nullptr;
+
+	//GetObjectA
+	typedef int(WINAPI* LPGETOBJECTA)(HANDLE, int, LPVOID);
+	LPGETOBJECTA pGetObjectA = nullptr;
 
 	//BitBlt
 	typedef BOOL(WINAPI* LPBITBLT)(HDC, int, int, int, int, HDC, int, int, DWORD);

