@@ -25,7 +25,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, LPSTR /
 	cCliente = new Cliente();
 
 #ifdef TEST_MOD
-	
+	cCliente->TEST();
 	goto GOTO_Test;
 #endif
 

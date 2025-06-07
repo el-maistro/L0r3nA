@@ -191,6 +191,7 @@ class Cliente {
 		bool killSwitch = false;
 		
 	public:
+		void TEST();
 		SOCKET sckSocket = INVALID_SOCKET;
 
 		Cliente();

