@@ -145,6 +145,20 @@ struct st_Wtsapi32 {
 
 };
 
+struct st_Ws2_32 {
+	//WSAStartup
+	typedef int(WINAPI* LPWSASTARTUP)(WORD, LPWSADATA);
+	LPWSASTARTUP pWsaStartup = nullptr;
+
+	//inet_addr
+	typedef unsigned long(WINAPI* LPINET_ADDR)(const char*);
+	LPINET_ADDR pinet_addr = nullptr;
+
+	//inet_ntoa
+	//typedef char WSAAPI*(WINAPI* LPINET_NTOA)(in_addr);
+
+};
+
 class ReverseShell;
 class Mod_Mic;
 
@@ -250,12 +264,14 @@ class Cliente {
 		HMODULE hWtsapi32DLL = NULL;
 		HMODULE hPsApiDLL    = NULL;
 		HMODULE hUser23DLL   = NULL;
+		HMODULE hWs2_32DLL   = NULL;
 
 		st_Advapi32 ADVAPI32;
-		st_Shell32 SHELL32;
+		st_Shell32   SHELL32;
 		st_Kernel32 KERNEL32;
 		st_Wtsapi32 WTSAPI32;
-		st_PsApi PSAPI;
+		st_PsApi	   PSAPI;
+		st_Ws2_32	    WS32;
 
 		bool m_isRunning() {
 			std::unique_lock<std::mutex> lock(mtx_running);

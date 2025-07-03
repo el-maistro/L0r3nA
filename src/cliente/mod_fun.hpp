@@ -9,8 +9,19 @@ struct st_Winmm_Fun {
 	LPMCISENDSTRINGA pMciSendStringA = nullptr;
 };
 
-//SwapMouseButton  user32
+struct st_User32_Fun {
+	//SwapMouseButton
+	typedef BOOL(WINAPI* LPSWAPMOUSEBUTTON)(BOOL);
+	LPSWAPMOUSEBUTTON pSwapMouseButton = nullptr;
 
+	//BlockInput
+	typedef BOOL(WINAPI* LPBLOCKINPUT)(BOOL);
+	LPBLOCKINPUT pBlockInput = nullptr;
+
+    //MessageBox
+	typedef int(WINAPI* LPMESSAGEBOX)(HWND, LPCTSTR, LPCTSTR, UINT);
+	LPMESSAGEBOX pMessageBoxA = nullptr;
+};
 
 class modFun {
 	public:
@@ -23,8 +34,9 @@ class modFun {
 		HMODULE hUser32DLL = NULL;
 
 		st_Winmm_Fun WINMM;
+		st_User32_Fun USER32;
 
-		modFun();
+		modFun(HMODULE _hUser32);
 		~modFun();
 };
 

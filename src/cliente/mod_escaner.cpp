@@ -429,7 +429,6 @@ std::string mod_Escaner::m_GetHostName(const char* _host) {
 }
 
 //SYN
-
 void mod_Escaner::m_SetDatagram(char* datagram, in_addr server_ip, const char* client_ip, iphdr* ip_head, tcphdr* tcp_head) {
     memset(datagram, 0, DATAGRAM_BUF_SIZE);
 

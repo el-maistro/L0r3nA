@@ -2,7 +2,7 @@
 #define __MOD_ESCANER_HPP__ 1
 
 #include "headers.hpp"
-#include<iphlpapi.h>
+#include<iphlpapi.h> //SendARP
 #include<icmpapi.h>
 #include<mstcpip.h>
 #include<cmath>
