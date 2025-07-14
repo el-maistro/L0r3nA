@@ -2,37 +2,12 @@
 #define __MOD_VENTANA 1
 
 #include "headers.hpp"
+#include "mod_dynamic_load.hpp"
 
 struct VentanaInfo {
 	HWND hwnd;
 	std::string strTitle;
 	bool active;
-};
-
-struct st_User32_WM {
-	//IsWindowVisible
-	typedef BOOL(WINAPI* LPISWINDOWVISIBLE)(HWND);
-	LPISWINDOWVISIBLE pIsWindowVisible = nullptr;
-
-	//GetWindowTextA
-	typedef int(WINAPI* LPGETWINDOWTEXTA)(HWND, LPSTR, int);
-	LPGETWINDOWTEXTA pGetWindowTextA = nullptr;
-
-	//GetForegroundWindow
-	typedef HWND(WINAPI* LPGETFOREGROUNDWINDOW)();
-	LPGETFOREGROUNDWINDOW pGetForegroundWindow = nullptr;
-
-	//EnumWindows
-	typedef BOOL(WINAPI* LPENUMWINDOWS)(WNDENUMPROC, LPARAM);
-	LPENUMWINDOWS pEnumWindows = nullptr;
-
-	//FindWindowA
-	typedef HWND(WINAPI* LPFINDWINDOWA)(LPCSTR, LPCSTR);
-	LPFINDWINDOWA pFindWindowA = nullptr;
-
-	//ShowWindow
-	typedef BOOL(WINAPI* LPSHOWWINDOW)(HWND, int);
-	LPSHOWWINDOW pShowWindow = nullptr;
 };
 
 class mod_AdminVentanas {
@@ -41,13 +16,10 @@ class mod_AdminVentanas {
 		std::vector<VentanaInfo> vcVentanas;
 
 		void m_WindowMSG(const std::string strTitle, int iMessage);
-
-		mod_AdminVentanas(HMODULE _user32DLL);
-
+		mod_AdminVentanas(st_User32_WM& _user32);
+		
 		st_User32_WM USER32;
 	private:
-		HMODULE hUser32DLL = NULL;
-		
 		int m_IndexOf(const std::string strTitle);
 };
 

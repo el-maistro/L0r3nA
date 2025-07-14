@@ -27,16 +27,8 @@ BOOL CALLBACK EnumwindowsProc(HWND hwnd, LPARAM lParam) {
     return TRUE;
 }
 
-mod_AdminVentanas::mod_AdminVentanas(HMODULE _user32DLL) {
-    if (_user32DLL) {
-        this->hUser32DLL = _user32DLL;
-        this->USER32.pIsWindowVisible = (st_User32_WM::LPISWINDOWVISIBLE)wrapGetProcAddr(this->hUser32DLL, "IsWindowVisible");
-        this->USER32.pGetWindowTextA = (st_User32_WM::LPGETWINDOWTEXTA)wrapGetProcAddr(this->hUser32DLL, "GetWindowTextA");
-        this->USER32.pGetForegroundWindow = (st_User32_WM::LPGETFOREGROUNDWINDOW)wrapGetProcAddr(this->hUser32DLL, "GetForegroundWindow");
-        this->USER32.pEnumWindows = (st_User32_WM::LPENUMWINDOWS)wrapGetProcAddr(this->hUser32DLL, "EnumWindows");
-        this->USER32.pFindWindowA = (st_User32_WM::LPFINDWINDOWA)wrapGetProcAddr(this->hUser32DLL, "FindWindowA");
-        this->USER32.pShowWindow = (st_User32_WM::LPSHOWWINDOW)wrapGetProcAddr(this->hUser32DLL, "ShowWindow");        
-    }
+mod_AdminVentanas::mod_AdminVentanas(st_User32_WM& _user32) {
+    this->USER32 = _user32;
 }
 
 std::vector<VentanaInfo> mod_AdminVentanas::m_ListaVentanas(){

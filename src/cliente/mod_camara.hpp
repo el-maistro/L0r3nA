@@ -13,10 +13,8 @@
 #include<shlwapi.h>
 #include<gdiplus.h>
 
-template <class T> void SafeRelease(T** ppT)
-{
-    if (*ppT)
-    {
+template <class T> void SafeRelease(T** ppT){
+    if (*ppT){
         (*ppT)->Release();
         *ppT = NULL;
     }

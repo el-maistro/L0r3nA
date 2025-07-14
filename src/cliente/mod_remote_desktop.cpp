@@ -224,41 +224,11 @@ void mod_RemoteDesktop::m_UpdateQuality(int iNew) {
     this->uQuality = iNew == 0 ? 32 : static_cast<ULONG>(iNew);
 }
 
-mod_RemoteDesktop::mod_RemoteDesktop(HMODULE _user32DLL) {
-    this->hUser32DLL = _user32DLL;
-    this->hGdi32DLL = wrapLoadDLL("gdi32.dll");
-    this->hGdiPlusDLL = wrapLoadDLL("gdiplus.dll");
-    this->hOle32 = wrapLoadDLL("ole32.dll");
-
-    if (this->hUser32DLL) {
-        this->USER32.pSendInput           = (st_User32_RD::LPSENDINPUT)wrapGetProcAddr(this->hUser32DLL, "SendInput");
-        this->USER32.pGetDC               = (st_User32_RD::LPGETDC)wrapGetProcAddr(this->hUser32DLL, "GetDC");
-        this->USER32.pGetDesktopWindow    = (st_User32_RD::LPGETDESKTOPWINDOW)wrapGetProcAddr(this->hUser32DLL, "GetDesktopWindow");
-        this->USER32.pEnumDisplayMonitors = (st_User32_RD::LPENUMDISPLAYMONITORS)wrapGetProcAddr(this->hUser32DLL, "EnumDisplayMonitors");
-        this->USER32.pGetMonitorInfoA     = (st_User32_RD::LPGETMONITORINFOA)wrapGetProcAddr(this->hUser32DLL, "GetMonitorInfoA");
-        this->USER32.pGetCursorInfo       = (st_User32_RD::LPGETCURSORINFO)wrapGetProcAddr(this->hUser32DLL, "GetCursorInfo");
-        this->USER32.pGetIconInfo         = (st_User32_RD::LPGETICONINFO)wrapGetProcAddr(this->hUser32DLL, "GetIconInfo");
-        this->USER32.pDrawIconEx          = (st_User32_RD::LPDRAWICONEX)wrapGetProcAddr(this->hUser32DLL, "DrawIconEx");
-        this->USER32.pGetWindowRect       = (st_User32_RD::LPGETWINDOWRECT)wrapGetProcAddr(this->hUser32DLL, "GetWindowRect");
-
-    }
-
-    if (this->hGdi32DLL) {
-        this->GDI32.pCreateCompatibleDC = (st_Gdi32::LPCREATECOMPATIBLEDC)wrapGetProcAddr(this->hGdi32DLL, "CreateCompatibleDC");
-        this->GDI32.pCreateCompatibleBitmap = (st_Gdi32::LPCREATECOMPATIBLEBITMAP)wrapGetProcAddr(this->hGdi32DLL, "CreateCompatibleBitmap");
-        this->GDI32.pSelectObject = (st_Gdi32::LPSELECTOBJECT)wrapGetProcAddr(this->hGdi32DLL, "SelectObject");
-        this->GDI32.pGetObjectA = (st_Gdi32::LPGETOBJECTA)wrapGetProcAddr(this->hGdi32DLL, "GetObjectA");
-        this->GDI32.pBitBlt = (st_Gdi32::LPBITBLT)wrapGetProcAddr(this->hGdi32DLL, "BitBlt");
-    }
-
-    if (this->hOle32) {
-        this->OLE32.pCreateStreamOnHGlobal = (st_Ole32::LPCREATESTREAMONHGLOBAL)wrapGetProcAddr(this->hOle32, "CreateStreamOnHGlobal");
-    }
-
-    if (this->hGdiPlusDLL) {
-        this->GDIPLUS.pGdiplusStartup = (st_GdiPlus::LPGDIPLUSSTARTUP)wrapGetProcAddr(this->hGdiPlusDLL, "GdiplusStartup");
-        this->GDIPLUS.pGdiplusShutdown = (st_GdiPlus::LPGDIPLUSSHUTDOWN)wrapGetProcAddr(this->hGdiPlusDLL, "GdiplusShutdown");
-    }
+mod_RemoteDesktop::mod_RemoteDesktop(st_User32_RD& _user32, st_Gdi32& _gdi32, st_GdiPlus& _gdiplus, st_Ole32& _ole32) {
+    this->USER32 = _user32;
+    this->GDI32 = _gdi32;
+    this->GDIPLUS = _gdiplus;
+    this->OLE32 = _ole32;
 
     this->InitGDI();
     
@@ -270,17 +240,7 @@ mod_RemoteDesktop::mod_RemoteDesktop(HMODULE _user32DLL) {
 mod_RemoteDesktop::~mod_RemoteDesktop() {
     this->StopGDI();
 
-    if (this->hGdi32DLL) {
-        wrapFreeLibrary(this->hGdi32DLL);
-    }
 
-    if (this->hGdiPlusDLL) {
-        wrapFreeLibrary(this->hGdiPlusDLL);
-    }
-
-    if (this->hOle32) {
-        wrapFreeLibrary(this->hOle32);
-    }
 
     return;
 }

