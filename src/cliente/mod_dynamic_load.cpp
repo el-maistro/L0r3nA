@@ -252,13 +252,15 @@ void DynamicLoad::LoadCamProcs() {
     }
 
     if (this->hMfplatDLL) {
+        this->MFPLAT.pMFStartup = (st_Mfplat::LPMFSTARTUP)wrapGetProcAddr(this->hMfplatDLL, "MFStartup");
+        this->MFPLAT.pMFShutdown = (st_Mfplat::LPMFSHUTDOWN)wrapGetProcAddr(this->hMfplatDLL, "MFShutdown");
         this->MFPLAT.pMFCreateAttributes = (st_Mfplat::LPMFCREATEATTRIBUTES)wrapGetProcAddr(this->hMfplatDLL, "MFCreateAttributes");
         this->MFPLAT.pMFTRegisterLocalByCLSID = (st_Mfplat::LPMFTREGISTERLOCALBYCLSID)wrapGetProcAddr(this->hMfplatDLL, "MFTRegisterLocalByCLSID");
         this->MFPLAT.pMFCreateMediaType = (st_Mfplat::LPMFCREATEMEDIATYPE)wrapGetProcAddr(this->hMfplatDLL, "MFCreateMediaType");
         this->MFPLAT.pMFCreateSample = (st_Mfplat::LPMFCREATESAMPLE)wrapGetProcAddr(this->hMfplatDLL, "MFCreateSample");
         this->MFPLAT.pMFCreateMemoryBuffer = (st_Mfplat::LPMFCREATEMEMORYBUFFER)wrapGetProcAddr(this->hMfplatDLL, "MFCreateMemoryBuffer");
 
-        //mfapi
+        //MFapi
         this->MFAPI.pMFGetAttributeSize = (st_Mfapi::LPMFGETATTRIBUTESIZE)wrapGetProcAddr(this->hMfplatDLL, "MFGetAttributeSize");
         this->MFAPI.pMFGetAttributeRatio = (st_Mfapi::LPMFGETATTRIBUTERATIO)wrapGetProcAddr(this->hMfplatDLL, "MFGetAttributeRatio");
         this->MFAPI.pMFSetAttributeRatio = (st_Mfapi::LPMFSETATTRIBUTERATIO)wrapGetProcAddr(this->hMfplatDLL, "MFSetAttributeRatio");
@@ -279,7 +281,8 @@ void DynamicLoad::LoadCamProcs() {
         this->OLE32.pCoTaskMemFree = (st_Ole32::LPCOTASKMEMFREE)wrapGetProcAddr(this->hOle32, "CoTaskMemFree");
         this->OLE32.pCoCreateInstance = (st_Ole32::LPCOCREATEINSTANCE)wrapGetProcAddr(this->hOle32, "CoCreateInstance");
         this->OLE32.pCreateStreamOnHGlobal = (st_Ole32::LPCREATESTREAMONHGLOBAL)wrapGetProcAddr(this->hOle32, "CreateStreamOnHGlobal");
-
+        this->OLE32.pCoInitialize = (st_Ole32::LPCOINITIALIZE)wrapGetProcAddr(this->hOle32, "CoInitialize");
+        this->OLE32.pCoUninitialize = (st_Ole32::LPCOUNITIALIZE)wrapGetProcAddr(this->hOle32, "CoUninitialize");
     }
 }
 

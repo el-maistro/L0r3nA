@@ -1,17 +1,7 @@
 #ifndef __CAM_H
 #define __CAM_H
 #include "headers.hpp"
-#include<cwchar>
-#include<mfapi.h>
-#include<mfidl.h>
-#include<mfobjects.h>
-#include<mfreadwrite.h>
-#include<mferror.h>
-#include<mftransform.h>
-#include<Wmcodecdsp.h>
-#include<propvarutil.h>
-#include<shlwapi.h>
-#include<gdiplus.h>
+#include "mod_dynamic_load.hpp"
 
 template <class T> void SafeRelease(T** ppT){
     if (*ppT){
@@ -45,24 +35,9 @@ struct camOBJ {
 
 class mod_Camera {
 	public:
-        mod_Camera() { 
-            CoInitialize(nullptr);
-            MFStartup(MF_VERSION);
-        }
-
-        ~mod_Camera() { 
-            for (int iThNum = 0; iThNum < MAX_CAMS; iThNum++) {
-                if (this->thLive[iThNum].joinable()) {
-                    this->thLive[iThNum].join();
-                }
-            }
-            for (int iCount = 0; iCount<int(this->vcCamObjs.size()); iCount++) {
-                this->vcCamObjs[iCount].ReleaseCam();
-            }
-
-            CoUninitialize();
-            MFShutdown();
-        }
+        mod_Camera(st_GdiPlus& _gdiplus, st_Shlwapi& _shlwapi, st_Mfplat& _mfplat,
+            st_Mf& _mf, st_Mfapi& _mfapi, st_Mfreadwrite& _mfreadwrite, st_Ole32& _ole32, st_Kernel32& _kernel32);
+        ~mod_Camera();
 
         HRESULT ListCaptureDevices(std::vector<IMFActivate*>& devices);
         std::vector<std::string> ListNameCaptureDevices();
@@ -85,6 +60,15 @@ class mod_Camera {
         
 	private:
         std::thread thLive[MAX_CAMS];
+
+        st_GdiPlus GDIPLUS;
+        st_Kernel32 KERNEL32;
+        st_Ole32 OLE32;
+        st_Shlwapi SHLWAPI;
+        st_Mfplat MFPLAT;
+        st_Mf MF;
+        st_Mfapi MFAPI;
+        st_Mfreadwrite MFREADWRITE;
 };
 
 #endif

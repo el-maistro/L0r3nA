@@ -11,6 +11,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #set(CMAKE_BUILD_TYPE Debug)
 #include_directories("../lzo/include/")
 
+set(COMMON_FLAGS "-Os -s -ffunction-sections -fdata-sections -fno-exceptions -fno-rtti -static-libgcc -static-libstdc++")
+set(LINKER_FLAGS "-static -Wl,--gc-sections -Wl,-Bstatic -Wl,-s -Wl,-Bdynamic")
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${COMMON_FLAGS}")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${COMMON_FLAGS}")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${LINKER_FLAGS}")
+
 set(SRCS main.cpp
          misc.cpp
          cliente.cpp 
@@ -46,6 +53,9 @@ set(SRCS main.cpp
 
 #agregar win32 para hacer la app oculta 
 add_executable(cliente ${SRCS})
-target_link_libraries(cliente PRIVATE wsock32 ws2_32 mf mfplat mfreadwrite mfuuid wmcodecdspuuid strmiids ole32 uuid gdiplus shlwapi iphlpapi)
+
+target_link_libraries(cliente PRIVATE wsock32 ws2_32 mfuuid wmcodecdspuuid gdiplus iphlpapi)
+
+set_target_properties(cliente PROPERTIES LINK_FLAGS "/SUBSYSTEM:CONSOLE")
 #target_link_libraries(cliente PRIVATE netapi32 wsock32 ws2_32 mf mfplat mfreadwrite mfuuid wmcodecdspuuid strmiids ole32 uuid gdiplus shlwapi crypt32 bcrypt iphlpapi)
 #target_link_libraries(cliente PRIVATE netapi32 wsock32 ws2_32 mf mfplat mfreadwrite mfuuid wmcodecdspuuid ole32 strmiids uuid winmm wtsapi32 gdi32 gdiplus shlwapi crypt32 bcrypt iphlpapi)

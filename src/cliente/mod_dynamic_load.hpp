@@ -4,8 +4,21 @@
 // TODO merge de todas las estructuras y evitar multiples
 
 #include "headers.hpp"
+
+//Mod Camara
+#include<cwchar>
+#include<mfapi.h>
+#include<mfidl.h>
+#include<mfobjects.h>
+#include<mfreadwrite.h>
+#include<mferror.h>
+#include<mftransform.h>
+#include<Wmcodecdsp.h>
+#include<propvarutil.h>
+#include<shlwapi.h>
+#include<gdiplus.h>
+
 #include "misc.hpp"
-#include "mod_camara.hpp"
 
 #define LOAD_DLL(hModule, cPath)              \
 	do{						                  \
@@ -368,6 +381,14 @@ struct st_Ole32 {
 	typedef HRESULT(WINAPI* LPCOCREATEINSTANCE)(
 		REFCLSID, LPUNKNOWN, DWORD, REFIID, LPVOID*);
 	LPCOCREATEINSTANCE pCoCreateInstance = nullptr;
+
+	//CoInitialize
+	typedef HRESULT(WINAPI* LPCOINITIALIZE)(LPVOID);
+	LPCOINITIALIZE pCoInitialize = nullptr;
+	
+	//CoUninitialize;
+	typedef void(WINAPI* LPCOUNITIALIZE)();
+	LPCOUNITIALIZE pCoUninitialize = nullptr;
 };
 
 struct st_GdiPlus {
@@ -506,6 +527,14 @@ struct st_Mfapi {
 };
 
 struct st_Mfplat {
+	//MFStartup
+	typedef HRESULT(WINAPI* LPMFSTARTUP)(ULONG, DWORD);
+	LPMFSTARTUP pMFStartup = nullptr;
+	
+	//MFShutdown
+	typedef HRESULT(WINAPI* LPMFSHUTDOWN)();
+	LPMFSHUTDOWN pMFShutdown = nullptr;
+	
 	//MFCreateAttributes
 	typedef HRESULT(WINAPI* LPMFCREATEATTRIBUTES)(IMFAttributes**, UINT32);
 	LPMFCREATEATTRIBUTES pMFCreateAttributes = nullptr;
@@ -535,6 +564,9 @@ struct st_Mf {
 	typedef HRESULT(WINAPI* LPMFENUMDEVICESOURCES)(IMFAttributes*, IMFActivate***, UINT32*);
 	LPMFENUMDEVICESOURCES pMFEnumDeviceSources = nullptr;
 };
+
+
+#include "mod_camara.hpp"
 
 class DynamicLoad {
 	private:
