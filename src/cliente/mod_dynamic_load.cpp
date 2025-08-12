@@ -112,7 +112,7 @@ void DynamicLoad::LoadRDProcs() {
         this->USER32_RD.pGetIconInfo = (st_User32_RD::LPGETICONINFO)wrapGetProcAddr(this->hUser32DLL, "GetIconInfo");
         this->USER32_RD.pDrawIconEx = (st_User32_RD::LPDRAWICONEX)wrapGetProcAddr(this->hUser32DLL, "DrawIconEx");
         this->USER32_RD.pGetWindowRect = (st_User32_RD::LPGETWINDOWRECT)wrapGetProcAddr(this->hUser32DLL, "GetWindowRect");
-
+		this->USER32_RD.pSetCursorPos = (st_User32_RD::LPSETCURSORPOS)wrapGetProcAddr(this->hUser32DLL, "SetCursorPos");
     }
 
     if (this->hGdi32DLL) {
@@ -245,6 +245,7 @@ void DynamicLoad::LoadCamProcs() {
         this->GDIPLUS_RD.pGetImageEncodersSize = (st_GdiPlus::LPGETIMAGEENCODERSSIZE)wrapGetProcAddr(this->hGdiPlusDLL, "GetImageEncodersSize");
         this->GDIPLUS_RD.pGetImageEncoders = (st_GdiPlus::LPGETIMAGEENCODERS)wrapGetProcAddr(this->hGdiPlusDLL, "GetImageEncoders");
         this->GDIPLUS_RD.pFromStream = (st_GdiPlus::LPFROMSTREAM)wrapGetProcAddr(this->hGdiPlusDLL, "FromStream");
+		this->GDIPLUS_RD.pGdipSaveImageToStream = (st_GdiPlus::LPGDIPSAVEIMAGETOSTREAM)wrapGetProcAddr(this->hGdiPlusDLL, "GdipSaveImageToFile");
     }
 
     if (this->hShlwapiDLL) {

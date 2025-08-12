@@ -275,6 +275,10 @@ struct st_User32_RD {
 	typedef HDC(WINAPI* LPGETDC)(HWND);
 	LPGETDC pGetDC = nullptr;
 
+	//ReleaseDC
+	typedef int(WINAPI* LPRELEASEDC)(HWND, HDC);
+	LPRELEASEDC pReleaseDC = nullptr;
+
 	//GetDesktopWindow
 	typedef HWND(WINAPI* LPGETDESKTOPWINDOW)();
 	LPGETDESKTOPWINDOW pGetDesktopWindow = nullptr;
@@ -290,6 +294,10 @@ struct st_User32_RD {
 	//GetCursorInfo 
 	typedef BOOL(WINAPI* LPGETCURSORINFO)(PCURSORINFO);
 	LPGETCURSORINFO pGetCursorInfo = nullptr;
+
+	//SetCursorPos
+	typedef BOOL(WINAPI* LPSETCURSORPOS)(int, int);
+	LPSETCURSORPOS pSetCursorPos = nullptr;
 
 	//GetWindowRect 
 	typedef BOOL(WINAPI* LPGETWINDOWRECT)(HWND, LPRECT);
@@ -366,6 +374,14 @@ struct st_Gdi32 {
 	//BitBlt
 	typedef BOOL(WINAPI* LPBITBLT)(HDC, int, int, int, int, HDC, int, int, DWORD);
 	LPBITBLT pBitBlt = nullptr;
+
+	//DeleteDC
+	typedef BOOL(WINAPI* LPDELETEDC)(HDC);
+	LPDELETEDC pDeleteDC = nullptr;
+
+	//DeleteObject
+	typedef BOOL(WINAPI* LPDELETEOBJECT)(HGDIOBJ);
+	LPDELETEOBJECT pDeleteObject = nullptr;
 };
 
 struct st_Ole32 {
@@ -411,6 +427,10 @@ struct st_GdiPlus {
 	//FromStream
 	typedef Gdiplus::Image* (WINAPI* LPFROMSTREAM)(IStream*, BOOL);
 	LPFROMSTREAM pFromStream = nullptr;
+
+	//GdipSaveImageToStream
+	typedef Gdiplus::Status(WINAPI* LPGDIPSAVEIMAGETOSTREAM)(Gdiplus::Image*, IStream*, const CLSID*, const Gdiplus::EncoderParameters*);
+	LPGDIPSAVEIMAGETOSTREAM pGdipSaveImageToStream = nullptr;
 };
 
 struct st_Winmm {

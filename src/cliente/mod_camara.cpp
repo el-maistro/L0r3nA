@@ -138,7 +138,8 @@ std::vector<BYTE> mod_Camera::toJPEG(const BYTE* bmpBuffer, u_int uiBuffersize) 
         }
     }
 
-    stat = nImage->Save(oStream, &encoderClsid, NULL);
+    //stat = nImage->Save(oStream, &encoderClsid, NULL);
+    stat = this->GDIPLUS.pGdipSaveImageToStream(nImage, oStream, &encoderClsid, NULL);
     if (stat != Gdiplus::Ok) {
         __DBG_("[X] nImage->Save");
         goto release;
