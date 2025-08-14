@@ -52,7 +52,6 @@ DynamicLoad::DynamicLoad() {
 
     }
 
-    this->LoadCamProcs();
 }
 
 //Bromas
@@ -130,6 +129,7 @@ void DynamicLoad::LoadRDProcs() {
     if (this->hGdiPlusDLL) {
         this->GDIPLUS_RD.pGdiplusStartup = (st_GdiPlus::LPGDIPLUSSTARTUP)wrapGetProcAddr(this->hGdiPlusDLL, "GdiplusStartup");
         this->GDIPLUS_RD.pGdiplusShutdown = (st_GdiPlus::LPGDIPLUSSHUTDOWN)wrapGetProcAddr(this->hGdiPlusDLL, "GdiplusShutdown");
+		this->GDIPLUS_RD.pGdipBitmapLockBits = (st_GdiPlus::LPGDIPBITMAPLOCKBITS)wrapGetProcAddr(this->hGdiPlusDLL, "GdipBitmapLockBits");
     }
 }
 

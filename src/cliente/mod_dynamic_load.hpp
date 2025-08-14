@@ -431,6 +431,10 @@ struct st_GdiPlus {
 	//GdipSaveImageToStream
 	typedef Gdiplus::Status(WINAPI* LPGDIPSAVEIMAGETOSTREAM)(Gdiplus::Image*, IStream*, const CLSID*, const Gdiplus::EncoderParameters*);
 	LPGDIPSAVEIMAGETOSTREAM pGdipSaveImageToStream = nullptr;
+
+	//GdipBitmapLockBits
+	typedef Gdiplus::Status(WINAPI* LPGDIPBITMAPLOCKBITS)(Gdiplus::Image*, GDIPCONST Gdiplus::GpRect*, UINT, Gdiplus::PixelFormat, Gdiplus::BitmapData*);
+	LPGDIPBITMAPLOCKBITS pGdipBitmapLockBits = nullptr;
 };
 
 struct st_Winmm {

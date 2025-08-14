@@ -145,59 +145,65 @@ void mod_RemoteDesktop::m_RemoteTeclado(char key, bool isDown) {
 }
 
 int mod_RemoteDesktop::BitmapDiff(std::shared_ptr<Gdiplus::Bitmap>& _oldBitmap, std::shared_ptr<Gdiplus::Bitmap>& _newBitmap, std::vector<Pixel_Data>& _outPixels) {
-    //if (_newBitmap.get() == nullptr || _oldBitmap.get() == nullptr) {
-    //    __DBG_("Uno de los bitmaps es nulo");
-    //    return -1;
-    //}
+    if (_newBitmap.get() == nullptr || _oldBitmap.get() == nullptr) {
+        __DBG_("Uno de los bitmaps es nulo");
+        return -1;
+    }
 
-    //UINT width = _oldBitmap.get()->GetWidth();
-    //UINT height = _oldBitmap.get()->GetHeight();
+    if (!this->GDIPLUS.pGdipBitmapLockBits) {
+        __DBG_("Funciones de GDI no cargadas");
+        return -1;
+    }
 
-    //if (width != _newBitmap.get()->GetWidth() || height != _newBitmap.get()->GetHeight()) {
-    //    __DBG_("Los bitmaps no son del mismo tamanio");
-    //    return -1;
-    //}
+    UINT width = _oldBitmap.get()->GetWidth();
+    UINT height = _oldBitmap.get()->GetHeight();
 
-    //Gdiplus::BitmapData bmpData1, bmpData2;
-    //Gdiplus::Rect rect(0, 0, width, height);
+    if (width != _newBitmap.get()->GetWidth() || height != _newBitmap.get()->GetHeight()) {
+        __DBG_("Los bitmaps no son del mismo tamanio");
+        return -1;
+    }
 
-    //_oldBitmap.get()->LockBits(&rect, Gdiplus::ImageLockMode::ImageLockModeRead | Gdiplus::ImageLockMode::ImageLockModeWrite, PixelFormat24bppRGB, &bmpData1);
+    Gdiplus::BitmapData bmpData1, bmpData2;
+    Gdiplus::Rect rect(0, 0, width, height);
+
+    this->GDIPLUS.pGdipBitmapLockBits(_oldBitmap.get(), &rect, Gdiplus::ImageLockMode::ImageLockModeRead | Gdiplus::ImageLockMode::ImageLockModeWrite, PixelFormat24bppRGB, &bmpData1);
     //_newBitmap.get()->LockBits(&rect, Gdiplus::ImageLockMode::ImageLockModeRead | Gdiplus::ImageLockMode::ImageLockModeWrite, PixelFormat24bppRGB, &bmpData2);
+    this->GDIPLUS.pGdipBitmapLockBits(_newBitmap.get(), &rect, Gdiplus::ImageLockMode::ImageLockModeRead | Gdiplus::ImageLockMode::ImageLockModeWrite, PixelFormat24bppRGB, &bmpData2);
 
-    //BYTE* oldBitmapPixels = static_cast<BYTE*>(bmpData1.Scan0);
-    //BYTE* newBitmapPixels = static_cast<BYTE*>(bmpData2.Scan0);
+    BYTE* oldBitmapPixels = static_cast<BYTE*>(bmpData1.Scan0);
+    BYTE* newBitmapPixels = static_cast<BYTE*>(bmpData2.Scan0);
 
-    //int outCantidad = 0;
+    int outCantidad = 0;
 
-    //for (UINT y = 0; y < height; y++) {
-    //    for (UINT x = 0; x < width; x++) {
-    //        UINT index = y * bmpData1.Stride + x * 3; //3 bytes por pixel en formato RGB
-    //        if (oldBitmapPixels[index    ] != newBitmapPixels[index    ] || //Canal Red
-    //            oldBitmapPixels[index + 1] != newBitmapPixels[index + 1] || //Canal Green
-    //            oldBitmapPixels[index + 2] != newBitmapPixels[index + 2]) { //Canal Blue
-    //            
-    //            //Pixel diferente
-    //            outCantidad++;
-    //            Pixel_Data nPixel;
-    //            nPixel.x = x;
-    //            nPixel.y = y;
-    //            nPixel.data.R = newBitmapPixels[index    ];
-    //            nPixel.data.G = newBitmapPixels[index + 1];
-    //            nPixel.data.B = newBitmapPixels[index + 2];
-    //            _outPixels.push_back(nPixel);
+    for (UINT y = 0; y < height; y++) {
+        for (UINT x = 0; x < width; x++) {
+            UINT index = y * bmpData1.Stride + x * 3; //3 bytes por pixel en formato RGB
+            if (oldBitmapPixels[index    ] != newBitmapPixels[index    ] || //Canal Red
+                oldBitmapPixels[index + 1] != newBitmapPixels[index + 1] || //Canal Green
+                oldBitmapPixels[index + 2] != newBitmapPixels[index + 2]) { //Canal Blue
+                
+                //Pixel diferente
+                outCantidad++;
+                Pixel_Data nPixel;
+                nPixel.x = x;
+                nPixel.y = y;
+                nPixel.data.R = newBitmapPixels[index    ];
+                nPixel.data.G = newBitmapPixels[index + 1];
+                nPixel.data.B = newBitmapPixels[index + 2];
+                _outPixels.push_back(nPixel);
 
-    //            oldBitmapPixels[index    ] = newBitmapPixels[index    ];
-    //            oldBitmapPixels[index + 1] = newBitmapPixels[index + 1];
-    //            oldBitmapPixels[index + 2] = newBitmapPixels[index + 2];
+                oldBitmapPixels[index    ] = newBitmapPixels[index    ];
+                oldBitmapPixels[index + 1] = newBitmapPixels[index + 1];
+                oldBitmapPixels[index + 2] = newBitmapPixels[index + 2];
 
-    //        }
-    //    }
-    //}
+            }
+        }
+    }
 
-    //_oldBitmap.get()->UnlockBits(&bmpData1);
-    //_newBitmap.get()->UnlockBits(&bmpData2);
+    _oldBitmap.get()->UnlockBits(&bmpData1);
+    _newBitmap.get()->UnlockBits(&bmpData2);
 
-    //return outCantidad;
+    return outCantidad;
     return 0;
 }
 
@@ -350,13 +356,13 @@ std::shared_ptr<Gdiplus::Bitmap> mod_RemoteDesktop::getFrameBitmap(ULONG quality
     Gdiplus::EncoderParameters encoderParams;
     encoderParams.Count = 1;
     encoderParams.Parameter[0].NumberOfValues = 1;
-    encoderParams.Parameter[0].Guid = Gdiplus::EncoderQuality;
+    encoderParams.Parameter[0].Guid = { 0x1d5be4b5,0xfa4a,0x452d,0x9c,0xdd,0x5d,0xb3,0x51,0x05,0xe7,0xeb };/*Gdiplus::EncoderQuality;*/
     encoderParams.Parameter[0].Type = Gdiplus::EncoderParameterValueTypeLong;
     encoderParams.Parameter[0].Value = &quality;
 
     GetEncoderClsid(L"image/jpeg", &imageCLSID);
     
-    //pScreenShot = new Gdiplus::Bitmap(hmpScreen, (HPALETTE)NULL);    <------------------  ERROR
+    pScreenShot = new Gdiplus::Bitmap(hmpScreen, (HPALETTE)NULL);  // <------------------  ERROR
 
     if (!pScreenShot) {
         __DBG_("No se pudo reservar memoria para crear el bitmap");
@@ -371,7 +377,7 @@ std::shared_ptr<Gdiplus::Bitmap> mod_RemoteDesktop::getFrameBitmap(ULONG quality
 
     oStream->Seek({ 0 }, STREAM_SEEK_SET, NULL);
 
-    outBitmap = std::make_shared<Gdiplus::Bitmap>(oStream);
+    //outBitmap = std::make_shared<Gdiplus::Bitmap>(oStream);  <---- ERROR
 
 EndSec:
     if (oStream) {
@@ -485,63 +491,63 @@ void mod_RemoteDesktop::DetenerLive() {
 
 void mod_RemoteDesktop::IniciarLive(int quality, int monitor_index) {
     this->isRunning = true;
-    //this->m_UpdateQuality(quality);
-    //std::shared_ptr<Gdiplus::Bitmap> oldBitmap = nullptr;
-    //while (this->m_isRunning()) {
-    //    //Confirmar kill switch
-    //    if (cCliente->isKillSwitch()) {
-    //        __DBG_("[RD] kill_switch...");
-    //        cCliente->setKillSwitch(false);
-    //        this->DetenerLive();
-    //        break;
-    //    }
+    this->m_UpdateQuality(quality);
+    std::shared_ptr<Gdiplus::Bitmap> oldBitmap = nullptr;
+    while (this->m_isRunning()) {
+        //Confirmar kill switch
+        if (cCliente->isKillSwitch()) {
+            __DBG_("[RD] kill_switch...");
+            cCliente->setKillSwitch(false);
+            this->DetenerLive();
+            break;
+        }
 
-    //    std::shared_ptr<Gdiplus::Bitmap> newBitmap = this->getFrameBitmap(this->m_Quality(), monitor_index);
+        std::shared_ptr<Gdiplus::Bitmap> newBitmap = this->getFrameBitmap(this->m_Quality(), monitor_index);
 
-    //    std::vector<Pixel_Data> vcPixels;
-    //    int iDiff = this->BitmapDiff(oldBitmap, newBitmap, vcPixels);
+        std::vector<Pixel_Data> vcPixels;
+        int iDiff = this->BitmapDiff(oldBitmap, newBitmap, vcPixels);
 
-    //    if (iDiff == -1) {
-    //        //Hubo un error o uno de los buffers es nulo
-    //        if (newBitmap.get() != nullptr) {
-    //            __DBG_("Asignando newBitmap a oldBitmap");
-    //            Gdiplus::Rect rect(0, 0, newBitmap.get()->GetWidth(), newBitmap.get()->GetHeight());
-    //            Gdiplus::Bitmap* temp_bitmap = newBitmap.get()->Clone(rect, newBitmap.get()->GetPixelFormat());
-    //            oldBitmap = std::shared_ptr<Gdiplus::Bitmap>(temp_bitmap);
-    //            //Obtener bytes del newBitmap
-    //            std::vector<char> imgBuffer = this->getBitmapBytes(newBitmap, quality);
-    //            int iSent = cCliente->cChunkSend(cCliente->sckSocket, imgBuffer.data(), imgBuffer.size(), 0, true, nullptr, EnumComandos::RD_Salida);
-    //            if (iSent == -1) {
-    //                break;
-    //            }
-    //        }else {
-    //            __DBG_("newBitmap es nulo");
-    //        }
-    //    }else if (iDiff > 0) {
-    //        //Hubo un cambio, enviar diferencia
-    //        //oldBitmap aqui ya tiene los pixeles modificados
-    //        //Vale la pena enviar el cambio de pixeles?
-    //        if ((sizeof(Pixel_Data) * iDiff) < 80000) {
-    //            //Serializar el vector a un std::vector<char> y mandarlo
-    //            std::vector<char> vcData;
-    //            this->pixelSerialize(vcPixels, vcData);
-    //            int iSent = cCliente->cChunkSend(cCliente->sckSocket, vcData.data(), vcData.size(), 0, true, nullptr, EnumComandos::RD_Salida_Pixel);
-    //            if (iSent == -1) {
-    //                break;
-    //            }
-    //        }else {
-    //            //Obtener bytes de newbitmap/oldbitmap y mandarlo completo
-    //            std::vector<char> imgBuffer = this->getBitmapBytes(oldBitmap, quality);
-    //            int iSent = cCliente->cChunkSend(cCliente->sckSocket, imgBuffer.data(), imgBuffer.size(), 0, true, nullptr, EnumComandos::RD_Salida);
-    //            if (iSent == -1) {
-    //                break;
-    //            }
-    //        }
-    //    }else {
-    //        //No hubo cambios
-    //        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    //    }
-    //}
+        if (iDiff == -1) {
+            //Hubo un error o uno de los buffers es nulo
+            if (newBitmap.get() != nullptr) {
+                __DBG_("Asignando newBitmap a oldBitmap");
+                Gdiplus::Rect rect(0, 0, newBitmap.get()->GetWidth(), newBitmap.get()->GetHeight());
+                Gdiplus::Bitmap* temp_bitmap = newBitmap.get()->Clone(rect, newBitmap.get()->GetPixelFormat());
+                oldBitmap = std::shared_ptr<Gdiplus::Bitmap>(temp_bitmap);
+                //Obtener bytes del newBitmap
+                std::vector<char> imgBuffer = this->getBitmapBytes(newBitmap, quality);
+                int iSent = cCliente->cChunkSend(cCliente->sckSocket, imgBuffer.data(), imgBuffer.size(), 0, true, nullptr, EnumComandos::RD_Salida);
+                if (iSent == -1) {
+                    break;
+                }
+            }else {
+                __DBG_("newBitmap es nulo");
+            }
+        }else if (iDiff > 0) {
+            //Hubo un cambio, enviar diferencia
+            //oldBitmap aqui ya tiene los pixeles modificados
+            //Vale la pena enviar el cambio de pixeles?
+            if ((sizeof(Pixel_Data) * iDiff) < 80000) {
+                //Serializar el vector a un std::vector<char> y mandarlo
+                std::vector<char> vcData;
+                this->pixelSerialize(vcPixels, vcData);
+                int iSent = cCliente->cChunkSend(cCliente->sckSocket, vcData.data(), vcData.size(), 0, true, nullptr, EnumComandos::RD_Salida_Pixel);
+                if (iSent == -1) {
+                    break;
+                }
+            }else {
+                //Obtener bytes de newbitmap/oldbitmap y mandarlo completo
+                std::vector<char> imgBuffer = this->getBitmapBytes(oldBitmap, quality);
+                int iSent = cCliente->cChunkSend(cCliente->sckSocket, imgBuffer.data(), imgBuffer.size(), 0, true, nullptr, EnumComandos::RD_Salida);
+                if (iSent == -1) {
+                    break;
+                }
+            }
+        }else {
+            //No hubo cambios
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+    }
 }
 
 std::vector<Monitor> mod_RemoteDesktop::m_ListaMonitores() {
