@@ -17,17 +17,13 @@ int GetEncoderClsid(const WCHAR* format, CLSID* pClsid){
 
     Gdiplus::ImageCodecInfo* pImageCodecInfo = NULL;
     mod_Instance_RD->GDIPLUS.pGetImageEncodersSize(&num, &size);
-    //Gdiplus::GetImageEncodersSize(&num, &size);
-    if (size == 0)
-        return -1;  // Failure
+    if (size == 0) { return -1; } 
 
     pImageCodecInfo = (Gdiplus::ImageCodecInfo*)(malloc(size));
-    if (pImageCodecInfo == NULL)
-        return -1;  // Failure
+    if (pImageCodecInfo == NULL) { return -1; }
 
 	mod_Instance_RD->GDIPLUS.pGetImageEncoders(num, size, pImageCodecInfo);
-    //GetImageEncoders(num, size, pImageCodecInfo);
-
+    
     for (UINT j = 0; j < num; ++j)
     {
         if (wcscmp(pImageCodecInfo[j].MimeType, format) == 0)
@@ -39,7 +35,7 @@ int GetEncoderClsid(const WCHAR* format, CLSID* pClsid){
     }
 
     free(pImageCodecInfo);
-    return -1;  // Failure
+    return -1;
 }
 
 bool mod_RemoteDesktop::m_isRunning() {
@@ -150,15 +146,31 @@ int mod_RemoteDesktop::BitmapDiff(std::shared_ptr<Gdiplus::Bitmap>& _oldBitmap, 
         return -1;
     }
 
-    if (!this->GDIPLUS.pGdipBitmapLockBits) {
+    if (!this->GDIPLUS.pGdipBitmapLockBits || !this->GDIPLUS.pGdipBitmapUnlockBits ||
+        !this->GDIPLUS.pGdipGetImageWidth || this->GDIPLUS.pGdipGetImageHeight) {
         __DBG_("Funciones de GDI no cargadas");
         return -1;
     }
 
-    UINT width = _oldBitmap.get()->GetWidth();
-    UINT height = _oldBitmap.get()->GetHeight();
+    UINT width = 0; // _oldBitmap.get()->GetWidth();
+    UINT height = 0; // _oldBitmap.get()->GetHeight();
 
-    if (width != _newBitmap.get()->GetWidth() || height != _newBitmap.get()->GetHeight()) {
+    if(this->GDIPLUS.pGdipGetImageHeight(_oldBitmap.get(), &height) != Gdiplus::Status::Ok ||
+       this->GDIPLUS.pGdipGetImageWidth(_oldBitmap.get(), &width) != Gdiplus::Status::Ok) {
+        __DBG_("Error al obtener dimensiones de _oldbitmap");
+        return -1;
+	}
+
+    UINT n_width = 0;
+    UINT n_height = 0;
+
+    if (this->GDIPLUS.pGdipGetImageHeight(_newBitmap.get(), &n_height) != Gdiplus::Status::Ok ||
+        this->GDIPLUS.pGdipGetImageWidth(_newBitmap.get(), &n_width) != Gdiplus::Status::Ok) {
+        __DBG_("Error al obtener dimensiones de _newBitmap");
+        return -1;
+    }
+
+    if (width != n_width || height != n_height) {
         __DBG_("Los bitmaps no son del mismo tamanio");
         return -1;
     }
@@ -167,7 +179,6 @@ int mod_RemoteDesktop::BitmapDiff(std::shared_ptr<Gdiplus::Bitmap>& _oldBitmap, 
     Gdiplus::Rect rect(0, 0, width, height);
 
     this->GDIPLUS.pGdipBitmapLockBits(_oldBitmap.get(), &rect, Gdiplus::ImageLockMode::ImageLockModeRead | Gdiplus::ImageLockMode::ImageLockModeWrite, PixelFormat24bppRGB, &bmpData1);
-    //_newBitmap.get()->LockBits(&rect, Gdiplus::ImageLockMode::ImageLockModeRead | Gdiplus::ImageLockMode::ImageLockModeWrite, PixelFormat24bppRGB, &bmpData2);
     this->GDIPLUS.pGdipBitmapLockBits(_newBitmap.get(), &rect, Gdiplus::ImageLockMode::ImageLockModeRead | Gdiplus::ImageLockMode::ImageLockModeWrite, PixelFormat24bppRGB, &bmpData2);
 
     BYTE* oldBitmapPixels = static_cast<BYTE*>(bmpData1.Scan0);
@@ -200,11 +211,12 @@ int mod_RemoteDesktop::BitmapDiff(std::shared_ptr<Gdiplus::Bitmap>& _oldBitmap, 
         }
     }
 
-    _oldBitmap.get()->UnlockBits(&bmpData1);
-    _newBitmap.get()->UnlockBits(&bmpData2);
+    this->GDIPLUS.pGdipBitmapUnlockBits(_oldBitmap.get(), &bmpData1);
+    this->GDIPLUS.pGdipBitmapUnlockBits(_newBitmap.get(), &bmpData2);
+    //_oldBitmap.get()->UnlockBits(&bmpData1);
+    //_newBitmap.get()->UnlockBits(&bmpData2);
 
     return outCantidad;
-    return 0;
 }
 
 void mod_RemoteDesktop::InitGDI() {

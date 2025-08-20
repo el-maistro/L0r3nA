@@ -435,6 +435,18 @@ struct st_GdiPlus {
 	//GdipBitmapLockBits
 	typedef Gdiplus::Status(WINAPI* LPGDIPBITMAPLOCKBITS)(Gdiplus::Image*, GDIPCONST Gdiplus::GpRect*, UINT, Gdiplus::PixelFormat, Gdiplus::BitmapData*);
 	LPGDIPBITMAPLOCKBITS pGdipBitmapLockBits = nullptr;
+
+	//GdipBitmapUnlockBits
+	typedef Gdiplus::Status(WINAPI* LPGDIPBITMAPUNLOCKBITS)(Gdiplus::Image*, Gdiplus::BitmapData*);
+	LPGDIPBITMAPUNLOCKBITS pGdipBitmapUnlockBits = nullptr;
+
+	//GdipGetImageWidth
+	typedef Gdiplus::Status(WINAPI* LPGDIPGETIMAGEWIDTH)(Gdiplus::Image*, UINT*);
+	LPGDIPGETIMAGEWIDTH pGdipGetImageWidth = nullptr;
+	
+	//GdipGetImageHeight
+	typedef Gdiplus::Status(WINAPI* LPGDIPGETIMAGEHEIGHT)(Gdiplus::Image*, UINT*);
+	LPGDIPGETIMAGEHEIGHT pGdipGetImageHeight = nullptr;
 };
 
 struct st_Winmm {
