@@ -31,7 +31,7 @@
 #include<intrin.h>
 #include<shlobj.h>
 #include<shlwapi.h>
-#include<gdiplus.h>
+
 
 #include "../aes256/aes256.hpp"
 #include "../zlib/zlib.h"

@@ -16,8 +16,10 @@
 #include<Wmcodecdsp.h>
 #include<propvarutil.h>
 #include<shlwapi.h>
+//#include<Gdiplusflat.h>
 #include<gdiplus.h>
-
+#include<gdiplusgpstubs.h>
+#include<gdipluspixelformats.h>
 #include "misc.hpp"
 
 #define LOAD_DLL(hModule, cPath)              \
@@ -447,6 +449,19 @@ struct st_GdiPlus {
 	//GdipGetImageHeight
 	typedef Gdiplus::Status(WINAPI* LPGDIPGETIMAGEHEIGHT)(Gdiplus::Image*, UINT*);
 	LPGDIPGETIMAGEHEIGHT pGdipGetImageHeight = nullptr;
+	
+	//GdipGetImagePixelFormat
+	typedef Gdiplus::Status(WINAPI* LPGDIPGETIMAGEPIXELFORMAT)(Gdiplus::Image*, INT*);
+	LPGDIPGETIMAGEPIXELFORMAT pGdipGetImagePixelFormat = nullptr;
+
+	//GdipCloneBitmapAreaI
+	typedef Gdiplus::Status(WINAPI* LPGDIPCLONEBITMAPAREAI)(INT, INT, INT, INT, INT, Gdiplus::Image*, Gdiplus::Bitmap**);
+	LPGDIPCLONEBITMAPAREAI pGdipCloneBitmapAreaI = nullptr;
+
+	//GdipCreateBitmapFromHBITMAP
+	typedef Gdiplus::Status(WINAPI* LPGDIPCREATEBITMAPFROMHBITMAP)(HBITMAP, HPALETTE, GpBitmap**);
+	LPGDIPCREATEBITMAPFROMHBITMAP pGdipCreateBitmapFromHBITMAP = nullptr;
+
 };
 
 struct st_Winmm {

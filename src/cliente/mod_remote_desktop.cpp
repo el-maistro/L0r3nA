@@ -213,8 +213,6 @@ int mod_RemoteDesktop::BitmapDiff(std::shared_ptr<Gdiplus::Bitmap>& _oldBitmap, 
 
     this->GDIPLUS.pGdipBitmapUnlockBits(_oldBitmap.get(), &bmpData1);
     this->GDIPLUS.pGdipBitmapUnlockBits(_newBitmap.get(), &bmpData2);
-    //_oldBitmap.get()->UnlockBits(&bmpData1);
-    //_newBitmap.get()->UnlockBits(&bmpData2);
 
     return outCantidad;
 }
@@ -374,14 +372,34 @@ std::shared_ptr<Gdiplus::Bitmap> mod_RemoteDesktop::getFrameBitmap(ULONG quality
 
     GetEncoderClsid(L"image/jpeg", &imageCLSID);
     
-    pScreenShot = new Gdiplus::Bitmap(hmpScreen, (HPALETTE)NULL);  // <------------------  ERROR
+    // Pseudocode plan:
+    // 1. The error occurs because Gdiplus::Bitmap constructors are not part of the flat API and require static linking to gdiplus.lib.
+    // 2. To create a Bitmap from an HBITMAP using the flat API, use GdipCreateBitmapFromHBITMAP, which returns a GpBitmap* (opaque pointer).
+    // 3. To use this with the rest of your code, you can reinterpret_cast the GpBitmap* to Gdiplus::Bitmap* (since Gdiplus::Bitmap is a thin wrapper around GpBitmap).
+    // 4. Replace `new Gdiplus::Bitmap(hmpScreen, (HPALETTE)NULL);` with a call to the flat API function via your function pointer, and cast the result as needed.
+
+    // Replace this line:
+    // pScreenShot = new Gdiplus::Bitmap(hmpScreen, (HPALETTE)NULL);
+
+    // With the following code:
+    GpBitmap* pGpBitmap = nullptr;
+    if (this->GDIPLUS.pGdipCreateBitmapFromHBITMAP) {
+        if (this->GDIPLUS.pGdipCreateBitmapFromHBITMAP(hmpScreen, NULL, &pGpBitmap) == Gdiplus::Status::Ok && pGpBitmap) {
+            pScreenShot = reinterpret_cast<Gdiplus::Bitmap*>(pGpBitmap);
+        } else {
+            __DBG_("GdipCreateBitmapFromHBITMAP failed");
+            goto EndSec;
+        }
+    } else {
+        __DBG_("pGdipCreateBitmapFromHBITMAP not loaded");
+        goto EndSec;
+    }
 
     if (!pScreenShot) {
         __DBG_("No se pudo reservar memoria para crear el bitmap");
         goto EndSec;
     }
 
-    //if (pScreenShot->Save(oStream, &imageCLSID, &encoderParams) != Gdiplus::Status::Ok) {
     if(this->GDIPLUS.pGdipSaveImageToStream(pScreenShot, oStream, &imageCLSID, &encoderParams) != Gdiplus::Status::Ok) {
 		__DBG_("No se pudo guardar el buffer al stream");
         goto EndSec;
@@ -389,7 +407,7 @@ std::shared_ptr<Gdiplus::Bitmap> mod_RemoteDesktop::getFrameBitmap(ULONG quality
 
     oStream->Seek({ 0 }, STREAM_SEEK_SET, NULL);
 
-    //outBitmap = std::make_shared<Gdiplus::Bitmap>(oStream);  <---- ERROR
+    //outBitmap = std::make_shared<Gdiplus::Bitmap>(oStream);  //<---- ERROR
 
 EndSec:
     if (oStream) {
@@ -436,23 +454,18 @@ std::vector<char> mod_RemoteDesktop::getBitmapBytes(std::shared_ptr<Gdiplus::Bit
         goto EndSec;
     }
 
-    // if (pScreenShot->Save(oStream, &imageCLSID, &encoderParams) != Gdiplus::Status::Ok) {
-     ///   DebugPrint("No se pudo guardar el buffer al stream");
-      //  goto EndSec;
-    //}
     CLSID imageCLSID;
 
     Gdiplus::EncoderParameters encoderParams;
     encoderParams.Count = 1;
     encoderParams.Parameter[0].NumberOfValues = 1;
-    encoderParams.Parameter[0].Guid = Gdiplus::EncoderQuality;
+    encoderParams.Parameter[0].Guid = { 0x1d5be4b5,0xfa4a,0x452d,0x9c,0xdd,0x5d,0xb3,0x51,0x05,0xe7,0xeb };/*Gdiplus::EncoderQuality;*/
     encoderParams.Parameter[0].Type = Gdiplus::EncoderParameterValueTypeLong;
     encoderParams.Parameter[0].Value = &_quality;
 
     GetEncoderClsid(L"image/jpeg", &imageCLSID);
 	this->GDIPLUS.pGdipSaveImageToStream(_in.get(), oStream, &imageCLSID, &encoderParams);
-    //_in.get()->Save(oStream, &imageCLSID, &encoderParams);
-
+    
     hr = oStream->Stat(&statstg, STATFLAG_NONAME);
     if (hr == S_OK) {
         ULONG bytes_read = 0;
@@ -502,6 +515,11 @@ void mod_RemoteDesktop::DetenerLive() {
 }
 
 void mod_RemoteDesktop::IniciarLive(int quality, int monitor_index) {
+    if (!this->GDIPLUS.pGdipGetImageHeight || !this->GDIPLUS.pGdipGetImageWidth ||
+        !this->GDIPLUS.pGdipGetImagePixelFormat || !this->GDIPLUS.pGdipCloneBitmapAreaI) {
+        __DBG_("[RD][IniciarLive] No estan cargas las funciones de gdiplus");
+        return;
+    }
     this->isRunning = true;
     this->m_UpdateQuality(quality);
     std::shared_ptr<Gdiplus::Bitmap> oldBitmap = nullptr;
@@ -523,12 +541,25 @@ void mod_RemoteDesktop::IniciarLive(int quality, int monitor_index) {
             //Hubo un error o uno de los buffers es nulo
             if (newBitmap.get() != nullptr) {
                 __DBG_("Asignando newBitmap a oldBitmap");
-                Gdiplus::Rect rect(0, 0, newBitmap.get()->GetWidth(), newBitmap.get()->GetHeight());
-                Gdiplus::Bitmap* temp_bitmap = newBitmap.get()->Clone(rect, newBitmap.get()->GetPixelFormat());
+                
+                UINT n_width = 0, n_height = 0;
+                this->GDIPLUS.pGdipGetImageHeight(newBitmap.get(), &n_height);
+                this->GDIPLUS.pGdipGetImageWidth(newBitmap.get(), &n_width);
+                
+                Gdiplus::Bitmap* temp_bitmap = new Gdiplus::Bitmap(n_width, n_height);
+
+                INT temp_format = 0; 
+                this->GDIPLUS.pGdipGetImagePixelFormat(newBitmap.get(), &temp_format);
+                
+                this->GDIPLUS.pGdipCloneBitmapAreaI(0, 0, n_width, n_height, temp_format, newBitmap.get(), &temp_bitmap);
                 oldBitmap = std::shared_ptr<Gdiplus::Bitmap>(temp_bitmap);
                 //Obtener bytes del newBitmap
                 std::vector<char> imgBuffer = this->getBitmapBytes(newBitmap, quality);
                 int iSent = cCliente->cChunkSend(cCliente->sckSocket, imgBuffer.data(), imgBuffer.size(), 0, true, nullptr, EnumComandos::RD_Salida);
+
+                delete temp_bitmap;
+                temp_bitmap = nullptr;
+
                 if (iSent == -1) {
                     break;
                 }

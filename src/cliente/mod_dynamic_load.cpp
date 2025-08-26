@@ -133,6 +133,8 @@ void DynamicLoad::LoadRDProcs() {
         this->GDIPLUS_RD.pGdipBitmapUnlockBits = (st_GdiPlus::LPGDIPBITMAPUNLOCKBITS)wrapGetProcAddr(this->hGdiPlusDLL, "GdipBitmapUnlockBits");
         this->GDIPLUS_RD.pGdipGetImageWidth = (st_GdiPlus::LPGDIPGETIMAGEWIDTH)wrapGetProcAddr(this->hGdiPlusDLL, "GdipGetImageWidth");
         this->GDIPLUS_RD.pGdipGetImageHeight = (st_GdiPlus::LPGDIPGETIMAGEHEIGHT)wrapGetProcAddr(this->hGdiPlusDLL, "GdipGetImageHeight");
+        this->GDIPLUS_RD.pGdipGetImagePixelFormat = (st_GdiPlus::LPGDIPGETIMAGEPIXELFORMAT)wrapGetProcAddr(this->hGdiPlusDLL, "GdipGetImagePixelFormat");
+        this->GDIPLUS_RD.pGdipCloneBitmapAreaI = (st_GdiPlus::LPGDIPCLONEBITMAPAREAI)wrapGetProcAddr(this->hGdiPlusDLL, "GdipCloneBitmapAreaI");
     }
 }
 
