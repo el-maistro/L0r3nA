@@ -3,7 +3,7 @@
 #include "misc.hpp"
 #include "mod_remote_desktop.hpp"
 
-#define TEST_MOD 1
+//#define TEST_MOD 1
 
 
 Cliente* cCliente;

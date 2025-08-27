@@ -1,4 +1,4 @@
-LINK2=-Wl,-Bstatic -lws2_32 -pthread -lmfuuid -lwmcodecdspuuid -lgdiplus -liphlpapi -ffunction-sections -fdata-sections -Wl,--gc-sections -Wno-write-strings -fno-exceptions -fmerge-all-constants -static-libgcc -static-libstdc++ -Wl,-Bdynamic -mwindows
+LINK2=-Wl,-Bstatic -lws2_32 -lmfuuid -lwmcodecdspuuid -liphlpapi -ffunction-sections -fdata-sections -Wl,--gc-sections -Wno-write-strings -fno-exceptions -fmerge-all-constants -static-libgcc -static-libstdc++ -pthread -Wl,-Bdynamic -mwindows
 #-lstrmiids -luuid 
 #LINK2=-Wl,-Bstatic -lmfplat -lmfreadwrite -lmfuuid -lmf -lwmcodecdspuuid -lstrmiids -luuid -lws2_32 -lole32 -lgdiplus -lshlwapi -liphlpapi -ffunction-sections -fdata-sections -Wno-write-strings -fno-exceptions -fmerge-all-constants -static-libgcc -Wl,-Bdynamic -mwindows
 #LINK2=-lmfplat -lmfreadwrite -lnetapi32 -lmfuuid -lmf -lwmcodecdspuuid -lstrmiids -luuid -lws2_32 -lole32 -lgdiplus -lshlwapi -liphlpapi -lcrypt32 -lbcrypt -Wl,-Bstatic -s -w -ffunction-sections -fdata-sections -Wno-write-strings -fno-exceptions -fmerge-all-constants -static-libgcc -Wl,-Bstatic -mwindows
@@ -17,8 +17,7 @@ RM=rm
 zlib/%.o: ../zlib/%.c
 	$(CC) $(CFLAG) -c -o $@ $<
 
-$(BIN):aes256.o base64.o sqlite3.o $(OBJ) #$(ZLIB)
-	#$(CC) -o $(BIN) $(OBJ) $(ZLIB) aes256.o base64.o $(LINK2)
+$(BIN):aes256.o base64.o sqlite3.o $(OBJ)
 	$(CC) -o $(BIN) $(OBJ) sqlite3.o aes256.o base64.o $(LINK2)
 
 aes256.o: ../aes256/aes256.cpp

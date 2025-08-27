@@ -3,6 +3,7 @@
 
 #include "headers.hpp"
 #include "mod_dynamic_load.hpp"
+
 #define KEYEVENTF_KEDOWN 0x0000
 
 struct rect_Monitor {
@@ -110,6 +111,7 @@ class mod_RemoteDesktop {
 		std::shared_ptr<Gdiplus::Bitmap> getFrameBitmap(ULONG quality, int index);
 		std::vector<char> getBitmapBytes(std::shared_ptr<Gdiplus::Bitmap>& _in, ULONG _quality);
 		void pixelSerialize(const std::vector<Pixel_Data>& _vcin, std::vector<char>& _vcout);
+		int GetEncoderClsid(const WCHAR* format, CLSID* pClsid);
 };
 
 #endif

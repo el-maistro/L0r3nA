@@ -16,11 +16,10 @@
 #include<Wmcodecdsp.h>
 #include<propvarutil.h>
 #include<shlwapi.h>
-//#include<Gdiplusflat.h>
 #include<gdiplus.h>
-#include<gdiplusgpstubs.h>
-#include<gdipluspixelformats.h>
 #include "misc.hpp"
+
+typedef void GpBitmap;
 
 #define LOAD_DLL(hModule, cPath)              \
 	do{						                  \
@@ -418,7 +417,7 @@ struct st_GdiPlus {
 	typedef void(WINAPI* LPGDIPLUSSHUTDOWN)(ULONG_PTR);
 	LPGDIPLUSSHUTDOWN pGdiplusShutdown = nullptr;
 
-	//GetImageEncodersSize
+	//GetImageEncodersSize / FlatApi GdipGetImageEncodersSize
 	typedef Gdiplus::Status(WINAPI* LPGETIMAGEENCODERSSIZE)(UINT*, UINT*);
 	LPGETIMAGEENCODERSSIZE pGetImageEncodersSize = nullptr;
 
@@ -461,6 +460,10 @@ struct st_GdiPlus {
 	//GdipCreateBitmapFromHBITMAP
 	typedef Gdiplus::Status(WINAPI* LPGDIPCREATEBITMAPFROMHBITMAP)(HBITMAP, HPALETTE, GpBitmap**);
 	LPGDIPCREATEBITMAPFROMHBITMAP pGdipCreateBitmapFromHBITMAP = nullptr;
+
+	//GdipCreateBitmapFromScan0
+	typedef Gdiplus::Status(WINAPI* LPGDIPCREATEBITMAPFROMSCAN0)(INT, INT, INT, INT, BYTE*, GpBitmap**);
+	LPGDIPCREATEBITMAPFROMSCAN0 pGdipCreateBitmapFromScan0 = nullptr;
 
 };
 

@@ -11,18 +11,18 @@ void Print_Mouse_Command(int x, int y, int monitor_index, int mouse_action) {
     std::cout << "X: " << x << "\nY:" << y << "Monitor: " << monitor_index << "\nAction: " << mouse_action << "\n";
 }
 
-int GetEncoderClsid(const WCHAR* format, CLSID* pClsid){
+int mod_RemoteDesktop::GetEncoderClsid(const WCHAR* format, CLSID* pClsid){
     UINT  num = 0;          // number of image encoders
     UINT  size = 0;         // size of the image encoder array in bytes
 
     Gdiplus::ImageCodecInfo* pImageCodecInfo = NULL;
-    mod_Instance_RD->GDIPLUS.pGetImageEncodersSize(&num, &size);
+    this->GDIPLUS.pGetImageEncodersSize(&num, &size);
     if (size == 0) { return -1; } 
 
     pImageCodecInfo = (Gdiplus::ImageCodecInfo*)(malloc(size));
     if (pImageCodecInfo == NULL) { return -1; }
 
-	mod_Instance_RD->GDIPLUS.pGetImageEncoders(num, size, pImageCodecInfo);
+	this->GDIPLUS.pGetImageEncoders(num, size, pImageCodecInfo);
     
     for (UINT j = 0; j < num; ++j)
     {
@@ -265,7 +265,8 @@ std::shared_ptr<Gdiplus::Bitmap> mod_RemoteDesktop::getFrameBitmap(ULONG quality
 
     if (!this->GDI32.pCreateCompatibleBitmap || !this->GDI32.pCreateCompatibleDC ||
         !this->GDI32.pSelectObject || !this->GDI32.pGetObjectA || !this->GDI32.pBitBlt || !this->OLE32.pCreateStreamOnHGlobal ||
-        !this->USER32.pGetWindowRect) {
+        !this->USER32.pGetWindowRect || !this->GDIPLUS.pGdipCreateBitmapFromHBITMAP) {
+        __DBG_("[RD][getFrameBitmap]No se cargaron todas las funciones");
         return outBitmap;
     }
 
@@ -294,6 +295,7 @@ std::shared_ptr<Gdiplus::Bitmap> mod_RemoteDesktop::getFrameBitmap(ULONG quality
     HBITMAP hmpScreen = NULL;
 
     Gdiplus::Bitmap* pScreenShot = nullptr;
+    GpBitmap* pGpBitmap = nullptr;
     IStream* oStream = nullptr;
     HRESULT hr = S_OK;
     
@@ -370,31 +372,21 @@ std::shared_ptr<Gdiplus::Bitmap> mod_RemoteDesktop::getFrameBitmap(ULONG quality
     encoderParams.Parameter[0].Type = Gdiplus::EncoderParameterValueTypeLong;
     encoderParams.Parameter[0].Value = &quality;
 
-    GetEncoderClsid(L"image/jpeg", &imageCLSID);
+    this->GetEncoderClsid(L"image/jpeg", &imageCLSID);
     
-    // Pseudocode plan:
-    // 1. The error occurs because Gdiplus::Bitmap constructors are not part of the flat API and require static linking to gdiplus.lib.
-    // 2. To create a Bitmap from an HBITMAP using the flat API, use GdipCreateBitmapFromHBITMAP, which returns a GpBitmap* (opaque pointer).
-    // 3. To use this with the rest of your code, you can reinterpret_cast the GpBitmap* to Gdiplus::Bitmap* (since Gdiplus::Bitmap is a thin wrapper around GpBitmap).
-    // 4. Replace `new Gdiplus::Bitmap(hmpScreen, (HPALETTE)NULL);` with a call to the flat API function via your function pointer, and cast the result as needed.
-
+    
     // Replace this line:
-    // pScreenShot = new Gdiplus::Bitmap(hmpScreen, (HPALETTE)NULL);
+    //pScreenShot = new Gdiplus::Bitmap(hmpScreen, (HPALETTE)NULL);
 
     // With the following code:
-    GpBitmap* pGpBitmap = nullptr;
-    if (this->GDIPLUS.pGdipCreateBitmapFromHBITMAP) {
-        if (this->GDIPLUS.pGdipCreateBitmapFromHBITMAP(hmpScreen, NULL, &pGpBitmap) == Gdiplus::Status::Ok && pGpBitmap) {
-            pScreenShot = reinterpret_cast<Gdiplus::Bitmap*>(pGpBitmap);
-        } else {
-            __DBG_("GdipCreateBitmapFromHBITMAP failed");
-            goto EndSec;
-        }
+   
+    if (this->GDIPLUS.pGdipCreateBitmapFromHBITMAP(hmpScreen, NULL, &pGpBitmap) == Gdiplus::Status::Ok && pGpBitmap) {
+        pScreenShot = reinterpret_cast<Gdiplus::Bitmap*>(pGpBitmap);
     } else {
-        __DBG_("pGdipCreateBitmapFromHBITMAP not loaded");
+        __DBG_("GdipCreateBitmapFromHBITMAP failed");
         goto EndSec;
     }
-
+    
     if (!pScreenShot) {
         __DBG_("No se pudo reservar memoria para crear el bitmap");
         goto EndSec;
@@ -407,7 +399,7 @@ std::shared_ptr<Gdiplus::Bitmap> mod_RemoteDesktop::getFrameBitmap(ULONG quality
 
     oStream->Seek({ 0 }, STREAM_SEEK_SET, NULL);
 
-    //outBitmap = std::make_shared<Gdiplus::Bitmap>(oStream);  //<---- ERROR
+    outBitmap = std::make_shared<Gdiplus::Bitmap>(oStream);  //<---- ERROR
 
 EndSec:
     if (oStream) {
@@ -463,7 +455,7 @@ std::vector<char> mod_RemoteDesktop::getBitmapBytes(std::shared_ptr<Gdiplus::Bit
     encoderParams.Parameter[0].Type = Gdiplus::EncoderParameterValueTypeLong;
     encoderParams.Parameter[0].Value = &_quality;
 
-    GetEncoderClsid(L"image/jpeg", &imageCLSID);
+    this->GetEncoderClsid(L"image/jpeg", &imageCLSID);
 	this->GDIPLUS.pGdipSaveImageToStream(_in.get(), oStream, &imageCLSID, &encoderParams);
     
     hr = oStream->Stat(&statstg, STATFLAG_NONAME);
@@ -516,7 +508,8 @@ void mod_RemoteDesktop::DetenerLive() {
 
 void mod_RemoteDesktop::IniciarLive(int quality, int monitor_index) {
     if (!this->GDIPLUS.pGdipGetImageHeight || !this->GDIPLUS.pGdipGetImageWidth ||
-        !this->GDIPLUS.pGdipGetImagePixelFormat || !this->GDIPLUS.pGdipCloneBitmapAreaI) {
+        !this->GDIPLUS.pGdipGetImagePixelFormat || !this->GDIPLUS.pGdipCloneBitmapAreaI ||
+        !this->GDIPLUS.pGdipCreateBitmapFromScan0) {
         __DBG_("[RD][IniciarLive] No estan cargas las funciones de gdiplus");
         return;
     }
@@ -546,7 +539,15 @@ void mod_RemoteDesktop::IniciarLive(int quality, int monitor_index) {
                 this->GDIPLUS.pGdipGetImageHeight(newBitmap.get(), &n_height);
                 this->GDIPLUS.pGdipGetImageWidth(newBitmap.get(), &n_width);
                 
-                Gdiplus::Bitmap* temp_bitmap = new Gdiplus::Bitmap(n_width, n_height);
+                Gdiplus::Bitmap* temp_bitmap = nullptr; //new Gdiplus::Bitmap(n_width, n_height);
+                GpBitmap* pGpBitmap = nullptr;
+                if (this->GDIPLUS.pGdipCreateBitmapFromScan0(
+                    n_width, n_height, 0, PixelFormat24bppRGB, nullptr, &pGpBitmap) == Gdiplus::Status::Ok && pGpBitmap) {
+                    temp_bitmap = reinterpret_cast<Gdiplus::Bitmap*>(pGpBitmap);
+                }else {
+                    __DBG_("[X][IniciarLive] pGdipCreateBitmapFromScan0 error");
+                    break;
+                }
 
                 INT temp_format = 0; 
                 this->GDIPLUS.pGdipGetImagePixelFormat(newBitmap.get(), &temp_format);
@@ -557,8 +558,8 @@ void mod_RemoteDesktop::IniciarLive(int quality, int monitor_index) {
                 std::vector<char> imgBuffer = this->getBitmapBytes(newBitmap, quality);
                 int iSent = cCliente->cChunkSend(cCliente->sckSocket, imgBuffer.data(), imgBuffer.size(), 0, true, nullptr, EnumComandos::RD_Salida);
 
-                delete temp_bitmap;
-                temp_bitmap = nullptr;
+                //delete temp_bitmap;
+                //temp_bitmap = nullptr;
 
                 if (iSent == -1) {
                     break;
