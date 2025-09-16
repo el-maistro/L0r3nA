@@ -4,6 +4,7 @@
 
 extern Cliente* cCliente;
 
+
 //Conversion functions
 int mod_Camera::GetEncoderClsid(const WCHAR* format, CLSID* pClsid){
     if (!this->GDIPLUS.pGetImageEncodersSize || !this->GDIPLUS.pGetImageEncoders) {

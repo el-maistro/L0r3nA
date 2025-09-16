@@ -20,6 +20,7 @@
 #include "misc.hpp"
 
 typedef void GpBitmap;
+typedef void GpImage;
 
 #define LOAD_DLL(hModule, cPath)              \
 	do{						                  \
@@ -465,6 +466,17 @@ struct st_GdiPlus {
 	typedef Gdiplus::Status(WINAPI* LPGDIPCREATEBITMAPFROMSCAN0)(INT, INT, INT, INT, BYTE*, GpBitmap**);
 	LPGDIPCREATEBITMAPFROMSCAN0 pGdipCreateBitmapFromScan0 = nullptr;
 
+	//GdipDisposeImage
+	typedef Gdiplus::Status(WINAPI* LPGDIPDISPOSEIMAGE)(GpImage*);
+	LPGDIPDISPOSEIMAGE pGdipDisposeImage = nullptr;
+
+	//GdipLoadImageFromStream
+	typedef Gdiplus::Status(WINAPI* LPGDIPLOADIMAGEFROMSTREAM)(IStream*, GpImage**);
+	LPGDIPLOADIMAGEFROMSTREAM pGdipLoadImageFromStream = nullptr;
+
+	//GdipCreateBitmapFromStream
+	typedef Gdiplus::Status(WINAPI* LPGDIPCREATEBITMAPFROMSTREAM)(IStream*, GpBitmap**);
+	LPGDIPCREATEBITMAPFROMSTREAM pGdipCreateBitmapFromStream = nullptr;
 };
 
 struct st_Winmm {

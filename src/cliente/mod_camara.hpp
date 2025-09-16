@@ -1,7 +1,13 @@
 #ifndef __CAM_H
 #define __CAM_H
 #include "headers.hpp"
+#include <initguid.h> 
 #include "mod_dynamic_load.hpp"
+
+//// CLSID_CColorConvertDMO {98230571-0087-4204-b020-3282538e57d3}
+
+DEFINE_GUID(CLSID_CColorConvertDMO,
+    0x98230571, 0x0087, 0x4204, 0xb0, 0x20, 0x32, 0x82, 0x53, 0x8e, 0x57, 0xd3);
 
 template <class T> void SafeRelease(T** ppT){
     if (*ppT){

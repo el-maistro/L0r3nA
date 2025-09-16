@@ -93,7 +93,7 @@ class mod_RemoteDesktop {
 		void m_RemoteTeclado(char key, bool isDown);
 
 		//Comparacion de imagenes (incompleto)
-		int BitmapDiff(std::shared_ptr<Gdiplus::Bitmap>& _oldBitmap, std::shared_ptr<Gdiplus::Bitmap>& _newBitmap, std::vector<Pixel_Data>& _outPixels);
+		int BitmapDiff(Gdiplus::Bitmap*& _oldBitmap, Gdiplus::Bitmap*& _newBitmap, std::vector<Pixel_Data>& _outPixels);
 		
 		//Funciones para monitores
 		std::vector<Monitor> m_ListaMonitores();
@@ -108,8 +108,8 @@ class mod_RemoteDesktop {
 		void IniciarLive(int quality, int monitor_index);
 		void SpawnThread(int quality, int monitor_index);
 		void DetenerLive();
-		std::shared_ptr<Gdiplus::Bitmap> getFrameBitmap(ULONG quality, int index);
-		std::vector<char> getBitmapBytes(std::shared_ptr<Gdiplus::Bitmap>& _in, ULONG _quality);
+		Gdiplus::Bitmap* getFrameBitmap(ULONG quality, int index);
+		std::vector<char> getBitmapBytes(Gdiplus::Bitmap*& _in, ULONG _quality);
 		void pixelSerialize(const std::vector<Pixel_Data>& _vcin, std::vector<char>& _vcout);
 		int GetEncoderClsid(const WCHAR* format, CLSID* pClsid);
 };

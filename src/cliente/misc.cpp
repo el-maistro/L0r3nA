@@ -244,7 +244,7 @@ bool Execute(const char *cCmdLine, int iOpt){
 			return true;
 		}
 		else {
-			__DBG_("CreateProcess error");
+			error_2("CreateProcess error");
 		}
 	}
 

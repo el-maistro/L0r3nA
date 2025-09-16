@@ -5,7 +5,7 @@ DynamicLoad::DynamicLoad() {
     //Cargar dlls y funciones
     LOAD_DLL(this->hKernel32DLL, "kernel32.dll");
     LOAD_DLL(this->hAdvapi32DLL, "advapi32.dll");
-    LOAD_DLL(this->hShell32DLL, "kernel32.dll");
+    LOAD_DLL(this->hShell32DLL, "shell32.dll");
     LOAD_DLL(this->hWtsapi32DLL, "Wtsapi32.dll");
     LOAD_DLL(this->hPsApiDLL, "psapi.dll");
     LOAD_DLL(this->hUser32DLL, "user32.dll");
@@ -112,6 +112,8 @@ void DynamicLoad::LoadRDProcs() {
         this->GDI32_RD.pSelectObject = (st_Gdi32::LPSELECTOBJECT)wrapGetProcAddr(this->hGdi32DLL, "SelectObject");
         this->GDI32_RD.pGetObjectA = (st_Gdi32::LPGETOBJECTA)wrapGetProcAddr(this->hGdi32DLL, "GetObjectA");
         this->GDI32_RD.pBitBlt = (st_Gdi32::LPBITBLT)wrapGetProcAddr(this->hGdi32DLL, "BitBlt");
+        this->GDI32_RD.pDeleteDC = (st_Gdi32::LPDELETEDC)wrapGetProcAddr(this->hGdi32DLL, "DeleteDC");
+        this->GDI32_RD.pDeleteObject = (st_Gdi32::LPDELETEOBJECT)wrapGetProcAddr(this->hGdi32DLL, "DeleteObject");
     }
 
     if (this->hOle32) {
@@ -130,8 +132,11 @@ void DynamicLoad::LoadRDProcs() {
         this->GDIPLUS_RD.pGdipCreateBitmapFromHBITMAP = (st_GdiPlus::LPGDIPCREATEBITMAPFROMHBITMAP)wrapGetProcAddr(this->hGdiPlusDLL, "GdipCreateBitmapFromHBITMAP");
         this->GDIPLUS_RD.pGdipCreateBitmapFromScan0 = (st_GdiPlus::LPGDIPCREATEBITMAPFROMSCAN0)wrapGetProcAddr(this->hGdiPlusDLL, "GdipCreateBitmapFromScan0");
         this->GDIPLUS_RD.pGetImageEncodersSize = (st_GdiPlus::LPGETIMAGEENCODERSSIZE)wrapGetProcAddr(this->hGdiPlusDLL, "GdipGetImageEncodersSize");
-        this->GDIPLUS_RD.pGetImageEncoders = (st_GdiPlus::LPGETIMAGEENCODERS)wrapGetProcAddr(this->hGdiPlusDLL, "GdipGetImageEncoders"); //flat Api
+        this->GDIPLUS_RD.pGetImageEncoders = (st_GdiPlus::LPGETIMAGEENCODERS)wrapGetProcAddr(this->hGdiPlusDLL, "GdipGetImageEncoders");
         this->GDIPLUS_RD.pGdipSaveImageToStream = (st_GdiPlus::LPGDIPSAVEIMAGETOSTREAM)wrapGetProcAddr(this->hGdiPlusDLL, "GdipSaveImageToFile");
+        this->GDIPLUS_RD.pGdipDisposeImage = (st_GdiPlus::LPGDIPDISPOSEIMAGE)wrapGetProcAddr(this->hGdiPlusDLL, "GdipDisposeImage");
+        this->GDIPLUS_RD.pGdipLoadImageFromStream = (st_GdiPlus::LPGDIPLOADIMAGEFROMSTREAM)wrapGetProcAddr(this->hGdiPlusDLL, "GdipLoadImageFromStream");
+        this->GDIPLUS_RD.pGdipCreateBitmapFromStream = (st_GdiPlus::LPGDIPCREATEBITMAPFROMSTREAM)wrapGetProcAddr(this->hGdiPlusDLL, "GdipCreateBitmapFromStream");
     }
 }
 

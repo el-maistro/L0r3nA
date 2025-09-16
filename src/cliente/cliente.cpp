@@ -761,14 +761,20 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
                 int iMonitorIndex = atoi(strIn[1].c_str());
                 _DBG_("Enviando captura de pantalla. Index:", iMonitorIndex);
                 _DBG_("Calidad:", iQuality);
-                std::shared_ptr<Gdiplus::Bitmap> bitmapBits = this->mod_RemoteDesk->getFrameBitmap(iQuality, iMonitorIndex);
-                std::vector<char> vcDeskBuffer = this->mod_RemoteDesk->getBitmapBytes(bitmapBits, iQuality);
-                int iBufferSize = vcDeskBuffer.size();
-                if (iBufferSize > 0) {
-                    this->cChunkSend(this->sckSocket, vcDeskBuffer.data(), iBufferSize, 0, true, nullptr, EnumComandos::RD_Salida);
-                }else {
-                    __DBG_("El buffer de remote_desk es 0");
+                //std::shared_ptr<Gdiplus::Bitmap> bitmapBits = this->mod_RemoteDesk->getFrameBitmap(iQuality, iMonitorIndex);
+                Gdiplus::Bitmap* bitmapBits = this->mod_RemoteDesk->getFrameBitmap(iQuality, iMonitorIndex);
+                if (bitmapBits != nullptr) {
+                    std::vector<char> vcDeskBuffer = this->mod_RemoteDesk->getBitmapBytes(bitmapBits, iQuality);
+                    int iBufferSize = vcDeskBuffer.size();
+                    if (iBufferSize > 0) {
+                        this->cChunkSend(this->sckSocket, vcDeskBuffer.data(), iBufferSize, 0, true, nullptr, EnumComandos::RD_Salida);
+                    }
+                    else {
+                        __DBG_("El buffer de remote_desk es 0");
+                    }
+                    this->mod_dynamic->GDIPLUS_RD.pGdipDisposeImage(reinterpret_cast<Gdiplus::Image*>(bitmapBits));
                 }
+                
             }
         }else {
             __DBG_("No se pudo reservar memoria para el modulo de escritorio remoto o ya esta enviando las imagenes");

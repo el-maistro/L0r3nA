@@ -36,17 +36,6 @@ set(SRCS main.cpp
          ../base64/base64.cpp
          ../sqlite3/sqlite3.c
          ../aes256/aes256.cpp
-         ../zlib/compress.c 
-         ../zlib/inflate.c 
-         ../zlib/infback.c 
-         ../zlib/inftrees.c 
-         ../zlib/trees.c 
-         ../zlib/inffast.c 
-         ../zlib/adler32.c 
-         ../zlib/deflate.c 
-         ../zlib/crc32.c 
-         ../zlib/zutil.c 
-         ../zlib/uncompr.c
 )
 
 #set_target_properties(cliente PROPERTIES LINK_FLAGS "/SUBSYSTEM:CONSOLE")
@@ -54,8 +43,7 @@ set(SRCS main.cpp
 #agregar win32 para hacer la app oculta 
 add_executable(cliente ${SRCS})
 
-target_link_libraries(cliente PRIVATE wsock32 ws2_32 mfuuid wmcodecdspuuid iphlpapi)
+target_link_libraries(cliente PRIVATE ws2_32 mfuuid iphlpapi)
 
 set_target_properties(cliente PROPERTIES LINK_FLAGS "/SUBSYSTEM:CONSOLE")
-#target_link_libraries(cliente PRIVATE netapi32 wsock32 ws2_32 mf mfplat mfreadwrite mfuuid wmcodecdspuuid strmiids ole32 uuid gdiplus shlwapi crypt32 bcrypt iphlpapi)
-#target_link_libraries(cliente PRIVATE netapi32 wsock32 ws2_32 mf mfplat mfreadwrite mfuuid wmcodecdspuuid ole32 strmiids uuid winmm wtsapi32 gdi32 gdiplus shlwapi crypt32 bcrypt iphlpapi)
+
