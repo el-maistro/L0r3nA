@@ -17,7 +17,8 @@ class frameEncryption : public wxFrame {
 		std::string strIP     = "";
 		SOCKET sckCliente = INVALID_SOCKET;
 		wxTextCtrl* txt_Pass = nullptr;
-		wxRadioBox* rdio_Options = nullptr;
+		wxRadioButton* radioEncrypt = nullptr;
+		wxRadioButton* radioDecrypt = nullptr;
 		wxCheckBox* chk_del = nullptr;
 
 		wxDECLARE_EVENT_TABLE();

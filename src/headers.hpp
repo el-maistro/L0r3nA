@@ -164,6 +164,7 @@ namespace EnumIDS {
         ID_CryptDB_Copiar,
         ID_CryptDB_Eliminar,
         ID_FM_Radio_Encriptar,
+        ID_FM_Radio_Desencriptar,
         ID_FM_BTN_Random,
         ID_FM_BTN_Crypt_Exec,
         ID_FM_Text_Password,
