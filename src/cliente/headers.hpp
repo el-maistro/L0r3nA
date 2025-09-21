@@ -21,11 +21,8 @@
 #include<cstring>
 #include<ctime>
 
-//#include<psapi.h>
 #include<sys/stat.h>
-//#include<wtsapi32.h>
 #include<winbase.h>
-//#include<winnt.h>
 #include<fcntl.h>
 #include<lmcons.h>
 #include<intrin.h>

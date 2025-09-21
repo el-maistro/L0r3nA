@@ -398,8 +398,8 @@ Gdiplus::Bitmap* mod_RemoteDesktop::getFrameBitmap(ULONG quality, int index) {
     oStream->Seek({ 0 }, STREAM_SEEK_SET, NULL);
 
     this->GDIPLUS.pGdipCreateBitmapFromStream(oStream, &pGpBitmap2);
-    if (pGpBitmap != nullptr) {
-        outBitmap = reinterpret_cast<Gdiplus::Bitmap*>(pGpBitmap2);
+    if (pGpBitmap2 != nullptr) {
+        //outBitmap = reinterpret_cast<Gdiplus::Bitmap*>(pGpBitmap2);
     }
 
 EndSec:

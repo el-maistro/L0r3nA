@@ -774,6 +774,9 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
                     }
                     this->mod_dynamic->GDIPLUS_RD.pGdipDisposeImage(reinterpret_cast<Gdiplus::Image*>(bitmapBits));
                 }
+                else {
+                    __DBG_("[RD] Error obteniendo el frame");
+                }
                 
             }
         }else {
