@@ -293,7 +293,6 @@ HRESULT mod_Camera::ConfigureSourceReader(IMFSourceReader*& pReader, int pIndexD
 
     // If the source's native format matches any of the formats in 
     // the list, prefer the native format.
-
     // Note: The camera might support multiple output formats, 
     // including a range of frame dimensions. The application could
     // provide a list to the user and have the user select the

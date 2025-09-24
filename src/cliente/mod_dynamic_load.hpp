@@ -44,6 +44,11 @@ typedef struct _WTS_PROCESS_INFOA {
 	PSID  pUserSid;
 } WTS_PROCESS_INFOA, * PWTS_PROCESS_INFOA;
 
+HRESULT WINAPI MyMFSetAttributeSize(IMFAttributes* , REFGUID , UINT32 , UINT32 );
+HRESULT WINAPI MyMFGetAttributeSize(IMFAttributes* , REFGUID , UINT32* , UINT32* );
+HRESULT WINAPI MyMFSetAttributeRatio(IMFAttributes* , REFGUID , UINT32 , UINT32 );
+HRESULT WINAPI MyMFGetAttributeRatio(IMFAttributes* , REFGUID , UINT32* , UINT32* );
+
 //Structs para dynamic_load
 struct st_Kernel32 {
 	//GetComputerNameA
@@ -577,19 +582,19 @@ struct st_Mfreadwrite {
 struct st_Mfapi {
 	//MFGetAttributeSize
 	typedef HRESULT(WINAPI* LPMFGETATTRIBUTESIZE)(IMFAttributes*, REFGUID, UINT32*, UINT32*);
-	LPMFGETATTRIBUTESIZE pMFGetAttributeSize = nullptr;
+	LPMFGETATTRIBUTESIZE pMFGetAttributeSize = &MyMFGetAttributeSize;
 
 	//MFGetAttributeRatio
 	typedef HRESULT(WINAPI* LPMFGETATTRIBUTERATIO)(IMFAttributes*, REFGUID, UINT32*, UINT32*);
-	LPMFGETATTRIBUTERATIO pMFGetAttributeRatio = nullptr;
+	LPMFGETATTRIBUTERATIO pMFGetAttributeRatio = &MyMFGetAttributeRatio;
 
 	//MFSetAttributeRatio
 	typedef HRESULT(WINAPI* LPMFSETATTRIBUTERATIO)(IMFAttributes*, REFGUID, UINT32, UINT32);
-	LPMFSETATTRIBUTERATIO pMFSetAttributeRatio = nullptr;
+	LPMFSETATTRIBUTERATIO pMFSetAttributeRatio = &MyMFSetAttributeRatio;
 
 	//MFSetAttributeSize
 	typedef HRESULT(WINAPI* LPMFSETATTRIBUTESIZE)(IMFAttributes*, REFGUID, UINT32, UINT32);
-	LPMFSETATTRIBUTESIZE pMFSetAttributeSize = nullptr;
+	LPMFSETATTRIBUTESIZE pMFSetAttributeSize = &MyMFSetAttributeSize;
 };
 
 struct st_Mfplat {
@@ -730,9 +735,6 @@ class DynamicLoad {
 		st_Kernel32_FM KERNEL32_FM;
 
 		//Mod camara
-		//gdiplus ya
-		//kernel32 tambien
-		//ole32 tambien
 		st_Shlwapi SHLWAPI;
 		st_Mfplat MFPLAT;
 		st_Mf MF;

