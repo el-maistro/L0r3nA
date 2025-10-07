@@ -15,11 +15,11 @@ int mod_RemoteDesktop::GetEncoderClsid(const WCHAR* format, CLSID* pClsid){
     UINT  num = 0;          // number of image encoders
     UINT  size = 0;         // size of the image encoder array in bytes
 
-    Gdiplus::ImageCodecInfo* pImageCodecInfo = NULL;
+    ImageCodecInfo* pImageCodecInfo = NULL;
     this->GDIPLUS.pGetImageEncodersSize(&num, &size);
     if (size == 0) { return -1; } 
 
-    pImageCodecInfo = (Gdiplus::ImageCodecInfo*)(malloc(size));
+    pImageCodecInfo = (ImageCodecInfo*)(malloc(size));
     if (pImageCodecInfo == NULL) { return -1; }
 
 	this->GDIPLUS.pGetImageEncoders(num, size, pImageCodecInfo);
@@ -219,7 +219,7 @@ int mod_RemoteDesktop::BitmapDiff(Gdiplus::Bitmap*& _oldBitmap, Gdiplus::Bitmap*
 
 void mod_RemoteDesktop::InitGDI() {
     if (this->GDIPLUS.pGdiplusStartup) {
-       if (this->GDIPLUS.pGdiplusStartup(&this->gdiplusToken, &this->gdiplusStartupInput, NULL) == Gdiplus::Status::Ok) {
+       if (this->GDIPLUS.pGdiplusStartup(&this->gdiplusToken, &this->gdiplusStartupInput, NULL) == GpStatus::Ok) {
             this->isGDIon = true;
         }
     }

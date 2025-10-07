@@ -50,7 +50,7 @@ namespace EnumRemoteMouse {
 
 class mod_RemoteDesktop {
 	private:
-		Gdiplus::GdiplusStartupInput gdiplusStartupInput;
+		GdiplusStartupInput gdiplusStartupInput;
 		ULONG_PTR gdiplusToken;
 		ULONG uQuality = 0;
 		bool isGDIon = false;

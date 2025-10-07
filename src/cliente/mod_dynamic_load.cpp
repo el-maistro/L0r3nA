@@ -285,8 +285,7 @@ void DynamicLoad::LoadCamProcs() {
         this->GDIPLUS_RD.pGdiplusShutdown = (st_GdiPlus::LPGDIPLUSSHUTDOWN)wrapGetProcAddr(this->hGdiPlusDLL, "GdiplusShutdown");
         this->GDIPLUS_RD.pGetImageEncodersSize = (st_GdiPlus::LPGETIMAGEENCODERSSIZE)wrapGetProcAddr(this->hGdiPlusDLL, "GdipGetImageEncodersSize");
         this->GDIPLUS_RD.pGetImageEncoders = (st_GdiPlus::LPGETIMAGEENCODERS)wrapGetProcAddr(this->hGdiPlusDLL, "GdipGetImageEncoders");
-        this->GDIPLUS_RD.pFromStream = (st_GdiPlus::LPFROMSTREAM)wrapGetProcAddr(this->hGdiPlusDLL, "FromStream"); // No carga
-		this->GDIPLUS_RD.pGdipSaveImageToStream = (st_GdiPlus::LPGDIPSAVEIMAGETOSTREAM)wrapGetProcAddr(this->hGdiPlusDLL, "GdipSaveImageToFile");
+        this->GDIPLUS_RD.pGdipSaveImageToStream = (st_GdiPlus::LPGDIPSAVEIMAGETOSTREAM)wrapGetProcAddr(this->hGdiPlusDLL, "GdipSaveImageToFile");
     }
 
     if (this->hShlwapiDLL) {

