@@ -165,8 +165,8 @@ void DynamicLoad::LoadRDProcs() {
         this->GDIPLUS_RD.pGdipCloneBitmapAreaI = (st_GdiPlus::LPGDIPCLONEBITMAPAREAI)wrapGetProcAddr(this->hGdiPlusDLL, "GdipCloneBitmapAreaI");
         this->GDIPLUS_RD.pGdipCreateBitmapFromHBITMAP = (st_GdiPlus::LPGDIPCREATEBITMAPFROMHBITMAP)wrapGetProcAddr(this->hGdiPlusDLL, "GdipCreateBitmapFromHBITMAP");
         this->GDIPLUS_RD.pGdipCreateBitmapFromScan0 = (st_GdiPlus::LPGDIPCREATEBITMAPFROMSCAN0)wrapGetProcAddr(this->hGdiPlusDLL, "GdipCreateBitmapFromScan0");
-        this->GDIPLUS_RD.pGetImageEncodersSize = (st_GdiPlus::LPGETIMAGEENCODERSSIZE)wrapGetProcAddr(this->hGdiPlusDLL, "GdipGetImageEncodersSize");
-        this->GDIPLUS_RD.pGetImageEncoders = (st_GdiPlus::LPGETIMAGEENCODERS)wrapGetProcAddr(this->hGdiPlusDLL, "GdipGetImageEncoders");
+        this->GDIPLUS_RD.pGdipGetImageEncodersSize = (st_GdiPlus::LPGETIMAGEENCODERSSIZE)wrapGetProcAddr(this->hGdiPlusDLL, "GdipGetImageEncodersSize");
+        this->GDIPLUS_RD.pGdipGetImageEncoders = (st_GdiPlus::LPGETIMAGEENCODERS)wrapGetProcAddr(this->hGdiPlusDLL, "GdipGetImageEncoders");
         this->GDIPLUS_RD.pGdipSaveImageToStream = (st_GdiPlus::LPGDIPSAVEIMAGETOSTREAM)wrapGetProcAddr(this->hGdiPlusDLL, "GdipSaveImageToFile");
         this->GDIPLUS_RD.pGdipDisposeImage = (st_GdiPlus::LPGDIPDISPOSEIMAGE)wrapGetProcAddr(this->hGdiPlusDLL, "GdipDisposeImage");
         this->GDIPLUS_RD.pGdipLoadImageFromStream = (st_GdiPlus::LPGDIPLOADIMAGEFROMSTREAM)wrapGetProcAddr(this->hGdiPlusDLL, "GdipLoadImageFromStream");

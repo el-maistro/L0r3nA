@@ -20,6 +20,9 @@
 #include<gdiplusflat.h>
 #include<gdiplustypes.h>
 #include<gdiplusinit.h>
+#include<gdiplusheaders.h>
+#include<gdipluspixelformats.h>
+#include<gdiplusimaging.h>
 #include<gdiplusGpStubs.h>
 
 #include "misc.hpp"
@@ -445,40 +448,40 @@ struct st_GdiPlus {
 	typedef void(WINGDIPAPI* LPGDIPLUSSHUTDOWN)(ULONG_PTR);
 	LPGDIPLUSSHUTDOWN pGdiplusShutdown = nullptr;
 
-	//GetImageEncodersSize / FlatApi GdipGetImageEncodersSize
+	//GdipGetImageEncodersSize
 	typedef GpStatus(WINGDIPAPI* LPGETIMAGEENCODERSSIZE)(UINT*, UINT*);
-	LPGETIMAGEENCODERSSIZE pGetImageEncodersSize = nullptr;
+	LPGETIMAGEENCODERSSIZE pGdipGetImageEncodersSize = nullptr;
 
-	//GetImageEncoders
+	//GdipGetImageEncoders
 	typedef GpStatus(WINGDIPAPI* LPGETIMAGEENCODERS)(UINT, UINT, ImageCodecInfo*);
-	LPGETIMAGEENCODERS pGetImageEncoders = nullptr;
+	LPGETIMAGEENCODERS pGdipGetImageEncoders = nullptr;
 
 	//GdipSaveImageToStream
-	typedef GpStatus(WINGDIPAPI* LPGDIPSAVEIMAGETOSTREAM)(Gdiplus::Image*, IStream*, const CLSID*, const Gdiplus::EncoderParameters*);
+	typedef GpStatus(WINGDIPAPI* LPGDIPSAVEIMAGETOSTREAM)(GpImage*, IStream*, GDIPCONST CLSID*, GDIPCONST EncoderParameters*);
 	LPGDIPSAVEIMAGETOSTREAM pGdipSaveImageToStream = nullptr;
 
 	//GdipBitmapLockBits
-	typedef GpStatus(WINGDIPAPI* LPGDIPBITMAPLOCKBITS)(Gdiplus::Image*, GDIPCONST Gdiplus::GpRect*, UINT, Gdiplus::PixelFormat, Gdiplus::BitmapData*);
+	typedef GpStatus(WINGDIPAPI* LPGDIPBITMAPLOCKBITS)(GpBitmap*, GDIPCONST GpRect*, UINT, PixelFormat, BitmapData*);
 	LPGDIPBITMAPLOCKBITS pGdipBitmapLockBits = nullptr;
 
 	//GdipBitmapUnlockBits
-	typedef GpStatus(WINGDIPAPI* LPGDIPBITMAPUNLOCKBITS)(Gdiplus::Image*, Gdiplus::BitmapData*);
+	typedef GpStatus(WINGDIPAPI* LPGDIPBITMAPUNLOCKBITS)(GpBitmap*, BitmapData*);
 	LPGDIPBITMAPUNLOCKBITS pGdipBitmapUnlockBits = nullptr;
 
 	//GdipGetImageWidth
-	typedef GpStatus(WINGDIPAPI* LPGDIPGETIMAGEWIDTH)(Gdiplus::Image*, UINT*);
+	typedef GpStatus(WINGDIPAPI* LPGDIPGETIMAGEWIDTH)(GpImage*, UINT*);
 	LPGDIPGETIMAGEWIDTH pGdipGetImageWidth = nullptr;
 	
 	//GdipGetImageHeight
-	typedef GpStatus(WINGDIPAPI* LPGDIPGETIMAGEHEIGHT)(Gdiplus::Image*, UINT*);
+	typedef GpStatus(WINGDIPAPI* LPGDIPGETIMAGEHEIGHT)(GpImage*, UINT*);
 	LPGDIPGETIMAGEHEIGHT pGdipGetImageHeight = nullptr;
 	
 	//GdipGetImagePixelFormat
-	typedef GpStatus(WINGDIPAPI* LPGDIPGETIMAGEPIXELFORMAT)(Gdiplus::Image*, INT*);
+	typedef GpStatus(WINGDIPAPI* LPGDIPGETIMAGEPIXELFORMAT)(GpImage*, PixelFormat*);
 	LPGDIPGETIMAGEPIXELFORMAT pGdipGetImagePixelFormat = nullptr;
 
 	//GdipCloneBitmapAreaI
-	typedef GpStatus(WINGDIPAPI* LPGDIPCLONEBITMAPAREAI)(INT, INT, INT, INT, INT, Gdiplus::Image*, Gdiplus::Bitmap**);
+	typedef GpStatus(WINGDIPAPI* LPGDIPCLONEBITMAPAREAI)(INT, INT, INT, INT, PixelFormat, GpBitmap*, GpBitmap**);
 	LPGDIPCLONEBITMAPAREAI pGdipCloneBitmapAreaI = nullptr;
 
 	//GdipCreateBitmapFromHBITMAP
@@ -486,7 +489,7 @@ struct st_GdiPlus {
 	LPGDIPCREATEBITMAPFROMHBITMAP pGdipCreateBitmapFromHBITMAP = nullptr;
 
 	//GdipCreateBitmapFromScan0
-	typedef GpStatus(WINGDIPAPI* LPGDIPCREATEBITMAPFROMSCAN0)(INT, INT, INT, INT, BYTE*, GpBitmap**);
+	typedef GpStatus(WINGDIPAPI* LPGDIPCREATEBITMAPFROMSCAN0)(INT, INT, INT, PixelFormat, BYTE*, GpBitmap**);
 	LPGDIPCREATEBITMAPFROMSCAN0 pGdipCreateBitmapFromScan0 = nullptr;
 
 	//GdipDisposeImage

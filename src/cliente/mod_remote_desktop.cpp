@@ -140,7 +140,7 @@ void mod_RemoteDesktop::m_RemoteTeclado(char key, bool isDown) {
     this->USER32.pSendInput(1, inputs, sizeof(INPUT));
 }
 
-int mod_RemoteDesktop::BitmapDiff(Gdiplus::Bitmap*& _oldBitmap, Gdiplus::Bitmap*& _newBitmap, std::vector<Pixel_Data>& _outPixels) {
+int mod_RemoteDesktop::BitmapDiff(GpImage*& _oldBitmap, GpImage*& _newBitmap, std::vector<Pixel_Data>& _outPixels) {
     if (_newBitmap == nullptr || _oldBitmap == nullptr) {
         __DBG_("Uno de los bitmaps es nulo");
         return -1;
@@ -152,11 +152,11 @@ int mod_RemoteDesktop::BitmapDiff(Gdiplus::Bitmap*& _oldBitmap, Gdiplus::Bitmap*
         return -1;
     }
 
-    UINT width = 0; // _oldBitmap.get()->GetWidth();
-    UINT height = 0; // _oldBitmap.get()->GetHeight();
+    UINT width = 0; 
+    UINT height = 0;
 
-    if(this->GDIPLUS.pGdipGetImageHeight(_oldBitmap, &height) != Gdiplus::Status::Ok ||
-       this->GDIPLUS.pGdipGetImageWidth(_oldBitmap, &width) != Gdiplus::Status::Ok) {
+    if(this->GDIPLUS.pGdipGetImageHeight(_oldBitmap, &height) != GpStatus::Ok ||
+       this->GDIPLUS.pGdipGetImageWidth(_oldBitmap, &width) != GpStatus::Ok) {
         __DBG_("Error al obtener dimensiones de _oldbitmap");
         return -1;
 	}
@@ -164,8 +164,8 @@ int mod_RemoteDesktop::BitmapDiff(Gdiplus::Bitmap*& _oldBitmap, Gdiplus::Bitmap*
     UINT n_width = 0;
     UINT n_height = 0;
 
-    if (this->GDIPLUS.pGdipGetImageHeight(_newBitmap, &n_height) != Gdiplus::Status::Ok ||
-        this->GDIPLUS.pGdipGetImageWidth(_newBitmap, &n_width) != Gdiplus::Status::Ok) {
+    if (this->GDIPLUS.pGdipGetImageHeight(_newBitmap, &n_height) != GpStatus::Ok ||
+        this->GDIPLUS.pGdipGetImageWidth(_newBitmap, &n_width) != GpStatus::Ok) {
         __DBG_("Error al obtener dimensiones de _newBitmap");
         return -1;
     }
@@ -175,11 +175,11 @@ int mod_RemoteDesktop::BitmapDiff(Gdiplus::Bitmap*& _oldBitmap, Gdiplus::Bitmap*
         return -1;
     }
 
-    Gdiplus::BitmapData bmpData1, bmpData2;
-    Gdiplus::Rect rect(0, 0, width, height);
+    BitmapData bmpData1, bmpData2;
+    GDIPCONST GpRect rect(0, 0, width, height);
 
-    this->GDIPLUS.pGdipBitmapLockBits(_oldBitmap, &rect, Gdiplus::ImageLockMode::ImageLockModeRead | Gdiplus::ImageLockMode::ImageLockModeWrite, PixelFormat24bppRGB, &bmpData1);
-    this->GDIPLUS.pGdipBitmapLockBits(_newBitmap, &rect, Gdiplus::ImageLockMode::ImageLockModeRead | Gdiplus::ImageLockMode::ImageLockModeWrite, PixelFormat24bppRGB, &bmpData2);
+    this->GDIPLUS.pGdipBitmapLockBits((GpBitmap*)_oldBitmap, &rect, ImageLockMode::ImageLockModeRead | ImageLockMode::ImageLockModeWrite, PixelFormat24bppRGB, &bmpData1);
+    this->GDIPLUS.pGdipBitmapLockBits((GpBitmap*)_newBitmap, &rect, ImageLockMode::ImageLockModeRead | ImageLockMode::ImageLockModeWrite, PixelFormat24bppRGB, &bmpData2);
 
     BYTE* oldBitmapPixels = static_cast<BYTE*>(bmpData1.Scan0);
     BYTE* newBitmapPixels = static_cast<BYTE*>(bmpData2.Scan0);
@@ -211,8 +211,8 @@ int mod_RemoteDesktop::BitmapDiff(Gdiplus::Bitmap*& _oldBitmap, Gdiplus::Bitmap*
         }
     }
 
-    this->GDIPLUS.pGdipBitmapUnlockBits(_oldBitmap, &bmpData1);
-    this->GDIPLUS.pGdipBitmapUnlockBits(_newBitmap, &bmpData2);
+    this->GDIPLUS.pGdipBitmapUnlockBits((GpBitmap*)_oldBitmap, &bmpData1);
+    this->GDIPLUS.pGdipBitmapUnlockBits((GpBitmap*)_newBitmap, &bmpData2);
 
     return outCantidad;
 }

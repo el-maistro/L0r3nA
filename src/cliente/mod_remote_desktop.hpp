@@ -93,7 +93,7 @@ class mod_RemoteDesktop {
 		void m_RemoteTeclado(char key, bool isDown);
 
 		//Comparacion de imagenes (incompleto)
-		int BitmapDiff(Gdiplus::Bitmap*& _oldBitmap, Gdiplus::Bitmap*& _newBitmap, std::vector<Pixel_Data>& _outPixels);
+		int BitmapDiff(GpImage*& _oldBitmap, GpImage*& _newBitmap, std::vector<Pixel_Data>& _outPixels);
 		
 		//Funciones para monitores
 		std::vector<Monitor> m_ListaMonitores();
