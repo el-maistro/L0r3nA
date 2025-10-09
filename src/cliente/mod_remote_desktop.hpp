@@ -6,6 +6,9 @@
 
 #define KEYEVENTF_KEDOWN 0x0000
 
+//Tamanio maximo de pixeles (en bytes) que pueden ser diferentes para enviar solo la diferencia en lugar de todo el frame
+#define MAX_PIXELS 80000        
+
 struct rect_Monitor {
 	int resWidth;
 	int resHeight;
@@ -69,7 +72,7 @@ class mod_RemoteDesktop {
 		bool  m_Vmouse();
 
 		//TESTING BORRAR
-		Gdiplus::Bitmap* oldBitmap = nullptr;
+		//Gdiplus::Bitmap* oldBitmap = nullptr;
 
 		std::vector<Monitor> vc_Monitores;
 		
@@ -93,7 +96,7 @@ class mod_RemoteDesktop {
 		void m_RemoteTeclado(char key, bool isDown);
 
 		//Comparacion de imagenes (incompleto)
-		int BitmapDiff(GpImage*& _oldBitmap, GpImage*& _newBitmap, std::vector<Pixel_Data>& _outPixels);
+		int BitmapDiff(GpBitmap*& _oldBitmap, GpBitmap*& _newBitmap, std::vector<Pixel_Data>& _outPixels);
 		
 		//Funciones para monitores
 		std::vector<Monitor> m_ListaMonitores();
@@ -105,11 +108,13 @@ class mod_RemoteDesktop {
 		mod_RemoteDesktop(st_User32_RD& _user32, st_Gdi32& _gdi32, st_GdiPlus& _gdiplus, st_Ole32& _ole32);
 		~mod_RemoteDesktop();
 
-		void IniciarLive(int quality, int monitor_index);
-		void SpawnThread(int quality, int monitor_index);
+		void IniciarLive(ULONG quality, int monitor_index);
+		void SpawnThread(ULONG quality, int monitor_index);
 		void DetenerLive();
-		Gdiplus::Bitmap* getFrameBitmap(ULONG quality, int index);
-		std::vector<char> getBitmapBytes(Gdiplus::Bitmap*& _in, ULONG _quality);
+		void EnviarCaptura(ULONG quality, int monitor_index);
+
+		GpBitmap* getFrameBitmap(ULONG quality, int monitor_index);
+		std::vector<char> getBitmapBytes(GpBitmap*& _in, ULONG _quality);
 		void pixelSerialize(const std::vector<Pixel_Data>& _vcin, std::vector<char>& _vcout);
 		int GetEncoderClsid(const WCHAR* format, CLSID* pClsid);
 };

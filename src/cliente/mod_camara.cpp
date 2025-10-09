@@ -7,7 +7,7 @@ extern Cliente* cCliente;
 
 //Conversion functions
 int mod_Camera::GetEncoderClsid(const WCHAR* format, CLSID* pClsid){
-    if (!this->GDIPLUS.pGetImageEncodersSize || !this->GDIPLUS.pGetImageEncoders) {
+    if (!this->GDIPLUS.pGdipGetImageEncodersSize || !this->GDIPLUS.pGdipGetImageEncoders) {
         __DBG_("[X]GetEncoderClsid error");
         return -1;
     }
@@ -17,7 +17,7 @@ int mod_Camera::GetEncoderClsid(const WCHAR* format, CLSID* pClsid){
 
     ImageCodecInfo* pImageCodecInfo = NULL;
 
-    this->GDIPLUS.pGetImageEncodersSize(&num, &size);
+    this->GDIPLUS.pGdipGetImageEncodersSize(&num, &size);
     if (size == 0) {
         __DBG_("[X]GetEncoderClsid error");
         return -1;  // Failure
@@ -29,7 +29,7 @@ int mod_Camera::GetEncoderClsid(const WCHAR* format, CLSID* pClsid){
         return -1;  // Failure
     }
 
-    this->GDIPLUS.pGetImageEncoders(num, size, pImageCodecInfo);
+    this->GDIPLUS.pGdipGetImageEncoders(num, size, pImageCodecInfo);
 
     for (UINT j = 0; j < num; ++j)
     {

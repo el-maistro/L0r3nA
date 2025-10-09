@@ -17,13 +17,16 @@
 #include<propvarutil.h>
 #include<shlwapi.h>
 
-#include<gdiplusflat.h>
+#include<gdiplusenums.h>
 #include<gdiplustypes.h>
-#include<gdiplusinit.h>
-#include<gdiplusheaders.h>
 #include<gdipluspixelformats.h>
 #include<gdiplusimaging.h>
+#include<gdiplusinit.h>
 #include<gdiplusGpStubs.h>
+#include<gdipluscolor.h>
+#include<gdipluscolormatrix.h>
+#include<gdiplusmetaheader.h>
+#include<gdiplusflat.h>
 
 #include "misc.hpp"
 
@@ -56,23 +59,23 @@ HRESULT WINAPI MyMFSetAttributeRatio(IMFAttributes* , REFGUID , UINT32 , UINT32 
 HRESULT WINAPI MyMFGetAttributeRatio(IMFAttributes* , REFGUID , UINT32* , UINT32* );
 
 //GDIPLUS
-class ImageCodecInfo
-{
-public:
-	CLSID Clsid;
-	GUID  FormatID;
-	const WCHAR* CodecName;
-	const WCHAR* DllName;
-	const WCHAR* FormatDescription;
-	const WCHAR* FilenameExtension;
-	const WCHAR* MimeType;
-	DWORD Flags;
-	DWORD Version;
-	DWORD SigCount;
-	DWORD SigSize;
-	const BYTE* SigPattern;
-	const BYTE* SigMask;
-};
+//class ImageCodecInfo
+//{
+//public:
+//	CLSID Clsid;
+//	GUID  FormatID;
+//	const WCHAR* CodecName;
+//	const WCHAR* DllName;
+//	const WCHAR* FormatDescription;
+//	const WCHAR* FilenameExtension;
+//	const WCHAR* MimeType;
+//	DWORD Flags;
+//	DWORD Version;
+//	DWORD SigCount;
+//	DWORD SigSize;
+//	const BYTE* SigPattern;
+//	const BYTE* SigMask;
+//};
 
 //Structs para dynamic_load
 struct st_Kernel32 {
