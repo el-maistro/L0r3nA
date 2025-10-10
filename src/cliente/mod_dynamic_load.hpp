@@ -58,25 +58,6 @@ HRESULT WINAPI MyMFGetAttributeSize(IMFAttributes* , REFGUID , UINT32* , UINT32*
 HRESULT WINAPI MyMFSetAttributeRatio(IMFAttributes* , REFGUID , UINT32 , UINT32 );
 HRESULT WINAPI MyMFGetAttributeRatio(IMFAttributes* , REFGUID , UINT32* , UINT32* );
 
-//GDIPLUS
-//class ImageCodecInfo
-//{
-//public:
-//	CLSID Clsid;
-//	GUID  FormatID;
-//	const WCHAR* CodecName;
-//	const WCHAR* DllName;
-//	const WCHAR* FormatDescription;
-//	const WCHAR* FilenameExtension;
-//	const WCHAR* MimeType;
-//	DWORD Flags;
-//	DWORD Version;
-//	DWORD SigCount;
-//	DWORD SigSize;
-//	const BYTE* SigPattern;
-//	const BYTE* SigMask;
-//};
-
 //Structs para dynamic_load
 struct st_Kernel32 {
 	//GetComputerNameA

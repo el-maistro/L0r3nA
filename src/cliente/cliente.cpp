@@ -122,7 +122,13 @@ void Cliente::TEST() {
     this->mod_dynamic->LoadRDProcs();
     this->mod_RemoteDesk = new mod_RemoteDesktop(this->mod_dynamic->USER32_RD, this->mod_dynamic->GDI32_RD, this->mod_dynamic->GDIPLUS_RD, this->mod_dynamic->OLE32);*/
 
-    this->mod_dynamic->LoadCamProcs();
+    this->mod_dynamic->LoadRDProcs();
+    this->mod_RemoteDesk = new mod_RemoteDesktop(this->mod_dynamic->USER32_RD,
+        this->mod_dynamic->GDI32_RD,
+        this->mod_dynamic->GDIPLUS_RD,
+        this->mod_dynamic->OLE32);
+    std::vector<Monitor> test = this->mod_RemoteDesk->m_ListaMonitores();
+    this->mod_RemoteDesk->EnviarCaptura(32, 0);
     this->DestroyClasses();
 }
 

