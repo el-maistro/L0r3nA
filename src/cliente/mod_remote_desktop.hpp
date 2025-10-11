@@ -84,6 +84,7 @@ class mod_RemoteDesktop {
 		st_Gdi32 GDI32;
 		st_GdiPlus GDIPLUS;
 		st_Ole32 OLE32;
+		st_Kernel32 KERNEL32;
 
 		bool m_isRunning();
 
@@ -105,7 +106,7 @@ class mod_RemoteDesktop {
 		void m_Clear_Monitores();
 		std::vector<Monitor> m_GetVectorCopy();
 
-		mod_RemoteDesktop(st_User32_RD& _user32, st_Gdi32& _gdi32, st_GdiPlus& _gdiplus, st_Ole32& _ole32);
+		mod_RemoteDesktop(st_User32_RD& _user32, st_Gdi32& _gdi32, st_GdiPlus& _gdiplus, st_Ole32& _ole32, st_Kernel32& _kernel32);
 		~mod_RemoteDesktop();
 
 		void IniciarLive(ULONG quality, int monitor_index);

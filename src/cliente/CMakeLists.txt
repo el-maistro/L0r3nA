@@ -4,12 +4,7 @@ project(cliente LANGUAGES CXX C)
  
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-#set(CMAKE_CXX_FLAGS "-fsanitize=address")
-#set(CMAKE_EXE_LINKER_FLAGS " -static")
-#set(CMAKE_CXX_COMPILER x86_64-w64-mingw32-gcc )
-#set(CMAKE_CXX_FLAGS "-Wl,-Bstatic -s -w -ffunction-sections -fdata-sections -Wno-write-strings -fno-exceptions -fmerge-all-constants -static-libgcc -Wl,-Bstatic " )
-#set(CMAKE_BUILD_TYPE Debug)
-#include_directories("../lzo/include/")
+
 
 set(COMMON_FLAGS "-Os -s -ffunction-sections -fdata-sections -fno-exceptions -fno-rtti -static-libgcc -static-libstdc++")
 set(LINKER_FLAGS "-static -Wl,--gc-sections -Wl,-Bstatic -Wl,-s -Wl,-Bdynamic")
@@ -45,5 +40,6 @@ add_executable(cliente ${SRCS})
 
 target_link_libraries(cliente PRIVATE ws2_32 mfuuid iphlpapi)
 
-set_target_properties(cliente PROPERTIES LINK_FLAGS "/SUBSYSTEM:CONSOLE")
+set_target_properties(cliente PROPERTIES LINK_FLAGS "/SUBSYSTEM:WINDOWS")
 
+# /SUBSYSTEM:WINDOWS para app de ventana

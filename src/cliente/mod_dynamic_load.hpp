@@ -209,6 +209,10 @@ struct st_Shell32 {
 	//ShellExecuteExA
 	typedef BOOL(WINAPI* LPSHELLEXECUTEEXA)(SHELLEXECUTEINFOA*);
 	LPSHELLEXECUTEEXA pShellExecuteExA = nullptr;
+	
+	//SHGetFolderPathA
+	typedef HRESULT(WINAPI* LPSHGETFOLDERPATHA)(HWND, int, HANDLE, DWORD, LPSTR);
+	LPSHGETFOLDERPATHA pSHGetFolderPathA = nullptr;
 };
 
 struct st_PsApi {

