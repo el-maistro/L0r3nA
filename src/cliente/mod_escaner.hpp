@@ -90,7 +90,7 @@ namespace TipoEscanerPuerto {
 
 class mod_Escaner {
 	public:
-		mod_Escaner(st_Iphl& _iphlapi);
+		mod_Escaner(st_Iphl& _iphlapi, st_Ws2_32& _ws2_32);
 
 		std::vector<Host_Entry> m_Escanear(const char* _cidr, bool _is_full_scan = false, bool _is_port_scan = false, int _scan_type = TipoEscanerPuerto::SCK, int _puerto_inicio = 0, int _puerto_fin = 0);
 	private:
@@ -121,6 +121,7 @@ class mod_Escaner {
 		void m_thCheckPortSYN(SOCKET sock_fd, char* datagram, in_addr server_ip, const char* client_ip, tcphdr* tcp_head, u_int target_port);
 
 		st_Iphl IPHLAPI;
+		st_Ws2_32 WS32;
 };
 
 #endif

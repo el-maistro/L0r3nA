@@ -248,7 +248,7 @@ std::vector<std::string> mod_Camera::ListNameCaptureDevices() {
                         &szFriendlyName, &cchName);
                     if (SUCCEEDED(hr)){
                         char cBuffer[100];
-                        memset(cBuffer, 0, sizeof(cBuffer));
+                        m_memset(cBuffer, 0, sizeof(cBuffer));
 
                         size_t iRet;
                         wcstombs_s(&iRet, cBuffer, sizeof(cBuffer), szFriendlyName, sizeof(cBuffer) - 1);

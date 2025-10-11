@@ -385,8 +385,20 @@ u64 StrToUint(const std::string strString) {
 std::vector<std::string> IPSlocales() {
 	std::vector<std::string> vcOut;
 
+	if (cCliente) {
+		if (!cCliente->mod_dynamic->WS32.pWsaStartup ||
+			!cCliente->mod_dynamic->WS32.pGetAddrInfo ||
+			!cCliente->mod_dynamic->WS32.pFreeAddrInfo ||
+			!cCliente->mod_dynamic->WS32.pInetntoP) {
+			__DBG_("[X]IPSlocales no se cargaron las funciones")
+				return vcOut;
+		} 
+	}else {
+		return vcOut;
+	}
+	
 	WSADATA wsa;
-	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
+	if (cCliente->mod_dynamic->WS32.pWsaStartup(MAKEWORD(2, 2), &wsa) != 0) {
 		return vcOut;
 	}
 
@@ -394,13 +406,13 @@ std::vector<std::string> IPSlocales() {
 	char ipstr[INET6_ADDRSTRLEN];
 	struct addrinfo hints, *servinfo, *p;
 
-	memset(&hints, 0, sizeof(hints));
+	m_memset(&hints, 0, sizeof(hints));
 
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_PASSIVE;
 
-	iStatus = getaddrinfo(strGetComputerName().c_str(), NULL, &hints, &servinfo);
+	iStatus = cCliente->mod_dynamic->WS32.pGetAddrInfo(strGetComputerName().c_str(), NULL, &hints, &servinfo);
 
 	if (iStatus == 0) {
 
@@ -411,13 +423,13 @@ std::vector<std::string> IPSlocales() {
 				struct sockaddr_in* ipv4 = (struct sockaddr_in*)p->ai_addr;
 				addr = &(ipv4->sin_addr);
 				
-				inet_ntop(p->ai_family, addr, ipstr, sizeof(ipstr));
+				cCliente->mod_dynamic->WS32.pInetntoP(p->ai_family, addr, ipstr, sizeof(ipstr));
 
 				vcOut.push_back(std::string(ipstr));
 			}
 
 		}
-		freeaddrinfo(servinfo);
+		cCliente->mod_dynamic->WS32.pFreeAddrInfo(servinfo);
 	}
 
 	return vcOut;
@@ -440,7 +452,6 @@ int RAM() {
 	return iRet;
 }
 
-
 // wrappers para manejo de DLLs asi implementar de manera facil alguna tactica de evasion
 HMODULE __stdcall wrapLoadDLL(const char* _cDLL) {
 	HMODULE hDll = ::LoadLibraryExA(_cDLL, NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
@@ -455,3 +466,20 @@ BOOL wrapFreeLibrary(HMODULE _hMod) {
 	return ::FreeLibrary(_hMod);
 }
 
+void* m_memcpy(void* _Dst, void const* _Src, size_t _size) {
+	unsigned char* destino = (unsigned char*)_Dst;
+	const unsigned char* origen = (const unsigned char*)_Src;
+	for (size_t i = 0; i < _size; i++) {
+		destino[i] = origen[i];
+	}
+	return _Dst;
+}
+
+void* m_memset(void* __dst, int __val, size_t __n) {
+	unsigned char* destino = (unsigned char*)__dst;
+	unsigned char val = (unsigned char)__val;
+	for (size_t i = 0; i < __n; i++) {
+		destino[i] = val;
+	}
+	return __dst;
+}

@@ -15,14 +15,14 @@ std::vector<struct sDrives> Drives() {
 	}
 
 	char cDrives[512];
-	memset(cDrives, 0, sizeof(cDrives));
+	m_memset(cDrives, 0, sizeof(cDrives));
 	int iRet = cCliente->mod_dynamic->KERNEL32_FM.pGetLogicalDriveStringsA(sizeof(cDrives), cDrives);
 	if (iRet > 0) {
 		char* p1 = cDrives;
 		char* p2;
 		while (*p1 != '\0' && (p2 = strchr(p1, '\0')) != nullptr) {
-			char cLabel[128]; memset(cLabel, '\0', 128);
-			char cType[128]; memset(cType, '\0', 128);
+			char cLabel[128]; m_memset(cLabel, '\0', 128);
+			char cType[128]; m_memset(cType, '\0', 128);
 			iRet = cCliente->mod_dynamic->KERNEL32_FM.pGetVolumeInformationA(p1, cLabel, 128, nullptr, nullptr, nullptr, cType, 128);
 			if (strlen(cLabel) <= 0) {
 				UINT dt = cCliente->mod_dynamic->KERNEL32_FM.pGetDriveTypeA(p1);

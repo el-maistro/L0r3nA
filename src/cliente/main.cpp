@@ -3,7 +3,7 @@
 #include "misc.hpp"
 #include "mod_remote_desktop.hpp"
 
-//#define TEST_MOD 1
+//#define TEST_MOD
 
 Cliente* cCliente;
 
@@ -15,12 +15,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, LPSTR /
 
 	const char* cHost = "127.0.0.1";
 	const char* cPort = "65500";
-	WSADATA wsa;
-	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
-		error();
-		return -1;
-	}
-
+	
 	cCliente = new Cliente();
 
 #ifdef TEST_MOD
@@ -52,6 +47,5 @@ GOTO_Test:
 	delete cCliente;
 	cCliente = nullptr;
 
-	WSACleanup();
 	return 0;
 }

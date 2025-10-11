@@ -33,8 +33,9 @@
 #include "../aes256/aes256.hpp"
 #include "../zlib/zlib.h"
 
+#define ___DBG__
+
 #define AES_KEY_LEN 32
-//#define ___DBG__
 #define MAX_CAMS 5
 #define CMD_DEL '~'
 #define CMD_DEL_2 ":[<->]:"

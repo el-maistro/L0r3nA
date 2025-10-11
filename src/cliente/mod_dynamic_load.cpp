@@ -39,6 +39,7 @@ DynamicLoad::DynamicLoad() {
     LOAD_DLL(this->hWtsapi32DLL, "Wtsapi32.dll");
     LOAD_DLL(this->hPsApiDLL, "psapi.dll");
     LOAD_DLL(this->hUser32DLL, "user32.dll");
+    LOAD_DLL(this->hWs2_32DLL, "ws2_32.dll");
 
     if (this->hKernel32DLL) {
         this->KERNEL32.pGetComputerName = (st_Kernel32::LPGETCOMPUTERNAMEA)wrapGetProcAddr(this->hKernel32DLL, "GetComputerNameA");
@@ -88,6 +89,8 @@ DynamicLoad::DynamicLoad() {
     }
 
     this->LoadFMProcs();
+
+    this->LoadWS2Procs();
 }
 
 //Bromas
@@ -338,8 +341,8 @@ void DynamicLoad::UnloadCamPros() {
 
 //Escaner
 void DynamicLoad::LoadNetProcs() {
-    this->hIphlpDLL = wrapLoadDLL("Iphlpapi.dll");
-
+    LOAD_DLL(this->hIphlpDLL, "Iphlpapi.dll");
+    
     if (this->hIphlpDLL) {
         this->IPHLAPI.pIcmpCreateFile = (st_Iphl::LPICMPCREATEFILE)wrapGetProcAddr(this->hIphlpDLL, "IcmpCreateFile");
         this->IPHLAPI.pIcmpSendEcho = (st_Iphl::LPICMPSENDECHO)wrapGetProcAddr(this->hIphlpDLL, "IcmpSendEcho");
@@ -351,6 +354,31 @@ void DynamicLoad::UnloadNetProcs() {
     UNLOAD_DLL(this->hIphlpDLL);
 }
 
+//Winsock
+void DynamicLoad::LoadWS2Procs() {
+    if (this->hWs2_32DLL) {
+        this->WS32.pWsaStartup = (st_Ws2_32::LPWSASTARTUP)wrapGetProcAddr(this->hWs2_32DLL, "WSAStartup");
+        this->WS32.pWSACleanup = (st_Ws2_32::LPWSACLEANUP)wrapGetProcAddr(this->hWs2_32DLL, "WSACleanup");
+        this->WS32.pWSAGetLastError = (st_Ws2_32::LPWSAGETLASTERROR)wrapGetProcAddr(this->hWs2_32DLL, "WSAGetLastError");
+        this->WS32.pNtoHS = (st_Ws2_32::LPNTOHS)wrapGetProcAddr(this->hWs2_32DLL, "ntohs");
+        this->WS32.pCloseSocket = (st_Ws2_32::LPSCLOSESOCKET)wrapGetProcAddr(this->hWs2_32DLL, "closesocket");
+        this->WS32.pSend = (st_Ws2_32::LPSEND)wrapGetProcAddr(this->hWs2_32DLL, "send");
+        this->WS32.pRecv = (st_Ws2_32::LPRECV)wrapGetProcAddr(this->hWs2_32DLL, "recv");
+        this->WS32.pGetAddrInfo = (st_Ws2_32::LPGETADDRINFO)wrapGetProcAddr(this->hWs2_32DLL, "getaddrinfo");
+        this->WS32.pSocket = (st_Ws2_32::LPSOCKET)wrapGetProcAddr(this->hWs2_32DLL, "socket");
+        this->WS32.pConnect = (st_Ws2_32::LPCONNECT)wrapGetProcAddr(this->hWs2_32DLL, "connect");
+        this->WS32.pFreeAddrInfo = (st_Ws2_32::LPFREEADDRINFO)wrapGetProcAddr(this->hWs2_32DLL, "freeaddrinfo");
+        this->WS32.pIoctlSocket = (st_Ws2_32::LPIOCTLSOCKET)wrapGetProcAddr(this->hWs2_32DLL, "ioctlsocket");
+        this->WS32.pInetntoP = (st_Ws2_32::LPINET_NTOP)wrapGetProcAddr(this->hWs2_32DLL, "inet_ntop");
+        this->WS32.pSelect = (st_Ws2_32::LPSELECT)wrapGetProcAddr(this->hWs2_32DLL, "select");
+        this->WS32.pInet_addr = (st_Ws2_32::LPINET_ADDR)wrapGetProcAddr(this->hWs2_32DLL, "inet_addr");
+        this->WS32.pInetntoA = (st_Ws2_32::LPINETNTOA)wrapGetProcAddr(this->hWs2_32DLL
+            , "inet_ntoa");
+        this->WS32.pInetptoN = (st_Ws2_32::LPINETNPTON)wrapGetProcAddr(this->hWs2_32DLL, "inet_pton");
+        this->WS32.pGetNameInfo = (st_Ws2_32::LPGETNAMEINFO)wrapGetProcAddr(this->hWs2_32DLL, "getnameinfo");
+    }
+}
+
 DynamicLoad::~DynamicLoad() {
     //Cerrar dlls
     UNLOAD_DLL(this->hKernel32DLL);
@@ -359,6 +387,7 @@ DynamicLoad::~DynamicLoad() {
     UNLOAD_DLL(this->hWtsapi32DLL);
     UNLOAD_DLL(this->hPsApiDLL);
     UNLOAD_DLL(this->hUser32DLL);
+    UNLOAD_DLL(this->hWs2_32DLL);
     this->UnloadFunDlls();
     this->UnloadInfoProcs();
     this->UnloadMicProcs();

@@ -4,6 +4,7 @@
 #define RETRY_COUNT 10
 
 #include "headers.hpp"
+#include "mod_dynamic_load.hpp"
 
 namespace TipoRequestHTTP {
 	enum Enum {
@@ -22,10 +23,10 @@ struct HTTPRequest {
 
 class ReverseProxy{
 	public:
-		ReverseProxy();
+		ReverseProxy(st_Ws2_32& _ws2_32);
 		void m_ProcesarDatosProxy(std::vector<char>& _vcdata, int _recibido);
 	private:
-		WSADATA wsa;
+		st_Ws2_32 WS32;
 		
 		std::map<int, SOCKET> map_sockets;
 

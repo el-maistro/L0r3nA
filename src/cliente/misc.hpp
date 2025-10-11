@@ -28,7 +28,6 @@ HMODULE __stdcall wrapLoadDLL(const char* _cDLL);
 FARPROC wrapGetProcAddr(HMODULE _hMod, LPCSTR _procName);
 BOOL wrapFreeLibrary(HMODULE _hMod);
 
-//void _DEBUG(const std::string strMsg, int iValor=0);
-//void _DEBUG(const char* cMsg, int iValor=0);
 
-
+void* m_memcpy(void* _Dst, void const* _Src, size_t _size);
+void* m_memset(void* __dst, int __val, size_t __n);

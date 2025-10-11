@@ -241,13 +241,73 @@ struct st_Ws2_32 {
 	typedef int(WINAPI* LPWSASTARTUP)(WORD, LPWSADATA);
 	LPWSASTARTUP pWsaStartup = nullptr;
 
+	//WSACleanup
+	typedef int(WINAPI* LPWSACLEANUP)();
+	LPWSACLEANUP pWSACleanup = nullptr;
+
+	//WSAGetLastError
+	typedef int(WINAPI* LPWSAGETLASTERROR)();
+	LPWSAGETLASTERROR pWSAGetLastError = nullptr;
+
+	//ntohs
+	typedef u_short(WINAPI* LPNTOHS)(u_short);
+	LPNTOHS pNtoHS = nullptr;
+
+	//closesocket
+	typedef int(WINAPI* LPSCLOSESOCKET)(SOCKET);
+	LPSCLOSESOCKET pCloseSocket = nullptr;
+
+	//send
+	typedef int(WINAPI* LPSEND)(SOCKET, const char*, int, int);
+	LPSEND pSend = nullptr;
+
+	//recv
+	typedef int(WINAPI* LPRECV)(SOCKET, char*, int, int);
+	LPRECV pRecv = nullptr;
+
+	//getaddrinfo
+	typedef INT(WINAPI* LPGETADDRINFO)(PCSTR, PCSTR, const ADDRINFOA*, PADDRINFOA*);
+	LPGETADDRINFO pGetAddrInfo = nullptr;
+
+	//socket
+	typedef SOCKET(WINAPI* LPSOCKET)(int, int, int);
+	LPSOCKET pSocket = nullptr;
+
+	//connect
+	typedef int(WINAPI* LPCONNECT)(SOCKET, const sockaddr*, int);
+	LPCONNECT pConnect = nullptr;
+
+	//freeaddrinfo
+	typedef VOID(WINAPI* LPFREEADDRINFO)(PADDRINFOA);
+	LPFREEADDRINFO pFreeAddrInfo = nullptr;
+
+	//ioctlsocket
+	typedef int(WINAPI* LPIOCTLSOCKET)(SOCKET, long, u_long*);
+	LPIOCTLSOCKET pIoctlSocket = nullptr;
+
+	//inet_ntop
+	typedef PCSTR(WINAPI* LPINET_NTOP)(INT, const VOID*, PSTR, size_t);
+	LPINET_NTOP pInetntoP = nullptr;
+	
+	//select
+	typedef int(WINAPI* LPSELECT)(int, fd_set*, fd_set*, fd_set*, const timeval*);
+	LPSELECT pSelect = nullptr;
+
 	//inet_addr
 	typedef unsigned long(WINAPI* LPINET_ADDR)(const char*);
-	LPINET_ADDR pinet_addr = nullptr;
+	LPINET_ADDR pInet_addr = nullptr;
 
 	//inet_ntoa
-	//typedef char WSAAPI*(WINAPI* LPINET_NTOA)(in_addr);
+	typedef char*(WINAPI* LPINETNTOA)(in_addr);
+	LPINETNTOA pInetntoA = nullptr;
 
+	//inet_pton
+	typedef INT(WINAPI* LPINETNPTON)(INT, PCSTR, PVOID);
+	LPINETNPTON pInetptoN = nullptr;
+
+	//getnameinfo
+	typedef INT(WINAPI* LPGETNAMEINFO)(const SOCKADDR*, socklen_t, PCHAR, DWORD, PCHAR, DWORD, INT);
+	LPGETNAMEINFO pGetNameInfo = nullptr;
 };
 
 struct st_User32_Fun {
@@ -651,17 +711,14 @@ struct st_Mf {
 
 struct st_Iphl {
 	//IcmpCreateFile
-	//typedef IPHLPAPI_DLL_LINKAGE HANDLE(WINAPI* LPICMPCREATEFILE)();
 	typedef HANDLE(WINAPI* LPICMPCREATEFILE)();
 	LPICMPCREATEFILE pIcmpCreateFile = nullptr;
 
 	//IcmpSendEcho
-	//typedef IPHLPAPI_DLL_LINKAGE DWORD(WINAPI* LPICMPSENDECHO)(HANDLE, IPAddr, LPVOID, WORD, PIP_OPTION_INFORMATION, LPVOID, DWORD, DWORD);
 	typedef DWORD(WINAPI* LPICMPSENDECHO)(HANDLE, IPAddr, LPVOID, WORD, PIP_OPTION_INFORMATION, LPVOID, DWORD, DWORD);
 	LPICMPSENDECHO pIcmpSendEcho = nullptr;
 
 	//SendARP
-	//typedef IPHLPAPI_DLL_LINKAGE DWORD(WINAPI* LPSENDARP)(IPAddr, IPAddr, PVOID, PULONG);
 	typedef DWORD(WINAPI* LPSENDARP)(IPAddr, IPAddr, PVOID, PULONG);
 	LPSENDARP pSendARP = nullptr;
 };
@@ -736,6 +793,9 @@ class DynamicLoad {
 		//Escaner
 		void LoadNetProcs();
 		void UnloadNetProcs();
+
+		//Winsock
+		void LoadWS2Procs();
 
 		//Generales
 		st_Advapi32 ADVAPI32;

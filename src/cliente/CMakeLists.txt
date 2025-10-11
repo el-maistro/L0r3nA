@@ -4,14 +4,38 @@ project(cliente LANGUAGES CXX C)
  
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+#set(CMAKE_CXX_EXTENSIONS OFF)
 
+#foreach(flag_var
+#    CMAKE_C_FLAGS
+#    CMAKE_C_FLAGS_DEBUG
+#    CMAKE_C_FLAGS_RELEASE
+#    CMAKE_C_FLAGS_RELWITHDEBINFO
+#    CMAKE_C_FLAGS_MINSIZEREL
+#    CMAKE_CXX_FLAGS
+#    CMAKE_CXX_FLAGS_DEBUG
+#    CMAKE_CXX_FLAGS_RELEASE
+#    CMAKE_CXX_FLAGS_RELWITHDEBINFO
+#    CMAKE_CXX_FLAGS_MINSIZEREL
+#)
+#Debug con consola, /MDd o /MTd, símbolos, sin optimizar
+#Release sin consola, /MT, optimizado, sin dependencias
 
-set(COMMON_FLAGS "-Os -s -ffunction-sections -fdata-sections -fno-exceptions -fno-rtti -static-libgcc -static-libstdc++")
-set(LINKER_FLAGS "-static -Wl,--gc-sections -Wl,-Bstatic -Wl,-s -Wl,-Bdynamic")
+#    if(${flag_var} MATCHES "/MD")
+#        string(REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
+#    elseif(${flag_var} MATCHES "/MDd")
+#        string(REPLACE "/MDd" "/MTd" ${flag_var} "${${flag_var}}")
+#    endif()
+#endforeach()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${COMMON_FLAGS}")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${COMMON_FLAGS}")
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${LINKER_FLAGS}")
+#Debug
+#set(CMAKE_EXE_LINKER_FLAGS_DEBUG "/SUBSYSTEM:CONSOLE")
+#set(CMAKE_CXX_FLAGS_DEBUG "/Zi /Od /RTC1")
+
+#Release
+#set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS /LTCG /OPT:REF /OPT:ICF /INCREMENTAL:NO")
+
+#set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2 /GS- /GL /DNDEBUG /EHsc- /GR-")
 
 set(SRCS main.cpp
          misc.cpp
@@ -33,13 +57,13 @@ set(SRCS main.cpp
          ../aes256/aes256.cpp
 )
 
-#set_target_properties(cliente PROPERTIES LINK_FLAGS "/SUBSYSTEM:CONSOLE")
 
-#agregar win32 para hacer la app oculta 
 add_executable(cliente ${SRCS})
 
-target_link_libraries(cliente PRIVATE ws2_32 mfuuid)
+target_link_libraries(cliente PRIVATE mfuuid)
 
-set_target_properties(cliente PROPERTIES LINK_FLAGS "/SUBSYSTEM:WINDOWS")
-
-# /SUBSYSTEM:WINDOWS para app de ventana
+#Compilar con opciones para modularidad
+#option(WITH_MOD1 "Enable modulo1" ON)
+#if(WITH_MOD1)
+#    target_compile_definitions(cliente PRIVATE WITH_MOD1)
+#endif()
