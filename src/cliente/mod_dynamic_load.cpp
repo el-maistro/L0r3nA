@@ -336,6 +336,21 @@ void DynamicLoad::UnloadCamPros() {
     UNLOAD_DLL(this->hGdiPlusDLL);
 }
 
+//Escaner
+void DynamicLoad::LoadNetProcs() {
+    this->hIphlpDLL = wrapLoadDLL("Iphlpapi.dll");
+
+    if (this->hIphlpDLL) {
+        this->IPHLAPI.pIcmpCreateFile = (st_Iphl::LPICMPCREATEFILE)wrapGetProcAddr(this->hIphlpDLL, "IcmpCreateFile");
+        this->IPHLAPI.pIcmpSendEcho = (st_Iphl::LPICMPSENDECHO)wrapGetProcAddr(this->hIphlpDLL, "IcmpSendEcho");
+        this->IPHLAPI.pSendARP = (st_Iphl::LPSENDARP)wrapGetProcAddr(this->hIphlpDLL, "SendARP");
+    }
+}
+
+void DynamicLoad::UnloadNetProcs() {
+    UNLOAD_DLL(this->hIphlpDLL);
+}
+
 DynamicLoad::~DynamicLoad() {
     //Cerrar dlls
     UNLOAD_DLL(this->hKernel32DLL);
@@ -349,4 +364,5 @@ DynamicLoad::~DynamicLoad() {
     this->UnloadMicProcs();
     this->UnloadRDDlls();
     this->UnloadCamPros();
+    this->UnloadNetProcs();
 }

@@ -28,6 +28,10 @@
 #include<gdiplusmetaheader.h>
 #include<gdiplusflat.h>
 
+//IPHLPAPI
+#include <iphlpapi.h>
+#include <icmpapi.h>
+
 #include "misc.hpp"
 
 
@@ -645,6 +649,23 @@ struct st_Mf {
 	LPMFENUMDEVICESOURCES pMFEnumDeviceSources = nullptr;
 };
 
+struct st_Iphl {
+	//IcmpCreateFile
+	//typedef IPHLPAPI_DLL_LINKAGE HANDLE(WINAPI* LPICMPCREATEFILE)();
+	typedef HANDLE(WINAPI* LPICMPCREATEFILE)();
+	LPICMPCREATEFILE pIcmpCreateFile = nullptr;
+
+	//IcmpSendEcho
+	//typedef IPHLPAPI_DLL_LINKAGE DWORD(WINAPI* LPICMPSENDECHO)(HANDLE, IPAddr, LPVOID, WORD, PIP_OPTION_INFORMATION, LPVOID, DWORD, DWORD);
+	typedef DWORD(WINAPI* LPICMPSENDECHO)(HANDLE, IPAddr, LPVOID, WORD, PIP_OPTION_INFORMATION, LPVOID, DWORD, DWORD);
+	LPICMPSENDECHO pIcmpSendEcho = nullptr;
+
+	//SendARP
+	//typedef IPHLPAPI_DLL_LINKAGE DWORD(WINAPI* LPSENDARP)(IPAddr, IPAddr, PVOID, PULONG);
+	typedef DWORD(WINAPI* LPSENDARP)(IPAddr, IPAddr, PVOID, PULONG);
+	LPSENDARP pSendARP = nullptr;
+};
+
 #include "mod_camara.hpp"
 
 class DynamicLoad {
@@ -674,6 +695,9 @@ class DynamicLoad {
 		HMODULE hMfDLL = NULL;
 		HMODULE hMfplatDLL = NULL;
 		HMODULE hShlwapiDLL = NULL;
+
+		//Mod escaner
+		HMODULE hIphlpDLL = NULL;
 
 
 	public:
@@ -708,6 +732,10 @@ class DynamicLoad {
 		//Camara
 		void LoadCamProcs();
 		void UnloadCamPros();
+
+		//Escaner
+		void LoadNetProcs();
+		void UnloadNetProcs();
 
 		//Generales
 		st_Advapi32 ADVAPI32;
@@ -748,6 +776,9 @@ class DynamicLoad {
 		st_Mf MF;
 		st_Mfapi MFAPI;
 		st_Mfreadwrite MFREADWRITE;
+
+		//Mod escaner
+		st_Iphl IPHLAPI;
 };
 
 #endif

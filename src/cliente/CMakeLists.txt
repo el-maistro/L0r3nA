@@ -38,7 +38,7 @@ set(SRCS main.cpp
 #agregar win32 para hacer la app oculta 
 add_executable(cliente ${SRCS})
 
-target_link_libraries(cliente PRIVATE ws2_32 mfuuid iphlpapi)
+target_link_libraries(cliente PRIVATE ws2_32 mfuuid)
 
 set_target_properties(cliente PROPERTIES LINK_FLAGS "/SUBSYSTEM:WINDOWS")
 

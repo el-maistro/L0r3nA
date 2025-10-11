@@ -1,10 +1,12 @@
 #include "mod_escaner.hpp"
 
-mod_Escaner::mod_Escaner() {
+mod_Escaner::mod_Escaner(st_Iphl& _iphlapi) {
     WSADATA wsa;
     if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
         error();
     }
+
+    this->IPHLAPI = _iphlapi;
 }
 
 std::vector<Host_Entry> mod_Escaner::m_Escanear(const char* _cidr, bool _is_full_scan, bool _is_port_scan, int _scan_type, int _puerto_inicio, int _puerto_fin) {
@@ -327,7 +329,11 @@ void mod_Escaner::m_AddEntry(const Host_Entry& _entry) {
 }
 
 void mod_Escaner::m_thPing(const std::string _strip, bool _is_port_scan, int _scan_type, int _puerto_inicio, int _puerto_fin) {
-	const char* _host = _strip.c_str();
+    if (!this->IPHLAPI.pIcmpCreateFile || !this->IPHLAPI.pIcmpSendEcho) {
+        __DBG_("[NET][X] m_thPing no se cargaron las funciones");
+        return;
+    }
+    const char* _host = _strip.c_str();
 
     HANDLE hIcmpFile;
     unsigned long ipaddr = inet_addr(_host);
@@ -336,7 +342,7 @@ void mod_Escaner::m_thPing(const std::string _strip, bool _is_port_scan, int _sc
     LPVOID ReplyBuffer = 0;
     DWORD ReplySize = 0;
 
-    hIcmpFile = IcmpCreateFile();
+    hIcmpFile = this->IPHLAPI.pIcmpCreateFile();
     if (hIcmpFile == INVALID_HANDLE_VALUE) {
         __DBG_("No se pudo crear el handle");
         return;
@@ -349,7 +355,7 @@ void mod_Escaner::m_thPing(const std::string _strip, bool _is_port_scan, int _sc
         return;
     }
 
-    dwRetVal = IcmpSendEcho(hIcmpFile, ipaddr, SendData, sizeof(SendData), NULL, ReplyBuffer, ReplySize, 500);
+    dwRetVal = this->IPHLAPI.pIcmpSendEcho(hIcmpFile, ipaddr, SendData, sizeof(SendData), NULL, ReplyBuffer, ReplySize, 500);
 
     if (dwRetVal != 0) {
 
@@ -388,6 +394,10 @@ void mod_Escaner::m_thPing(const std::string _strip, bool _is_port_scan, int _sc
 }
 
 std::string mod_Escaner::m_GetMac(const char* _host) {
+    if (!this->IPHLAPI.pSendARP) {
+        __DBG_("[NET][X] m_GetMac no se cargo la funcion");
+        return "ERR";
+    }
     ULONG macAddr[2] = { 0 };
     ULONG macAddrLen = 6;
     struct sockaddr_in dest;
@@ -395,7 +405,7 @@ std::string mod_Escaner::m_GetMac(const char* _host) {
     dest.sin_family = AF_INET;
     inet_pton(AF_INET, _host, &dest.sin_addr);
 
-    if (SendARP(dest.sin_addr.s_addr, 0, macAddr, &macAddrLen) == NO_ERROR) {
+    if (this->IPHLAPI.pSendARP(dest.sin_addr.s_addr, 0, macAddr, &macAddrLen) == NO_ERROR) {
         unsigned char* mac = (unsigned char*)macAddr;
         char macStr[18];
         snprintf(macStr, sizeof(macStr), "%02X:%02X:%02X:%02X:%02X:%02X",

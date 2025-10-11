@@ -114,6 +114,8 @@ Cliente::Cliente() {
 }
 
 void Cliente::TEST() {
+    this->mod_dynamic->LoadNetProcs();
+    this->mod_Scan = new mod_Escaner(this->mod_dynamic->IPHLAPI);
     return;
 }
 
@@ -985,7 +987,8 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //Escanear red PING
     if (iComando == EnumComandos::Net_Scan) {
         if (!this->mod_Scan) {
-            this->mod_Scan = new mod_Escaner();
+            this->mod_dynamic->LoadNetProcs();
+            this->mod_Scan = new mod_Escaner(this->mod_dynamic->IPHLAPI);
         }
         std::string strPaquete = "";
         for (Host_Entry& host : this->mod_Scan->m_Escanear(paquete.cBuffer.data())) {
@@ -1001,7 +1004,8 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     if (iComando == EnumComandos::Net_Scan_Sck || iComando == EnumComandos::Net_Scan_Syn ||
         iComando == EnumComandos::Net_Scan_Full_Sck || iComando == EnumComandos::Net_Scan_Full_Syn) {
         if (!this->mod_Scan) {
-            this->mod_Scan = new mod_Escaner();
+            this->mod_dynamic->LoadNetProcs();
+            this->mod_Scan = new mod_Escaner(this->mod_dynamic->IPHLAPI);
         }
         std::vector<std::string> vcData = strSplit(std::string(paquete.cBuffer.data()), "|", 3);
         if (vcData.size() == 3) {

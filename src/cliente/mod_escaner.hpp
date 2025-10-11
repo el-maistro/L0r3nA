@@ -2,9 +2,8 @@
 #define __MOD_ESCANER_HPP__ 1
 
 #include "headers.hpp"
-#include<iphlpapi.h> //SendARP
-#include<icmpapi.h>
-#include<mstcpip.h>
+#include "mod_dynamic_load.hpp"
+//#include<mstcpip.h>
 #include<cmath>
 
 
@@ -91,7 +90,7 @@ namespace TipoEscanerPuerto {
 
 class mod_Escaner {
 	public:
-		mod_Escaner();
+		mod_Escaner(st_Iphl& _iphlapi);
 
 		std::vector<Host_Entry> m_Escanear(const char* _cidr, bool _is_full_scan = false, bool _is_port_scan = false, int _scan_type = TipoEscanerPuerto::SCK, int _puerto_inicio = 0, int _puerto_fin = 0);
 	private:
@@ -120,6 +119,8 @@ class mod_Escaner {
 		void m_SetDatagram(char* datagram, in_addr server_ip, const char* client_ip, iphdr* ip_head, tcphdr* tcp_head);
 		unsigned short checksum(void* buffer, int len);
 		void m_thCheckPortSYN(SOCKET sock_fd, char* datagram, in_addr server_ip, const char* client_ip, tcphdr* tcp_head, u_int target_port);
+
+		st_Iphl IPHLAPI;
 };
 
 #endif

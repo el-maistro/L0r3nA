@@ -5,7 +5,6 @@
 
 //#define TEST_MOD 1
 
-
 Cliente* cCliente;
 
 #ifdef ___DBG__
