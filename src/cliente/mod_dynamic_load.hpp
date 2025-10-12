@@ -308,6 +308,10 @@ struct st_Ws2_32 {
 	//getnameinfo
 	typedef INT(WINAPI* LPGETNAMEINFO)(const SOCKADDR*, socklen_t, PCHAR, DWORD, PCHAR, DWORD, INT);
 	LPGETNAMEINFO pGetNameInfo = nullptr;
+
+	//__WSAFDIsSet
+	typedef int(WINAPI* LPWSAFDISSET)(SOCKET, fd_set*);
+	LPWSAFDISSET p__WSAFDIsSet = nullptr;
 };
 
 struct st_User32_Fun {

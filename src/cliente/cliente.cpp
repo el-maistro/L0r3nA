@@ -1304,7 +1304,10 @@ int Cliente::send_all(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags
 int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock, DWORD* err_code) {
     // 1 non block
     // 0 block
-    
+    if (!this->mod_dynamic->WS32.pIoctlSocket) {
+        __DBG_("[X][cSend] no se cargaron todas las funciones");
+        return -1;
+    }
     std::unique_lock<std::mutex> lock(this->sck_mutex);
 
     //Tamaño del buffer
@@ -1329,7 +1332,7 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
 
     if (isBlock) {
         //Hacer el socket block
-        if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
+        if (this->mod_dynamic->WS32.pIoctlSocket(pSocket, FIONBIO, &iBlock) != 0) {
             _DBG_("[cSend] No se pudo hacer block", GetLastError());
         }
     }
@@ -1343,7 +1346,7 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
     if (isBlock) {
         if (!this->BLOCK_MODE) {
             iBlock = 1;
-            if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
+            if (this->mod_dynamic->WS32.pIoctlSocket(pSocket, FIONBIO, &iBlock) != 0) {
                 __DBG_("No se pudo restaurar el block_mode del socket");
             }
         }
@@ -1388,7 +1391,10 @@ int Cliente::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, bool
     // 1 non block
     // 0 block
     
-
+    if (!this->mod_dynamic->WS32.pIoctlSocket || !this->mod_dynamic->WS32.pRecv) {
+        __DBG_("[X][cSend] no se cargaron todas las funciones");
+        return -1;
+    }
     std::vector<char> cRecvBuffer;
     
     int iRecibido = SOCKET_ERROR;
@@ -1396,14 +1402,14 @@ int Cliente::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, bool
     bool bErrorFlag = false;
     if (isBlock) {
         //Hacer el socket block
-        if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
+        if (this->mod_dynamic->WS32.pIoctlSocket(pSocket, FIONBIO, &iBlock) != 0) {
             __DBG_("No se pudo hacer block");
         }
     }
         
     //Leer primero sizeof(int) para opbtener el total de bytes a leer
     char cBuffSize[sizeof(int)];
-    int iPaquetesize = recv(pSocket, cBuffSize, sizeof(int), pFlags);
+    int iPaquetesize = this->mod_dynamic->WS32.pRecv(pSocket, cBuffSize, sizeof(int), pFlags);
     if (err_code != nullptr) {
         if (this->mod_dynamic->WS32.pWSAGetLastError) {
             *err_code = this->mod_dynamic->WS32.pWSAGetLastError();
@@ -1435,7 +1441,7 @@ int Cliente::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, bool
     //Restaurar block_mode en el socket
     if (isBlock && !this->BLOCK_MODE) {
         iBlock = 1;
-        if (ioctlsocket(pSocket, FIONBIO, &iBlock) != 0) {
+        if (this->mod_dynamic->WS32.pIoctlSocket(pSocket, FIONBIO, &iBlock) != 0) {
             __DBG_("No se pudo restaurar el block_mode en el socket");
         }
     }

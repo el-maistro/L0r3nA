@@ -7,10 +7,10 @@ extern Cliente* cCliente;
 ReverseProxy::ReverseProxy(st_Ws2_32& _ws2_32) {
 	this->WS32 = _ws2_32;
 
-	if (this->WS32.pWsaStartup) {
+	if (this->WS32.pWsaStartup && this->WS32.pWSAGetLastError) {
 		WSADATA wsa;
 		if (this->WS32.pWsaStartup(MAKEWORD(2, 2), &wsa) != 0) {
-			_DBG_("WSAStartup error", WSAGetLastError());
+			_DBG_("WSAStartup error", this->WS32.pWSAGetLastError());
 		}
 	}else {
 		__DBG_("[X][ReverseProxy] No se cargo la funcion pWsaStartup");
@@ -21,6 +21,11 @@ ReverseProxy::ReverseProxy(st_Ws2_32& _ws2_32) {
 void ReverseProxy::m_ProcesarDatosProxy(std::vector<char>& _vcdata, int _recibido) {
 	if (_recibido < 4) {
 		//Paquete muy pequenio
+		return;
+	}
+
+	if (!this->WS32.pCloseSocket || !this->WS32.pWSAGetLastError || !this->WS32.pNtoHS) {
+		__DBG_("[X][m_ProcesarDatosProxy] No se cargaron las funciones");
 		return;
 	}
 
@@ -37,10 +42,7 @@ void ReverseProxy::m_ProcesarDatosProxy(std::vector<char>& _vcdata, int _recibid
 		char cRespuesta[2] = { _vcdata[0], 0x00 };
 
 		if (this->cSend(cCliente->sckSocket, cRespuesta, 2, id_conexion) == SOCKET_ERROR) {
-			int err_wsa = 0;
-			if (this->WS32.pWSAGetLastError) {
-				err_wsa = this->WS32.pWSAGetLastError();
-			}
+			int err_wsa = this->WS32.pWSAGetLastError();
 			_DBG_("[Proxy]cSend error", err_wsa);
 		}
 	}else if (this->isSocksSegundoPaso(_vcdata, data_size)) {
@@ -66,7 +68,7 @@ void ReverseProxy::m_ProcesarDatosProxy(std::vector<char>& _vcdata, int _recibid
 		int iPort = 0;
 		size_t nPortOffset = data_size - 2;
 		m_memcpy(&nPort, _vcdata.data() + nPortOffset, 2);
-		iPort = static_cast<int>(ntohs(nPort));
+		iPort = static_cast<int>(this->WS32.pNtoHS(nPort));
 
 		std::string strPort = std::to_string(iPort);
 
@@ -91,14 +93,14 @@ void ReverseProxy::m_ProcesarDatosProxy(std::vector<char>& _vcdata, int _recibid
 				std::thread th(&ReverseProxy::th_Handle_Session, this, id_conexion);
 				th.detach();
 			}else {
-				_DBG_("[Proxy]Conexion con punto final completo pero no se pudo enviar la respuesta al servidor", WSAGetLastError());
-				closesocket(sckPuntoFinal);
+				_DBG_("[Proxy]Conexion con punto final completo pero no se pudo enviar la respuesta al servidor", this->WS32.pWSAGetLastError());
+				this->WS32.pCloseSocket(sckPuntoFinal);
 			}
 		}else {
 			_vcdata[1] = 0x04;
-			_DBG_("No se pudo conectar al punto final", WSAGetLastError());
+			_DBG_("No se pudo conectar al punto final", this->WS32.pWSAGetLastError());
 			if (this->cSend(cCliente->sckSocket, _vcdata.data(), data_size, id_conexion) == SOCKET_ERROR) {
-				_DBG_("[Proxy]No se pudo enviar la respuesta al servidor", WSAGetLastError());
+				_DBG_("[Proxy]No se pudo enviar la respuesta al servidor", this->WS32.pWSAGetLastError());
 			}
 		}
 
@@ -117,14 +119,14 @@ void ReverseProxy::m_ProcesarDatosProxy(std::vector<char>& _vcdata, int _recibid
 					std::thread th(&ReverseProxy::th_Handle_Session, this, id_conexion);
 					th.detach();
 				}else {
-					_DBG_("[X] No se pudo enviar respuesta al servidor", WSAGetLastError());
+					_DBG_("[X] No se pudo enviar respuesta al servidor", this->WS32.pWSAGetLastError());
 				}
 			}else {
-				_DBG_("[X] No se pudo conectar con el punto final", WSAGetLastError());
+				_DBG_("[X] No se pudo conectar con el punto final", this->WS32.pWSAGetLastError());
 
 				strResponse = "HTTP/1.1 500 Destination Not Found\r\n\r\n";
 				if (this->cSend(cCliente->sckSocket, strResponse.c_str(), strResponse.size(), id_conexion) == SOCKET_ERROR) {
-					_DBG_("[X] No se pudo enviar respuesta de error al servidor", WSAGetLastError());
+					_DBG_("[X] No se pudo enviar respuesta de error al servidor", this->WS32.pWSAGetLastError());
 				}
 			}
 		} else{
@@ -153,10 +155,10 @@ void ReverseProxy::m_ProcesarDatosProxy(std::vector<char>& _vcdata, int _recibid
 					std::thread th(&ReverseProxy::th_Handle_Session, this, id_conexion);
 					th.detach();
 				}else {
-					_DBG_("[X] Error reenviando peticion a punto final", WSAGetLastError());
+					_DBG_("[X] Error reenviando peticion a punto final", this->WS32.pWSAGetLastError());
 				}
 			}else {
-				_DBG_("[X] No se pudo conectar con el punto final", WSAGetLastError());
+				_DBG_("[X] No se pudo conectar con el punto final", this->WS32.pWSAGetLastError());
 			}
 		}
 	}else {
@@ -165,7 +167,7 @@ void ReverseProxy::m_ProcesarDatosProxy(std::vector<char>& _vcdata, int _recibid
 
 		if (socket_punto_final != INVALID_SOCKET) {
 			if (this->sendAllLocal(socket_punto_final, _vcdata.data(), data_size) == SOCKET_ERROR) {
-				_DBG_("[X] Error reenviando datos al punto final", WSAGetLastError());
+				_DBG_("[X] Error reenviando datos al punto final", this->WS32.pWSAGetLastError());
 			}
 		}else {
 			__DBG_("[!] No se encontro un socket con el id " + std::to_string(id_conexion));

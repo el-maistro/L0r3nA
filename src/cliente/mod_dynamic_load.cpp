@@ -376,6 +376,7 @@ void DynamicLoad::LoadWS2Procs() {
             , "inet_ntoa");
         this->WS32.pInetptoN = (st_Ws2_32::LPINETNPTON)wrapGetProcAddr(this->hWs2_32DLL, "inet_pton");
         this->WS32.pGetNameInfo = (st_Ws2_32::LPGETNAMEINFO)wrapGetProcAddr(this->hWs2_32DLL, "getnameinfo");
+        this->WS32.p__WSAFDIsSet = (st_Ws2_32::LPWSAFDISSET)wrapGetProcAddr(this->hWs2_32DLL, "__WSAFDIsSet");
     }
 }
 

@@ -261,7 +261,8 @@ void mod_Escaner::m_thCheckPortSCK(const char* _host, int _port) {
         !this->WS32.pFreeAddrInfo ||
         !this->WS32.pIoctlSocket ||
         !this->WS32.pSelect ||
-        !this->WS32.pWSAGetLastError) {
+        !this->WS32.pWSAGetLastError ||
+        !this->WS32.p__WSAFDIsSet) {
         __DBG_("[X]m_thCheckPortSCK: No se cargaron las funciones");
         return;
     }
@@ -317,7 +318,8 @@ void mod_Escaner::m_thCheckPortSCK(const char* _host, int _port) {
             FD_SET(temp_socket, &Err);
 
             this->WS32.pSelect(0, NULL, &Write, &Err, &Timeout);
-            if (!FD_ISSET(temp_socket, &Write)){
+            //if (!FD_ISSET(temp_socket, &Write)){
+            if (!this->WS32.p__WSAFDIsSet(temp_socket, &Write)){
                 continue;
             }
         }
@@ -347,14 +349,14 @@ void mod_Escaner::m_AddEntry(const Host_Entry& _entry) {
 }
 
 void mod_Escaner::m_thPing(const std::string _strip, bool _is_port_scan, int _scan_type, int _puerto_inicio, int _puerto_fin) {
-    if (!this->IPHLAPI.pIcmpCreateFile || !this->IPHLAPI.pIcmpSendEcho || !this->WS32.pInetntoA) {
+    if (!this->IPHLAPI.pIcmpCreateFile || !this->IPHLAPI.pIcmpSendEcho || !this->WS32.pInetntoA || !this->WS32.pInet_addr) {
         __DBG_("[NET][X] m_thPing no se cargaron las funciones");
         return;
     }
     const char* _host = _strip.c_str();
 
     HANDLE hIcmpFile;
-    unsigned long ipaddr = inet_addr(_host);
+    unsigned long ipaddr = this->WS32.pInet_addr(_host);
     DWORD dwRetVal = 0;
     char SendData[32] = "ABCDEFGHIJL";
     LPVOID ReplyBuffer = 0;
