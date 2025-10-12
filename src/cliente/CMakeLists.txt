@@ -7,8 +7,6 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# --- Forzar runtime estático (sin DLLs de MSVC) ---
-# Esto reemplaza las opciones -static-libgcc / -static-libstdc++
 foreach(flag_var
     CMAKE_C_FLAGS
     CMAKE_C_FLAGS_DEBUG
@@ -36,7 +34,6 @@ set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS /LTCG /OPT:REF /OPT:ICF /
 
 # Optimización y seguridad
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2 /GS- /GL /DNDEBUG /EHsc- /GR-")
-
 
 set(SRCS main.cpp
          misc.cpp
