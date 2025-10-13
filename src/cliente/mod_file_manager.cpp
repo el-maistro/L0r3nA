@@ -82,6 +82,32 @@ std::vector<struct sDrives> Drives() {
 
 }
 
+std::string strDrivesData() {
+	std::vector<struct sDrives> vDrives = Drives();
+	std::string strDipositivos = ""; //std::to_string(EnumComandos::FM_Discos_Lista);
+	strDipositivos.append(1, CMD_DEL);
+	for (struct sDrives dev : vDrives) {
+		std::string sLetter = dev.cLetter;
+		std::string sFree = std::to_string(dev.dFree);
+		std::string sTotal = std::to_string(dev.dTotal);
+		std::string strTemp = sLetter.substr(0, sLetter.length() - 2);
+		strTemp.append(1, '|');
+		strTemp += dev.cType;
+		strTemp.append(1, '|');
+		strTemp += dev.cLabel;
+		strTemp.append(1, '|');
+		strTemp += sFree.substr(0, sFree.length() - 4);
+		strTemp.append(1, '|');
+		strTemp += sTotal.substr(0, sTotal.length() - 4);
+		strTemp.append(1, CMD_DEL);
+
+		strDipositivos += strTemp;
+	}
+	strDipositivos.pop_back();
+
+	return strDipositivos;
+}
+
 std::vector<std::string> vDir(c_char* cPath) {
 	std::vector<std::string> vcFolders;
 	std::vector<std::string> vcFiles;

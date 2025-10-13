@@ -127,6 +127,22 @@ struct st_Kernel32 {
 	//GlobalFree
 	typedef HGLOBAL(WINAPI* LPGLOBALFREE)(HGLOBAL);
 	LPGLOBALFREE pGlobalFree = nullptr;
+
+	//GetLastError
+	typedef DWORD(WINAPI* LPGETLASTERROR)();
+	LPGETLASTERROR pGetLastError = nullptr;
+
+	//GetCurrentProcessId;
+	typedef DWORD(WINAPI* LPGETCURRENTPROCESSID)();
+	LPGETCURRENTPROCESSID pGetCurrentProcessId = nullptr;
+
+	//GetEnvironmentVariableA
+	typedef DWORD(WINAPI* LPGETENVIRONMENTVARIABLEA)(LPCSTR, LPSTR, DWORD);
+	LPGETENVIRONMENTVARIABLEA pGetEnvironmentVariableA = nullptr;
+
+	//GetStartupInfoA
+	typedef VOID(WINAPI* LPGETSTARTUPINFOA)(STARTUPINFO*);
+	LPGETSTARTUPINFOA pGetStartupInfoA = nullptr;
 };
 
 struct st_Kernel32_FM {

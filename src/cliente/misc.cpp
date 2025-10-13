@@ -165,17 +165,17 @@ std::string strCpu() {
 	char CPUBrandString[200];
 	__cpuid(CPUInfo, 0x80000000);
 	u_int nExIds = CPUInfo[0];
-	memset(CPUBrandString, 0, sizeof(CPUBrandString));
+	m_memset(CPUBrandString, 0, sizeof(CPUBrandString));
 	for (u_int i = 0x80000000; i <= nExIds; ++i) {
 		__cpuid(CPUInfo, i);
 		if (i == 0x80000002) {
-			memcpy(CPUBrandString, CPUInfo, sizeof(CPUInfo));
+			m_memcpy(CPUBrandString, CPUInfo, sizeof(CPUInfo));
 		}
 		else if (i == 0x80000003) {
-			memcpy(CPUBrandString + 16, CPUInfo, sizeof(CPUInfo));
+			m_memcpy(CPUBrandString + 16, CPUInfo, sizeof(CPUInfo));
 		}
 		else if (i == 0x80000004) {
-			memcpy(CPUBrandString + 32, CPUInfo, sizeof(CPUInfo));
+			m_memcpy(CPUBrandString + 32, CPUInfo, sizeof(CPUInfo));
 		}
 	}
 	strOut = CPUBrandString;
