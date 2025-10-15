@@ -47,8 +47,8 @@
 
 
 #ifdef ___DBG__
-    #define error() std::cout<<"Error["<<GetLastError()<<"]\n";
-    #define error_2(x) std::cout<<"["<<x<<"]"<<"Error["<<GetLastError()<<"]\n";
+    #define error() std::cout<<"Error[]\n";
+    #define error_2(x, y) std::cout<<"["<<x<<"]"<<"Error["<<y<<"]\n";
     #define _DBG_(a, b) std::cout<<"[DBG] "<<a<<" "<<b<<"\n";
     #define __DBG_(a) std::cout<<"[DBG] "<<a<<"\n";
 #else

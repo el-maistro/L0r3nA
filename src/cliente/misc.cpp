@@ -244,7 +244,7 @@ bool Execute(const char *cCmdLine, int iOpt){
 			return true;
 		}
 		else {
-			error_2("CreateProcess error");
+			__DBG_("[X]Execurte CreateProcess error");
 		}
 	}
 
@@ -443,7 +443,7 @@ int RAM() {
 	if (cCliente->mod_dynamic->KERNEL32.pGlobalMemoryStatusEx) {
 		iRet = cCliente->mod_dynamic->KERNEL32.pGlobalMemoryStatusEx(&mem);
 		if (iRet == 0) {
-			error_2("GlobalMemoryStatusEx");
+			__DBG_("[X] GlobalMemoryStatusEx error");
 			return 0;
 		}
 	}
@@ -481,5 +481,6 @@ void* m_memset(void* __dst, int __val, size_t __n) {
 	for (size_t i = 0; i < __n; i++) {
 		destino[i] = val;
 	}
+	
 	return __dst;
 }

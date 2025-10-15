@@ -143,6 +143,11 @@ struct st_Kernel32 {
 	//GetStartupInfoA
 	typedef VOID(WINAPI* LPGETSTARTUPINFOA)(STARTUPINFO*);
 	LPGETSTARTUPINFOA pGetStartupInfoA = nullptr;
+
+	//LocalFree
+	typedef HLOCAL(WINAPI* LPLOCALFREE)(HLOCAL);
+	LPLOCALFREE pLocalFree = nullptr;
+
 };
 
 struct st_Kernel32_FM {

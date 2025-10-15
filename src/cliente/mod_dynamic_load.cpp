@@ -67,6 +67,7 @@ DynamicLoad::DynamicLoad() {
         this->KERNEL32.pGetCurrentProcessId = (st_Kernel32::LPGETCURRENTPROCESSID)wrapGetProcAddr(this->hKernel32DLL, "GetCurrentProcessId");
         this->KERNEL32.pGetEnvironmentVariableA = (st_Kernel32::LPGETENVIRONMENTVARIABLEA)wrapGetProcAddr(this->hKernel32DLL, "GetEnvironmentVariableA");
         this->KERNEL32.pGetStartupInfoA = (st_Kernel32::LPGETSTARTUPINFOA)wrapGetProcAddr(this->hKernel32DLL, "GetStartupInfoA");
+        this->KERNEL32.pLocalFree = (st_Kernel32::LPLOCALFREE)wrapGetProcAddr(this->hKernel32DLL, "LocalFree");
     }
 
     if (this->hAdvapi32DLL) {
