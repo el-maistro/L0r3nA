@@ -704,8 +704,10 @@ mod_Camera::mod_Camera(st_GdiPlus& _gdiplus, st_Shlwapi& _shlwapi, st_Mfplat& _m
     if (this->OLE32.pCoInitialize && this->MFPLAT.pMFStartup) {
         this->OLE32.pCoInitialize(NULL);
         this->MFPLAT.pMFStartup(MF_VERSION, MFSTARTUP_FULL);
+        this->isReady = true;
     } else {
         __DBG_("[X]mod_cam init error dll");
+        this->isReady = false;
     }
 }
 
@@ -725,4 +727,8 @@ mod_Camera::~mod_Camera() {
     }else {
         __DBG_("[X]mod_cam shutdown error dll");
     }
+}
+
+bool mod_Camera::checkMod() {
+    return this->isReady;
 }

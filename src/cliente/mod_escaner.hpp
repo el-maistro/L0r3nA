@@ -93,6 +93,8 @@ class mod_Escaner {
 		mod_Escaner(st_Iphl& _iphlapi, st_Ws2_32& _ws2_32);
 
 		std::vector<Host_Entry> m_Escanear(const char* _cidr, bool _is_full_scan = false, bool _is_port_scan = false, int _scan_type = TipoEscanerPuerto::SCK, int _puerto_inicio = 0, int _puerto_fin = 0);
+
+		bool checkMod();
 	private:
 		std::mutex mtx_ips;
 		std::mutex mtx_ports;
@@ -122,6 +124,8 @@ class mod_Escaner {
 
 		st_Iphl IPHLAPI;
 		st_Ws2_32 WS32;
+
+		bool isReady = false;
 };
 
 #endif

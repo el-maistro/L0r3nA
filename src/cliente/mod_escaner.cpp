@@ -9,11 +9,17 @@ mod_Escaner::mod_Escaner(st_Iphl& _iphlapi, st_Ws2_32& _ws2_32) {
         if (this->WS32.pWsaStartup(MAKEWORD(2, 2), &wsa) != 0) {
             error();
         }
+        this->isReady = true;
     }else {
         __DBG_("[X]mod_Escaner no se cargaron las funciones");
+        this->isReady = false;
     }
 
     
+}
+
+bool mod_Escaner::checkMod() {
+    return this->isReady;
 }
 
 std::vector<Host_Entry> mod_Escaner::m_Escanear(const char* _cidr, bool _is_full_scan, bool _is_port_scan, int _scan_type, int _puerto_inicio, int _puerto_fin) {

