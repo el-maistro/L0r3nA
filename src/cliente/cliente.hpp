@@ -166,8 +166,6 @@ class ReverseShell {
 		HANDLE stdinRd, stdinWr, stdoutRd, stdoutWr;
 		std::thread tRead;
 	public:
-		ReverseShell(Cliente* nFather) : sckSocket(nFather->sckSocket) {}
-		SOCKET sckSocket;
 		bool SpawnShell(const char* pStrComando);
 		void StopShell();		
 		void TerminarShell();

@@ -10,7 +10,9 @@ BOOL CALLBACK EnumwindowsProc(HWND hwnd, LPARAM lParam) {
     if (!obj->USER32.pGetWindowTextA || !obj->USER32.pGetForegroundWindow || !obj->USER32.pIsWindowVisible) {
         return FALSE;
     }
-
+    
+    //LRESULT iconHandle = SendMessage(ventanaHWND, WM_GETICON, ICON_SMALL, NULL);
+    
     if (obj->USER32.pIsWindowVisible(hwnd)) {
         char cBuffer[512];
         memset(cBuffer, 0, sizeof(cBuffer));
@@ -22,6 +24,12 @@ BOOL CALLBACK EnumwindowsProc(HWND hwnd, LPARAM lParam) {
             
             ventana.active = (obj->USER32.pGetForegroundWindow() == hwnd);
             obj->vcVentanas.push_back(ventana);
+
+            //HICON iconHandle = (HICON)SendMessage(hwnd, WM_GETICON, ICON_SMALL, NULL);
+            //if (iconHandle) {
+            //    //SaveIconToFile
+            //    SaveIconToFile(iconHandle, (WCHAR*)cBuffer);
+            //}
         }
     }
     return TRUE;

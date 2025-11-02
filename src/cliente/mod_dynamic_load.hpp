@@ -787,40 +787,40 @@ class DynamicLoad {
 		~DynamicLoad();
 
 		//Mod fun
-		void LoadFunProcs();
+		bool LoadFunProcs();
 		void UnloadFunDlls();
 
 		//Mod ventanas
-		void LoadWMProcs();
+		bool LoadWMProcs();
 
 		//Mod escritorio remoto
-		void LoadRDProcs();
+		bool LoadRDProcs();
 		void UnloadRDDlls();
 
 		//Mod microfono
-		void LoadMicProcs();
+		bool LoadMicProcs();
 		void UnloadMicProcs();
 
 		//Keylogger
-		void LoadKLProcs();
+		bool LoadKLProcs();
 
 		//Informacion
-		void LoadInfoProcs();
+		bool LoadInfoProcs();
 		void UnloadInfoProcs();
 
 		//Mod adm de arhivos
-		void LoadFMProcs();
+		bool LoadFMProcs();
 
 		//Camara
-		void LoadCamProcs();
+		bool LoadCamProcs();
 		void UnloadCamPros();
 
 		//Escaner
-		void LoadNetProcs();
+		bool LoadNetProcs();
 		void UnloadNetProcs();
 
 		//Winsock
-		void LoadWS2Procs();
+		bool LoadWS2Procs();
 
 		//Generales
 		st_Advapi32 ADVAPI32;

