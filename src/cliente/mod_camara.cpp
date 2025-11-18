@@ -726,7 +726,3 @@ mod_Camera::~mod_Camera() {
         __DBG_("[X]mod_cam shutdown error dll");
     }
 }
-
-bool mod_Camera::checkMod() {
-    return this->isReady;
-}
