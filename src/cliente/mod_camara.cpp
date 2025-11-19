@@ -591,7 +591,7 @@ std::vector<BYTE> mod_Camera::GetFrame(int pIndexDev) {
                 // Unlock the buffer when done.
 
                 std::vector<BYTE> bmpHeadBuff = this->bmpHeader(this->vcCamObjs[pIndexDev].width, this->vcCamObjs[pIndexDev].height, 24, 0, currentLength);
-                int iOutSize = bmpHeadBuff.size();
+                size_t iOutSize = bmpHeadBuff.size();
                 if (iOutSize > 0) {
                     cBufferOut.resize(currentLength + iOutSize, 0);
                     memcpy(cBufferOut.data(), bmpHeadBuff.data(), iOutSize);
@@ -647,7 +647,7 @@ void mod_Camera::LiveCam(int pIndexDev) {
         std::string strHeader = std::to_string(pIndexDev);
         strHeader.append(1, CMD_DEL);
 
-        int iHeaderSize = strHeader.size();
+        size_t iHeaderSize = strHeader.size();
 
         while (this->vcCamObjs[pIndexDev].isLive) {
             //Kill swith
@@ -658,11 +658,11 @@ void mod_Camera::LiveCam(int pIndexDev) {
                 break;
             }
 
-            u_int uiPacketSize = 0;
+            size_t uiPacketSize = 0;
             std::vector<BYTE> cBuffer = this->GetFrame(pIndexDev);
             
             if (cBuffer.size() > 0) {
-                std::vector<BYTE> cJPGBuffer = this->toJPEG(cBuffer.data(), cBuffer.size());
+                std::vector<BYTE> cJPGBuffer = this->toJPEG(cBuffer.data(), static_cast<u_int>(cBuffer.size()));
                 if (cJPGBuffer.size() > 0) {
                     uiPacketSize = iHeaderSize + cJPGBuffer.size();
                     std::vector<char> cPacket(uiPacketSize);
@@ -670,7 +670,7 @@ void mod_Camera::LiveCam(int pIndexDev) {
                         m_memcpy(cPacket.data(), strHeader.c_str(), iHeaderSize);
                         m_memcpy(cPacket.data() + iHeaderSize, cJPGBuffer.data(), cJPGBuffer.size());
                         
-                        int iSent = cCliente->cChunkSend(cCliente->sckSocket, cPacket.data(), uiPacketSize, 0, true, nullptr, EnumComandos::CM_Single_Salida);
+                        int iSent = cCliente->cChunkSend(cCliente->sckSocket, cPacket.data(), static_cast<int>(uiPacketSize), 0, true, nullptr, EnumComandos::CM_Single_Salida);
                         if (iSent == -1) {
                             this->vcCamObjs[pIndexDev].isLive = false;
                             break;

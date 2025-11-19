@@ -483,7 +483,7 @@ std::vector<char> mod_RemoteDesktop::getBitmapBytes(GpBitmap*& _in, ULONG _quali
     hr = oStream->Stat(&statstg, STATFLAG_NONAME);
     if (hr == S_OK) {
         ULONG bytes_read = 0;
-        unsigned long long int uiBuffsize = statstg.cbSize.LowPart;
+        ULONG uiBuffsize = statstg.cbSize.LowPart;
         vcOut.resize(uiBuffsize);
         if (vcOut.size() == uiBuffsize) {
             oStream->Seek({ 0 }, STREAM_SEEK_SET, NULL);
@@ -501,7 +501,7 @@ EndSec:
 }
 
 void mod_RemoteDesktop::pixelSerialize(const std::vector<Pixel_Data>& _vcin, std::vector<char>& _vcout) {
-    int nsize = sizeof(Pixel_Data) * _vcin.size();
+    size_t nsize = sizeof(Pixel_Data) * _vcin.size();
     _vcout.resize(nsize);
     if (_vcout.size() == nsize) {
         int iPos = 0;
@@ -590,7 +590,7 @@ void mod_RemoteDesktop::IniciarLive(ULONG quality, int monitor_index) {
 
                         //Obtener bytes del newBitmap
                         std::vector<char> imgBuffer = this->getBitmapBytes(newBitmap, this->m_Quality());
-                        int iSent = cCliente->cChunkSend(cCliente->sckSocket, imgBuffer.data(), imgBuffer.size(), 0, true, nullptr, EnumComandos::RD_Salida);
+                        int iSent = cCliente->cChunkSend(cCliente->sckSocket, imgBuffer.data(), static_cast<int>(imgBuffer.size()), 0, true, nullptr, EnumComandos::RD_Salida);
                         if (iSent == -1) {
                             __DBG_("[RD][X] IniciarLive error enviando el frame al servidor");
                             break;
@@ -622,7 +622,7 @@ void mod_RemoteDesktop::IniciarLive(ULONG quality, int monitor_index) {
                 //Serializar el vector a un std::vector<char> y mandarlo
                 std::vector<char> vcData;
                 this->pixelSerialize(vcPixels, vcData);
-                int iSent = cCliente->cChunkSend(cCliente->sckSocket, vcData.data(), vcData.size(), 0, true, nullptr, EnumComandos::RD_Salida_Pixel);
+                int iSent = cCliente->cChunkSend(cCliente->sckSocket, vcData.data(), static_cast<int>(vcData.size()), 0, true, nullptr, EnumComandos::RD_Salida_Pixel);
                 if (iSent == -1) {
                     __DBG_("[RD][X] IniciarLive cChunkSend(Pixels): Error enviando el paquete al servidor");
                     break;
@@ -630,7 +630,7 @@ void mod_RemoteDesktop::IniciarLive(ULONG quality, int monitor_index) {
             }else {
                 //La cantidad de bytes no vale la pena. Enviar el frame completo
                 std::vector<char> imgBuffer = this->getBitmapBytes(oldBitmap, this->m_Quality());
-                int iSent = cCliente->cChunkSend(cCliente->sckSocket, imgBuffer.data(), imgBuffer.size(), 0, true, nullptr, EnumComandos::RD_Salida);
+                int iSent = cCliente->cChunkSend(cCliente->sckSocket, imgBuffer.data(), static_cast<int>(imgBuffer.size()), 0, true, nullptr, EnumComandos::RD_Salida);
                 if (iSent == -1) {
                     __DBG_("[RD][X] IniciarLive cChunkSend(Full frame): Error enviando el paquete al servidor");
                     break;
@@ -654,9 +654,9 @@ void mod_RemoteDesktop::EnviarCaptura(ULONG quality, int monitor_index) {
     GpBitmap* bitmapBits = this->getFrameBitmap(quality, monitor_index);
     if (bitmapBits != nullptr) {
         std::vector<char> vcDeskBuffer = this->getBitmapBytes(bitmapBits, quality);
-        int iBufferSize = vcDeskBuffer.size();
+        size_t iBufferSize = vcDeskBuffer.size();
         if (iBufferSize > 0) {
-            int iRet = cCliente->cChunkSend(cCliente->sckSocket, vcDeskBuffer.data(), iBufferSize, 0, true, nullptr, EnumComandos::RD_Salida);
+            int iRet = cCliente->cChunkSend(cCliente->sckSocket, vcDeskBuffer.data(), static_cast<int>(iBufferSize), 0, true, nullptr, EnumComandos::RD_Salida);
             if (iRet == -1) {
                 __DBG_("[RD][X] EnviarCaptura No se puedo enviar la captura de pantalla");
             }else {

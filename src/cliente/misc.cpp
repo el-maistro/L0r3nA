@@ -54,7 +54,6 @@ std::string strGetComputerName() {
 std::string strUserName() {
 	std::string strOutput = "unknown";
 	char cUser[UNLEN + 1];
-	char cMachineName[100];
 	DWORD dLen = UNLEN + 1;
 
 	if (cCliente->mod_dynamic->ADVAPI32.pGetUserName) {
@@ -98,7 +97,7 @@ std::string strOS() {
 }
 
 std::string TimeToDays(const unsigned long long& ulltime) {
-	int days = ((ulltime / 60) / 60) / 24;
+	unsigned __int64 days = ((ulltime / 60) / 60) / 24;
 
 	return std::to_string(days) + " dias";
 }
@@ -112,10 +111,15 @@ std::string TimeToString(unsigned long long ullTime) {
 	std::string strOut = "";
 	std::time_t timestamp = ullTime;
 
-	std::tm* timeInfo = std::localtime(&timestamp);
-	if (timeInfo != NULL) {
+	struct tm timeInfo;  //std::localtime(&timestamp);
+	errno_t err = localtime_s(&timeInfo, &timestamp);
+	/*localtime_s( // See note in remarks section about linkage
+   struct tm* const tmDest,
+   time_t const* const sourceTime
+);*/
+	if (!err) {
 		char buffer[80];
-		std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", timeInfo);
+		std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", &timeInfo);
 
 		strOut = std::string(buffer);
 	}
@@ -373,8 +377,8 @@ std::string strProcessList() {
 }
 
 u64 StrToUint(const std::string strString) {
-	u_int uiLen = strString.size();
-	u_int uiLen2 = uiLen;
+	size_t uiLen = strString.size();
+	size_t uiLen2 = uiLen;
 	u64 uiRet = 0;
 	for (u_int uiIte0 = 0; uiIte0 < uiLen; uiIte0++) {
 		u_int uiTlen = 1;
@@ -454,7 +458,7 @@ int RAM() {
 		}
 	}
 
-	iRet = (mem.ullTotalPhys / 1024) / 1024;
+	iRet = static_cast<int>((mem.ullTotalPhys / 1024) / 1024);
 	return iRet;
 }
 

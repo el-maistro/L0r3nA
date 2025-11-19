@@ -49,7 +49,7 @@ void Mod_Mic::m_Enviar_Dispositivos() {
 
     }
 
-    cCliente->cChunkSend(this->sckSocket, strSalida.c_str(), strSalida.size(), 0, true, nullptr, EnumComandos::Mic_Refre_Resultado);
+    cCliente->cChunkSend(this->sckSocket, strSalida.c_str(), static_cast<int>(strSalida.size()), 0, true, nullptr, EnumComandos::Mic_Refre_Resultado);
 }
 
 void Mod_Mic::m_EmpezarLive() {

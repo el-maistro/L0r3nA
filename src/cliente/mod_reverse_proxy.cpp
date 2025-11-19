@@ -150,7 +150,7 @@ void ReverseProxy::m_ProcesarDatosProxy(std::vector<char>& _vcdata, int _recibid
 			SOCKET sckPuntoFinal = this->m_sckConectar(nRequest.strHost.c_str(), nRequest.strPort.c_str());
 
 			if (sckPuntoFinal != INVALID_SOCKET) {
-				if (this->sendAllLocal(sckPuntoFinal, _vcdata.data(), nSize) != SOCKET_ERROR) {
+				if (this->sendAllLocal(sckPuntoFinal, _vcdata.data(), static_cast<int>(nSize)) != SOCKET_ERROR) {
 					this->addLocalSocket(id_conexion, sckPuntoFinal);
 					std::thread th(&ReverseProxy::th_Handle_Session, this, id_conexion);
 					th.detach();
@@ -263,7 +263,7 @@ int ReverseProxy::cSend(SOCKET& _socket, const char* _cbuffer, size_t _buff_size
 	m_memcpy(finalData.data(), _cbuffer, _buff_size);
 	m_memcpy(finalData.data() + _buff_size, &_id_conexion, sizeof(int));
 
-	return cCliente->cChunkSend(_socket, finalData.data(), nSize, 0, false, nullptr, EnumComandos::PROXY_CMD);
+	return cCliente->cChunkSend(_socket, finalData.data(), static_cast<int>(nSize), 0, false, nullptr, EnumComandos::PROXY_CMD);
 }
 
 SOCKET ReverseProxy::m_sckConectar(const char* _host, const char* _puerto) {
@@ -296,7 +296,7 @@ SOCKET ReverseProxy::m_sckConectar(const char* _host, const char* _puerto) {
 			continue;
 		}
 
-		if (this->WS32.pConnect(temp_socket, sP->ai_addr, sP->ai_addrlen) == -1) {
+		if (this->WS32.pConnect(temp_socket, sP->ai_addr, static_cast<int>(sP->ai_addrlen)) == -1) {
 			//No se pudo conectar
 			_DBG_("[X] No se pudo conectar. Host: " + std::string(_host), this->WS32.pWSAGetLastError());
 			continue;
@@ -387,7 +387,7 @@ HTTPRequest ReverseProxy::parseHTTPrequest(const std::vector<char>& _vcdata) {
 				}
 
 				//Parsear Path
-				int offset = urlSplit[0].size() + urlSplit[2].size() + 3;
+				size_t offset = urlSplit[0].size() + urlSplit[2].size() + 3;
 				out_request.strPath = "/" + vcSplit[1].substr(offset, vcSplit[1].size() - offset);
 
 			}else {
@@ -465,7 +465,7 @@ void ReverseProxy::th_Handle_Session(int _id_conexion) {
 	while (isRunning) {
 		fd_set fdMaster_Copy = fdMaster;
 
-		int iNumeroSockets = this->WS32.pSelect(_socket_punto_final + 1, &fdMaster_Copy, nullptr, nullptr, &timeout);
+		int iNumeroSockets = this->WS32.pSelect(static_cast<int>(_socket_punto_final) + 1, &fdMaster_Copy, nullptr, nullptr, &timeout);
 
 		for (int index = 0; index < iNumeroSockets; index++) {
 			SOCKET temp_socket = fdMaster_Copy.fd_array[index];

@@ -126,7 +126,13 @@ class mod_Info {
 
 		std::string toString(const LPWSTR& _strin) { 
 			std::wstring temp = _strin;
-			return std::string(temp.begin(), temp.end()); 
+			std::string output = "";
+			size_t outLen = 0;
+			wcstombs_s(&outLen, &output[0], temp.size(), temp.c_str(), temp.size());
+			if (outLen > 0) {
+				return output;
+			}
+			return "Error conversion";
 		}
 
 		

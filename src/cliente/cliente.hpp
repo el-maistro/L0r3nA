@@ -29,8 +29,8 @@ struct Paquete_Queue {
 
 struct Archivo_Descarga {
 	std::shared_ptr<std::ofstream> ssOutfile;
-	double uTamArchivo;
-	double uDescargado;
+	u64 uTamArchivo;
+	u64 uDescargado;
 
 	Archivo_Descarga():
 		ssOutfile(nullptr), uTamArchivo(0), uDescargado(0){}
