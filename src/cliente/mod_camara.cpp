@@ -674,15 +674,12 @@ void mod_Camera::LiveCam(int pIndexDev) {
                         if (iSent == -1) {
                             this->vcCamObjs[pIndexDev].isLive = false;
                             break;
-                        }else {
-                            __DBG_("[WEBCAM][X] No se pudo enviar el paquete al servidor");
                         }
                     }
 
                 }
             }
         }
-
         __DBG_("[!]Live terminado");
         cCliente->m_RemoteLog("[WEBCAM] Live finalizado");
     }else {

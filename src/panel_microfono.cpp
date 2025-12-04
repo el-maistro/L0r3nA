@@ -11,10 +11,11 @@ wxBEGIN_EVENT_TABLE(panelMicrophone, wxPanel)
 wxEND_EVENT_TABLE()
 
 //Microfono
-panelMicrophone::panelMicrophone(wxWindow* pParent, SOCKET sck_socket) :
+panelMicrophone::panelMicrophone(wxWindow* pParent, SOCKET sck_socket, std::string strID) :
     wxPanel(pParent, EnumIDS::ID_Panel_Microphone, wxDefaultPosition, wxDefaultSize) {
 
     this->sckSocket = sck_socket;
+    this->strID = strID;
 
     wxBoxSizer* main_sizer = new wxBoxSizer(wxVERTICAL);
     wxBoxSizer* row_sizer1 = new wxBoxSizer(wxHORIZONTAL);
@@ -66,7 +67,11 @@ void panelMicrophone::OnDetener(wxCommandEvent& event) {
     this->EnviarComando(strComando, EnumComandos::Mic_Detener_Escucha);
 
     int iIndex = p_Servidor->IndexOf(this->strID);
-    p_Servidor->vc_Clientes[iIndex]->ClosePlayer();
+    if (iIndex >= 0) {
+        p_Servidor->vc_Clientes[iIndex]->ClosePlayer();
+    }else {
+        DEBUG_MSG("No se pudo encontrar el cliente con id" + this->strID);
+    }
 }
 
 void panelMicrophone::EnviarComando(std::string pComando, int iComando) {

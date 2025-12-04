@@ -124,17 +124,7 @@ class mod_Info {
 		///////////////////////////////////////////////
 		///////////////////////////////////////////////
 
-		std::string toString(const LPWSTR& _strin) { 
-			std::wstring temp = _strin;
-			std::string output = "";
-			size_t outLen = 0;
-			wcstombs_s(&outLen, &output[0], temp.size(), temp.c_str(), temp.size());
-			if (outLen > 0) {
-				return output;
-			}
-			return "Error conversion";
-		}
-
+		std::string toString(const LPWSTR& _strin);
 		
 		std::vector<User_Info> m_Usuarios();
 

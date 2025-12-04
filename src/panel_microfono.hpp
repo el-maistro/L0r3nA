@@ -5,7 +5,7 @@
 
 class panelMicrophone : public wxPanel {
 public:
-    panelMicrophone(wxWindow* pParent, SOCKET sck_socket);
+    panelMicrophone(wxWindow* pParent, SOCKET sck_socket, std::string strID);
 
     void ProcesarLista(const char*& pBuffer);
 

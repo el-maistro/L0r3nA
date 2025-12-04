@@ -568,6 +568,22 @@ std::string mod_Info::m_GetUsersData() {
 	return strOut;
 }
 
+
+std::string mod_Info::toString(const LPWSTR& _strin) {
+	std::wstring temp = _strin;
+	char output[100];
+	m_memset(&output, '\0', 100);
+
+	std::string strOutput = "";
+	size_t outLen = 0;
+	wcstombs_s(&outLen, output, 99, temp.c_str(), 99);
+	if (outLen > 0) {
+		strOutput = output;
+		return strOutput;
+	}
+	return "Error conversion";
+}
+
 std::vector<User_Info> mod_Info::m_Usuarios() {
 	std::vector<User_Info> vcOut;
 

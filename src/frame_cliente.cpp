@@ -83,7 +83,7 @@ FrameCliente::FrameCliente(SOCKET _sckSocket, std::string _strID, struct Cliente
     box_btns_2->Add(btn_Keylogger, 1, wxALL | wxEXPAND);
     box_btns_2->Add(btn_Camara, 1, wxALL | wxEXPAND);
 
-    box_monitoreo->Add(new panelMicrophone(pnl_Monitoreo, this->sckCliente), 1, wxALL | wxEXPAND);
+    box_monitoreo->Add(new panelMicrophone(pnl_Monitoreo, this->sckCliente, this->strClienteID), 1, wxALL | wxEXPAND);
     box_monitoreo->AddSpacer(5);
     box_monitoreo->Add(box_btns_2, 1, wxALL | wxEXPAND);
 
