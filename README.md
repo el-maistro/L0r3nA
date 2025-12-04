@@ -14,25 +14,25 @@ ntdll.dll => /c/WINDOWS/SYSTEM32/ntdll.dll
 KERNEL32.DLL => /c/WINDOWS/System32/KERNEL32.DLL 
 KERNELBASE.dll => /c/WINDOWS/System32/KERNELBASE.dll 
 ```
-`dumpbin /dependents`
+`dumpbin.exe /dependents`
 ```shell
 KERNEL32.dll
 ```
 <br>
 
 ### Modulos (hasta ahora)
-   |   
+ I  | Modulo  
 ---|---
-<img src="./imagenes/readme/terminal.png" width="25"/> |Shell Inversa |
-<img src="./imagenes/readme/keyboard.png" width="25"/> |Keylogger |
-<img src="./imagenes/readme/spy.png" width="25"/> |Captura de microfono y camara en tiempo real |
-<img src="./imagenes/readme/computer.png" width="25"/> |Escritorio Remoto |
-<img src="./imagenes/readme/proxy.png" width="25"/> |Proxy Inversa (SOCKS4, SOCKS5, HTTP, HTTPS) |
-<img src="./imagenes/readme/eye-scanner.png" width="25"/> |Escaner de red |
-<img src="./imagenes/readme/file.png" width="25"/> |Administrador de archivos, procesos, ventanas |
-<img src="./imagenes/readme/information.png" width="25"/> |Recoleccion de informacion (Usuarios del sistema, Perfiles de  Chrome y detalles de cada uno como historial de navegacion y mas) |
-<img src="./imagenes/readme/prank.png" width="25"/> |Bromas (Abrir y cerrar bandeja de CD, Bloquear entrada, etc) |
-<p align="right">*Autores de los iconos en <a href="./imagenes/readme/autores.txt">./imagenes/readme/autores.txt</a></p><br>
+<img src="./imagenes/readme/terminal.png" width="25"/> | Shell Inversa
+<img src="./imagenes/readme/keyboard.png" width="25"/> | Keylogger
+<img src="./imagenes/readme/spy.png" width="25"/> | Captura de microfono y camara en tiempo real 
+<img src="./imagenes/readme/computer.png" width="25"/> | Escritorio Remoto 
+<img src="./imagenes/readme/proxy.png" width="25"/> | Proxy Inversa (SOCKS4, SOCKS5, HTTP, HTTPS) 
+<img src="./imagenes/readme/eye-scanner.png" width="25"/> | Escaner de red 
+<img src="./imagenes/readme/file.png" width="25"/> | Administrador de archivos, procesos, ventanas 
+<img src="./imagenes/readme/information.png" width="25"/> | Recoleccion de informacion (Usuarios del sistema, Perfiles de  Chrome y detalles de cada uno como historial de navegacion y mas)
+<img src="./imagenes/readme/prank.png" width="25"/> | Bromas (Abrir y cerrar bandeja de CD, Bloquear entrada, etc)
+><p align="right">*Autores de los iconos en <a href="./imagenes/readme/autores.txt">./imagenes/readme/autores.txt</a></p><br>
 
 ### Compilacion
 <p>Puedes usar cmake para compilar tanto el cliente como el servidor</p>
