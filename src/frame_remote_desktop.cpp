@@ -72,6 +72,7 @@ frameRemoteDesktop::frameRemoteDesktop(wxWindow* pParent, SOCKET sck, std::strin
 	main_sizer->Add(topSizer, 0, wxALIGN_CENTER_HORIZONTAL);
 	main_sizer->Add(middleSizer, 0, wxALIGN_CENTER_HORIZONTAL);
 	main_sizer->Add(this->pnl_main, 1, wxALL | wxEXPAND);
+	main_sizer->AddSpacer(20);
 	main_sizer->Add(bottomSizer, 0, wxALIGN_CENTER_HORIZONTAL);
 
 	this->SetSizer(main_sizer);
@@ -383,8 +384,8 @@ MonitorInfo frameRemoteDesktop::GetCopy(int index) {
 }
 
 void frameRemoteDesktop::DrawImage(std::shared_ptr<wxImage>& _img) {
-	int x = this->GetSize().GetWidth() - 30;
-	int y = this->GetSize().GetHeight() - 90;
+	int x = this->GetSize().GetWidth() -30;
+	int y = this->GetSize().GetHeight() -130;
 	if (_img.get()->IsOk() && _img.get()->GetType() != wxBitmapType::wxBITMAP_TYPE_INVALID) {
 		wxImage tmp_img(*_img.get());
 		if (tmp_img.IsOk()) {
@@ -393,19 +394,6 @@ void frameRemoteDesktop::DrawImage(std::shared_ptr<wxImage>& _img) {
 
 			if (bmp_Obj.IsOk()) {
 				this->pnl_main->SetBitmap(bmp_Obj);
-				/*try {
-					if (this->imageCtrl) {
-						this->imageCtrl->SetBitmap(bmp_Obj);
-						this->imageCtrl->Refresh();
-					}
-				}
-				catch (const std::exception& e) {
-					DEBUG_MSG("exception:");
-					DEBUG_MSG(e.what());
-				}
-				catch (...) {
-					throw;
-				}*/
 			}else {
 				DEBUG_MSG("La imagen es invalida");
 			}

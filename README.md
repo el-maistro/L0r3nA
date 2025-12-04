@@ -1,20 +1,84 @@
-<p><img src="./imagenes/banner.png" /><br></p>
+<p align="center"><img src="./imagenes/Servidor/imgs/banner.png" /><br></p>
 
-<p align="center">Herramienta de administracion remota escrita</p>
+<p align="center"><b>Herramienta de administracion remota</b></p><br><br>
 
-<p>Escrita en C++. En el lado del servidor se usa la libreria wxWidgets para la interfaz grafica. El cliente usa carga dinamica de funciones en todos su modulos reduciendo en lo mas minimo el tamaño del binario. Actualmente no posee ningun metodo de prograpacion, instalacion o evasion.</p>
+<p>Escrita en C++. En el lado del servidor se usa la libreria wxWidgets para la interfaz grafica. Esta por los momentos se ha mantenido simple pero se ira modificando a una mas amigable.</p>
 
-### Modulos
-- Shell Inversa
-- Keylogger
-- Captura de microfono y camara en tiempo real
-- Escritorio Remoto
-- Proxy Inversa (SOCKS4, SOCKS5, HTTP, HTTPS)
-- Escaner de red
-- Administrador de archivos, procesos, ventanas
-- Recoleccion de informacion (Usuarios, Perfiles de Chrome)
-- Bromas (Abrir y cerrar bandeja de CD, Bloquear entrada, etc)
 
+### Dependencias del cliente
+<p>El cliente usa carga dinamica de funciones en todos su modulos reduciendo en lo mas minimo el tamaño del binario. Este no depende de ninguna dll adicional mas que las que se encuentran por defecto en todo sistema Windows. Hace uso de carga dinamica para todos los modulos y es tolerante a fallas cuando la libreria no esta presente en el sistema.</p>
+
+`ldd.exe`
+```shell
+ntdll.dll => /c/WINDOWS/SYSTEM32/ntdll.dll 
+KERNEL32.DLL => /c/WINDOWS/System32/KERNEL32.DLL 
+KERNELBASE.dll => /c/WINDOWS/System32/KERNELBASE.dll 
+```
+`dumpbin /dependents`
+```shell
+KERNEL32.dll
+```
+<br>
+
+### Modulos (hasta ahora)
+   |   
+---|---
+<img src="./imagenes/readme/terminal.png" width="25"/> |Shell Inversa |
+<img src="./imagenes/readme/keyboard.png" width="25"/> |Keylogger |
+<img src="./imagenes/readme/spy.png" width="25"/> |Captura de microfono y camara en tiempo real |
+<img src="./imagenes/readme/computer.png" width="25"/> |Escritorio Remoto |
+<img src="./imagenes/readme/proxy.png" width="25"/> |Proxy Inversa (SOCKS4, SOCKS5, HTTP, HTTPS) |
+<img src="./imagenes/readme/eye-scanner.png" width="25"/> |Escaner de red |
+<img src="./imagenes/readme/file.png" width="25"/> |Administrador de archivos, procesos, ventanas |
+<img src="./imagenes/readme/information.png" width="25"/> |Recoleccion de informacion (Usuarios del sistema, Perfiles de  Chrome y detalles de cada uno como historial de navegacion y mas) |
+<img src="./imagenes/readme/prank.png" width="25"/> |Bromas (Abrir y cerrar bandeja de CD, Bloquear entrada, etc) |
+<p align="right">*Autores de los iconos en <a href="./imagenes/readme/autores.txt">./imagenes/readme/autores.txt</a></p><br>
+
+### Compilacion
+<p>Puedes usar cmake para compilar tanto el cliente como el servidor</p>
+<b>Servidor</b>:
+
+```shell
+cd src && mkdir build && cd build
+cmake --fresh ..
+cmake --build . --config Release
+xcopy /E ..\..\imagenes\Servidor\imgs Release\imgs\
+```
+<b>Cliente</b>:<br>
+Primero, si se piensa generar la version final hay que editar el archivo `headers.hpp` y comentar la linea 36
+```cpp
+#define ___DBG__ 
+```
+
+```cpp
+//#define ___DBG__ 
+```
+<br>Luego, en el archivo `main.cpp` se modifican las lineas 15 y 16 con la informacion correspondiente
+```cpp
+const char* cHost = "127.0.0.1"; // <--- Ip o nombre de dominio
+const char* cPort = "65500";     // <--- Puerto de conexion
+```
+Para finalizar se compila igual que el servidor:
+```shell
+cd src/cliente && mkdir build && cd build
+cmake --fresh ..
+cmake --build . --config Release
+```
+<p>Despues de esto ya se tendrian los dos binarios listos para ser ejecutados en ambos lados para realizar la prueba.</p><br>
+
+### Capturas de pantalla
+`Ventana Principal`
+<img src="./imagenes/Capturas/main.jpg">
+`Panel de administracion`
+<img src="./imagenes/Capturas/admin.jpg">
+`Keylogger, Shell y admin de procesos`
+<img src="./imagenes/Capturas/control.jpg">
+
+### Evasion y persistencia
+<p>Actualmente no posee ningun metodo de propagacion, instalacion o evasion. Aunque debido a la encapsulacion de las llamadas dinamicas a funciones se puede implementar api unhooking/hashing de manera sencilla.</p>
+
+### Colaboracion/Sugerencia
+<p>Cualquier colaboracion y sugerencia es bienvenida. Este es un proyecto en el cual pienso seguir trabajando y agregando nuevas funcionalidades.</p>
 
 ### Descargo de responsabilidad (DISCLAIMER)
-Este software esta hecho con propositos de pruebas y a modo de demostracion solamente, diseñado para ejecutarse en un ambiente controlado con previa autorizacion, no viene con ninguna garantia y no se debe ejecutar en un ambiente de trabajo real ni mucho menos hacer uso del mismo para robar informacion. El desarollador no es responsable de cualquier daño o repercusiones legales. Usalo bajo tu propio riesgo.
+<p>Este software esta hecho con propositos de pruebas y a modo de demostracion solamente, diseñado para ejecutarse en un ambiente controlado con previa autorizacion, no viene con ninguna garantia y no se debe ejecutar en un ambiente de trabajo real ni mucho menos hacer uso del mismo para robar/dañar informacion. El desarollador no es responsable de cualquier daño o repercusiones legales. Usalo bajo tu propio riesgo.</p>

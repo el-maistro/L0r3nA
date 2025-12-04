@@ -1,0 +1,12 @@
+Banner y logo:
+- eW1n
+/imgs/Computer
+- <a href="https://www.flaticon.com/free-icons/computer" title="computer icons">Computer icons created by Freepik - Flaticon</a>
+/imgs/Desktop
+- <a href="https://www.flaticon.com/free-icons/computer" title="computer icons">Computer icons created by Freepik - Flaticon</a>
+/imgs/Download
+- <a href="https://www.flaticon.com/free-icons/download" title="download icons">Download icons created by Freepik - Flaticon</a>
+/imgs/Upload
+- <a href="https://www.flaticon.com/free-icons/upload" title="upload icons">Upload icons created by Freepik - Flaticon</a>
+/imgs/Refresh
+- <a href="https://www.flaticon.com/free-icons/refresh" title="refresh icons">Refresh icons created by Freepik - Flaticon</a>

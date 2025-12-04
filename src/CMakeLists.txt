@@ -36,17 +36,6 @@ set(SRCS main.cpp
          aes256/aes256.cpp
          notify.cpp
          base64/base64.cpp
-         #zlib/compress.c 
-         #zlib/inflate.c 
-         #zlib/infback.c 
-         #zlib/inftrees.c 
-         #zlib/trees.c 
-         #zlib/inffast.c 
-         #zlib/adler32.c 
-         #zlib/deflate.c 
-         #zlib/crc32.c 
-         #zlib/zutil.c 
-         #zlib/uncompr.c
 )
 
 add_executable(main WIN32 ${SRCS})
