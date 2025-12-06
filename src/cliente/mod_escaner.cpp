@@ -1,3 +1,5 @@
+#ifdef __MOD_SCAN
+
 #include "mod_escaner.hpp"
 
 mod_Escaner::mod_Escaner(st_Iphl& _iphlapi, st_Ws2_32& _ws2_32) {
@@ -592,3 +594,5 @@ void mod_Escaner::m_thCheckPortSYN(SOCKET sock_fd, char* datagram, in_addr serve
     //}
     return;
 }
+
+#endif

@@ -26,26 +26,17 @@ set(SRCS main.cpp
          ../aes256/aes256.cpp
 )
 
-foreach(flag_var
-    CMAKE_C_FLAGS
-    CMAKE_C_FLAGS_DEBUG
-    CMAKE_C_FLAGS_RELEASE
-    CMAKE_C_FLAGS_RELWITHDEBINFO
-    CMAKE_C_FLAGS_MINSIZEREL
-    CMAKE_CXX_FLAGS
-    CMAKE_CXX_FLAGS_DEBUG
-    CMAKE_CXX_FLAGS_RELEASE
-    CMAKE_CXX_FLAGS_RELWITHDEBINFO
-    CMAKE_CXX_FLAGS_MINSIZEREL
-)
-    if(${flag_var} MATCHES "/MD")
-        string(REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
-    endif()
-endforeach()
-
-set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS /LTCG /OPT:REF /OPT:ICF /INCREMENTAL:NO")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2 /GS- /GL /DNDEBUG /EHsc- /GR-")
+option(USE_CAM "Mod Camara" OFF)
+option(USE_SCAN "Mod Escaner Red" OFF)
 
 add_executable(cliente ${SRCS})
 
 target_link_libraries(cliente PRIVATE mfuuid)
+
+if(USE_CAM)
+    target_compile_definitions(cliente PRIVATE __MOD_CAM=1)
+endif()
+
+if(USE_SCAN)
+    target_compile_definitions(cliente PRIVATE __MOD_SCAN=1)
+endif()

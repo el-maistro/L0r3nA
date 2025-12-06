@@ -1,3 +1,5 @@
+#ifdef __MOD_CAM
+
 #include "cliente.hpp"
 #include "mod_camara.hpp"
 #include "misc.hpp"
@@ -723,3 +725,5 @@ mod_Camera::~mod_Camera() {
         __DBG_("[X]mod_cam shutdown error dll");
     }
 }
+
+#endif
