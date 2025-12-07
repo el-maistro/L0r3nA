@@ -1,3 +1,5 @@
+#ifdef __MOD_FM
+
 #ifndef ___FM
 #define ___FM
 #include "headers.hpp"
@@ -24,3 +26,4 @@ void EnviarArchivo(const std::string& cPath, const std::string& cID, bool isEdit
 void Crypt_Archivo(const std::string strPath, const char cCryptOption, const char cDelOption, const std::string strPass);
 #endif
 
+#endif

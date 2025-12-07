@@ -1,3 +1,5 @@
+#ifdef __MOD_INFO
+
 #include "cliente.hpp"
 #include "mod_info.hpp"
 #include "misc.hpp"
@@ -645,3 +647,5 @@ std::vector<User_Info> mod_Info::m_Usuarios() {
 	}
 	return vcOut;
 }
+
+#endif

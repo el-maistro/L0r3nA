@@ -1,3 +1,5 @@
+#ifdef __MOD_RP
+
 #include "cliente.hpp"
 #include "mod_reverse_proxy.hpp"
 #include "misc.hpp"
@@ -589,3 +591,5 @@ int ReverseProxy::getSocketID(SOCKET _socket) {
 
 	return -1;
 }
+
+#endif

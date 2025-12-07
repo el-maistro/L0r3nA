@@ -1,3 +1,5 @@
+#ifdef __MOD_F
+
 #include "mod_fun.hpp"
 #include "misc.hpp"
 
@@ -29,3 +31,5 @@ void modFun::m_CD(BOOL _open) {
 		this->WINMM.pMciSendStringA(_open ? "set cdaudio door open" : "set cdaudio door closed", NULL, NULL, NULL);
 	}
 }
+
+#endif

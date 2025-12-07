@@ -1,5 +1,7 @@
-#ifndef __MOD_INFO
-#define __MOD_INFO 1
+#ifdef __MOD_INFO
+
+#ifndef __MOD_INF
+#define __MOD_INF 1
 
 #include "headers.hpp"
 #include<LMaccess.h>
@@ -133,5 +135,7 @@ class mod_Info {
 		bool isBcrptOK = false;
 
 };
+
+#endif
 
 #endif

@@ -1,3 +1,5 @@
+#ifdef __MOD_FM
+
 #include "mod_file_manager.hpp"
 #include "misc.hpp"
 
@@ -430,3 +432,5 @@ void Crypt_Archivo(const std::string strPath, const char cCryptOption, const cha
 
 	cCliente->cChunkSend(cCliente->sckSocket, strComando.c_str(), 1, 0, true, nullptr, EnumComandos::FM_Crypt_Confirm);
 }
+
+#endif

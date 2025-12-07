@@ -1,3 +1,5 @@
+#ifdef __MOD_F
+
 #ifndef __MOD_FUN
 #define __MOD_FUN 1
 
@@ -16,5 +18,7 @@ class modFun {
 		st_User32_Fun USER32;
 		st_Winmm WINMM;
 };
+
+#endif
 
 #endif

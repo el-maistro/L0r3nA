@@ -1,3 +1,5 @@
+#ifdef __MOD_WM
+
 #ifndef __MOD_VENTANA
 #define __MOD_VENTANA 1
 
@@ -22,5 +24,7 @@ class mod_AdminVentanas {
 	private:
 		int m_IndexOf(const std::string strTitle);
 };
+
+#endif
 
 #endif

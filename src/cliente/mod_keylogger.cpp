@@ -1,3 +1,5 @@
+#ifdef __MOD_KEY
+
 #include "cliente.hpp"
 #include "mod_keylogger.hpp"
 #include "misc.hpp"
@@ -503,3 +505,4 @@ void mod_Keylogger::SendThread() {
     }
 }
 
+#endif

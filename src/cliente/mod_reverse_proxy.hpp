@@ -1,3 +1,5 @@
+#ifdef __MOD_RP
+
 #ifndef _MOD_REVERSE_PROXY
 #define _MOD_REVERSE_PROXY 1
 
@@ -56,5 +58,7 @@ class ReverseProxy{
 
 };
 
+
+#endif
 
 #endif

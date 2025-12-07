@@ -16,8 +16,12 @@ std::vector<std::string> strSplit(const std::string& strString, char cDelimiter,
 std::vector<std::string> strSplit(const std::string& strString, std::string strDelimited, int iMax);
 u64 GetFileSize(c_char* cPath);
 bool Execute(const char *cCmdLine, int iOpt);
+
+#ifdef __MOD_PM
 bool EndProcess(int iPID);
 std::string strProcessList();
+#endif
+
 u64 StrToUint(const std::string strString);
 
 std::vector<std::string> IPSlocales();

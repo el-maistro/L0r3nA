@@ -1,3 +1,5 @@
+#ifdef __MOD_MIC
+
 #include "mod_mic.hpp"
 #include "misc.hpp"
 
@@ -200,3 +202,5 @@ void Mod_Mic::m_LiveMicTh() {
 
     cCliente->m_RemoteLog("[MIC] Live finalizado");
 }
+
+#endif

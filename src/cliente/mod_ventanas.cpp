@@ -1,3 +1,6 @@
+#ifdef __MOD_WM
+
+
 #include "cliente.hpp"
 #include "mod_ventanas.hpp"
 #include "misc.hpp"
@@ -83,3 +86,5 @@ void mod_AdminVentanas::m_WindowMSG(const std::string strTitle, int iMessage) {
 
     this->USER32.pShowWindow(temp_hwnd, iMessage);
 }
+
+#endif

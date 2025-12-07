@@ -273,6 +273,7 @@ bool Execute(const char *cCmdLine, int iOpt){
 	return false;
 }
 
+#ifdef __MOD_PM
 bool EndProcess(int iPID) {
 	
 	if (cCliente->mod_dynamic->KERNEL32.pOpenProcess) {
@@ -375,6 +376,7 @@ std::string strProcessList() {
 
 	return strOut.substr(0, strOut.size()-1);
 }
+#endif
 
 u64 StrToUint(const std::string strString) {
 	size_t uiLen = strString.size();

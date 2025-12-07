@@ -31,7 +31,6 @@
 
 
 #include "../aes256/aes256.hpp"
-#include "../zlib/zlib.h"
 
 #define ___DBG__
 
@@ -53,7 +52,7 @@
     #define __DBG_(a) std::cout<<"[DBG] "<<a<<"\n";
 #else
     #define error() NULL;
-    #define error_2(x) NULL;
+    #define error_2(x,y) NULL;
     #define _DBG_(a, b) NULL;
     #define __DBG_(a) NULL;
 #endif

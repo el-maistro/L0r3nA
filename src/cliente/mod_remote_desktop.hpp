@@ -1,3 +1,5 @@
+#ifdef __MOD_RD
+
 #ifndef __MOD_REMOTE_DESKTOP
 #define __MOD_REMOTE_DESKTOP
 
@@ -119,5 +121,7 @@ class mod_RemoteDesktop {
 		void pixelSerialize(const std::vector<Pixel_Data>& _vcin, std::vector<char>& _vcout);
 		int GetEncoderClsid(const WCHAR* format, CLSID* pClsid);
 };
+
+#endif
 
 #endif

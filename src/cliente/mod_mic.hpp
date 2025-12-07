@@ -1,3 +1,5 @@
+#ifdef __MOD_MIC
+
 #ifndef ___MIC
 #define ___MIC
 
@@ -30,5 +32,7 @@ class Mod_Mic{
 
 		Mod_Mic(st_WinmmMic& _winmm);
 };
+
+#endif
 
 #endif

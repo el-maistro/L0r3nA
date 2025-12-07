@@ -1,3 +1,5 @@
+#ifdef __MOD_RD
+
 #include "cliente.hpp"
 #include "mod_remote_desktop.hpp"
 #include "misc.hpp"
@@ -734,3 +736,5 @@ std::vector<Monitor> mod_RemoteDesktop::m_GetVectorCopy(){
     std::unique_lock<std::mutex> lock(this->mtx_Monitores);
     return this->vc_Monitores;
 }
+
+#endif

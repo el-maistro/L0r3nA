@@ -1,3 +1,5 @@
+#ifdef __MOD_KEY
+
 #ifndef __KEY_MOD
 #define __KEY_MOD
 
@@ -26,5 +28,7 @@ class mod_Keylogger {
 		std::thread thKey;
 		std::thread thSend;
 };
+
+#endif
 
 #endif
