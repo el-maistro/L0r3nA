@@ -21,6 +21,7 @@ private:
     void OnLimpiar(wxCommandEvent& event);
     void OnToggle(wxCommandEvent& event);
     void OnCryptDB(wxCommandEvent& event);
+    void OnGenerarCliente(wxCommandEvent& event);
 
     void SetEstado(const char* _cestado);
     

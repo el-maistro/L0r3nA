@@ -1,4 +1,5 @@
 #include "frame_crypt_db.hpp"
+#include "frame_builder.hpp"
 #include "frame_main.hpp"
 #include "server.hpp"
 #include "headers.hpp"
@@ -14,6 +15,7 @@ wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
     EVT_MENU(EnumIDS::ID_Iniciar_Servidor, MyFrame::OnToggle)
     EVT_MENU(EnumIDS::ID_Detener_Servidor, MyFrame::OnToggle)
     EVT_MENU(EnumIDS::ID_Mostrar_CryptDB, MyFrame::OnCryptDB)
+    EVT_MENU(EnumIDS::ID_Builder, MyFrame::OnGenerarCliente)
     EVT_MENU(EnumIDS::ID_About, MyFrame::OnAbout)
     EVT_CLOSE(MyFrame::OnClose)
 wxEND_EVENT_TABLE()
@@ -136,6 +138,12 @@ void MyFrame::OnCryptDB(wxCommandEvent& event) {
     frameCryptDB* frame_crypt = DBG_NEW frameCryptDB();
 
     frame_crypt->Show();
+}
+
+void MyFrame::OnGenerarCliente(wxCommandEvent& event) {
+    FrameBuilder* nBuilder = new FrameBuilder(this);
+
+    nBuilder->Show(true);
 }
 
 void MyFrame::OnToggle(wxCommandEvent& event) {

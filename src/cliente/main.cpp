@@ -2,8 +2,6 @@
 #include "cliente.hpp"
 #include "misc.hpp"
 
-#define TEST_MOD
-
 Cliente* cCliente;
 
 #ifdef ___DBG__
@@ -12,8 +10,10 @@ int main(int argc, char** argv) {
 int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, LPSTR /*lpCmdLine*/, int /*nShowCmd*/) {
 #endif
 
-	const char* cHost = "127.0.0.1";
-	const char* cPort = "65500";
+	const char* cHost = __CUSTOM_HOST;
+	const char* cPort = __CUSTOM_PORT;
+
+	std::cout << __CUSTOM_HOST << ":" << __CUSTOM_PORT << "\n";
 
 	cCliente = new Cliente();
 

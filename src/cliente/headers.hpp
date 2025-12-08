@@ -32,8 +32,6 @@
 
 #include "../aes256/aes256.hpp"
 
-#define ___DBG__
-
 #define AES_KEY_LEN 32
 #define MAX_CAMS 5
 #define CMD_DEL '~'

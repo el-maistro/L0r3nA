@@ -16,6 +16,7 @@ set(SRCS main.cpp
          mod_reverse_proxy.cpp
          frame_cliente.cpp
          frame_remote_desktop.cpp
+         frame_builder.cpp
          panel_file_manager.cpp
          file_editor.cpp
          file_encryption.cpp
