@@ -7,15 +7,16 @@
 
 ### Dependencias del cliente
 <p>El cliente usa carga dinamica de funciones en todos su modulos reduciendo en lo mas minimo el tamaño del binario. Este no depende de ninguna dll adicional mas que las que se encuentran por defecto en todo sistema Windows. Hace uso de carga dinamica para todos los modulos y es tolerante a fallas cuando la libreria no esta presente en el sistema.<br>
-Si se piensa usar</p>
+Si se piensa usar habilitar el modulo de informacion se requiere SQLite el cual puede ser descagado desde aqui --> <a target="_blank" href="https://sqlite.org/index.html">SQLite</a>, especificamente la version <b>sqlite-amalgamation-xxxxx</b> la cual contiene todo lo necesario en tres archivos.<br>Luego solo toca crear el folder en <b>src\sqlite3</b>. </p><br>
 
-`ldd.exe`
+
+`Salida de: ldd.exe`
 ```shell
 ntdll.dll => /c/WINDOWS/SYSTEM32/ntdll.dll 
 KERNEL32.DLL => /c/WINDOWS/System32/KERNEL32.DLL 
 KERNELBASE.dll => /c/WINDOWS/System32/KERNELBASE.dll 
 ```
-`dumpbin.exe /dependents`
+`Salida de: dumpbin.exe /dependents`
 ```shell
 KERNEL32.dll
 ```
@@ -46,8 +47,7 @@ cmake --build . --config Release
 xcopy /E ..\..\imagenes\Servidor\imgs Release\imgs\
 ```
 <b>Cliente</b>:<br>
-`Update: 08/12/2025 - compilacion modular`
-<p>Para compilar el cliente ahora se puede hacer uso del builder integrado en el servidor:</p>
+<p>Para compilar el cliente se puede hacer uso del builder integrado en el servidor:</p>
 <img src="./imagenes/Capturas/builder.jpg">
 <p>La compilacion ahora es modular y solo se incluyen los modulos seleccionados en el formulario. Esto permite generar un binario mas peque&ntilde;o o uno para escenario especificos.</p>
 
