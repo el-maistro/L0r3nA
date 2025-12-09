@@ -53,13 +53,13 @@ xcopy /E ..\..\imagenes\Servidor\imgs Release\imgs\
 <p>Despues de esto ya se tendrian los dos binarios listos para ser ejecutados en ambos lados para realizar la prueba.</p><br>
 
 ### Capturas de pantalla
-`Ventana Principal`
-<img src="./imagenes/Capturas/main.jpg">
-`Panel de administracion`
-<img src="./imagenes/Capturas/admin.jpg">
-`Builder para generar clientes`
-<img src="./imagenes/Capturas/builder.jpg">
-`Keylogger, Shell y admin de procesos`
+`Ventana Principal`<br>
+<img src="./imagenes/Capturas/main.jpg"><br>
+`Panel de administracion`<br>
+<img src="./imagenes/Capturas/admin.jpg"><br>
+`Builder para generar clientes`<br>
+<img src="./imagenes/Capturas/builder.jpg"><br>
+`Keylogger, Shell y admin de procesos`<br>
 <img src="./imagenes/Capturas/control.jpg">
 
 ### Evasion y persistencia
