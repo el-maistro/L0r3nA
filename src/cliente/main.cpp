@@ -13,8 +13,6 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, LPSTR /
 	const char* cHost = __CUSTOM_HOST;
 	const char* cPort = __CUSTOM_PORT;
 
-	std::cout << __CUSTOM_HOST << ":" << __CUSTOM_PORT << "\n";
-
 	cCliente = new Cliente();
 
 #ifdef TEST_MOD

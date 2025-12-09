@@ -45,25 +45,11 @@ cmake --build . --config Release
 xcopy /E ..\..\imagenes\Servidor\imgs Release\imgs\
 ```
 <b>Cliente</b>:<br>
-Primero, si se piensa generar la version final hay que editar el archivo `headers.hpp` y comentar la linea 36
-```cpp
-#define ___DBG__ 
-```
+`Update: 08/12/2025 - compilacion modular`
+<p>Para compilar el cliente ahora se puede hacer uso del builder integrado en el servidor:</p>
+<img src="./imagenes/Capturas/builder.jpg">
+<p>La compilacion ahora es modular y solo se incluyen los modulos seleccionados en el formulario. Esto permite generar un binario mas peque&ntilde;o o uno para escenario especificos.</p>
 
-```cpp
-//#define ___DBG__ 
-```
-<br>Luego, en el archivo `main.cpp` se modifican las lineas 15 y 16 con la informacion correspondiente
-```cpp
-const char* cHost = "127.0.0.1"; // <--- Ip o nombre de dominio
-const char* cPort = "65500";     // <--- Puerto de conexion
-```
-Para finalizar se compila igual que el servidor:
-```shell
-cd src/cliente && mkdir build && cd build
-cmake --fresh ..
-cmake --build . --config Release
-```
 <p>Despues de esto ya se tendrian los dos binarios listos para ser ejecutados en ambos lados para realizar la prueba.</p><br>
 
 ### Capturas de pantalla
@@ -71,6 +57,8 @@ cmake --build . --config Release
 <img src="./imagenes/Capturas/main.jpg">
 `Panel de administracion`
 <img src="./imagenes/Capturas/admin.jpg">
+`Builder para generar clientes`
+<img src="./imagenes/Capturas/builder.jpg">
 `Keylogger, Shell y admin de procesos`
 <img src="./imagenes/Capturas/control.jpg">
 

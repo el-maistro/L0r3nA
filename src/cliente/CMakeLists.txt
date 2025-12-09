@@ -26,9 +26,9 @@ set(SRCS main.cpp
          ../aes256/aes256.cpp
 )
 
-option(USE_TEST_MOD "Mod prueba" ON)
-
+option(USE_TEST_MOD "Mod prueba" OFF)
 option(USE_DEBUG "Debug" OFF)
+
 option(USE_CAM "Mod Camara" OFF)
 option(USE_SCAN "Mod Escaner Red" OFF)
 option(USE_FM "Mod Admin Archivos" OFF)
@@ -41,10 +41,11 @@ option(USE_RP "Mod Proxy Inversa" OFF)
 option(USE_WM "Mod Admin Ventanas" OFF)
 option(USE_SHELL "Mod Shell Inversa" OFF)
 option(USE_PM "Mod Admin Procesos" OFF)
+
 option(SRV_ADDR "Direccion Servidor" "127.0.0.1")
 option(SRV_ADDR_PORT "Puerto de conexion" "65500")
 
-add_executable(cliente ${SRCS})
+add_executable(cliente WIN32 ${SRCS})
 
 target_link_libraries(cliente PRIVATE mfuuid)
 
@@ -56,6 +57,7 @@ if(USE_TEST_MOD)
 endif()
 
 if(USE_DEBUG)
+    message("Debug habilitado!!!")
     target_compile_definitions(cliente PRIVATE ___DBG__=1)
 endif()
 
