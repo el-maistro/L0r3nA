@@ -6,6 +6,10 @@ project(cliente LANGUAGES CXX C)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(SRC_INFO_MOD
+    ../base64/base64.cpp
+    ../sqlite3/sqlite3.c
+)
 
 set(SRCS main.cpp
          misc.cpp
@@ -21,9 +25,7 @@ set(SRCS main.cpp
          mod_escaner.cpp
          mod_fun.cpp
          mod_dynamic_load.cpp
-         ../base64/base64.cpp
-         ../sqlite3/sqlite3.c
-         ../aes256/aes256.cpp
+        ../aes256/aes256.cpp
 )
 
 option(USE_TEST_MOD "Mod prueba" OFF)
@@ -45,7 +47,33 @@ option(USE_PM "Mod Admin Procesos" OFF)
 option(SRV_ADDR "Direccion Servidor" "127.0.0.1")
 option(SRV_ADDR_PORT "Puerto de conexion" "65500")
 
-add_executable(cliente WIN32 ${SRCS})
+if(NOT USE_DEBUG)
+    message("[!] Reduciendo dependencias...")
+    foreach(flag_var
+        CMAKE_C_FLAGS
+        CMAKE_C_FLAGS_DEBUG
+        CMAKE_C_FLAGS_RELEASE
+        CMAKE_C_FLAGS_RELWITHDEBINFO
+        CMAKE_C_FLAGS_MINSIZEREL
+        CMAKE_CXX_FLAGS
+        CMAKE_CXX_FLAGS_DEBUG
+        CMAKE_CXX_FLAGS_RELEASE
+        CMAKE_CXX_FLAGS_RELWITHDEBINFO
+        CMAKE_CXX_FLAGS_MINSIZEREL
+    )
+        if(${flag_var} MATCHES "/MD")
+            string(REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
+        endif()
+    endforeach()
+endif()
+
+if(USE_INFO)
+    message("SQLITE Version :v")
+    add_executable(cliente WIN32 ${SRCS} ${SRC_INFO_MOD})
+else()
+    message("Clean Version :v")
+    add_executable(cliente WIN32 ${SRCS})
+endif()
 
 target_link_libraries(cliente PRIVATE mfuuid)
 
