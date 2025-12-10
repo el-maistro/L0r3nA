@@ -40,6 +40,8 @@ FrameCliente::FrameCliente(SOCKET _sckSocket, std::string _strID, struct Cliente
     this->sckCliente = _sckSocket;
     this->strClienteID = _strID.substr(0, _strID.find('/', 0));;
 
+    wxMessageBox(_cliente.mods);
+
 
     // Tema de controles
     /*wxColour backgroundTheme(90, 0, 90);

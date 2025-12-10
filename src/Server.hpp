@@ -6,6 +6,8 @@
 #include "frame_client.hpp"
 #include "mod_reverse_proxy.hpp"
 
+#define MODS_SIZE 13
+
 struct Paquete {
     u_int uiTipoPaquete;
     u_int uiTamBuffer;
@@ -57,6 +59,7 @@ struct Cliente{
     std::string _strPID;
     std::string _strRAM;
     std::string _strIPS;
+    char mods[MODS_SIZE];
     bool _isBusy = false;
     bool _isRunningShell = false;
     std::unordered_map<std::string, struct Archivo_Descarga> um_Archivos_Descarga2;
