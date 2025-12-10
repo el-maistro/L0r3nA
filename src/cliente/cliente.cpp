@@ -92,7 +92,7 @@ void Cliente::CheckMyMods() {
 #ifdef __MOD_RP
         this->mods[10] = '1';
 #endif
-
+        // ADMIN PROCESOS
 #ifdef __MOD_PM
         this->mods[11] = '1';
 #endif

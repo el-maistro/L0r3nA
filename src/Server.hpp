@@ -6,6 +6,23 @@
 #include "frame_client.hpp"
 #include "mod_reverse_proxy.hpp"
 
+namespace EnumMenuMods {
+    enum Enum {
+        ID_OnShell = 1234,     //
+        ID_OnMicrofono,        //
+        ID_OnKeyloger,         //
+        ID_OnCamara,           //
+        ID_OnEscritorioRemoto, //
+        ID_OnAdminVentanas,    //
+        ID_OnInfo,             //
+        ID_OnEscanerRed,       //
+        ID_OnBromas,           //
+        ID_OnAdminArchivos,    //
+        ID_OnProxyInversa,     //
+        ID_OnAdminProcesos     //
+    };
+}
+
 #define MODS_SIZE 13
 
 struct Paquete {
@@ -93,6 +110,21 @@ public:
 
     }
 
+    //Opciones de menu contextual
+    void OnShellInversa(wxCommandEvent& event);
+    void OnMicrofono(wxCommandEvent& event);
+    void OnKeylogger(wxCommandEvent& event);
+    void OnCamara(wxCommandEvent& event);
+    void OnEscritorioRemoto(wxCommandEvent& event);
+    void OnAdminVentanas(wxCommandEvent& event);
+    void OnInfo(wxCommandEvent& event);
+    void OnEscanerRed(wxCommandEvent& event);
+    void OnBromas(wxCommandEvent& event);
+    void OnAdminArchivos(wxCommandEvent& event);
+    void OnProxyInversa(wxCommandEvent& event);
+    void OnAdminProcesos(wxCommandEvent& event);
+
+
     void ShowContextMenu(const wxPoint& pos, long item);
     void OnContextMenu(wxContextMenuEvent& event);
     void OnInteractuar(wxCommandEvent& event);
@@ -161,6 +193,9 @@ class Cliente_Handler {
 
         struct Cliente p_Cliente;
         bool isRunning = true;
+
+        //Regresar lista de mods disponibles en el cliente
+        std::vector<std::string> vc_GetMods();
 
         //funcion para agregar un paquete ya completado al queue
         void Add_to_Queue(const Paquete_Queue& paquete);
