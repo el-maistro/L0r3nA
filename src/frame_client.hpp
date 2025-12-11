@@ -1,4 +1,4 @@
-#pragma once
+//#ifdef ___TESTING_NEW_UI
 
 #ifndef _FRAME_CLIENTE
 #define _FRAME_CLIENTE
@@ -56,7 +56,7 @@ class MyTreeCtrl : public wxTreeCtrl {
 
 class FrameCliente : public wxFrame {
     public:
-        std::string strClienteID = "";
+        /*std::string strClienteID = "";
         SOCKET sckCliente = INVALID_SOCKET;
 
         FrameCliente(SOCKET _sckSocket, std::string _strID, struct Cliente& _cliente);
@@ -66,27 +66,29 @@ class FrameCliente : public wxFrame {
         MyTreeCtrl* m_tree = nullptr;
         panelReverseShell* panelShell = nullptr;
         panelTransferencias* panelTransfers = nullptr;
-        panelEscaner* panelScaner = nullptr;
+        panelEscaner* panelScaner = nullptr;*/
     private:
-        wxButton* btn_Test = nullptr;
-        wxTextCtrl* txtLog = nullptr;
-        wxComboBox* cmdIPS = nullptr;
+        //wxButton* btn_Test = nullptr;
+        //wxTextCtrl* txtLog = nullptr;
+        //wxComboBox* cmdIPS = nullptr;
 
 
-        void ChangeMyChildButtons(wxWindow* parent);
+        //void ChangeMyChildButtons(wxWindow* parent);
 
-        //Eventos
-        void OnClose(wxCloseEvent& event);
-        void OnButton(wxCommandEvent& event);
+        ////Eventos
+        //void OnClose(wxCloseEvent& event);
+        //void OnButton(wxCommandEvent& event);
 
-        //Eventos de disenio
-        void OnMouseHover(wxMouseEvent& event);
-        void OnMouseLeave(wxMouseEvent& event);
+        ////Eventos de disenio
+        //void OnMouseHover(wxMouseEvent& event);
+        //void OnMouseLeave(wxMouseEvent& event);
 
 
-        void OnClosePage(wxAuiNotebookEvent& event);
+        //void OnClosePage(wxAuiNotebookEvent& event);
 
-        wxDECLARE_EVENT_TABLE();
+        //wxDECLARE_EVENT_TABLE();
 
 };
 #endif
+
+//#endif

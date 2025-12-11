@@ -4,7 +4,7 @@
 
 extern Servidor* p_Servidor;
 
-wxBEGIN_EVENT_TABLE(panelMicrophone, wxPanel)
+wxBEGIN_EVENT_TABLE(panelMicrophone, wxFrame)
     EVT_BUTTON(EnumIDS::ID_Panel_Mic_BTN_Refresh, panelMicrophone::OnRefrescarDispositivos)
     EVT_BUTTON(EnumIDS::ID_Panel_Mic_BTN_Escuchar, panelMicrophone::OnEscuchar)
     EVT_BUTTON(EnumIDS::ID_Panel_Mic_BTN_Detener, panelMicrophone::OnDetener)
@@ -12,8 +12,9 @@ wxEND_EVENT_TABLE()
 
 //Microfono
 panelMicrophone::panelMicrophone(wxWindow* pParent, SOCKET sck_socket, std::string strID) :
-    wxPanel(pParent, EnumIDS::ID_Panel_Microphone, wxDefaultPosition, wxDefaultSize) {
+    wxFrame(pParent, EnumIDS::ID_Panel_Microphone, "[" + strID + "] Monitor microfono", wxDefaultPosition, wxDefaultSize) {
 
+    this->SetName(strID + "-mic");
     this->sckSocket = sck_socket;
     this->strID = strID;
 

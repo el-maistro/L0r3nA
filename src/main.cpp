@@ -22,22 +22,7 @@ wxEND_EVENT_TABLE()
 
 wxBEGIN_EVENT_TABLE(MyListCtrl, wxListCtrl)
     EVT_CONTEXT_MENU(MyListCtrl::OnContextMenu)
-    EVT_MENU(EnumMenuMods::ID_OnMicrofono, MyListCtrl::OnMicrofono)
-    EVT_MENU(EnumMenuMods::ID_OnKeyloger, MyListCtrl::OnKeylogger)
-    EVT_MENU(EnumMenuMods::ID_OnCamara, MyListCtrl::OnCamara)
-    EVT_MENU(EnumMenuMods::ID_OnAdminVentanas, MyListCtrl::OnAdminVentanas)
-    EVT_MENU(EnumMenuMods::ID_OnBromas, MyListCtrl::OnBromas)
-    EVT_MENU(EnumMenuMods::ID_OnEscanerRed, MyListCtrl::OnEscanerRed)
-    EVT_MENU(EnumMenuMods::ID_OnProxyInversa, MyListCtrl::OnProxyInversa)
-    EVT_MENU(EnumMenuMods::ID_OnShell, MyListCtrl::OnShellInversa)
-    EVT_MENU(EnumMenuMods::ID_OnEscritorioRemoto, MyListCtrl::OnEscritorioRemoto)
-    EVT_MENU(EnumMenuMods::ID_OnInfo, MyListCtrl::OnInfo)
-    EVT_MENU(EnumMenuMods::ID_OnAdminArchivos, MyListCtrl::OnAdminArchivos)
-    EVT_MENU(EnumMenuMods::ID_OnAdminProcesos, MyListCtrl::OnAdminProcesos)
-
-    EVT_MENU(EnumIDS::ID_Interactuar, MyListCtrl::OnInteractuar)
-    EVT_MENU(EnumIDS::ID_Refrescar, MyListCtrl::OnRefrescar)
-    EVT_MENU(EnumIDS::ID_CerrarProceso, MyListCtrl::OnMatarProceso)
+    EVT_MENU(wxID_ANY, MyListCtrl::OnModMenu)
     EVT_LIST_ITEM_ACTIVATED(EnumIDS::ID_Main_List, MyListCtrl::OnActivated)
 wxEND_EVENT_TABLE()
 
@@ -69,8 +54,9 @@ bool MyApp::OnInit(){
 MyFrame::MyFrame()
     : wxFrame(nullptr, EnumIDS::ID_MAIN, strTitle){
     //Trace memory leak
-    //_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-    //_CrtSetBreakAlloc(40997);
+   // _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+    //_CrtSetBreakAlloc(47523);
+    //_CrtSetBreakAlloc(47522);
 
     //Agregar Banner
     wxPanel* pnlBitmap = new wxPanel(this, wxID_ANY);
@@ -243,7 +229,11 @@ void MyFrame::OnClose(wxCloseEvent& event){
     p_Servidor->m_StopHandler();
     p_Servidor->m_JoinThreads();
     p_Servidor->m_CerrarConexiones();
-    p_Servidor->m_listCtrl->DeleteAllItems();
+    if (p_Servidor->m_listCtrl) {
+        p_Servidor->m_listCtrl->DeleteAllItems();
+        delete p_Servidor->m_listCtrl;
+        p_Servidor->m_listCtrl = nullptr;
+    }
     
     delete p_Servidor;
     p_Servidor = nullptr;

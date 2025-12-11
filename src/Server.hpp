@@ -124,6 +124,8 @@ public:
     void OnProxyInversa(wxCommandEvent& event);
     void OnAdminProcesos(wxCommandEvent& event);
 
+    void OnModMenu(wxCommandEvent& event);
+
 
     void ShowContextMenu(const wxPoint& pos, long item);
     void OnContextMenu(wxContextMenuEvent& event);
@@ -134,6 +136,8 @@ public:
 
 private:
     wxString strTmp = "";
+    int iClienteID = -1;
+
     wxDECLARE_EVENT_TABLE();
 };
 

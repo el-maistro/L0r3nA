@@ -12,8 +12,9 @@ wxBEGIN_EVENT_TABLE(panelKeylogger, wxFrame)
 wxEND_EVENT_TABLE()
 
 panelKeylogger::panelKeylogger(wxWindow* pParent, SOCKET sck, std::string _strID) :
-	wxFrame(pParent, EnumIDS::ID_KL_Panel, "Keylogger") {
+	wxFrame(pParent, EnumIDS::ID_KL_Panel,"[" + _strID + "] Keylogger") {
 
+	this->SetName(_strID + "-key");
 	this->sckCliente = sck;
 	this->SetTitle("[" + _strID.substr(0, _strID.find('/', 0)) + "] Keylogger");
 

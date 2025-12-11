@@ -3,7 +3,7 @@
 
 #include "headers.hpp"
 
-class panelMicrophone : public wxPanel {
+class panelMicrophone : public wxFrame {
 public:
     panelMicrophone(wxWindow* pParent, SOCKET sck_socket, std::string strID);
 

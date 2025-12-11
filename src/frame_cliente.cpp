@@ -1,3 +1,5 @@
+#ifdef ___TESTING_NEW_UI
+
 #include "frame_client.hpp"
 #include "frame_remote_desktop.hpp"
 #include "panel_file_manager.hpp"
@@ -513,3 +515,5 @@ void MyTreeCtrl::OnItemActivated(wxTreeEvent& event) {
     //    this->p_Notebook->Thaw();
     //} 
 }
+
+#endif
