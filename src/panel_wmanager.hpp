@@ -29,10 +29,12 @@ class panelWManager : public wxFrame {
 	public:
 		panelWManager(wxWindow* pParent, SOCKET sckCliente, std::string strID);
 
+		void AgregarData(const std::string& strBuffer);
 	private:
 		ListWmManager* listManager = nullptr;
 
 		void m_CrearListView();
+
 
 		SOCKET sckCliente = INVALID_SOCKET;
 };

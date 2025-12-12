@@ -22,7 +22,8 @@ frameRemoteDesktop::frameRemoteDesktop(wxWindow* pParent, SOCKET sck, std::strin
 	wxFrame(pParent, EnumRemoteDesktop::ID_Main_Frame, "Escritorio Remoto", wxDefaultPosition, wxSize(900, 500)) {
 	
 	this->sckCliente = sck;
-	this->SetTitle("[" + strID.substr(0, strID.find('/', 0)) + "] Escritorio Remoto");
+	this->SetName(strID + "-RD");
+	this->SetTitle("[" + strID + "] Escritorio Remoto");
 
 	this->InitGDI();
 	

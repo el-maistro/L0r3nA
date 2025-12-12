@@ -3,8 +3,8 @@
 #ifndef _HEADERS
 #define _HEADERS 1
 
-#define __MEM_LEAK_RAVDO 1
-#define _DEBUG 1
+//#define __MEM_LEAK_RAVDO 1
+//#define _DEBUG 1
 //#define DEBUG_DESIGN_LIMITS
 
 #ifdef __MEM_LEAK_RAVDO

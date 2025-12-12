@@ -499,64 +499,56 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
 
     //mod escritorio remoto - lista monitores
     if (iComando == EnumComandos::RD_Lista_Salida) {
-        if (this->m_isFrameVisible()) {
-            try {
-                frameRemoteDesktop* temp_rd_frame = (frameRemoteDesktop*)wxWindow::FindWindowById(EnumRemoteDesktop::ID_Main_Frame);// , this->n_Frame);
-                if (temp_rd_frame) {
-                    const char* cBuff = paquete.cBuffer.data();
-                    temp_rd_frame->ProcesarLista(cBuff);
-                }
-            }catch (const std::exception& e) {
-                wxMessageBox(e.what(), "Exception");
+        try {
+            frameRemoteDesktop* temp_rd_frame = (frameRemoteDesktop*)wxWindow::FindWindowByName(this->p_Cliente._id + "-RD");
+            if (temp_rd_frame) {
+                const char* cBuff = paquete.cBuffer.data();
+                temp_rd_frame->ProcesarLista(cBuff);
             }
+        }catch (const std::exception& e) {
+            wxMessageBox(e.what(), "Exception");
         }
         return;
     }
 
     //mod escritorio remoto - Buffer de video del escritorio
     if (iComando == EnumComandos::RD_Salida) {
-        if (this->m_isFrameVisible()) {
-            try {
-                frameRemoteDesktop* temp_rd_frame = (frameRemoteDesktop*)wxWindow::FindWindowById(EnumRemoteDesktop::ID_Main_Frame);// , this->n_Frame);
-                if (temp_rd_frame != NULL) {
-                    const char* cBufferImagen = paquete.cBuffer.data();
-                    temp_rd_frame->OnDrawBuffer(cBufferImagen, iRecibido - 1);
-                }
-            }catch (const std::exception& e) {
-                wxMessageBox(e.what(), "Exception");
+        try {
+            frameRemoteDesktop* temp_rd_frame = (frameRemoteDesktop*)wxWindow::FindWindowByName(this->p_Cliente._id + "-RD");
+            if (temp_rd_frame != NULL) {
+                const char* cBufferImagen = paquete.cBuffer.data();
+                temp_rd_frame->OnDrawBuffer(cBufferImagen, iRecibido - 1);
             }
+        }catch (const std::exception& e) {
+            wxMessageBox(e.what(), "Exception");
         }
         return;
     }
 
     //mod escritorio remoto - Envio de imagen parcial (pixeles)
     if (iComando == EnumComandos::RD_Salida_Pixel) {
-        if (this->m_isFrameVisible()) {
-            try{
-                frameRemoteDesktop* temp_rd_frame = (frameRemoteDesktop*)wxWindow::FindWindowById(EnumRemoteDesktop::ID_Main_Frame);// , this->n_Frame);
-                if (temp_rd_frame != NULL) {
+        try{
+            frameRemoteDesktop* temp_rd_frame = (frameRemoteDesktop*)wxWindow::FindWindowByName(this->p_Cliente._id + "-RD");
+            if (temp_rd_frame != NULL) {
                 const char* cBufferImagen = paquete.cBuffer.data();
                 temp_rd_frame->ProcesaPixelData(cBufferImagen, iRecibido - 1);
             }
-            }catch (const std::exception& e) {
-                wxMessageBox(e.what(), "Exception");
-            }
+        }catch (const std::exception& e) {
+            wxMessageBox(e.what(), "Exception");
         }
         return;
     }
 
     //mod admin ventanas - Lista de ventanas
     if (iComando == EnumComandos::WM_Lista) {
-        if (this->m_isFrameVisible()) {
-            try{
-                ListWmManager* temp_lv_wm = (ListWmManager*)wxWindow::FindWindowById(EnumIDS::ID_Panel_WM_ListView);// , this->n_Frame);
-                if (temp_lv_wm) {
-                    std::string strData(paquete.cBuffer.data());
-                    temp_lv_wm->AgregarData(strData);
-                }
-            }catch (const std::exception& e) {
-                wxMessageBox(e.what(), "Exception");
+        try{
+            panelWManager* temp_lv_wm = (panelWManager*)wxWindow::FindWindowByName(this->p_Cliente._id + "-WM");
+            if (temp_lv_wm) {
+                std::string strData(paquete.cBuffer.data());
+                temp_lv_wm->AgregarData(strData);
             }
+        }catch (const std::exception& e) {
+            wxMessageBox(e.what(), "Exception");
         }
         return;
     }
@@ -1743,6 +1735,9 @@ void MyListCtrl::OnModMenu(wxCommandEvent& event) {
     }else if (menuID == EnumMenuMods::ID_OnEscritorioRemoto) {
         frameRemoteDesktop* frameRemote = new frameRemoteDesktop(this, tmpSocket, this->strTmp.ToStdString());
         frameRemote->Show();
+    }else if (menuID == EnumMenuMods::ID_OnAdminVentanas) {
+        panelWManager* panelWM = new panelWManager(this, tmpSocket, this->strTmp.ToStdString());
+        panelWM->Show();
     }
 }
 
