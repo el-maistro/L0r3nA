@@ -20,7 +20,7 @@ panelReverseShell::panelReverseShell(wxWindow* pParent, SOCKET sck, std::string 
     this->sckCliente = sck;
     this->SetTitle("[" + _strID.substr(0, _strID.find('/', 0)) + "] Shell Inversa");
 
-    this->txtConsole = new wxTextCtrl(this, EnumIDS::ID_Panel_Reverse_Shell_TxtConsole, "Reverse Shell v0.1\n", wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE | wxTE_RICH);
+    this->txtConsole = DBG_NEW wxTextCtrl(this, EnumIDS::ID_Panel_Reverse_Shell_TxtConsole, "Reverse Shell v0.1\n", wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE | wxTE_RICH);
     if (this->txtConsole == nullptr) {
         DEBUG_MSG("No se pudo iniciar el txtConsole");
     }
@@ -30,11 +30,11 @@ panelReverseShell::panelReverseShell(wxWindow* pParent, SOCKET sck, std::string 
     wxBoxSizer* main_sizer = new wxBoxSizer(wxVERTICAL);
     wxBoxSizer* sizer_controls = new wxBoxSizer(wxHORIZONTAL);
 
-    this->txtShellPath = new wxTextCtrl(this, wxID_ANY, "C:\\Windows\\System32\\cmd.exe", wxDefaultPosition, wxSize(this->GetSize().GetWidth()/2, wxDefaultSize.GetHeight()));
+    this->txtShellPath = DBG_NEW wxTextCtrl(this, wxID_ANY, "C:\\Windows\\System32\\cmd.exe", wxDefaultPosition, wxSize(this->GetSize().GetWidth()/2, wxDefaultSize.GetHeight()));
 
     sizer_controls->Add(this->txtShellPath, 1);
-    sizer_controls->Add(new wxButton(this, EnumReverseShell::BTN_Start, "Iniciar", wxDefaultPosition, wxDefaultSize), 0);
-    sizer_controls->Add(new wxButton(this, EnumReverseShell::BTN_Stop, "Detener", wxDefaultPosition, wxDefaultSize), 0);
+    sizer_controls->Add(DBG_NEW wxButton(this, EnumReverseShell::BTN_Start, "Iniciar", wxDefaultPosition, wxDefaultSize), 0);
+    sizer_controls->Add(DBG_NEW wxButton(this, EnumReverseShell::BTN_Stop, "Detener", wxDefaultPosition, wxDefaultSize), 0);
 
     main_sizer->Add(sizer_controls, 0);
     main_sizer->Add(this->txtConsole, 1, wxALL | wxEXPAND);

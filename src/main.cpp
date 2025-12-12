@@ -53,11 +53,7 @@ bool MyApp::OnInit(){
 
 MyFrame::MyFrame()
     : wxFrame(nullptr, EnumIDS::ID_MAIN, strTitle){
-    //Trace memory leak
-   // _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-    //_CrtSetBreakAlloc(47523);
-    //_CrtSetBreakAlloc(47522);
-
+    
     //Agregar Banner
     wxPanel* pnlBitmap = new wxPanel(this, wxID_ANY);
     wxStaticBitmap* bmpBanner = new wxStaticBitmap(pnlBitmap, wxID_ANY, wxBitmap(800, 200));
@@ -244,7 +240,7 @@ void MyFrame::OnClose(wxCloseEvent& event){
 void MyFrame::OnExit(wxCommandEvent& event) {
     Close(true);
 #ifdef __MEM_LEAK_RAVDO
-    _CrtDumpMemoryLeaks();
+    //_CrtDumpMemoryLeaks();
 #endif
 }
 

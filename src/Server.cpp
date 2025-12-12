@@ -1504,23 +1504,26 @@ void MyListCtrl::ShowContextMenu(const wxPoint& pos, long item) {
     if (iCliIndex != -1) {
         this->iClienteID = iCliIndex;
         wxMenu menu;
-        wxMenu* subMenuSpy = new wxMenu;
-        wxMenu* subMenuMisc = new wxMenu;
-        wxMenu* subMenuRed = new wxMenu;
+        wxMenu* subMenuSpy = nullptr; // = new wxMenu;
+        wxMenu* subMenuMisc = nullptr; //new wxMenu;
+        wxMenu* subMenuRed = nullptr; // new wxMenu;
 
         std::vector<std::string> vcMods = p_Servidor->vc_Clientes[iCliIndex]->vc_GetMods();
         if (vcMods.size() > 0) {
             for (std::string& item : vcMods) {
                 //Vigilancia
                 if (item == "Microfono"){
+                    if (!subMenuSpy) subMenuSpy = new wxMenu;
                     subMenuSpy->Append(EnumMenuMods::ID_OnMicrofono, item);
                     continue;
                 } 
                 if (item == "Keylogger") {
+                    if (!subMenuSpy) subMenuSpy = new wxMenu;
                     subMenuSpy->Append(EnumMenuMods::ID_OnKeyloger, item);
                     continue;
                 }
                 if (item == "Camara") {
+                    if (!subMenuSpy) subMenuSpy = new wxMenu;
                     subMenuSpy->Append(EnumMenuMods::ID_OnCamara, item);
                     continue;
                 }
@@ -1528,10 +1531,12 @@ void MyListCtrl::ShowContextMenu(const wxPoint& pos, long item) {
 
                 //Misc
                 if (item == "Administrador de Ventanas"){
+                    if (!subMenuMisc) subMenuMisc = new wxMenu;
                     subMenuMisc->Append(EnumMenuMods::ID_OnAdminVentanas, item);
                     continue;
                 }
                 if (item == "Bromas") {
+                    if (!subMenuMisc) subMenuMisc = new wxMenu;
                     subMenuMisc->Append(EnumMenuMods::ID_OnBromas, item);
                     continue;
                 }
@@ -1540,13 +1545,16 @@ void MyListCtrl::ShowContextMenu(const wxPoint& pos, long item) {
 
                 //Red
                 if (item == "Escaner de Red"){
+                    if (!subMenuRed) subMenuRed = new wxMenu;
                     subMenuRed->Append(EnumMenuMods::ID_OnEscanerRed, item);
                     continue;
                 }
                 if (item == "Proxy Inversa") {
+                    if (!subMenuRed) subMenuRed = new wxMenu;
                     subMenuRed->Append(EnumMenuMods::ID_OnProxyInversa, item);
                     continue;
                 }
+
 
 
                 //Shell
@@ -1580,16 +1588,21 @@ void MyListCtrl::ShowContextMenu(const wxPoint& pos, long item) {
                 }
             }
 
-            if (subMenuSpy->GetMenuItemCount() > 0) {
-                menu.AppendSubMenu(subMenuSpy, "Vigilancia");
+            if (subMenuSpy) {
+                if (subMenuSpy->GetMenuItemCount() > 0) {
+                    menu.AppendSubMenu(subMenuSpy, "Vigilancia");
+                }
             }
-            if (subMenuMisc->GetMenuItemCount() > 0) {
-                menu.AppendSubMenu(subMenuMisc, "Miscelaneo");
+            if (subMenuMisc) {
+                if (subMenuMisc->GetMenuItemCount() > 0) {
+                    menu.AppendSubMenu(subMenuMisc, "Miscelaneo");
+                }
             }
-            if (subMenuRed->GetMenuItemCount() > 0) {
-                menu.AppendSubMenu(subMenuRed, "Red");
+            if (subMenuRed) {
+                if (subMenuRed->GetMenuItemCount() > 0) {
+                    menu.AppendSubMenu(subMenuRed, "Red");
+                }
             }
-
             menu.AppendSeparator();
         }
 

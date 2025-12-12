@@ -3,8 +3,8 @@
 #ifndef _HEADERS
 #define _HEADERS 1
 
-//#define __MEM_LEAK_RAVDO
-//#define _DEBUG
+#define __MEM_LEAK_RAVDO 1
+#define _DEBUG 1
 //#define DEBUG_DESIGN_LIMITS
 
 #ifdef __MEM_LEAK_RAVDO
@@ -14,7 +14,7 @@
 #endif
 
 #ifdef _DEBUG
-    #define DBG_NEW new ( _NORMAL_BLOCK , __FILE__ , __LINE__ ) //este para debug de leaks
+    #define DBG_NEW new ( _CLIENT_BLOCK , __FILE__ , __LINE__ ) //este para debug de leaks
     // Replace _NORMAL_BLOCK with _CLIENT_BLOCK if you want the
     // allocations to be of _CLIENT_BLOCK type
 #else
