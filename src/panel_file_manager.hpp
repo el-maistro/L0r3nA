@@ -7,7 +7,7 @@
 
 class ListCtrlManager;
 
-class panelFileManager: public wxPanel{
+class panelFileManager: public wxFrame{
 	public:
 		ListCtrlManager* listManager = nullptr;
 		

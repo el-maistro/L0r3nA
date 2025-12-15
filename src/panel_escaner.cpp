@@ -15,7 +15,8 @@ wxEND_EVENT_TABLE()
 panelEscaner::panelEscaner(wxWindow* pParent, SOCKET _sck, std::string _strID)
 	: wxFrame(pParent, EnumEscanerIDS::Main_Window, "Escaner de red") {
 	this->sckSocket = _sck;
-	this->SetTitle("[" + _strID.substr(0, _strID.find('/', 0)) + "] Escaner de red");
+	this->SetName(_strID + "-NET");
+	this->SetTitle("[" + _strID + "] Escaner de red");
 
 	
 	//////  Host(s) y prefijo    /////////

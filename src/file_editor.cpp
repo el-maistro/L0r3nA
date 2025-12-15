@@ -21,7 +21,7 @@ wxEND_EVENT_TABLE()
 wxEditForm::wxEditForm(wxWindow* pParent, wxString strNombre, std::string strID)
 	: wxFrame(pParent, wxID_ANY, "[REMOTO]", wxDefaultPosition, wxSize(600, 600), wxDEFAULT_FRAME_STYLE, strID)
 {
-	this->SetTitle("[" + strID.substr(0, strID.find('/', 0)) + "] " + strNombre);
+	this->SetTitle("[" + strID + "] " + strNombre);
 
 	this->p_txtEditor = new wxStyledTextCtrl(this, EditorIDS::Edit_Text, wxDefaultPosition, wxDefaultSize);
 	this->p_txtEditor->SetCaretLineVisible(true);

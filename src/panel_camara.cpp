@@ -123,7 +123,8 @@ panelCamara::panelCamara(wxWindow* pParent, SOCKET sck, std::string _strID):
 	wxFrame(pParent, EnumCamMenu::ID_Main_Panel, "Camara") {
 
 	this->sckCliente = sck;
-	this->SetTitle("[" + _strID.substr(0, _strID.find('/', 0)) + "] Camara");
+	this->SetName(_strID + "-CAM");
+	this->SetTitle("[" + _strID + "] Camara");
 
 	this->cam_Devices = new wxComboBox(this, EnumCamMenu::ID_Combo_Devices, "...", wxDefaultPosition, wxSize(200, 20));
 	wxButton* btn_Listar = new wxButton(this, EnumCamMenu::ID_Refrescar_Lista, "Refrescar lista");

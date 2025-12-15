@@ -8,12 +8,12 @@ wxBEGIN_EVENT_TABLE(panelInfoChrome, wxFrame)
 	EVT_BUTTON(wxID_ANY, panelInfoChrome::OnProcesarBoton)
 wxEND_EVENT_TABLE()
 
-panelInfoChrome::panelInfoChrome(wxWindow* pParent, SOCKET sck_socket, wxString _strID)
+panelInfoChrome::panelInfoChrome(wxWindow* pParent, SOCKET sck_socket, wxString _title, std::string _strID)
 	: wxFrame(pParent, EnumIDS::ID_Panel_Info, "Recoleccion de informacion [Google Chrome]") {
 	
 	this->sckSocket = sck_socket;
-
-	this->SetTitle(_strID + " [Google Chrome]");
+	this->SetName(_strID + "-INF-CHROME");
+	this->SetTitle(_title + " [Google Chrome]");
 
 	wxButton* btn_perfiles   = new wxButton(this, EnumChromeInfoIDS::BTN_Profiles, "Lista de perfiles");
 	wxButton* btn_passwords  = new wxButton(this, EnumChromeInfoIDS::BTN_Passwords,      "Contraseñas");

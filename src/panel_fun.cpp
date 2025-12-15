@@ -12,7 +12,7 @@ wxEND_EVENT_TABLE()
 panelFun::panelFun(wxWindow* pParent, SOCKET _socket, std::string _strID)
 	:wxFrame(pParent, EnumFunIDS::ID_Main_Window, "Kaizer mode") {
 	this->sckSocket = _socket;
-	this->SetTitle("[" + _strID.substr(0, _strID.find('/', 0)) + "] Kaizer mode");
+	this->SetTitle("[" + _strID + "] Kaizer mode");
 
 	
 	//////////  Mouse y teclado /////////////

@@ -8,9 +8,10 @@ wxBEGIN_EVENT_TABLE(panelUsuarios, wxPanel)
 	EVT_BUTTON(EnumPanelUsuarios::BTN_Refrescar, panelUsuarios::OnRefrescar)
 wxEND_EVENT_TABLE()
 
-panelUsuarios::panelUsuarios(wxWindow* pParent, SOCKET _sckSocket)
+panelUsuarios::panelUsuarios(wxWindow* pParent, SOCKET _sckSocket, std::string _strID)
 	: wxPanel(pParent, EnumIDS::ID_Panel_Info_Usuarios) {
 	
+	this->SetName(_strID + "-INF-USR");
 	this->sckSocket = _sckSocket;
 
 	wxButton* btn_refrescar = new wxButton(this, EnumPanelUsuarios::BTN_Refrescar, "Refrescar lista de usuarios");

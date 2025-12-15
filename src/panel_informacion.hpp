@@ -15,7 +15,7 @@ class panelInformacion : public wxFrame {
 
 	private:
 		SOCKET sckCliente = INVALID_SOCKET;
-
+		std::string strdID = "";
 		//Eventos
 		void OnChromeInfo(wxCommandEvent& event);
 

@@ -16,7 +16,7 @@ struct ColumnData2 {
 
 class panelUsuarios : public wxPanel {
 	public:
-		panelUsuarios(wxWindow* pParent, SOCKET sckSocket);
+		panelUsuarios(wxWindow* pParent, SOCKET sckSocket, std::string _strID);
 
 		void m_ProcesarDatos(const std::string& strBuffer);
 

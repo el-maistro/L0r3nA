@@ -8,7 +8,7 @@
 extern Servidor* p_Servidor;
 extern std::mutex vector_mutex;
 
-wxBEGIN_EVENT_TABLE(panelFileManager, wxPanel)
+wxBEGIN_EVENT_TABLE(panelFileManager, wxFrame)
 	EVT_MENU(wxID_ANY, panelFileManager::OnToolBarClick)
 wxEND_EVENT_TABLE()
 
@@ -27,10 +27,11 @@ wxBEGIN_EVENT_TABLE(ListCtrlManager, wxListCtrl)
 wxEND_EVENT_TABLE()
 
 panelFileManager::panelFileManager(wxWindow* pParent, SOCKET sck, std::string _strID, std::string _strIP) :
-	wxPanel(pParent, EnumIDS::ID_Panel_FM, wxDefaultPosition, wxDefaultSize) {
+	wxFrame(pParent, wxID_ANY, "[" + _strID + "] Admin archivos", wxDefaultPosition, wxDefaultSize){
 	
+	this->SetName(_strID + "-FM");
 	this->sckCliente = sck;
-	this->strID = _strID.substr(0, _strID.find('/', 0));
+	this->strID = _strID;
 	this->strIP = _strIP;
 	
 	this->p_ToolBar = new wxToolBar(this, wxID_ANY, wxDefaultPosition, wxSize(30, wxDefaultSize.GetHeight()), wxTB_VERTICAL | wxTB_LEFT);
@@ -138,6 +139,7 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 
 void panelFileManager::CrearLista() {
 	this->listManager = new ListCtrlManager(this, EnumIDS::ID_Panel_FM_List, wxDefaultPosition,  wxDefaultSize/*wxSize(FRAME_CLIENT_SIZE_WIDTH*3, FRAME_CLIENT_SIZE_WIDTH*3)*/, wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES, this->strID, this->strIP, this->sckCliente);
+	this->listManager->SetName(this->strID + "-FM-LIST");
 	
 	//Spining circle
 	this->listManager->m_indicator = new wxActivityIndicator(this->listManager, wxID_ANY, wxDefaultPosition, wxDefaultSize);
