@@ -3,12 +3,13 @@
 
 extern Servidor* p_Servidor;
 
-wxBEGIN_EVENT_TABLE(panelReverseProxy, wxPanel)
+wxBEGIN_EVENT_TABLE(panelReverseProxy, wxFrame)
 	EVT_TOGGLEBUTTON(EnumIDSProxy::ID_BTN_Toggle, panelReverseProxy::OnToggle)
 wxEND_EVENT_TABLE()
 
-panelReverseProxy::panelReverseProxy(wxWindow* pParent, SOCKET sck) :
-   wxPanel(pParent, EnumIDSProxy::ID_Main_Window){
+panelReverseProxy::panelReverseProxy(wxWindow* pParent, SOCKET sck, std::string _strID) :
+   wxFrame(pParent, EnumIDSProxy::ID_Main_Window, "[" + _strID + "] Proxy Inversa", wxDefaultPosition, wxSize(350, 150)) {
+	
 	this->sckSocket = sck;
 
 	wxStaticText* label1 = new wxStaticText(this, wxID_ANY, "Puerto:");
@@ -22,6 +23,7 @@ panelReverseProxy::panelReverseProxy(wxWindow* pParent, SOCKET sck) :
 	main_sizer->Add(btnToggle, 0, wxALIGN_CENTER);
 
 	this->SetSizer(main_sizer);
+	this->SetSizeHints(this->GetSize(), this->GetSize());
 }
 
 void panelReverseProxy::OnToggle(wxCommandEvent&) {

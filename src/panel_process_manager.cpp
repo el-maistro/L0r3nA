@@ -13,10 +13,10 @@ wxBEGIN_EVENT_TABLE(ListCtrlManager2, wxListCtrl)
 wxEND_EVENT_TABLE()
 
 panelProcessManager::panelProcessManager(wxWindow* pParent, SOCKET sck, std::string _strID) :
-	wxFrame(pParent, EnumIDS::ID_PM_Panel, "Administrador de procesos") {
+	wxFrame(pParent, EnumIDS::ID_PM_Panel, "[" + _strID + "] Administrador de procesos") {
 
 	this->sckCliente = sck;
-	this->SetTitle("[" + _strID.substr(0, _strID.find('/', 0)) + "] Administrador de procesos");
+	this->SetName(_strID + "-PM");
 	
 	this->CrearListview();
 
