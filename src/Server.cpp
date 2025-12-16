@@ -906,6 +906,27 @@ void Servidor::m_CerrarConexion(SOCKET pSocket) {
     }
 }
 
+void Servidor::m_AgregarListener(Servidor_Listener _nuevo_listener) {
+    std::unique_lock<std::mutex>(this->mtx_listeners);
+    //Iniciar nuevo thread con la info
+    this->vc_Listeners.push_back(_nuevo_listener);
+    return;
+}
+
+void Servidor::m_BorrarListener(const std::string _nombre_listener) {
+    std::unique_lock<std::mutex>(this->mtx_listeners);
+    std::vector<Servidor_Listener>::iterator ntemp = this->vc_Listeners.begin();
+    for (; ntemp != this->vc_Listeners.end(); ntemp++) {
+        if(ntemp->strNombre == _nombre_listener) {
+            //Detener thread y cerrar sockets pendientes
+            this->vc_Listeners.erase(ntemp);
+            break;
+        }
+    }
+
+    return;
+}
+
 void Servidor::m_CerrarConexiones() {
     std::unique_lock<std::mutex> lock(vector_mutex); //<------------------------------- DBG_NEW
     if (this->vc_Clientes.size() > 0) {

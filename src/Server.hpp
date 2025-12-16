@@ -88,6 +88,11 @@ struct ClientConInfo{
     std::string _strIp;
 };
 
+struct Servidor_Listener {
+    SOCKET sckSocket;
+    std::string strNombre;
+    char con_key[AES_KEY_LEN]; //Llave a usar en la conexion
+};
 namespace LogType{
     const int LogMessage = 100;
     const int LogError   = 101;
@@ -260,7 +265,8 @@ class Servidor{
 
         ByteArray bKey;
         void Init_Key();
-        int p_PingTime = 1000 * 60; //60 segundos
+        
+        std::vector<Servidor_Listener> vc_Listeners;
         
     public:
         Servidor();
@@ -269,7 +275,8 @@ class Servidor{
         std::mutex p_mutex;
         std::mutex p_transfers;
         std::mutex count_mutex;
-        std::mutex mtx_map;   //mutex para mapa de mutexes
+        std::mutex mtx_map;       //mutex para mapa de mutexes
+        std::mutex mtx_listeners; 
 
         std::map<std::string, struct TransferStatus> vcTransferencias;
 		std::map<SOCKET, std::shared_ptr<std::mutex>> vcMutex; //Mapa que almacena mutex para cada socket
@@ -323,6 +330,10 @@ class Servidor{
         ClientConInfo m_Aceptar();
         void m_CerrarConexiones();
         void m_CerrarConexion(SOCKET pSocket);
+
+        //Listeners
+        void m_AgregarListener(Servidor_Listener _nuevo_listener);
+        void m_BorrarListener(const std::string _nombre_listener);
 
         //Mapa mutex
         std::shared_ptr<std::mutex> m_GetMutex(SOCKET pSocket);
