@@ -1636,10 +1636,6 @@ void MyListCtrl::OnContextMenu(wxContextMenuEvent& event){
 
         wxString st1 = this->GetItemText(iItem, 0);
         this->strTmp = st1;
-        /*this->strTmp.append(1, '/');
-        this->strTmp += this->GetItemText(iItem, 1);
-        this->strTmp.append(1, '/');
-        this->strTmp += this->GetItemText(iItem, 2);*/
 
         ShowContextMenu(point, iItem);
     }

@@ -76,6 +76,8 @@ struct Cliente{
     std::string _strPID;
     std::string _strRAM;
     std::string _strIPS;
+    std::string _strListener;
+    char c_key[AES_KEY_LEN];
     char mods[MODS_SIZE];
     bool _isBusy = false;
     bool _isRunningShell = false;
@@ -91,6 +93,7 @@ struct ClientConInfo{
 struct Servidor_Listener {
     SOCKET sckSocket;
     std::string strNombre;
+    bool isRunning = false;
     char con_key[AES_KEY_LEN]; //Llave a usar en la conexion
 };
 namespace LogType{

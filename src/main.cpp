@@ -1,5 +1,6 @@
 #include "frame_crypt_db.hpp"
 #include "frame_builder.hpp"
+#include "frame_listener.hpp"
 #include "frame_main.hpp"
 #include "server.hpp"
 #include "headers.hpp"
@@ -16,6 +17,7 @@ wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
     EVT_MENU(EnumIDS::ID_Detener_Servidor, MyFrame::OnToggle)
     EVT_MENU(EnumIDS::ID_Mostrar_CryptDB, MyFrame::OnCryptDB)
     EVT_MENU(EnumIDS::ID_Builder, MyFrame::OnGenerarCliente)
+    EVT_MENU(EnumIDS::ID_Listeners, MyFrame::OnListeners)
     EVT_MENU(EnumIDS::ID_About, MyFrame::OnAbout)
     EVT_CLOSE(MyFrame::OnClose)
 wxEND_EVENT_TABLE()
@@ -108,6 +110,7 @@ MyFrame::MyFrame()
     p_server->Append(this->detenerMenu);
     p_server->Append(EnumIDS::ID_Mostrar_CryptDB, "Crypt DB");
     p_server->Append(EnumIDS::ID_Builder, "Generar Cliente");
+    p_server->Append(EnumIDS::ID_Listeners, "Listeners");
    
     wxMenu* p_help = new wxMenu();
     p_help->Append(EnumIDS::ID_About, "Acerca de")->SetBitmap(wxArtProvider::GetBitmapBundle(wxART_INFORMATION, wxART_MENU));
@@ -139,6 +142,11 @@ void MyFrame::OnGenerarCliente(wxCommandEvent& event) {
     FrameBuilder* nBuilder = new FrameBuilder(this);
 
     nBuilder->Show(true);
+}
+
+void MyFrame::OnListeners(wxCommandEvent& event) {
+    frameListeners* listeners = new frameListeners(this);
+    listeners->Show();
 }
 
 void MyFrame::OnToggle(wxCommandEvent& event) {
