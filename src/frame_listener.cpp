@@ -1,9 +1,13 @@
+#include "server.hpp"
 #include "frame_listener.hpp"
 #include "misc.hpp"
+
+extern Servidor* p_Servidor;
 
 wxBEGIN_EVENT_TABLE(frameListeners, wxFrame)
 	EVT_BUTTON(EnumIDSListeners::ID_GenerarPass, frameListeners::OnGenerarPass)
 	EVT_BUTTON(EnumIDSListeners::ID_CrearListener, frameListeners::OnCrearListener)
+	EVT_TEXT(EnumIDSListeners::ID_TXT_Puerto, frameListeners::OnInputPuerto)
 wxEND_EVENT_TABLE()
 
 wxBEGIN_EVENT_TABLE(ListCtrlManagerListeners, wxListCtrl)
@@ -28,7 +32,8 @@ frameListeners::frameListeners(wxWindow* pParent)
 
 	this->txtNombre = new wxTextCtrl(this, wxID_ANY, "Listener 1");
 	this->txtPass = new wxTextCtrl(this, wxID_ANY, RandomPass(AES_KEY_LEN));
-	this->txtPuerto = new wxTextCtrl(this, wxID_ANY, "65500");
+	this->txtPuerto = new wxTextCtrl(this, EnumIDSListeners::ID_TXT_Puerto, "65500");
+	this->txtPuerto->SetMaxLength(5);
 
 	this->txtPass->SetMaxLength(AES_KEY_LEN);
 	this->txtPass->Enable(false);
@@ -95,8 +100,17 @@ void frameListeners::OnCrearListener(wxCommandEvent& event) {
 				strCMD.append("', '");
 				strCMD.append(strPuerto);
 				strCMD.append("');");
+
+				//Agregar listener al vector de servidor
+				Servidor_Listener nuevo_listener;
+				nuevo_listener.sckSocket = INVALID_SOCKET;
+				nuevo_listener.strNombre = strNombre;
+				nuevo_listener.isRunning = false;
+				strncpy_s(nuevo_listener.con_key, strPass.size(), strPass.c_str(), AES_KEY_LEN);
+				p_Servidor->m_AgregarListener(nuevo_listener);
+
 				this->Exec_SQL(strCMD.c_str());
-				wxMessageBox("Operacion completada!");
+				wxMessageBox("Listener agregado!");
 				this->list_ctrl->MostrarLista();
 			}else {
 				wxMessageBox("El puerto de escucha no puede estar en blanco");
@@ -111,6 +125,10 @@ void frameListeners::OnCrearListener(wxCommandEvent& event) {
 
 void frameListeners::OnGenerarPass(wxCommandEvent& event) {
 	this->txtPass->SetValue(RandomPass(AES_KEY_LEN));
+}
+
+void frameListeners::OnInputPuerto(wxCommandEvent& event) {
+	event.Skip();
 }
 
 void frameListeners::Exec_SQL(const char* cCMD) {
@@ -234,6 +252,8 @@ int ListCtrlManagerListeners::Callback(int argc, char** argv, char** azColName) 
 
 void ListCtrlManagerListeners::MostrarLista() {
 	this->DeleteAllItems();
+
+	//Obtener lista del vector
 	sqlite3* db;
 	this->iCount = 0;
 	char* zErrMsg = 0;
@@ -258,13 +278,13 @@ void ListCtrlManagerListeners::OnEliminar(wxCommandEvent& event) {
 	std::string strNombre = this->GetItemText(this->iSelectedIndex, 0);
 	std::string strPass = this->GetItemText(this->iSelectedIndex, 1);
 
-	//Remover listener del FD_SET maestro y cerrar conexiones activas
-
 	std::string strCMD = "DELETE FROM listeners WHERE nombre = '";
 	strCMD.append(strNombre);
 	strCMD.append("' AND clave_acceso = '");
 	strCMD.append(strPass);
 	strCMD.append("';");
+
+	p_Servidor->m_BorrarListener(strNombre);
 
 	frameListeners* frm = static_cast<frameListeners*>(this->GetParent());
 	frm->Exec_SQL(strCMD.c_str());
@@ -319,6 +339,9 @@ void ListCtrlManagerListeners::OnToggle(wxCommandEvent& event) {
 		//Detener listener
 		this->SetItem(this->iSelectedIndex, 3, "Deshabilitado");
 	}
+
+	p_Servidor->m_ToggleListener(this->GetItemText(this->iSelectedIndex, 0).ToStdString());
+
 	return;
 }
 

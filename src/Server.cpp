@@ -910,10 +910,11 @@ void Servidor::m_AgregarListener(Servidor_Listener _nuevo_listener) {
     std::unique_lock<std::mutex>(this->mtx_listeners);
     //Iniciar nuevo thread con la info
     this->vc_Listeners.push_back(_nuevo_listener);
-    return;
 }
 
 void Servidor::m_BorrarListener(const std::string _nombre_listener) {
+    //Remover listener del FD_SET maestro y cerrar conexiones activas
+
     std::unique_lock<std::mutex>(this->mtx_listeners);
     std::vector<Servidor_Listener>::iterator ntemp = this->vc_Listeners.begin();
     for (; ntemp != this->vc_Listeners.end(); ntemp++) {
@@ -923,8 +924,21 @@ void Servidor::m_BorrarListener(const std::string _nombre_listener) {
             break;
         }
     }
+}
 
-    return;
+void Servidor::m_ToggleListener(const std::string _nombre_listener) {
+    std::vector<Servidor_Listener>::iterator ntemp = this->vc_Listeners.begin();
+    for (; ntemp != this->vc_Listeners.end(); ntemp++) {
+        if (ntemp->strNombre == _nombre_listener) {
+            //Cambiar estado del listener
+            if (ntemp->isRunning) {
+
+            }else {
+
+            }
+            break;
+        }
+    }
 }
 
 void Servidor::m_CerrarConexiones() {

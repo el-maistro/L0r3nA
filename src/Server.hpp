@@ -337,6 +337,7 @@ class Servidor{
         //Listeners
         void m_AgregarListener(Servidor_Listener _nuevo_listener);
         void m_BorrarListener(const std::string _nombre_listener);
+        void m_ToggleListener(const std::string _nombre_listener);
 
         //Mapa mutex
         std::shared_ptr<std::mutex> m_GetMutex(SOCKET pSocket);
