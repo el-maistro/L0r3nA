@@ -102,12 +102,15 @@ void frameListeners::OnCrearListener(wxCommandEvent& event) {
 				strCMD.append("');");
 
 				//Agregar listener al vector de servidor
-				Servidor_Listener nuevo_listener;
+				/*Servidor_Listener nuevo_listener;
 				nuevo_listener.sckSocket = INVALID_SOCKET;
 				nuevo_listener.strNombre = strNombre;
 				nuevo_listener.isRunning = false;
 				strncpy_s(nuevo_listener.con_key, strPass.size(), strPass.c_str(), AES_KEY_LEN);
 				p_Servidor->m_AgregarListener(nuevo_listener);
+				*/
+				int iPuerto = atoi(strPuerto.c_str());
+				p_Servidor->m_AgregarListener(strNombre, iPuerto, strPass.c_str());
 
 				this->Exec_SQL(strCMD.c_str());
 				wxMessageBox("Listener agregado!");
