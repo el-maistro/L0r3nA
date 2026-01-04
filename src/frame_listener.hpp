@@ -12,7 +12,8 @@ namespace EnumIDSListeners {
 		ID_CM_Eliminar,
 		ID_CM_Habilitar,
 		ID_CM_Deshabilitar,
-		ID_TXT_Puerto
+		ID_TXT_Puerto,
+		ID_Frame
 	};
 }
 
@@ -50,9 +51,9 @@ class frameListeners : public wxFrame {
 		void OnCrearListener(wxCommandEvent& event);
 		void OnInputPuerto(wxCommandEvent& event);
 		void Exec_SQL(const char* cCMD);
-	private:
-
 		ListCtrlManagerListeners* list_ctrl = nullptr;
+
+	private:
 		void CrearLista();
 		wxTextCtrl* txtNombre = nullptr;
 		wxTextCtrl* txtPass = nullptr;

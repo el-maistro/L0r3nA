@@ -792,19 +792,19 @@ bool Servidor::Init_Socket(SOCKET& _socket, u_int _puerto, struct sockaddr_in& _
     
     _socket = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
     if (!_socket) {
-        DEBUG_MSG("[Servidor::Init_Socket] No se pudo iniciar el socket");
+        ERROR_EW("[Servidor::Init_Socket] No se pudo iniciar el socket");
         return false;
     }
 
     int iTemp = 1;
     if (setsockopt(_socket, SOL_SOCKET, SO_REUSEADDR, (const char*)&iTemp, sizeof(iTemp)) < 0) {
-        DEBUG_MSG("[Servidor::Init_Socket] Error configurando el socket SO_REUSEADDR");
+        ERROR_EW("[Servidor::Init_Socket] Error configurando el socket SO_REUSEADDR");
         return false;
     }
 
     unsigned long int iBlock = 1;
     if (ioctlsocket(_socket, FIONBIO, &iBlock) != 0) {
-        DEBUG_MSG("[Servidor::Init_Socket] Error configurando el socket NON_BLOCK");
+        ERROR_EW("[Servidor::Init_Socket] Error configurando el socket NON_BLOCK");
         return false;
     }
 
@@ -813,20 +813,27 @@ bool Servidor::Init_Socket(SOCKET& _socket, u_int _puerto, struct sockaddr_in& _
     _struct_listener.sin_addr.s_addr = INADDR_ANY;
 
     if (bind(_socket, (struct sockaddr*)&_struct_listener, sizeof(struct sockaddr)) == -1) {
-        DEBUG_MSG("[Servidor::Init_Socket] Error configurando el socket BIND");
-        return false;
-    }
-
-    if (listen(_socket, 10) == -1) {
-        DEBUG_MSG("[Servidor::Init_Socket] Error configurando el socket LISTEN");
+        ERROR_EW("[Servidor::Init_Socket] Error configurando el socket BIND");
         return false;
     }
 
     return true;
 }
 
+void Servidor::Init_Listen(SOCKET& _socket) {
+    if (_socket != INVALID_SOCKET) {
+        if (listen(_socket, 10) == -1) {
+            ERROR_EW("[Servidor::Init_Listen] Error configurando el socket LISTEN");
+            
+        }
+    }
+}
+
 Servidor::Servidor(){
-    this->uiPuertoLocal = 65500;
+    WSACleanup();
+    if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
+        ERROR_EW("[WSAStartup] Servidor::Servidor");
+    }
 
     //clase para logear
     this->m_txtLog = DBG_NEW MyLogClass();
@@ -834,16 +841,10 @@ Servidor::Servidor(){
     this->Init_Key();
 
     this->modRerverseProxy = new ReverseProxy();
-
-    FD_ZERO(&this->fd_Master);
-
 }
 
 bool Servidor::m_Iniciar(){
-    WSACleanup();
-    if(WSAStartup(MAKEWORD(2,2), &wsa) != 0){
-        return false;
-    }
+   
 
     //TESTING
   /*  return true;
@@ -955,18 +956,19 @@ void Servidor::m_AgregarListener(const std::string _nuevo_nombre, int _puerto, c
     nuevo_listener.sckSocket = INVALID_SOCKET;
     nuevo_listener.strNombre = _nuevo_nombre;
     nuevo_listener.isRunning = false;
+    nuevo_listener.iPuerto = _puerto;
     memset(nuevo_listener.con_key, 0, AES_KEY_LEN+1);
 
     strncpy(nuevo_listener.con_key, _con_key, AES_KEY_LEN);
     //strncpy_s(&nuevo_listener.con_key[0], AES_KEY_LEN, _con_key, AES_KEY_LEN);
 
-    if (this->Init_Socket(nuevo_listener.sckSocket, _puerto, nuevo_listener.struct_Listener)) {
-        FD_SET(nuevo_listener.sckSocket, &this->fd_Master);
-        nuevo_listener.isRunning = true;
-        this->vc_Listeners.push_back(nuevo_listener);
-    }else {
-        wxMessageBox("Error: No se pudo crear el socket del nuevo listener");
-    }
+    //if (this->Init_Socket(nuevo_listener.sckSocket, _puerto, nuevo_listener.struct_Listener)) {
+    //FD_SET(nuevo_listener.sckSocket, &this->fd_Master);
+    //nuevo_listener.isRunning = true;
+    this->vc_Listeners.push_back(nuevo_listener);
+    //}else {
+    //    wxMessageBox("Error: No se pudo crear el socket del nuevo listener");
+    //}
 }
 
 void Servidor::m_BorrarListener(const std::string _nombre_listener) {
@@ -976,7 +978,12 @@ void Servidor::m_BorrarListener(const std::string _nombre_listener) {
     std::vector<Servidor_Listener>::iterator ntemp = this->vc_Listeners.begin();
     for (; ntemp != this->vc_Listeners.end(); ntemp++) {
         if(ntemp->strNombre == _nombre_listener) {
-            //Detener thread y cerrar sockets pendientes
+            //Cerrar socket, terminar conexiones???
+            if (ntemp->sckSocket != INVALID_SOCKET) {
+                closesocket(ntemp->sckSocket);
+                ntemp->sckSocket = INVALID_SOCKET;
+            }
+
             this->vc_Listeners.erase(ntemp);
             break;
         }
@@ -984,14 +991,23 @@ void Servidor::m_BorrarListener(const std::string _nombre_listener) {
 }
 
 void Servidor::m_ToggleListener(const std::string _nombre_listener) {
-    std::vector<Servidor_Listener>::iterator ntemp = this->vc_Listeners.begin();
-    for (; ntemp != this->vc_Listeners.end(); ntemp++) {
-        if (ntemp->strNombre == _nombre_listener) {
+    std::unique_lock<std::mutex> lock(this->mtx_listeners);
+    for (size_t i = 0; i < this->vc_Listeners.size(); i++) {
+        if (this->vc_Listeners[i].strNombre == _nombre_listener) {
             //Cambiar estado del listener
-            if (ntemp->isRunning) {
-
+            if (this->vc_Listeners[i].isRunning) {
+                closesocket(this->vc_Listeners[i].sckSocket);
+                this->vc_Listeners[i].sckSocket = INVALID_SOCKET;
+                this->vc_Listeners[i].isRunning = false;
             }else {
-
+                if (!this->Init_Socket(this->vc_Listeners[i].sckSocket, this->vc_Listeners[i].iPuerto, this->vc_Listeners[i].struct_Listener)) {
+                    DEBUG_MSG("[Servidor::m_ToggleListener] No se pudo iniciar el listener " + this->vc_Listeners[i].strNombre);
+                }else {
+                    this->vc_Listeners[i].isRunning = true;
+                    if (this->m_Running()) {
+                        this->Init_Listen(this->vc_Listeners[i].sckSocket);
+                    }
+                }
             }
             break;
         }
@@ -1012,11 +1028,33 @@ Servidor_Listener Servidor::m_ObtenerListener(SOCKET& _socket) {
 
 fd_set Servidor::m_CopiaFD() {
     std::unique_lock<std::mutex> lock(this->mtx_listeners);
-    return this->fd_Master;
+    fd_set temp_fd;
+    FD_ZERO(&temp_fd);
+    for (size_t i = 0; i < this->vc_Listeners.size(); i++) {
+        if (this->vc_Listeners[i].isRunning) {
+            FD_SET(this->vc_Listeners[i].sckSocket, &temp_fd);
+        }
+    }
+    return temp_fd;
+}
+
+std::vector<Listener_List_Data> Servidor::m_ListenerVectorCopy() {
+    std::unique_lock<std::mutex> lock(this->mtx_listeners);
+    std::vector<Listener_List_Data> vcOut;
+    for (size_t i = 0; i < this->vc_Listeners.size(); i++) {
+        Listener_List_Data ntemp;
+        ntemp.nombre = this->vc_Listeners[i].strNombre;
+        ntemp.clave_acceso = this->vc_Listeners[i].con_key;
+        ntemp.puerto = std::to_string(this->vc_Listeners[i].iPuerto);
+        ntemp.estado = this->vc_Listeners[i].isRunning ? "Habilitado" : "Deshabilitado";
+        vcOut.push_back(ntemp);
+    }
+
+    return vcOut;
 }
 
 void Servidor::m_CerrarConexiones() {
-    std::unique_lock<std::mutex> lock(vector_mutex); //<------------------------------- DBG_NEW
+    std::unique_lock<std::mutex> lock(vector_mutex);
     if (this->vc_Clientes.size() > 0) {
         for(int iIndex = 0; iIndex<int(this->vc_Clientes.size()); iIndex++){
             this->m_CerrarConexion(this->vc_Clientes[iIndex]->p_Cliente._sckCliente);
@@ -1073,11 +1111,19 @@ void Servidor::m_Escucha(){
     struct timeval timeout;
     timeout.tv_sec = 1;
     timeout.tv_usec = 0;
-    
-    //FD_SET(this->sckSocket, &this->fd_Master);
+
+    //Iniciar listen en todos los que esten habilitados
+    std::unique_lock<std::mutex> lock(this->mtx_listeners);
+    for (size_t i = 0; i < this->vc_Listeners.size(); i++) {
+        if (this->vc_Listeners[i].isRunning) {
+            this->Init_Listen(this->vc_Listeners[i].sckSocket);
+        }
+    }
+    lock.unlock();
+
     
     while(this->m_Running()){
-        fd_set fdMaster_copy = this->m_CopiaFD();
+        fd_set fdMaster_copy = this->m_CopiaFD();  // Se obtiene lista de sockets que estan corriendo
         SOCKET tempSocket = INVALID_SOCKET;
         if (fdMaster_copy.fd_count <= 0) {
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -1151,6 +1197,16 @@ void Servidor::m_Escucha(){
 
         }
     }
+
+    //Cerrar todos los listener
+    std::unique_lock<std::mutex> lock2(this->mtx_listeners);
+    for (Servidor_Listener& listener : this->vc_Listeners) {
+        if (listener.sckSocket != INVALID_SOCKET) {
+            closesocket(listener.sckSocket);
+            listener.sckSocket = INVALID_SOCKET;
+        }
+    }
+
     DEBUG_MSG("DONE Listen");
 }
 

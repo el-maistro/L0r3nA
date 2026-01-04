@@ -20,7 +20,7 @@ wxBEGIN_EVENT_TABLE(ListCtrlManagerListeners, wxListCtrl)
 wxEND_EVENT_TABLE()
 
 frameListeners::frameListeners(wxWindow* pParent)
-	:wxFrame(pParent, wxID_ANY, "Listeners", wxDefaultPosition, wxSize(430, 500)) {
+	:wxFrame(pParent, EnumIDSListeners::ID_Frame, "Listeners", wxDefaultPosition, wxSize(430, 500)) {
 
 	const char* cQuery = "CREATE TABLE IF NOT EXISTS \"listeners\" (\
 			\"nombre\"	TEXT,\
@@ -102,13 +102,6 @@ void frameListeners::OnCrearListener(wxCommandEvent& event) {
 				strCMD.append("');");
 
 				//Agregar listener al vector de servidor
-				/*Servidor_Listener nuevo_listener;
-				nuevo_listener.sckSocket = INVALID_SOCKET;
-				nuevo_listener.strNombre = strNombre;
-				nuevo_listener.isRunning = false;
-				strncpy_s(nuevo_listener.con_key, strPass.size(), strPass.c_str(), AES_KEY_LEN);
-				p_Servidor->m_AgregarListener(nuevo_listener);
-				*/
 				int iPuerto = atoi(strPuerto.c_str());
 				p_Servidor->m_AgregarListener(strNombre, iPuerto, strPass.c_str());
 
@@ -239,33 +232,51 @@ static int static_callback(void* objClass, int argc, char** argv, char** azColNa
 }
 
 int ListCtrlManagerListeners::Callback(int argc, char** argv, char** azColName) {
+	std::string strNombre = "";
+	int iPuerto = 0;
+	std::string strPass = "";
 	for (size_t i = 0; i < argc; i++) {
 		if (strncmp(azColName[i], "nombre", 5) == 0) {
 			this->InsertItem(this->iCount, wxString(argv[i]));
+			strNombre = wxString(argv[i]).ToStdString();
 		}else if (strncmp(azColName[i], "clave_acceso", 12) == 0) {
 			this->SetItem(this->iCount, 1, wxString(argv[i]));
+			strPass = wxString(argv[i]).ToStdString();
 		}else if (strncmp(azColName[i], "puerto", 6) == 0) {
 			this->SetItem(this->iCount, 2, wxString(argv[i]));
+			iPuerto = atoi(wxString(argv[i]).ToStdString().c_str());
 		}
-
-		//Estado del listener en servidor
 	}
+
+	this->SetItem(this->iCount, 3, "Deshabilitado");
+	p_Servidor->m_AgregarListener(strNombre, iPuerto, strPass.c_str());
+	this->iCount++;
 	return 0;
 }
 
 void ListCtrlManagerListeners::MostrarLista() {
 	this->DeleteAllItems();
-
+	int icount = 0;
 	//Obtener lista del vector
-	sqlite3* db;
-	this->iCount = 0;
-	char* zErrMsg = 0;
-	if (sqlite3_open(DB_FILE, &db) == SQLITE_OK) {
-		sqlite3_exec(db, "SELECT * FROM listeners;", static_callback, this, &zErrMsg);
+	std::vector<Listener_List_Data> vcData = p_Servidor->m_ListenerVectorCopy();
+	if (vcData.size() > 0) {
+		for (Listener_List_Data& ntemp : vcData) {
+			this->InsertItem(icount, ntemp.nombre);
+			this->SetItem(icount, 1, ntemp.clave_acceso);
+			this->SetItem(icount, 2, ntemp.puerto);
+			this->SetItem(icount++, 3, ntemp.estado);
+		}
+	}else {
+		//Obtener lista de sqlite db
+		sqlite3* db;
+		this->iCount = 0;
+		char* zErrMsg = 0;
+		if (sqlite3_open(DB_FILE, &db) == SQLITE_OK) {
+			sqlite3_exec(db, "SELECT * FROM listeners;", static_callback, this, &zErrMsg);
+		}
+		sqlite3_free(zErrMsg);
+		sqlite3_close(db);
 	}
-	sqlite3_free(zErrMsg);
-	sqlite3_close(db);
-	return;
 }
 
 void ListCtrlManagerListeners::OnRefrescar(wxCommandEvent& event) {
