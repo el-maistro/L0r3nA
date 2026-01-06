@@ -124,7 +124,22 @@ void frameListeners::OnGenerarPass(wxCommandEvent& event) {
 }
 
 void frameListeners::OnInputPuerto(wxCommandEvent& event) {
-	event.Skip();
+	wxString strTemp = "";
+	wxString strData = event.GetString();
+
+	for (size_t i = 0; i < strData.size(); i++) {
+		const char c = strData[i].GetValue();
+		if (c >= 48 && c <= 57) {
+			if (c == 48 && i == 0) {
+				continue;
+			}
+			strTemp.append(c);
+		}
+	}
+	//this->txtPuerto->SetValue(strTemp); envia EVT_TEXT nuevamente (loop infinito)
+	this->txtPuerto->ChangeValue(strTemp);
+	this->txtPuerto->SetInsertionPointEnd();
+
 }
 
 void frameListeners::Exec_SQL(const char* cCMD) {
