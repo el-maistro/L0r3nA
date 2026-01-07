@@ -37,7 +37,7 @@ int RandomID() {
 }
 
 std::string RandomPass(int iLongitud) {
-	const char* Map = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ{[]}/<>-!@$%^&*(.:;)abcdefghijklmnñopqrstuvwxyz1234567890_";
+	const char* Map = "ABCDEFGHIJKLMNOPQRSTUVWXYZ{[]}/<>-!@$%^&*(.:;)abcdefghijklmnopqrstuvwxyz1234567890_";
 	std::string strSalida = "";
 
 	std::random_device rd;

@@ -29,7 +29,7 @@ set(SRCS main.cpp
 )
 
 option(USE_TEST_MOD "Mod prueba" OFF)
-option(USE_DEBUG "Debug" OFF)
+option(USE_DEBUG "Debug" ON)
 
 option(USE_CAM "Mod Camara" OFF)
 option(USE_SCAN "Mod Escaner Red" OFF)
@@ -70,9 +70,10 @@ if(NOT USE_DEBUG)
             string(REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
         endif()
     endforeach()
+else()
+    message("Debug habilitado!!!")
+    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/SUBSYSTEM:CONSOLE")
 endif()
-
-#set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/SUBSYSTEM:CONSOLE")
 
 if(USE_INFO)
     message("SQLITE Version :v")
@@ -86,20 +87,11 @@ target_link_libraries(cliente PRIVATE mfuuid)
 
 target_include_directories(cliente PRIVATE ${CMAKE_BINARY_DIR})
 
-message(STATUS "SRV_ENC_KEY='${SRV_ENC_KEY}'")
-message(STATUS "SRV_ADDR='${SRV_ADDR}'")
-message(STATUS "SRV_ADDR_PORT='${SRV_ADDR_PORT}'")
-
-#target_compile_definitions(cliente PRIVATE __CUSTOM_HOST="\""${SRV_ADDR}"\"")
-#target_compile_definitions(cliente PRIVATE __CUSTOM_PORT="\""${SRV_ADDR_PORT}"\"")
-#target_compile_definitions(cliente PRIVATE __CUSTOM_ENCRYPTION_KEY="${SRV_ENC_KEY}")
-
 if(USE_TEST_MOD)
     target_compile_definitions(cliente PRIVATE TEST_MOD=1)
 endif()
 
 if(USE_DEBUG)
-    message("Debug habilitado!!!")
     target_compile_definitions(cliente PRIVATE ___DBG__=1)
 endif()
 
