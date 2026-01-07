@@ -44,8 +44,13 @@ option(USE_WM "Mod Admin Ventanas" OFF)
 option(USE_SHELL "Mod Shell Inversa" OFF)
 option(USE_PM "Mod Admin Procesos" OFF)
 
-option(SRV_ADDR "Direccion Servidor" "127.0.0.1")
-option(SRV_ADDR_PORT "Puerto de conexion" "65500")
+set(SRV_ADDR "127.0.0.1" CACHE STRING "Direccion Servidor")
+set(SRV_ADDR_PORT "65500" CACHE STRING "Puerto de conexion")
+set(SRV_ENC_KEY "eW1n" CACHE STRING "Llave de cifrado")
+
+configure_file(${CMAKE_SOURCE_DIR}/cliente/config.hpp.in
+                ${CMAKE_BINARY_DIR}/config.hpp
+                @ONLY)
 
 if(NOT USE_DEBUG)
     message("[!] Reduciendo dependencias...")
@@ -67,6 +72,8 @@ if(NOT USE_DEBUG)
     endforeach()
 endif()
 
+#set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/SUBSYSTEM:CONSOLE")
+
 if(USE_INFO)
     message("SQLITE Version :v")
     add_executable(cliente WIN32 ${SRCS} ${SRC_INFO_MOD})
@@ -77,8 +84,15 @@ endif()
 
 target_link_libraries(cliente PRIVATE mfuuid)
 
-target_compile_definitions(cliente PRIVATE __CUSTOM_HOST="\""${SRV_ADDR}"\"")
-target_compile_definitions(cliente PRIVATE __CUSTOM_PORT="\""${SRV_ADDR_PORT}"\"")
+target_include_directories(cliente PRIVATE ${CMAKE_BINARY_DIR})
+
+message(STATUS "SRV_ENC_KEY='${SRV_ENC_KEY}'")
+message(STATUS "SRV_ADDR='${SRV_ADDR}'")
+message(STATUS "SRV_ADDR_PORT='${SRV_ADDR_PORT}'")
+
+#target_compile_definitions(cliente PRIVATE __CUSTOM_HOST="\""${SRV_ADDR}"\"")
+#target_compile_definitions(cliente PRIVATE __CUSTOM_PORT="\""${SRV_ADDR_PORT}"\"")
+#target_compile_definitions(cliente PRIVATE __CUSTOM_ENCRYPTION_KEY="${SRV_ENC_KEY}")
 
 if(USE_TEST_MOD)
     target_compile_definitions(cliente PRIVATE TEST_MOD=1)

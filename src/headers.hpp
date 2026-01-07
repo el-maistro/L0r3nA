@@ -33,6 +33,7 @@
 #include<wx/statusbr.h>
 #include<wx/stattext.h>
 #include<wx/radiobox.h>
+#include<wx/combobox.h>
 #include<wx/sizer.h>
 #include<wx/image.h>
 #include<wx/wxhtml.h>
