@@ -30,8 +30,8 @@ void Print_Packet(const Paquete& paquete) {
 }
 
 void Cliente::Init_Key() {
-    const unsigned char t_key[AES_KEY_LEN] = __CUSTOM_ENCRYPTION_KEY;
-    for (unsigned char i = 0; i < AES_KEY_LEN; i++) {
+    const char* t_key = __CUSTOM_ENCRYPTION_KEY;
+    for (size_t i = 0; i < AES_KEY_LEN; i++) {
         this->bKey.push_back(t_key[i]);
     }
 }

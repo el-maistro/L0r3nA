@@ -12,9 +12,10 @@ wxBEGIN_EVENT_TABLE(panelEscaner, wxFrame)
 wxEND_EVENT_TABLE()
 
 
-panelEscaner::panelEscaner(wxWindow* pParent, SOCKET _sck, std::string _strID)
+panelEscaner::panelEscaner(wxWindow* pParent, SOCKET _sck, std::string _strID, ByteArray c_key)
 	: wxFrame(pParent, EnumEscanerIDS::Main_Window, "Escaner de red") {
 	this->sckSocket = _sck;
+	this->enc_key = c_key;
 	this->SetName(_strID + "-NET");
 	this->SetTitle("[" + _strID + "] Escaner de red");
 
@@ -190,7 +191,7 @@ void panelEscaner::OnScan(wxCommandEvent& event) {
 			break;
 	}
 	
-	int iSent = p_Servidor->cChunkSend(this->sckSocket, strHostBase.ToStdString().c_str(), strHostBase.size(), 0, false, iComando);
+	int iSent = p_Servidor->cChunkSend(this->sckSocket, strHostBase.ToStdString().c_str(), strHostBase.size(), 0, false, iComando, this->enc_key);
 	if (iSent > 0) {
 		this->MostrarCarga();
 	} // else error enviando el comando

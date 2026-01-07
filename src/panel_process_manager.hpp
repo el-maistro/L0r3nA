@@ -8,14 +8,14 @@ class ListCtrlManager2 : public wxListCtrl {
 	public:
 
 		ListCtrlManager2(wxWindow* parent, const wxWindowID id,
-			const wxPoint& pos, const wxSize& size, long style)
-			: wxListCtrl(parent, id, pos, size, style) {}
+			const wxPoint& pos, const wxSize& size, long style, ByteArray c_key)
+			: wxListCtrl(parent, id, pos, size, style), enc_key(c_key) {}
 
 		SOCKET sckCliente = INVALID_SOCKET;
 
 		void AgregarData(std::string strBuffer, std::string _strPID);
 	private:
-
+		ByteArray enc_key;
 		void OnRefrescar(wxCommandEvent& event);
 		void OnTerminarPID(wxCommandEvent& event);
 
@@ -30,13 +30,14 @@ class ListCtrlManager2 : public wxListCtrl {
 
 class panelProcessManager : public wxFrame {
 	public:
-		panelProcessManager(wxWindow* pParent, SOCKET sck, std::string _strID);
+		panelProcessManager(wxWindow* pParent, SOCKET sck, std::string _strID, ByteArray c_key);
 
 		void CrearListview();
 
 		ListCtrlManager2* listManager = nullptr;
 		
 	private:
+		ByteArray enc_key;
 		SOCKET sckCliente = INVALID_SOCKET;
 };
 

@@ -67,7 +67,9 @@ SOCKET ReverseProxy::m_Aceptar(SOCKET& _socket) {
 	return nSocket;
 }
 
-void ReverseProxy::InitHandler(int _puerto, SOCKET _socket) {
+void ReverseProxy::InitHandler(int _puerto, SOCKET _socket, ByteArray c_key) {
+	this->enc_key = c_key;
+
 	//_puerto = puerto por el cual se escuchara
 	//_socket = socket del cliente que se esta usando de proxy
 	this->addProxyRunning(_puerto, _socket);
@@ -215,7 +217,7 @@ int ReverseProxy::cSend(SOCKET& _socket, const char* _cbuffer, size_t _buff_size
 	memcpy(finalData.data(), _cbuffer, _buff_size);
 	memcpy(finalData.data() + _buff_size, &_id_conexion, sizeof(int));
 
-	return p_Servidor->cChunkSend(_socket, finalData.data(), nSize, 0, false, EnumComandos::PROXY_CMD);
+	return p_Servidor->cChunkSend(_socket, finalData.data(), nSize, 0, false, EnumComandos::PROXY_CMD, this->enc_key);
 }
 
 void ReverseProxy::procRespuestaProxy(int _recibido, const std::vector<char>& _vcdata) {

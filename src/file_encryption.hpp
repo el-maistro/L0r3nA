@@ -5,13 +5,14 @@
 
 class frameEncryption : public wxFrame {
 	public:
-		frameEncryption(wxWindow* pParent, std::string _strPath, std::string _strID, std::string _strIP, SOCKET _sck);
+		frameEncryption(wxWindow* pParent, std::string _strPath, std::string _strID, std::string _strIP, SOCKET _sck, ByteArray c_key);
 
 		void OnGenerarPass(wxCommandEvent& event);
 		void OnExecCrypt(wxCommandEvent& event);
 		void Exec_SQL(const char* cCMD);
 		
 	private:
+		ByteArray enc_key;
 		std::string p_strPath = "";
 		std::string strID     = "";
 		std::string strIP     = "";

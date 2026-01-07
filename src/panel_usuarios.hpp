@@ -16,11 +16,12 @@ struct ColumnData2 {
 
 class panelUsuarios : public wxPanel {
 	public:
-		panelUsuarios(wxWindow* pParent, SOCKET sckSocket, std::string _strID);
+		panelUsuarios(wxWindow* pParent, SOCKET sckSocket, std::string _strID, ByteArray c_key);
 
 		void m_ProcesarDatos(const std::string& strBuffer);
 
 	private:
+		ByteArray enc_key;
 		SOCKET sckSocket = INVALID_SOCKET;
 		wxListCtrl* list_ctrl = nullptr;
 

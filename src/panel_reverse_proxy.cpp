@@ -7,10 +7,11 @@ wxBEGIN_EVENT_TABLE(panelReverseProxy, wxFrame)
 	EVT_TOGGLEBUTTON(EnumIDSProxy::ID_BTN_Toggle, panelReverseProxy::OnToggle)
 wxEND_EVENT_TABLE()
 
-panelReverseProxy::panelReverseProxy(wxWindow* pParent, SOCKET sck, std::string _strID) :
+panelReverseProxy::panelReverseProxy(wxWindow* pParent, SOCKET sck, std::string _strID, ByteArray c_key) :
    wxFrame(pParent, EnumIDSProxy::ID_Main_Window, "[" + _strID + "] Proxy Inversa", wxDefaultPosition, wxSize(350, 150)) {
 	
 	this->sckSocket = sck;
+	this->enc_key = c_key;
 
 	wxStaticText* label1 = new wxStaticText(this, wxID_ANY, "Puerto:");
 	this->txtPort = new wxTextCtrl(this, EnumIDSProxy::ID_TXT_Port, "6666");
@@ -35,7 +36,7 @@ void panelReverseProxy::OnToggle(wxCommandEvent&) {
 		this->btnToggle->SetLabelText("Detener");
 		//Iniciar handler para escuchar en X puerto
 		
-		p_Servidor->modRerverseProxy->InitHandler(puerto_escucha, this->sckSocket);
+		p_Servidor->modRerverseProxy->InitHandler(puerto_escucha, this->sckSocket, this->enc_key);
 	}else {
 		//Detener servidor local para proxy
 		this->btnToggle->SetLabelText("Iniciar");

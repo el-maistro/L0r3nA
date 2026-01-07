@@ -10,12 +10,13 @@ wxBEGIN_EVENT_TABLE(frameEncryption, wxFrame)
 	EVT_BUTTON(EnumIDS::ID_FM_BTN_Crypt_Exec, frameEncryption::OnExecCrypt)
 wxEND_EVENT_TABLE()
 
-frameEncryption::frameEncryption(wxWindow* pParent, std::string _strPath, std::string _strID, std::string _strIP, SOCKET _sck) :
+frameEncryption::frameEncryption(wxWindow* pParent, std::string _strPath, std::string _strID, std::string _strIP, SOCKET _sck, ByteArray c_key) :
 	wxFrame(pParent, wxID_ANY, "Encriptar/Desencriptar Archivo", wxDefaultPosition, wxDefaultSize, wxDD_DEFAULT_STYLE) {
 	this->p_strPath = _strPath;
 	this->strID = _strID;
 	this->strIP = _strIP;
 	this->sckCliente = _sck;
+	this->enc_key = c_key;
 
 	this->radioEncrypt = new wxRadioButton(this, EnumIDS::ID_FM_Radio_Encriptar, "Encriptar", wxDefaultPosition, wxDefaultSize, wxRB_GROUP);
 	
@@ -90,7 +91,7 @@ void frameEncryption::OnExecCrypt(wxCommandEvent& event) {
 	strComando.append(1, CMD_DEL);
 	strComando += this->txt_Pass->GetValue();
 
-	p_Servidor->cChunkSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false, EnumComandos::FM_Crypt_Archivo);
+	p_Servidor->cChunkSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false, EnumComandos::FM_Crypt_Archivo, this->enc_key);
 
 	//Agregar a BD si es para cifrar
 	if (this->radioEncrypt->GetValue()) {

@@ -82,7 +82,7 @@ private:
 
 class frameRemoteDesktop : public wxFrame {
 	public:
-		frameRemoteDesktop(wxWindow* pParent, SOCKET sck, std::string strID);
+		frameRemoteDesktop(wxWindow* pParent, SOCKET sck, std::string strID, ByteArray c_key);
 		~frameRemoteDesktop() {
 			StopGDI();
 		}
@@ -104,6 +104,7 @@ class frameRemoteDesktop : public wxFrame {
 		Gdiplus::GdiplusStartupInput gdiplusStartupInput;
 		ULONG_PTR gdiplusToken;
 		std::mutex mtx_vector;
+		ByteArray enc_key;
 		bool isRemoteControl                       =     	  false;
 		bool isLive                                =          false;
 		SOCKET sckCliente                          = INVALID_SOCKET;

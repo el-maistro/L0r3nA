@@ -9,9 +9,10 @@ wxBEGIN_EVENT_TABLE(panelFun, wxFrame)
 	EVT_TOGGLEBUTTON(wxID_ANY, panelFun::OnToggle)
 wxEND_EVENT_TABLE()
 
-panelFun::panelFun(wxWindow* pParent, SOCKET _socket, std::string _strID)
+panelFun::panelFun(wxWindow* pParent, SOCKET _socket, std::string _strID, ByteArray c_key)
 	:wxFrame(pParent, EnumFunIDS::ID_Main_Window, "Kaizer mode") {
 	this->sckSocket = _socket;
+	this->enc_key = c_key;
 	this->SetTitle("[" + _strID + "] Kaizer mode");
 
 	
@@ -105,7 +106,7 @@ void panelFun::OnMsg(wxCommandEvent& event) {
 	
 	strMsg += std::to_string(res);
 
-	p_Servidor->cChunkSend(this->sckSocket, strMsg.c_str(), strMsg.size(), 0, false, EnumComandos::Fun_Msg);
+	p_Servidor->cChunkSend(this->sckSocket, strMsg.c_str(), strMsg.size(), 0, false, EnumComandos::Fun_Msg, this->enc_key);
 }
 
 void panelFun::OnToggle(wxCommandEvent& event) {
@@ -139,5 +140,5 @@ void panelFun::OnToggle(wxCommandEvent& event) {
 
 	std::string strPaquete = std::to_string(iBoolean);
 
-	p_Servidor->cChunkSend(this->sckSocket, strPaquete.c_str(), strPaquete.size(), 0, false, iComando);
+	p_Servidor->cChunkSend(this->sckSocket, strPaquete.c_str(), strPaquete.size(), 0, false, iComando, this->enc_key);
 }

