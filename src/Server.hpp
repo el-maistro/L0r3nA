@@ -329,11 +329,11 @@ class Servidor{
         //Socket wraps
         int send_all(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags);
         int recv_all(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags);
-        int cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, std::mutex*& mtx_obj, bool isBlock = false, int iTipoPaquete = 0);
+        int cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, std::mutex*& mtx_obj, bool isBlock, int iTipoPaquete, ByteArray& c_key);
         int cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, bool isBlock, DWORD* err_code, ByteArray& c_key);
         void m_SerializarPaquete(const Paquete& paquete, char* cBuffer);
         bool m_DeserializarPaquete(const char* cBuffer, Paquete& paquete, int bufer_size);
-        int cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock = false, int iTipoPaquete = 0);
+        int cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock, int iTipoPaquete, ByteArray& c_key);
         
 
         //AES 256
