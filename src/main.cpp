@@ -196,25 +196,29 @@ void MyFrame::CrearLista(long flags, bool withText){
     itemCol.SetAlign(wxLIST_FORMAT_CENTRE);
     p_Servidor->m_listCtrl->InsertColumn(0, itemCol);
 
+    itemCol.SetText("LISTENER");
+    itemCol.SetWidth(100);
+    p_Servidor->m_listCtrl->InsertColumn(1, itemCol);
+
     itemCol.SetText("USUARIO");
     itemCol.SetWidth(160);
-    p_Servidor->m_listCtrl->InsertColumn(1, itemCol);
+    p_Servidor->m_listCtrl->InsertColumn(2, itemCol);
 
     itemCol.SetText("IP");
     itemCol.SetWidth(120);
-    p_Servidor->m_listCtrl->InsertColumn(2, itemCol);
+    p_Servidor->m_listCtrl->InsertColumn(3, itemCol);
 
     itemCol.SetText("SO");
     itemCol.SetWidth(140);
-    p_Servidor->m_listCtrl->InsertColumn(3, itemCol);
+    p_Servidor->m_listCtrl->InsertColumn(4, itemCol);
 
     itemCol.SetText("PID");
     itemCol.SetWidth(60);
-    p_Servidor->m_listCtrl->InsertColumn(4, itemCol);
+    p_Servidor->m_listCtrl->InsertColumn(5, itemCol);
 
     itemCol.SetText("CPU");
     itemCol.SetWidth(200);
-    p_Servidor->m_listCtrl->InsertColumn(5, itemCol);
+    p_Servidor->m_listCtrl->InsertColumn(6, itemCol);
 
 }
 

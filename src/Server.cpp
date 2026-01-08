@@ -197,6 +197,7 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
         structTmp._strCpu = this->p_Cliente._strCpu = vcDatos[3];
         structTmp._id = this->p_Cliente._id;
         structTmp._strIp = this->p_Cliente._strIp;
+        structTmp._strListener = this->p_Cliente._strListener;
         this->p_Cliente._strRAM = vcDatos[4];
         this->p_Cliente._strIPS = vcDatos[5];
 
@@ -1225,11 +1226,12 @@ void Servidor::m_InsertarCliente(struct Cliente& p_Cliente){
     int iIndex = this->m_listCtrl->GetItemCount();
 
     this->m_listCtrl->InsertItem(iIndex, wxString(p_Cliente._id));
-    this->m_listCtrl->SetItem(iIndex, 1, wxString(p_Cliente._strUser));
-    this->m_listCtrl->SetItem(iIndex, 2, wxString(p_Cliente._strIp));
-    this->m_listCtrl->SetItem(iIndex, 3, wxString(p_Cliente._strSo));
-    this->m_listCtrl->SetItem(iIndex, 4, wxString(p_Cliente._strPID));
-    this->m_listCtrl->SetItem(iIndex, 5, wxString(p_Cliente._strCpu));
+    this->m_listCtrl->SetItem(iIndex, 1, wxString(p_Cliente._strListener));
+    this->m_listCtrl->SetItem(iIndex, 2, wxString(p_Cliente._strUser));
+    this->m_listCtrl->SetItem(iIndex, 3, wxString(p_Cliente._strIp));
+    this->m_listCtrl->SetItem(iIndex, 4, wxString(p_Cliente._strSo));
+    this->m_listCtrl->SetItem(iIndex, 5, wxString(p_Cliente._strPID));
+    this->m_listCtrl->SetItem(iIndex, 6, wxString(p_Cliente._strCpu));
 }
 
 void Servidor::m_RemoverClienteLista(std::string p_ID){
