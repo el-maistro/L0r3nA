@@ -29,7 +29,7 @@ set(SRCS main.cpp
 )
 
 option(USE_TEST_MOD "Mod prueba" OFF)
-option(USE_DEBUG "Debug" ON)
+option(USE_DEBUG "Debug" OFF)
 
 option(USE_CAM "Mod Camara" OFF)
 option(USE_SCAN "Mod Escaner Red" OFF)
