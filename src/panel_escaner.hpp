@@ -17,12 +17,13 @@ namespace EnumEscanerIDS {
 
 class panelEscaner : public wxFrame {
 	public:
-		panelEscaner(wxWindow* pParent, SOCKET _sck, std::string _strID);
+		panelEscaner(wxWindow* pParent, SOCKET _sck, std::string _strID, ByteArray c_key);
 
 		void AddData(const char* _buffer);
 		
 	private:
 		std::mutex mtx_carga;
+		ByteArray enc_key;
 		wxActivityIndicator* m_indicator = nullptr;
 		wxDataViewColumn* m_col;
 		wxTextCtrl* txtHostBase = nullptr;

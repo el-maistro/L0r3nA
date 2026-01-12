@@ -1,5 +1,6 @@
 #include "frame_crypt_db.hpp"
 #include "frame_builder.hpp"
+#include "frame_listener.hpp"
 #include "frame_main.hpp"
 #include "server.hpp"
 #include "headers.hpp"
@@ -16,6 +17,7 @@ wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
     EVT_MENU(EnumIDS::ID_Detener_Servidor, MyFrame::OnToggle)
     EVT_MENU(EnumIDS::ID_Mostrar_CryptDB, MyFrame::OnCryptDB)
     EVT_MENU(EnumIDS::ID_Builder, MyFrame::OnGenerarCliente)
+    EVT_MENU(EnumIDS::ID_Listeners, MyFrame::OnListeners)
     EVT_MENU(EnumIDS::ID_About, MyFrame::OnAbout)
     EVT_CLOSE(MyFrame::OnClose)
 wxEND_EVENT_TABLE()
@@ -108,6 +110,7 @@ MyFrame::MyFrame()
     p_server->Append(this->detenerMenu);
     p_server->Append(EnumIDS::ID_Mostrar_CryptDB, "Crypt DB");
     p_server->Append(EnumIDS::ID_Builder, "Generar Cliente");
+    p_server->Append(EnumIDS::ID_Listeners, "Listeners");
    
     wxMenu* p_help = new wxMenu();
     p_help->Append(EnumIDS::ID_About, "Acerca de")->SetBitmap(wxArtProvider::GetBitmapBundle(wxART_INFORMATION, wxART_MENU));
@@ -139,6 +142,11 @@ void MyFrame::OnGenerarCliente(wxCommandEvent& event) {
     FrameBuilder* nBuilder = new FrameBuilder(this);
 
     nBuilder->Show(true);
+}
+
+void MyFrame::OnListeners(wxCommandEvent& event) {
+    frameListeners* listeners = new frameListeners(this);
+    listeners->Show();
 }
 
 void MyFrame::OnToggle(wxCommandEvent& event) {
@@ -188,25 +196,29 @@ void MyFrame::CrearLista(long flags, bool withText){
     itemCol.SetAlign(wxLIST_FORMAT_CENTRE);
     p_Servidor->m_listCtrl->InsertColumn(0, itemCol);
 
+    itemCol.SetText("LISTENER");
+    itemCol.SetWidth(100);
+    p_Servidor->m_listCtrl->InsertColumn(1, itemCol);
+
     itemCol.SetText("USUARIO");
     itemCol.SetWidth(160);
-    p_Servidor->m_listCtrl->InsertColumn(1, itemCol);
+    p_Servidor->m_listCtrl->InsertColumn(2, itemCol);
 
     itemCol.SetText("IP");
     itemCol.SetWidth(120);
-    p_Servidor->m_listCtrl->InsertColumn(2, itemCol);
+    p_Servidor->m_listCtrl->InsertColumn(3, itemCol);
 
     itemCol.SetText("SO");
     itemCol.SetWidth(140);
-    p_Servidor->m_listCtrl->InsertColumn(3, itemCol);
+    p_Servidor->m_listCtrl->InsertColumn(4, itemCol);
 
     itemCol.SetText("PID");
     itemCol.SetWidth(60);
-    p_Servidor->m_listCtrl->InsertColumn(4, itemCol);
+    p_Servidor->m_listCtrl->InsertColumn(5, itemCol);
 
     itemCol.SetText("CPU");
     itemCol.SetWidth(200);
-    p_Servidor->m_listCtrl->InsertColumn(5, itemCol);
+    p_Servidor->m_listCtrl->InsertColumn(6, itemCol);
 
 }
 

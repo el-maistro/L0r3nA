@@ -10,6 +10,8 @@
 #include "mod_escaner.hpp"
 #include "misc.hpp"
 
+#include "config.hpp"
+
 template<typename OBJ>
 void DeleteObj(OBJ*& _obj) {
     if (_obj) {
@@ -28,10 +30,10 @@ void Print_Packet(const Paquete& paquete) {
 }
 
 void Cliente::Init_Key() {
-    for (unsigned char i = 0; i < AES_KEY_LEN; i++) {
-        this->bKey.push_back(this->t_key[i]);
+    const char* t_key = __CUSTOM_ENCRYPTION_KEY;
+    for (size_t i = 0; i < AES_KEY_LEN; i++) {
+        this->bKey.push_back(t_key[i]);
     }
-
 }
 
 void Cliente::CheckMyMods() {
@@ -211,12 +213,14 @@ Cliente::Cliente() {
 }
 
 void Cliente::TEST() {
-    //this->mod_dynamic->LoadNetProcs();
-    //this->mod_Scan = new mod_Escaner(this->mod_dynamic->IPHLAPI);
-    /*this->mod_dynamic->LoadWMProcs();
-    this->mod_AdminVen = new mod_AdminVentanas(this->mod_dynamic->USER32_WM);
-    this->mod_AdminVen->m_ListaVentanas();*/
-    this->CheckMyMods();
+
+    //const char* ctemp = __CUSTOM_ENCRYPTION_KEY;
+    //memset(this->t_key2, '\0', AES_KEY_LEN);
+    //strncpy(this->t_key2, ctemp, AES_KEY_LEN);
+    //memcpy_s(this->t_key2, AES_KEY_LEN, ctemp, AES_KEY_LEN);
+    //std::cout <<"ENC_KEY="<< this->t_key2 << "\n";
+    //std::cout <<"ENC_KEY="<< ctemp << "\n";
+    //this->CheckMyMods();
     return;
 }
 

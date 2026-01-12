@@ -33,6 +33,7 @@
 #include<wx/statusbr.h>
 #include<wx/stattext.h>
 #include<wx/radiobox.h>
+#include<wx/combobox.h>
 #include<wx/sizer.h>
 #include<wx/image.h>
 #include<wx/wxhtml.h>
@@ -78,7 +79,7 @@
 #define AES_KEY_LEN 32
 #define CLI_TIMEOUT_MILSECS 100
 #define FRAME_CLIENT_SIZE_WIDTH 600
-#define DB_FILE "./crypt_.db"
+#define DB_FILE "./l0r3na_data.db"
 #define CMD_DEL '~'
 #define PAQUETE_BUFFER_SIZE 1024 * 5
 #define CHUNK_FILE_TRANSFER_SIZE 1024 * 10
@@ -159,6 +160,7 @@ namespace EnumIDS {
         ID_Mostrar_Transfers,
         ID_Mostrar_CryptDB,
         ID_Builder,
+        ID_Listeners,
         ID_About,
         ID_CryptDB_Refrescar,
         ID_CryptDB_Copiar,

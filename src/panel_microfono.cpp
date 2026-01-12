@@ -11,11 +11,12 @@ wxBEGIN_EVENT_TABLE(panelMicrophone, wxFrame)
 wxEND_EVENT_TABLE()
 
 //Microfono
-panelMicrophone::panelMicrophone(wxWindow* pParent, SOCKET sck_socket, std::string strID) :
+panelMicrophone::panelMicrophone(wxWindow* pParent, SOCKET sck_socket, std::string strID, ByteArray c_key) :
     wxFrame(pParent, EnumIDS::ID_Panel_Microphone, "[" + strID + "] Monitor microfono", wxDefaultPosition, wxDefaultSize) {
 
     this->SetName(strID + "-mic");
     this->sckSocket = sck_socket;
+    this->enc_key = c_key;
     this->strID = strID;
 
     wxBoxSizer* main_sizer = new wxBoxSizer(wxVERTICAL);
@@ -76,7 +77,7 @@ void panelMicrophone::OnDetener(wxCommandEvent& event) {
 }
 
 void panelMicrophone::EnviarComando(std::string pComando, int iComando) {
-    p_Servidor->cChunkSend(this->sckSocket, pComando.c_str(), pComando.size() + 1, 0, false, iComando);
+    p_Servidor->cChunkSend(this->sckSocket, pComando.c_str(), pComando.size() + 1, 0, false, iComando, this->enc_key);
 }
 
 void panelMicrophone::ProcesarLista(const char*& pBuffer) {

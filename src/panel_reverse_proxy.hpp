@@ -13,8 +13,9 @@ namespace EnumIDSProxy {
 
 class panelReverseProxy : public wxFrame {
 	public:
-		panelReverseProxy(wxWindow* pParent, SOCKET sck, std::string _strID);
+		panelReverseProxy(wxWindow* pParent, SOCKET sck, std::string _strID, ByteArray c_key);
 	private:
+		ByteArray enc_key;
 		wxToggleButton* btnToggle = nullptr;
 		wxTextCtrl* txtPort = nullptr;
 

@@ -18,10 +18,11 @@ wxBEGIN_EVENT_TABLE(frameRemoteDesktop, wxFrame)
 	EVT_CHECKBOX(EnumRemoteDesktop::ID_CHK_Vmouse, frameRemoteDesktop::OnCheckVmouse)
 wxEND_EVENT_TABLE()
 
-frameRemoteDesktop::frameRemoteDesktop(wxWindow* pParent, SOCKET sck, std::string strID) :
+frameRemoteDesktop::frameRemoteDesktop(wxWindow* pParent, SOCKET sck, std::string strID, ByteArray c_key) :
 	wxFrame(pParent, EnumRemoteDesktop::ID_Main_Frame, "Escritorio Remoto", wxDefaultPosition, wxSize(900, 500)) {
 	
 	this->sckCliente = sck;
+	this->enc_key = c_key;
 	this->SetName(strID + "-RD");
 	this->SetTitle("[" + strID + "] Escritorio Remoto");
 
@@ -92,7 +93,7 @@ void frameRemoteDesktop::OnSingle(wxCommandEvent&) {
 			std::string strPaquete = this->strQuality;
 			strPaquete.append(1, '|');
 			strPaquete += std::to_string(monitor_index);
-			p_Servidor->cChunkSend(this->sckCliente, strPaquete.c_str(), strPaquete.size(), 0, true, EnumComandos::RD_Single);
+			p_Servidor->cChunkSend(this->sckCliente, strPaquete.c_str(), strPaquete.size(), 0, true, EnumComandos::RD_Single, this->enc_key);
 		}
 		else {
 			wxMessageBox("Monitor no seleccionado", "Error");
@@ -101,7 +102,7 @@ void frameRemoteDesktop::OnSingle(wxCommandEvent&) {
 }
 
 void frameRemoteDesktop::OnObtenerLista(wxCommandEvent&) {
-	p_Servidor->cChunkSend(this->sckCliente, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, false, EnumComandos::RD_Lista);
+	p_Servidor->cChunkSend(this->sckCliente, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, false, EnumComandos::RD_Lista, this->enc_key);
 }
 
 void frameRemoteDesktop::OnStart(wxCommandEvent&) {
@@ -109,7 +110,7 @@ void frameRemoteDesktop::OnStart(wxCommandEvent&) {
 	if (monitor_index != wxNOT_FOUND) {
 		std::string strPaquete = "32|";
 		strPaquete += std::to_string(monitor_index);
-		p_Servidor->cChunkSend(this->sckCliente, strPaquete.c_str(), strPaquete.size(), 0, true, EnumComandos::RD_Start);
+		p_Servidor->cChunkSend(this->sckCliente, strPaquete.c_str(), strPaquete.size(), 0, true, EnumComandos::RD_Start, this->enc_key);
 		this->isLive = true;
 	}else {
 		wxMessageBox("Monitor no seleccionado", "Error");
@@ -117,7 +118,7 @@ void frameRemoteDesktop::OnStart(wxCommandEvent&) {
 }
 
 void frameRemoteDesktop::OnStop(wxCommandEvent&) {
-	p_Servidor->cChunkSend(this->sckCliente, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, false, EnumComandos::RD_Stop);
+	p_Servidor->cChunkSend(this->sckCliente, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, false, EnumComandos::RD_Stop, this->enc_key);
 	this->isLive = false;
 }
 
@@ -175,7 +176,7 @@ void frameRemoteDesktop::OnComboChange(wxCommandEvent& event) {
 	}
 	//si esta live actualizar, de lo contrario solo variable local
 	if (this->isLive) {
-		p_Servidor->cChunkSend(this->sckCliente, this->strQuality.c_str(), this->strQuality.size(), 0, false, EnumComandos::RD_Update_Q);
+		p_Servidor->cChunkSend(this->sckCliente, this->strQuality.c_str(), this->strQuality.size(), 0, false, EnumComandos::RD_Update_Q, this->enc_key);
 	}
 	event.Skip();
 }
@@ -241,12 +242,12 @@ void frameRemoteDesktop::ProcesarLista(const char*& pBuffer) {
 
 void frameRemoteDesktop::OnCheckVmouse(wxCommandEvent& event) {
 	bool isChecked = event.IsChecked();
-	p_Servidor->cChunkSend(this->sckCliente, (isChecked ? "1" : "0"), 1, 0, false, EnumComandos::RD_Update_Vmouse);
+	p_Servidor->cChunkSend(this->sckCliente, (isChecked ? "1" : "0"), 1, 0, false, EnumComandos::RD_Update_Vmouse, this->enc_key);
 	event.Skip();
 }
 
 void frameRemoteDesktop::Onclose(wxCloseEvent&) {
-	p_Servidor->cChunkSend(this->sckCliente, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, false, EnumComandos::RD_Stop);
+	p_Servidor->cChunkSend(this->sckCliente, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, false, EnumComandos::RD_Stop, this->enc_key);
 	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 	Destroy();
 }
@@ -322,7 +323,7 @@ void frameRemoteDesktop::EnviarEventoMouse(wxEventType evento, int x, int y, boo
 			strComando.append(1, CMD_DEL);
 			strComando += std::to_string(mouse_action);
 			
-			p_Servidor->cChunkSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, true, EnumComandos::RD_Send_Click);
+			p_Servidor->cChunkSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, true, EnumComandos::RD_Send_Click, this->enc_key);
 
 		}else {
 			//Esto no deberia de pasar
@@ -341,7 +342,7 @@ void frameRemoteDesktop::EnviarEventoTeclado(wxEventType evento, u_int key) {
 		strComando.append(1, CMD_DEL);
 		strComando.append(1, isDown ? '0' : '1');
 		
-		p_Servidor->cChunkSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, true, EnumComandos::RD_Send_Teclado);
+		p_Servidor->cChunkSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, true, EnumComandos::RD_Send_Teclado, this->enc_key);
 	}
 }
 

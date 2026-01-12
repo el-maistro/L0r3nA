@@ -8,11 +8,12 @@ wxBEGIN_EVENT_TABLE(panelUsuarios, wxPanel)
 	EVT_BUTTON(EnumPanelUsuarios::BTN_Refrescar, panelUsuarios::OnRefrescar)
 wxEND_EVENT_TABLE()
 
-panelUsuarios::panelUsuarios(wxWindow* pParent, SOCKET _sckSocket, std::string _strID)
+panelUsuarios::panelUsuarios(wxWindow* pParent, SOCKET _sckSocket, std::string _strID, ByteArray c_key)
 	: wxPanel(pParent, EnumIDS::ID_Panel_Info_Usuarios) {
 	
 	this->SetName(_strID + "-INF-USR");
 	this->sckSocket = _sckSocket;
+	this->enc_key = c_key;
 
 	wxButton* btn_refrescar = new wxButton(this, EnumPanelUsuarios::BTN_Refrescar, "Refrescar lista de usuarios");
 	this->CrearListCtrl();
@@ -68,7 +69,7 @@ void panelUsuarios::CrearListCtrl() {
 }
 
 void panelUsuarios::OnRefrescar(wxCommandEvent&) {
-	p_Servidor->cChunkSend(this->sckSocket, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, true, EnumComandos::INF_Users);
+	p_Servidor->cChunkSend(this->sckSocket, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, true, EnumComandos::INF_Users, this->enc_key);
 }
 
 void panelUsuarios::m_ProcesarDatos(const std::string& strBuffer) {

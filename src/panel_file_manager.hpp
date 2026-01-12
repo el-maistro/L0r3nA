@@ -16,7 +16,7 @@ class panelFileManager: public wxFrame{
 		void EnviarComando(std::string pComando, int iComando);
 		void EnviarArchivo(const std::string cPath, const char* rPath, std::string strCliente);
 
-		panelFileManager(wxWindow* pParent, SOCKET sck, std::string _strID, std::string _strIP);
+		panelFileManager(wxWindow* pParent, SOCKET sck, std::string _strID, std::string _strIP, ByteArray c_key);
 
 		//Eventos
 		void OnToolBarClick(wxCommandEvent& event);
@@ -26,6 +26,8 @@ class panelFileManager: public wxFrame{
 		std::vector<wxString> c_RutaActual;
 		
 		void ActualizarRuta(const char*& pBuffer);
+
+		ByteArray enc_key;
 
 	private:
 		std::string strID = "";

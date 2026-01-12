@@ -76,6 +76,8 @@ struct Cliente{
     std::string _strPID;
     std::string _strRAM;
     std::string _strIPS;
+    std::string _strListener;
+    ByteArray c_key;
     char mods[MODS_SIZE];
     bool _isBusy = false;
     bool _isRunningShell = false;
@@ -86,6 +88,22 @@ struct ClientConInfo{
     SOCKET _sckSocket;
     std::string _strPuerto;
     std::string _strIp;
+};
+
+struct Servidor_Listener {
+    SOCKET sckSocket;
+    struct sockaddr_in struct_Listener;
+    std::string strNombre;
+    int iPuerto = 0;
+    bool isRunning = false;
+    char con_key[AES_KEY_LEN+1]; //Llave a usar en la conexion
+};
+
+struct Listener_List_Data {
+    std::string nombre;
+    std::string clave_acceso;
+    std::string puerto;
+    std::string estado;
 };
 
 namespace LogType{
@@ -260,7 +278,10 @@ class Servidor{
 
         ByteArray bKey;
         void Init_Key();
-        int p_PingTime = 1000 * 60; //60 segundos
+        bool Init_Socket(SOCKET& _socket, u_int _puerto, struct sockaddr_in& _struct_listener);
+        void Init_Listen(SOCKET& _socket);
+        
+        std::vector<Servidor_Listener> vc_Listeners;
         
     public:
         Servidor();
@@ -269,7 +290,8 @@ class Servidor{
         std::mutex p_mutex;
         std::mutex p_transfers;
         std::mutex count_mutex;
-        std::mutex mtx_map;   //mutex para mapa de mutexes
+        std::mutex mtx_map;       //mutex para mapa de mutexes
+        std::mutex mtx_listeners; 
 
         std::map<std::string, struct TransferStatus> vcTransferencias;
 		std::map<SOCKET, std::shared_ptr<std::mutex>> vcMutex; //Mapa que almacena mutex para cada socket
@@ -307,22 +329,30 @@ class Servidor{
         //Socket wraps
         int send_all(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags);
         int recv_all(SOCKET& pSocket, char* pBuffer, int pLen, int pFlags);
-        int cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, std::mutex*& mtx_obj, bool isBlock = false, int iTipoPaquete = 0);
-        int cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, bool isBlock, DWORD* err_code);
+        int cSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, std::mutex*& mtx_obj, bool isBlock, int iTipoPaquete, ByteArray& c_key);
+        int cRecv(SOCKET& pSocket, std::vector<char>& pBuffer, int pFlags, bool isBlock, DWORD* err_code, ByteArray& c_key);
         void m_SerializarPaquete(const Paquete& paquete, char* cBuffer);
         bool m_DeserializarPaquete(const char* cBuffer, Paquete& paquete, int bufer_size);
-        int cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock = false, int iTipoPaquete = 0);
+        int cChunkSend(SOCKET& pSocket, const char* pBuffer, int pLen, int pFlags, bool isBlock, int iTipoPaquete, ByteArray& c_key);
         
 
         //AES 256
-        ByteArray bDec(const unsigned char* pInput, size_t pLen);
-        ByteArray bEnc(const unsigned char* pInput, size_t pLen);
+        ByteArray bDec(const unsigned char* pInput, size_t pLen, ByteArray c_key);
+        ByteArray bEnc(const unsigned char* pInput, size_t pLen, ByteArray c_key);
 
         //Server
         bool   m_Iniciar();
-        ClientConInfo m_Aceptar();
+        ClientConInfo m_Aceptar(SOCKET& _socket);
         void m_CerrarConexiones();
         void m_CerrarConexion(SOCKET pSocket);
+
+        //Listeners
+        void m_AgregarListener(const std::string _nuevo_nombre, int _puerto, const char* _con_key);
+        void m_BorrarListener(const std::string _nombre_listener);
+        void m_ToggleListener(const std::string _nombre_listener);
+        Servidor_Listener m_ObtenerListener(SOCKET& _socket);
+        fd_set m_CopiaFD();
+        std::vector<Listener_List_Data> m_ListenerVectorCopy();
 
         //Mapa mutex
         std::shared_ptr<std::mutex> m_GetMutex(SOCKET pSocket);

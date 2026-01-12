@@ -9,7 +9,7 @@ class ReverseProxy {
 	public:
 		ReverseProxy();
 
-		void InitHandler(int _puerto, SOCKET _socket); // invocar thread para esperar por peticiones locales en X puerto
+		void InitHandler(int _puerto, SOCKET _socket, ByteArray c_key); // invocar thread para esperar por peticiones locales en X puerto
 		void StopHandler(int _puerto);
 
 		void procRespuestaProxy(int _recibido, const std::vector<char>& _vcdata);
@@ -17,6 +17,7 @@ class ReverseProxy {
 		//Mapa global que almacena cada socket
 		std::map<int, SOCKET> map_sockets;
 		std::map<int, bool> map_is_proxy_running;
+		ByteArray enc_key;
 
 		std::mutex mtx_MapSockets;
 		std::mutex mtx_MapProxyRunning;

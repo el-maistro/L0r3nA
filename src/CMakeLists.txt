@@ -34,6 +34,7 @@ set(SRCS main.cpp
          panel_escaner.cpp
          panel_fun.cpp
          frame_crypt_db.cpp
+         frame_listener.cpp
          aes256/aes256.cpp
          notify.cpp
          base64/base64.cpp

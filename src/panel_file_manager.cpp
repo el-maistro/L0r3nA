@@ -26,13 +26,14 @@ wxBEGIN_EVENT_TABLE(ListCtrlManager, wxListCtrl)
 	EVT_LIST_ITEM_ACTIVATED(EnumIDS::ID_Panel_FM_List, ListCtrlManager::OnActivated)
 wxEND_EVENT_TABLE()
 
-panelFileManager::panelFileManager(wxWindow* pParent, SOCKET sck, std::string _strID, std::string _strIP) :
+panelFileManager::panelFileManager(wxWindow* pParent, SOCKET sck, std::string _strID, std::string _strIP, ByteArray c_key) :
 	wxFrame(pParent, wxID_ANY, "[" + _strID + "] Admin archivos", wxDefaultPosition, wxDefaultSize){
 	
 	this->SetName(_strID + "-FM");
 	this->sckCliente = sck;
 	this->strID = _strID;
 	this->strIP = _strIP;
+	this->enc_key = c_key;
 	
 	this->p_ToolBar = new wxToolBar(this, wxID_ANY, wxDefaultPosition, wxSize(30, wxDefaultSize.GetHeight()), wxTB_VERTICAL | wxTB_LEFT);
 	
@@ -147,7 +148,7 @@ void panelFileManager::CrearLista() {
 }
 
 void panelFileManager::EnviarComando(std::string pComando, int iComando) {
-	p_Servidor->cChunkSend(this->sckCliente, pComando.c_str(), pComando.size(), 0, false, iComando);
+	p_Servidor->cChunkSend(this->sckCliente, pComando.c_str(), pComando.size(), 0, false, iComando, this->enc_key);
 }
 
 void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath, std::string strCliente) {
@@ -189,7 +190,7 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 	strComando += strID;
 	
 	//Enviar ruta remota y tamaño de archivo
-	p_Servidor->cChunkSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, true, EnumComandos::FM_Descargar_Archivo_Init);
+	p_Servidor->cChunkSend(this->sckCliente, strComando.c_str(), strComando.size(), 0, true, EnumComandos::FM_Descargar_Archivo_Init, this->enc_key);
 	
 	int iBytesLeidos = 0;
 
@@ -211,7 +212,7 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 		iBytesLeidos = localFile.gcount();
 		if (iBytesLeidos > 0) {
 			iBytesLeidos += iHeaderSize;
-			int iEnviado = p_Servidor->cChunkSend(this->sckCliente, nSendBuffer.data(), iBytesLeidos, 0, false, EnumComandos::FM_Descargar_Archivo_Recibir);
+			int iEnviado = p_Servidor->cChunkSend(this->sckCliente, nSendBuffer.data(), iBytesLeidos, 0, false, EnumComandos::FM_Descargar_Archivo_Recibir, this->enc_key);
 			uBytesEnviados += iEnviado;
 			if (iEnviado == SOCKET_ERROR || iEnviado == WSAECONNRESET) {
 				break;
@@ -238,7 +239,7 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 
 	//Ya se envio todo, cerrar el archivo
 	std::this_thread::sleep_for(std::chrono::milliseconds(500));
-	p_Servidor->cChunkSend(this->sckCliente, strID.c_str(), strID.size(), 0, true, EnumComandos::FM_Descargar_Archivo_End);
+	p_Servidor->cChunkSend(this->sckCliente, strID.c_str(), strID.size(), 0, true, EnumComandos::FM_Descargar_Archivo_End, this->enc_key);
 }
 
 void panelFileManager::ActualizarRuta(const char*& pBuffer) {
@@ -375,7 +376,7 @@ void ListCtrlManager::OnRenombrarArchivo(wxCommandEvent& event) {
 }
 
 void ListCtrlManager::OnEncriptarArchivo(wxCommandEvent& event) {
-	frameEncryption* frm_crypt = new frameEncryption(this, this->ArchivoSeleccionado(), this->strID, this->strIP, this->sckCliente);
+	frameEncryption* frm_crypt = new frameEncryption(this, this->ArchivoSeleccionado(), this->strID, this->strIP, this->sckCliente, this->itemp->enc_key);
 	frm_crypt->Show(true);
 }
 
