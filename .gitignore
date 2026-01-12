@@ -8,6 +8,7 @@ src/out*
 src/zlib
 src/sqlite3
 src/wxWidgets
+src/config.hpp.in
 .vs*
 *.json
 *.zip

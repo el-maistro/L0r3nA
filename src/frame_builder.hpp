@@ -61,7 +61,7 @@ private:
 	void RefrescarLista();
 
 	void thLeerShell(HANDLE hPipe);
-	void thLeerShell2(std::string strCmd);
+	void thLeerShell2(std::string strCmd, std::string strFolderName);
 
 	wxDECLARE_EVENT_TABLE();
 };

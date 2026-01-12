@@ -13,6 +13,15 @@ wxBEGIN_EVENT_TABLE(FrameBuilder, wxFrame)
 	EVT_TEXT(EnumBuilderIDS::CMB_Listeners, FrameBuilder::OnCambioListener)
 wxEND_EVENT_TABLE()
 
+std::string CmdPath(){
+	char szTemp[MAX_PATH];
+	std::string strOut = "C:\\Windows\\System32\\cmd.exe";
+	if (::GetEnvironmentVariableA("COMSPEC", szTemp, sizeof(szTemp)) > 0) {
+		strOut = szTemp;
+	}
+	return strOut;
+}
+
 FrameBuilder::FrameBuilder(wxWindow* pParent)
 : wxFrame(pParent, wxID_ANY, "Generar cliente", wxDefaultPosition, wxDefaultSize){
 
@@ -23,7 +32,7 @@ FrameBuilder::FrameBuilder(wxWindow* pParent)
 	wxBoxSizer* boxHost = new wxBoxSizer(wxHORIZONTAL);
 	this->txtHost = new wxTextCtrl(pnl_Main, wxID_ANY, "127.0.0.1", wxDefaultPosition, wxDefaultSize);
 	this->txtPort = new wxTextCtrl(pnl_Main, wxID_ANY, "65500", wxDefaultPosition, wxDefaultSize);
-	this->txtOutput = new wxTextCtrl(pnl_Main, wxID_ANY, "...", wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE | wxTE_READONLY | wxHSCROLL);
+	this->txtOutput = new wxTextCtrl(this, wxID_ANY, "...", wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE | wxTE_READONLY | wxHSCROLL);
 
 	boxHost->AddSpacer(10);
 	boxHost->Add(new wxStaticText(pnl_Main, wxID_ANY, "Host:"));	
@@ -46,7 +55,7 @@ FrameBuilder::FrameBuilder(wxWindow* pParent)
 
 	boxListener->AddSpacer(10);
 	boxListener->Add(new wxStaticText(pnl_Main, wxID_ANY, "Listener:"), 0);
-	boxListener->Add(this->cmbListeners, 1, wxALL | wxEXPAND);
+	boxListener->Add(this->cmbListeners, 1, wxALL);
 	boxListener->Add(this->btnRefListeners, 0);
 	boxListener->AddSpacer(10);
 	
@@ -55,8 +64,7 @@ FrameBuilder::FrameBuilder(wxWindow* pParent)
 	box_Server->AddSpacer(10);
 	box_Server->Add(boxListener, 1, wxALL | wxEXPAND);
 	box_Server->AddSpacer(10);
-	box_Server->Add(this->txtOutput, 1, wxALL | wxEXPAND);
-
+	
 	pnl_Main->SetSizer(box_Server);
 
 
@@ -108,7 +116,9 @@ FrameBuilder::FrameBuilder(wxWindow* pParent)
 	main_sizer->Add(pnlMods, 1, wxALL | wxEXPAND);
 	main_sizer->AddSpacer(10);
 	main_sizer->Add(this->btnGenerar, 0, wxALL | wxEXPAND);
-	main_sizer->AddSpacer(10);
+	main_sizer->AddSpacer(15);
+	main_sizer->Add(this->txtOutput, 1, wxALL | wxEXPAND);
+	main_sizer->AddSpacer(5);
 
 	this->SetSizerAndFit(main_sizer);
 
@@ -120,6 +130,8 @@ FrameBuilder::FrameBuilder(wxWindow* pParent)
 }
 
 void FrameBuilder::OnGenerarCliente(wxCommandEvent& event) {
+
+	this->btnGenerar->Enable(false);
 
 	if (this->strClave == "" || this->cmbListeners->GetValue() == "") {
 		wxMessageBox("No se ha seleccionado un listener!!!", "Builder", wxICON_WARNING);
@@ -133,7 +145,7 @@ void FrameBuilder::OnGenerarCliente(wxCommandEvent& event) {
 		return;
 	}
 
-	wxString strCmd = "cmd.exe /c cmake --fresh -B ";
+	wxString strCmd = "/c cmake --fresh -B ";
 	strCmd.append(strNewfolder);
 	strCmd.append(1, ' ');
 		
@@ -217,12 +229,10 @@ void FrameBuilder::OnGenerarCliente(wxCommandEvent& event) {
 	strCmd.append(strRutaSource);
 	strCmd.append(" && cmake --build ");
 	strCmd.append(strNewfolder);
-	//strCmd.append(" --config Release && ");
-	strCmd.append(" --config Release");
-	//strCmd.append("xcopy " + strNewfolder + "\\Release\\cliente.exe .\\ &&");
-	//strCmd.append("xcopy " + strNewfolder + "\\Release\\cliente.exe .\\");
-	//strCmd.append("del /S /Q " + strNewfolder + "\\* .* && ");
-	//strCmd.append("rmdir /S /Q .\\" + strNewfolder + "\\.");
+	strCmd.append(" --config Release && ");
+	strCmd.append("xcopy " + strNewfolder + "\\Release\\cliente.exe .\\ && ");
+	strCmd.append("del /S /Q " + strNewfolder + "\\* .* && ");
+	strCmd.append("rmdir /S /Q .\\" + strNewfolder + "\\.");
 
 	this->stdinRd = this->stdinWr = this->stdoutRd = this->stdoutWr = nullptr;
 	SECURITY_ATTRIBUTES sa;
@@ -249,7 +259,7 @@ void FrameBuilder::OnGenerarCliente(wxCommandEvent& event) {
 
 	ZeroMemory(&this->pi, sizeof(this->pi));
 
-	if (!::CreateProcessA(nullptr, (LPSTR)strCmd.ToStdString().c_str(), nullptr, nullptr, true, CREATE_NEW_CONSOLE, nullptr, nullptr, &this->si, &this->pi)) {
+	if (!::CreateProcessA(CmdPath().c_str(), (LPSTR)strCmd.ToStdString().c_str(), nullptr, nullptr, true, CREATE_NEW_CONSOLE, nullptr, nullptr, &this->si, &this->pi)) {
 		int err = GetLastError();
 		wxMessageBox("Error creando el proceso del builder", "Builder", wxICON_ERROR);
 		return;
@@ -257,17 +267,10 @@ void FrameBuilder::OnGenerarCliente(wxCommandEvent& event) {
 
 	this->tRead = std::thread(&FrameBuilder::thLeerShell, this, this->stdoutRd);
 	this->tRead.detach();
-	
-	/*if (!::CreateDirectoryA(strNewfolder, NULL)) {
-		int err = GetLastError();
-		wxMessageBox("[2] No se pudo crear el directorio " + strNewfolder, "Builder", wxICON_ERROR);
-		return;
-	}*/
 
-	strCmd = "xcopy .\\cliente.exe .\\" + strNewfolder + "\\ && del /Q /F .\\cliente.exe";
-	this->tRead2 = std::thread(&FrameBuilder::thLeerShell2, this, std::string(strCmd.c_str()));
+	strCmd = "/c xcopy .\\cliente.exe .\\" + strNewfolder + "\\ && del /Q /F .\\cliente.exe && echo Arrancandonga...";
+	this->tRead2 = std::thread(&FrameBuilder::thLeerShell2, this, std::string(strCmd.c_str()), std::string(strNewfolder.ToStdString().c_str()));
 	this->tRead2.detach();
-	//wxMessageBox("Cliente listo en " + strNewfolder, "Builder");
 }
 
 void FrameBuilder::OnRefListeners(wxCommandEvent& event) {
@@ -295,8 +298,14 @@ void FrameBuilder::RefrescarLista() {
 	if (this->vc_listeners.size() == 0) {
 		//Spawn frame de listeners para crear uno
 		frameListeners* frame_listener = new frameListeners(this);
-		frame_listener->Show();
-		return;
+		if (frame_listener) {
+			this->vc_listeners = p_Servidor->m_ListenerVectorCopy();
+			frame_listener->Destroy();
+			if (frame_listener) {
+				delete frame_listener;
+				frame_listener = nullptr;
+			}
+		}
 	}
 
 	for (size_t i = 0; i < this->vc_listeners.size(); i++) {
@@ -345,8 +354,6 @@ void FrameBuilder::thLeerShell(HANDLE hPipe) {
 			}
 			cBuffer2[dBytesToWrite] = '\0';
 
-			DEBUG_MSG(cBuffer2);
-
 			this->txtOutput->AppendText(wxString(cBuffer2));
 		}else {
 			//Error
@@ -357,12 +364,21 @@ void FrameBuilder::thLeerShell(HANDLE hPipe) {
 	this->isDone1 = true;
 }
 
-void FrameBuilder::thLeerShell2(std::string strCmd) {
-	while (!this->isError) {
+void FrameBuilder::thLeerShell2(std::string strCmd, std::string strFolderName) {
+	while (true) {
 		if(this->isDone1) {
-			if (!::CreateProcessA(nullptr, (LPSTR)strCmd.c_str(), nullptr, nullptr, true, CREATE_NEW_CONSOLE, nullptr, nullptr, &this->si, &this->pi)) {
+			if (!::CreateDirectoryA(strFolderName.c_str(), NULL)) {
 				int err = GetLastError();
+				DEBUG_MSG(err);
+				wxMessageBox("[2] No se pudo crear el directorio " + strFolderName, "Builder", wxICON_ERROR);
+				return;
+			}
+			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+			if (!::CreateProcessA(CmdPath().c_str(), (LPSTR)strCmd.c_str(), nullptr, nullptr, true, CREATE_NEW_CONSOLE, nullptr, nullptr, &this->si, &this->pi)) {
+				int err = GetLastError();
+				DEBUG_MSG(err);
 				wxMessageBox("[1]Error creando el proceso del builder", "Builder", wxICON_ERROR);
+				break;
 			}
 			this->tRead = std::thread(&FrameBuilder::thLeerShell, this, this->stdoutRd);
 			this->tRead.detach();
@@ -370,4 +386,14 @@ void FrameBuilder::thLeerShell2(std::string strCmd) {
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(500));
 	}
+
+	if (this->isError) {
+		wxMessageBox("Hubo un error generando el cliente", "Builder", wxICON_ERROR);
+	}else {
+		::ShellExecuteA(NULL, "open", strFolderName.c_str(), NULL, NULL, SW_SHOWNORMAL);
+		std::this_thread::sleep_for(std::chrono::milliseconds(500));
+		wxMessageBox("Cliente generado en " + strFolderName);
+	}
+
+	this->btnGenerar->Enable(true);
 }

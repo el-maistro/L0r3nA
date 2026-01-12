@@ -215,7 +215,7 @@ Cliente::Cliente() {
 void Cliente::TEST() {
 
     //const char* ctemp = __CUSTOM_ENCRYPTION_KEY;
-//memset(this->t_key2, '\0', AES_KEY_LEN);
+    //memset(this->t_key2, '\0', AES_KEY_LEN);
     //strncpy(this->t_key2, ctemp, AES_KEY_LEN);
     //memcpy_s(this->t_key2, AES_KEY_LEN, ctemp, AES_KEY_LEN);
     //std::cout <<"ENC_KEY="<< this->t_key2 << "\n";
