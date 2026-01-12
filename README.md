@@ -1,9 +1,16 @@
 <p align="center"><img src="./imagenes/Servidor/imgs/banner.png" /><br></p>
 
-<p align="center"><b>Herramienta de administracion remota</b></p><br><br>
+<center>
 
-<p>Escrita en C++. En el lado del servidor se usa la libreria wxWidgets para la interfaz grafica. Esta por los momentos se ha mantenido simple pero se ira modificando a una mas amigable.</p>
+![Static Badge](https://img.shields.io/badge/C++-red)
+![Static Badge](https://img.shields.io/badge/wxWidgets-blue)
+![Static Badge](https://img.shields.io/badge/Aes256-lightgreen)
 
+</center>
+
+<p>L0r3na es una herramienta de administracion remota escrita en C++. En el lado del servidor se usa la libreria wxWidgets para la interfaz grafica. En el lado del cliente se usa <b>C++</b> y <b>C</b> (<i>para sqlite</i>)</p>
+
+<p>La conexion es cifrada de punto a punto gracias a <b>Aes256</b> usando una llave cifrado generada aleatoriamente.</p>
 
 ### Dependencias del cliente
 <p>El cliente usa carga dinamica de funciones en todos su modulos reduciendo en lo mas minimo el tamaño del binario. Este no depende de ninguna dll adicional mas que las que se encuentran por defecto en todo sistema Windows. Hace uso de carga dinamica para todos los modulos y es tolerante a fallas cuando la libreria no esta presente en el sistema.<br>
@@ -47,19 +54,20 @@ cmake --build . --config Release
 xcopy /E ..\..\imagenes\Servidor\imgs Release\imgs\
 ```
 <b>Cliente</b>:<br>
-<p>Para compilar el cliente se puede hacer uso del builder integrado en el servidor:</p>
-<img src="./imagenes/Capturas/builder.jpg">
-<p>La compilacion ahora es modular y solo se incluyen los modulos seleccionados en el formulario. Esto permite generar un binario mas peque&ntilde;o o uno para escenario especificos.</p>
+<p>Para compilar el cliente se puede hacer uso del builder integrado en el servidor. Primero se debe de crear un listener para generar una clave de acceso y guardar datos de conexion:</p>
+<img src="./imagenes/Capturas/listeners.jpg" width="350">
+<img src="./imagenes/Capturas/listener-opts.jpg" width="350">
+
+<p>Luego se elige el listener en el formulario para generar el cliente y se seleccionan los modulos a incluir en la compilacion:</p>
+<img src="./imagenes/Capturas/generar-2.jpg" width="350">
+
 
 <p>Despues de esto ya se tendrian los dos binarios listos para ser ejecutados en ambos lados para realizar la prueba.</p><br>
 
 ### Capturas de pantalla
 `Ventana Principal`<br>
-<img src="./imagenes/Capturas/main.jpg"><br>
-`Panel de administracion`<br>
-<img src="./imagenes/Capturas/admin.jpg"><br>
-`Builder para generar clientes`<br>
-<img src="./imagenes/Capturas/builder.jpg"><br>
+<img src="./imagenes/Capturas/control-nuevo.jpg" width="450"><br>
+<img src="./imagenes/Capturas/main-listener.jpg" width="450"><br>
 `Keylogger, Shell y admin de procesos`<br>
 <img src="./imagenes/Capturas/control.jpg">
 
