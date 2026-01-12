@@ -116,9 +116,6 @@ FrameBuilder::FrameBuilder(wxWindow* pParent)
 
 	this->RefrescarLista();
 
-	Bind(wxEVT_TIMER, &FrameBuilder::OnTimer, this);
-
-
 	ChangeMyChildsTheme(this, THEME_BACKGROUND_COLOR, THEME_FOREGROUND_COLOR, THEME_FONT_GLOBAL);
 }
 
@@ -136,7 +133,7 @@ void FrameBuilder::OnGenerarCliente(wxCommandEvent& event) {
 		return;
 	}
 
-	wxString strCmd = "cmake --fresh -B ";
+	wxString strCmd = "cmd.exe /c cmake --fresh -B ";
 	strCmd.append(strNewfolder);
 	strCmd.append(1, ' ');
 		
@@ -220,36 +217,57 @@ void FrameBuilder::OnGenerarCliente(wxCommandEvent& event) {
 	strCmd.append(strRutaSource);
 	strCmd.append(" && cmake --build ");
 	strCmd.append(strNewfolder);
-	strCmd.append(" --config Release && ");
-	strCmd.append("xcopy " + strNewfolder + "\\Release\\cliente.exe .\\ && ");
-	strCmd.append("del /S /Q " + strNewfolder + "\\* .* && ");
-	strCmd.append("rmdir /S /Q .\\" + strNewfolder + "\\.");
+	//strCmd.append(" --config Release && ");
+	strCmd.append(" --config Release");
+	//strCmd.append("xcopy " + strNewfolder + "\\Release\\cliente.exe .\\ &&");
+	//strCmd.append("xcopy " + strNewfolder + "\\Release\\cliente.exe .\\");
+	//strCmd.append("del /S /Q " + strNewfolder + "\\* .* && ");
+	//strCmd.append("rmdir /S /Q .\\" + strNewfolder + "\\.");
 
-	//wxShell(strCmd);
-	//if (this->nProcess) { delete this->nProcess; this->nProcess = NULL; }
-	
-	//this->nProcess = new wxProcess(wxPROCESS_REDIRECT);
-	//wxProcess n;
-	this->nProcess = new MyProcess(this);
-	//this->nProcess = wxProcess::Open(strCmd, wxEXEC_ASYNC);
+	this->stdinRd = this->stdinWr = this->stdoutRd = this->stdoutWr = nullptr;
+	SECURITY_ATTRIBUTES sa;
+	sa.nLength = sizeof(SECURITY_ATTRIBUTES);
+	sa.lpSecurityDescriptor = nullptr;
+	sa.bInheritHandle = true;
 
-	int iRet = wxExecute(strCmd, wxEXEC_ASYNC, this->nProcess);
-
-	if (iRet != -1) {
-		//Success lanzar thread para leer
-		this->m_timer.Start(5);
-	}
-
-	if (!::CreateDirectoryA(strNewfolder, NULL)) {
-		wxMessageBox("[2] No se pudo crear el directorio " + strNewfolder, "Builder", wxICON_ERROR);
+	if (!::CreatePipe(&this->stdinRd, &this->stdinWr, &sa, 0) ||
+		!::CreatePipe(&this->stdoutRd, &this->stdoutWr, &sa, 0)) {
+		wxMessageBox("Error creando las tuberias para lanzar el proceso", "Builder", wxICON_ERROR);
 		return;
 	}
 
+	
+	ZeroMemory(&this->si, sizeof(this->si));
+	this->si.cb = sizeof(this->si);
+
+	::GetStartupInfoA(&si);
+	this->si.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
+	this->si.wShowWindow = SW_HIDE;
+	this->si.hStdOutput = this->stdoutWr;
+	this->si.hStdError = this->stdoutWr;
+	this->si.hStdInput = this->stdinRd;
+
+	ZeroMemory(&this->pi, sizeof(this->pi));
+
+	if (!::CreateProcessA(nullptr, (LPSTR)strCmd.ToStdString().c_str(), nullptr, nullptr, true, CREATE_NEW_CONSOLE, nullptr, nullptr, &this->si, &this->pi)) {
+		int err = GetLastError();
+		wxMessageBox("Error creando el proceso del builder", "Builder", wxICON_ERROR);
+		return;
+	}
+
+	this->tRead = std::thread(&FrameBuilder::thLeerShell, this, this->stdoutRd);
+	this->tRead.detach();
+	
+	/*if (!::CreateDirectoryA(strNewfolder, NULL)) {
+		int err = GetLastError();
+		wxMessageBox("[2] No se pudo crear el directorio " + strNewfolder, "Builder", wxICON_ERROR);
+		return;
+	}*/
+
 	strCmd = "xcopy .\\cliente.exe .\\" + strNewfolder + "\\ && del /Q /F .\\cliente.exe";
-
-	//wxShell(strCmd);
-
-	wxMessageBox("Cliente listo en " + strNewfolder, "Builder");
+	this->tRead2 = std::thread(&FrameBuilder::thLeerShell2, this, std::string(strCmd.c_str()));
+	this->tRead2.detach();
+	//wxMessageBox("Cliente listo en " + strNewfolder, "Builder");
 }
 
 void FrameBuilder::OnRefListeners(wxCommandEvent& event) {
@@ -290,17 +308,66 @@ void FrameBuilder::RefrescarLista() {
 	this->cmbListeners->Refresh();
 }
 
-void FrameBuilder::OnTimer(wxTimerEvent& event) {
-	wxInputStream* in = this->nProcess->GetInputStream();
-	if (!in) { return; }
-	if (in->CanRead()) {
-		char nBuffer[255];
-		in->Read(&nBuffer, 254);
-		size_t read_bytes = in->LastRead();
-		if (read_bytes > 0) {
-			nBuffer[read_bytes] = '\0';
-			this->txtOutput->AppendText(wxString(nBuffer));
+void FrameBuilder::thLeerShell(HANDLE hPipe) {
+	char cBuffer[4096], cBuffer2[4096 * 2 + 30];
+	DWORD dBytesReaded = 0, dBufferC = 0, dBytesToWrite = 0;
+	BYTE bPChar = 0;
+
+	while (1) {
+		if (::PeekNamedPipe(hPipe, cBuffer, sizeof(cBuffer), &dBytesReaded, nullptr, nullptr)) {
+			if (dBytesReaded > 0) {
+				if (!::ReadFile(hPipe, cBuffer, sizeof(cBuffer), &dBytesReaded, nullptr)) {
+					if (::GetLastError() == ERROR_BROKEN_PIPE) {
+						this->isError = true;
+						this->isDone1 = true;
+						break;
+					}
+				}
+			}else {
+				DWORD exit_code = 0;
+				if (GetExitCodeProcess(this->pi.hProcess, &exit_code)) {
+					if (exit_code == STILL_ACTIVE) {
+						std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+						continue;
+					}else {
+						this->isDone1 = true;
+						break;
+					}
+				}
+				continue;
+			}
+
+			for (dBufferC = 0, dBytesToWrite = 0; dBufferC < dBytesReaded; dBufferC++) {
+				if (cBuffer[dBufferC] == '\n' && bPChar != '\r') {
+					cBuffer2[dBytesToWrite++] = '\r';
+				}
+				bPChar = cBuffer2[dBytesToWrite++] = cBuffer[dBufferC];
+			}
+			cBuffer2[dBytesToWrite] = '\0';
+
+			DEBUG_MSG(cBuffer2);
+
+			this->txtOutput->AppendText(wxString(cBuffer2));
+		}else {
+			//Error
+			this->isError = true;
+			break;
 		}
 	}
-	
+	this->isDone1 = true;
+}
+
+void FrameBuilder::thLeerShell2(std::string strCmd) {
+	while (!this->isError) {
+		if(this->isDone1) {
+			if (!::CreateProcessA(nullptr, (LPSTR)strCmd.c_str(), nullptr, nullptr, true, CREATE_NEW_CONSOLE, nullptr, nullptr, &this->si, &this->pi)) {
+				int err = GetLastError();
+				wxMessageBox("[1]Error creando el proceso del builder", "Builder", wxICON_ERROR);
+			}
+			this->tRead = std::thread(&FrameBuilder::thLeerShell, this, this->stdoutRd);
+			this->tRead.detach();
+			break;
+		}
+		std::this_thread::sleep_for(std::chrono::milliseconds(500));
+	}
 }

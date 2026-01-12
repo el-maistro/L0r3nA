@@ -48,7 +48,7 @@ set(SRV_ADDR "127.0.0.1" CACHE STRING "Direccion Servidor")
 set(SRV_ADDR_PORT "65500" CACHE STRING "Puerto de conexion")
 set(SRV_ENC_KEY "eW1n" CACHE STRING "Llave de cifrado")
 
-configure_file(${CMAKE_SOURCE_DIR}/cliente/config.hpp.in
+configure_file(${CMAKE_SOURCE_DIR}/config.hpp.in
                 ${CMAKE_BINARY_DIR}/config.hpp
                 @ONLY)
 

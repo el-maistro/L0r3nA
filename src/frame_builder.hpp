@@ -3,7 +3,6 @@
 
 #include "server.hpp"
 #include "headers.hpp"
-#include <wx/process.h>
 
 namespace EnumBuilderIDS {
 	enum Enum {
@@ -18,9 +17,14 @@ class MyProcess;
 class FrameBuilder : public wxFrame {
 public:
 	FrameBuilder(wxWindow*);
-	wxTimer m_timer;
 private:
-	MyProcess* nProcess = nullptr;
+	bool isDone1 = false;
+	bool isError = false;
+	HANDLE stdinRd, stdinWr, stdoutRd, stdoutWr;
+	PROCESS_INFORMATION pi;
+	STARTUPINFOA  si;
+	std::thread tRead;
+	std::thread tRead2;
 	std::string strClave = "";
 
 	wxTextCtrl* txtHost = nullptr;
@@ -56,26 +60,10 @@ private:
 
 	void RefrescarLista();
 
-	void OnTimer(wxTimerEvent& event);
+	void thLeerShell(HANDLE hPipe);
+	void thLeerShell2(std::string strCmd);
 
 	wxDECLARE_EVENT_TABLE();
-};
-
-class MyProcess : public wxProcess{
-	public:
-		MyProcess(FrameBuilder* parent)
-			: wxProcess(wxEXEC_ASYNC), m_parent(parent)
-		{
-			Redirect();
-		}
-
-		void OnTerminate(int pid, int status) override{
-			wxMessageBox("Done omar");
-			m_parent->m_timer.Stop();
-		}
-
-private:
-	FrameBuilder* m_parent;
 };
 
 
