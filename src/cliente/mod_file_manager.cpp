@@ -117,7 +117,10 @@ std::vector<std::string> vDir(c_char* cPath) {
 	if (!cCliente->mod_dynamic->KERNEL32_FM.pFindFirstFileA ||
 		!cCliente->mod_dynamic->KERNEL32_FM.pFileTimeToSystemTime ||
 		!cCliente->mod_dynamic->KERNEL32_FM.pFindNextFileA ||
-		!cCliente->mod_dynamic->KERNEL32_FM.pFindClose) {
+		!cCliente->mod_dynamic->KERNEL32_FM.pFindClose ||
+		!cCliente->mod_dynamic->SHELL32.pSHGetFileInfoA ||
+		!cCliente->mod_dynamic->OLE32.pCoInitialize ||
+		!cCliente->mod_dynamic->OLE32.pCoUninitialize) {
 		__DBG_("No cargaron todas las funciones para listar directorios");
 		cCliente->m_RemoteLog("[X] Dynamic_load error: vDir");
 		return vcFolders;
@@ -138,6 +141,8 @@ std::vector<std::string> vDir(c_char* cPath) {
 		__DBG_("No se pudo listar el directorio " + std::string(szDir));
 		return vcFolders;
 	}
+
+	cCliente->mod_dynamic->OLE32.pCoInitialize(NULL);
 	do {
 		if (cCliente->isKillSwitch()) {
 			__DBG_("[DIR] kill_switch...");
@@ -160,6 +165,18 @@ std::vector<std::string> vDir(c_char* cPath) {
 		stat(cTmpdir, &info);
 
 		std::string strEntry = "";
+		std::string strFileType = "-";
+
+		SHFILEINFOA file_info;
+		std::string strFullPath = szDir;
+		strFullPath.pop_back();
+		strFullPath += win32Archivo.cFileName;
+		if (cCliente->mod_dynamic->SHELL32.pSHGetFileInfoA(strFullPath.c_str(), NULL, &file_info, sizeof(file_info), SHGFI_TYPENAME) != 0) {
+			strFileType = file_info.szTypeName;
+		}else {
+			error_2("[DIR]", GetLastError());
+			__DBG_(strFullPath);
+		}
 
 		if (info.st_mode & S_IFDIR) {
 			//Directorio
@@ -167,6 +184,8 @@ std::vector<std::string> vDir(c_char* cPath) {
 			strEntry += win32Archivo.cFileName;
 			strEntry += ">->";
 			strEntry += cFecha;
+			strEntry += ">";
+			strEntry += strFileType;
 			vcFolders.push_back(strEntry);
 		} else {
 			strEntry = "0<";
@@ -175,9 +194,12 @@ std::vector<std::string> vDir(c_char* cPath) {
 			strEntry += std::to_string(win32Archivo.nFileSizeLow);
 			strEntry += "<";
 			strEntry += cFecha;
+			strEntry += "<";
+			strEntry += strFileType;
 			vcFiles.push_back(strEntry);
-
 		}
+
+		
 
 	} while (cCliente->mod_dynamic->KERNEL32_FM.pFindNextFileA(hFind, &win32Archivo) != 0);
 	
@@ -188,6 +210,8 @@ std::vector<std::string> vDir(c_char* cPath) {
 	for (auto item : vcFiles) {
 		vcFolders.push_back(item);
 	}
+
+	cCliente->mod_dynamic->OLE32.pCoUninitialize();
 
 	return vcFolders;
 }

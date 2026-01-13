@@ -250,7 +250,7 @@ void panelFileManager::ActualizarRuta(const char*& pBuffer) {
 		std::vector<std::string> vcNuevaRuta = strSplit(std::string(pBuffer), CMD_DEL, 100);
 		for (std::string& sub_path : vcNuevaRuta) {
 			if (sub_path == "\\") { continue; }
-			sub_path += "\\";
+			//sub_path += "\\";
 			this->c_RutaActual.push_back(sub_path);
 		}
 	}
@@ -427,7 +427,11 @@ void ListCtrlManager::OnActivated(wxListEvent& event) {
 			itemCol.SetText("Fecha Mod");
 			itemCol.SetWidth(100);
 			this->InsertColumn(3, itemCol);
-			
+
+			itemCol.SetText("Tipo");
+			itemCol.SetWidth(100);
+			this->InsertColumn(4, itemCol);
+
 			itemp->Enable(false);
 			
 			this->MostrarCarga();
@@ -546,7 +550,7 @@ void ListCtrlManager::ListarDir(const char* strData) {
 	//4 columnas para listar dir
 	std::unique_lock<std::mutex> lock(this->mtx_fm);
 
-	if (this->GetColumnCount() != 4) {
+	if (this->GetColumnCount() != 5) {
 		wxListItem itemCol;
 		this->ClearAll();
 		itemCol.SetText("-");
@@ -566,6 +570,10 @@ void ListCtrlManager::ListarDir(const char* strData) {
 		itemCol.SetText("Fecha Mod");
 		itemCol.SetWidth(100);
 		this->InsertColumn(3, itemCol);
+
+		itemCol.SetText("Tipo");
+		itemCol.SetWidth(100);
+		this->InsertColumn(5, itemCol);
 	}
 
 	for (std::string vcEntry : strSplit(std::string(strData), '|', 10000)) {
@@ -573,11 +581,11 @@ void ListCtrlManager::ListarDir(const char* strData) {
 		wxString strTama = "-";
 		if (vcEntry[1] == '>') {
 			//Dir
-			vcFileEntry = strSplit(vcEntry, '>', 4);
+			vcFileEntry = strSplit(vcEntry, '>', 5);
 		}else if (vcEntry[1] == '<') {
 			//file
-			vcFileEntry = strSplit(vcEntry, '<', 4);
-			if (vcFileEntry.size() == 4) {
+			vcFileEntry = strSplit(vcEntry, '<', 5);
+			if (vcFileEntry.size() == 5) {
 				u64 bytes = StrToUint(vcFileEntry[2].c_str());
 				const char* cDEN = "BKMGTP";
 				double factor = floor((vcFileEntry[2].size() - 1) / 3);
@@ -590,13 +598,14 @@ void ListCtrlManager::ListarDir(const char* strData) {
 			DEBUG_MSG("[FM]DESCONOCIDO: " + vcEntry);
 		}
 		
-		if (vcFileEntry.size() == 4) {
+		if (vcFileEntry.size() == 5) {
 			int iCount = this->GetItemCount() > 0 ? this->GetItemCount() - 1 : 0;
 			if (iCount == -1) { iCount = 0; }
 			this->InsertItem(iCount, wxString("-"));
 			this->SetItem(iCount, 1, wxString(vcFileEntry[1]));
 			this->SetItem(iCount, 2, strTama); //tama
 			this->SetItem(iCount, 3, wxString(vcFileEntry[3]));
+			this->SetItem(iCount, 4, wxString(vcFileEntry[4]));
 		}else {
 			DEBUG_MSG("La entrada no tiene los parametros requeridos: " + vcEntry);
 		}
@@ -610,33 +619,32 @@ void ListCtrlManager::ListarEquipo(const std::vector<std::string> vcDrives) {
 	//Listar discos y almacenamiento
 	//5 Columnas para drives
 	std::unique_lock<std::mutex> lock(this->mtx_fm);
-	if (this->GetColumnCount() != 5) {
-		wxListItem itemCol;
-		this->ClearAll();
+	
+	wxListItem itemCol;
+	this->ClearAll();
 
-		itemCol.SetText("-");
-		itemCol.SetWidth(20);
-		itemCol.SetAlign(wxLIST_FORMAT_CENTRE);
-		this->InsertColumn(0, itemCol);
+	itemCol.SetText("-");
+	itemCol.SetWidth(20);
+	itemCol.SetAlign(wxLIST_FORMAT_CENTRE);
+	this->InsertColumn(0, itemCol);
 
-		itemCol.SetText("Nombre");
-		itemCol.SetAlign(wxLIST_FORMAT_LEFT);
-		itemCol.SetWidth(150);
-		this->InsertColumn(1, itemCol);
+	itemCol.SetText("Nombre");
+	itemCol.SetAlign(wxLIST_FORMAT_LEFT);
+	itemCol.SetWidth(150);
+	this->InsertColumn(1, itemCol);
 
-		itemCol.SetText("Tipo");
-		itemCol.SetWidth(100);
-		this->InsertColumn(2, itemCol);
+	itemCol.SetText("Tipo");
+	itemCol.SetWidth(100);
+	this->InsertColumn(2, itemCol);
 
-		itemCol.SetText("Libre");
-		itemCol.SetWidth(50);
-		this->InsertColumn(3, itemCol);
+	itemCol.SetText("Libre");
+	itemCol.SetWidth(50);
+	this->InsertColumn(3, itemCol);
 
-		itemCol.SetText("Total");
-		itemCol.SetWidth(50);
-		this->InsertColumn(4, itemCol);
-	}
-
+	itemCol.SetText("Total");
+	itemCol.SetWidth(50);
+	this->InsertColumn(4, itemCol);
+	
 	for (int iCount = 0, iRowCount = 0; iCount<int(vcDrives.size()); iCount++) {
 		std::vector<std::string> vDrive = strSplit(vcDrives[iCount], '|', 5);
 		if (vDrive.size() >= 5) {

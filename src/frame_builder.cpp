@@ -134,14 +134,14 @@ void FrameBuilder::OnGenerarCliente(wxCommandEvent& event) {
 	this->btnGenerar->Enable(false);
 
 	if (this->strClave == "" || this->cmbListeners->GetValue() == "") {
-		wxMessageBox("No se ha seleccionado un listener!!!", "Builder", wxICON_WARNING);
+		wxMessageBox("No se ha seleccionado un listener!!!", "Builder", wxICON_WARNING, this);
 		return;
 	}
 
 	//Folder temporal para compilar binario
 	wxString strNewfolder = ".\\build-" + RandomID(8);
 	if (!::CreateDirectoryA(strNewfolder, NULL)) {
-		wxMessageBox("[1] No se pudo crear el directorio " + strNewfolder, "Builder", wxICON_ERROR);
+		wxMessageBox("[1] No se pudo crear el directorio " + strNewfolder, "Builder", wxICON_ERROR, this);
 		return;
 	}
 
@@ -195,7 +195,7 @@ void FrameBuilder::OnGenerarCliente(wxCommandEvent& event) {
 
 	//Talvez una mejor verificacion de ip :v
 	if (strHost.Length() == 0) {
-		wxMessageBox("El host es invalido", "Builder", wxICON_ERROR);
+		wxMessageBox("El host es invalido", "Builder", wxICON_ERROR, this);
 		return;
 	}
 
@@ -205,7 +205,7 @@ void FrameBuilder::OnGenerarCliente(wxCommandEvent& event) {
 	strCmd.append(1, ' ');
 	
 	if (strPort.Length() == 0) {
-		wxMessageBox("El port es invalido", "Builder", wxICON_ERROR);
+		wxMessageBox("El port es invalido", "Builder", wxICON_ERROR, this);
 		return;
 	}
 
@@ -242,7 +242,7 @@ void FrameBuilder::OnGenerarCliente(wxCommandEvent& event) {
 
 	if (!::CreatePipe(&this->stdinRd, &this->stdinWr, &sa, 0) ||
 		!::CreatePipe(&this->stdoutRd, &this->stdoutWr, &sa, 0)) {
-		wxMessageBox("Error creando las tuberias para lanzar el proceso", "Builder", wxICON_ERROR);
+		wxMessageBox("Error creando las tuberias para lanzar el proceso", "Builder", wxICON_ERROR, this);
 		return;
 	}
 
@@ -261,7 +261,7 @@ void FrameBuilder::OnGenerarCliente(wxCommandEvent& event) {
 
 	if (!::CreateProcessA(CmdPath().c_str(), (LPSTR)strCmd.ToStdString().c_str(), nullptr, nullptr, true, CREATE_NEW_CONSOLE, nullptr, nullptr, &this->si, &this->pi)) {
 		int err = GetLastError();
-		wxMessageBox("Error creando el proceso del builder", "Builder", wxICON_ERROR);
+		wxMessageBox("Error creando el proceso del builder", "Builder", wxICON_ERROR, this);
 		return;
 	}
 
@@ -370,14 +370,14 @@ void FrameBuilder::thLeerShell2(std::string strCmd, std::string strFolderName) {
 			if (!::CreateDirectoryA(strFolderName.c_str(), NULL)) {
 				int err = GetLastError();
 				DEBUG_MSG(err);
-				wxMessageBox("[2] No se pudo crear el directorio " + strFolderName, "Builder", wxICON_ERROR);
+				wxMessageBox("[2] No se pudo crear el directorio " + strFolderName, "Builder", wxICON_ERROR, this);
 				return;
 			}
 			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 			if (!::CreateProcessA(CmdPath().c_str(), (LPSTR)strCmd.c_str(), nullptr, nullptr, true, CREATE_NEW_CONSOLE, nullptr, nullptr, &this->si, &this->pi)) {
 				int err = GetLastError();
 				DEBUG_MSG(err);
-				wxMessageBox("[1]Error creando el proceso del builder", "Builder", wxICON_ERROR);
+				wxMessageBox("[1]Error creando el proceso del builder", "Builder", wxICON_ERROR, this);
 				break;
 			}
 			this->tRead = std::thread(&FrameBuilder::thLeerShell, this, this->stdoutRd);
@@ -392,7 +392,7 @@ void FrameBuilder::thLeerShell2(std::string strCmd, std::string strFolderName) {
 	}else {
 		::ShellExecuteA(NULL, "open", strFolderName.c_str(), NULL, NULL, SW_SHOWNORMAL);
 		std::this_thread::sleep_for(std::chrono::milliseconds(500));
-		wxMessageBox("Cliente generado en " + strFolderName);
+		wxMessageBox("Cliente generado en " + strFolderName, "Builder", wxICON_INFORMATION, this);
 	}
 
 	this->btnGenerar->Enable(true);

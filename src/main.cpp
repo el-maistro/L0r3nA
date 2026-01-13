@@ -44,6 +44,12 @@ bool MyApp::OnInit(){
     freopen("CONOUT$", "w", stdout);
     freopen("CONOUT$", "w", stderr);
 
+    SHFILEINFOA file_info;
+
+    DWORD dRet = ::SHGetFileInfoA("C:\\Users\\david\\Desktop\\UTH\\UTH2.png", NULL, &file_info, sizeof(file_info), SHGFI_TYPENAME);
+    if (dRet != 0) {
+        std::cout << file_info.szTypeName << "\n";
+    }
     wxImage::AddHandler(new wxJPEGHandler);
     wxImage::AddHandler(new wxPNGHandler);
 

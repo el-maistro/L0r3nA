@@ -238,6 +238,10 @@ struct st_Shell32 {
 	//SHGetFolderPathA
 	typedef HRESULT(WINAPI* LPSHGETFOLDERPATHA)(HWND, int, HANDLE, DWORD, LPSTR);
 	LPSHGETFOLDERPATHA pSHGetFolderPathA = nullptr;
+
+	//SHGetFileInfoA
+	typedef DWORD_PTR(WINAPI* LPSHGETFILEINFOA)(LPCSTR, DWORD, SHFILEINFOA*, UINT, UINT);
+	LPSHGETFILEINFOA pSHGetFileInfoA = nullptr;
 };
 
 struct st_PsApi {
