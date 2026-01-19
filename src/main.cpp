@@ -7,6 +7,8 @@
 #include "notify.hpp"
 #include "misc.hpp"
 
+#include "panel_file_manager.hpp"
+
 extern Servidor* p_Servidor;
 
 const wxString strTitle = "L0r3nA v0.1";
@@ -44,12 +46,6 @@ bool MyApp::OnInit(){
     freopen("CONOUT$", "w", stdout);
     freopen("CONOUT$", "w", stderr);
 
-    SHFILEINFOA file_info;
-
-    DWORD dRet = ::SHGetFileInfoA("C:\\Users\\david\\Desktop\\UTH\\UTH2.png", NULL, &file_info, sizeof(file_info), SHGFI_TYPENAME);
-    if (dRet != 0) {
-        std::cout << file_info.szTypeName << "\n";
-    }
     wxImage::AddHandler(new wxJPEGHandler);
     wxImage::AddHandler(new wxPNGHandler);
 

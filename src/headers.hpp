@@ -36,6 +36,7 @@
 #include<wx/combobox.h>
 #include<wx/sizer.h>
 #include<wx/image.h>
+#include<wx/imaglist.h>
 #include<wx/wxhtml.h>
 #include<wx/activityindicator.h>
 #include<wx/artprov.h>

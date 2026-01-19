@@ -11,24 +11,25 @@ class panelFileManager: public wxFrame{
 	public:
 		ListCtrlManager* listManager = nullptr;
 		
-		void CrearLista();
+		void CrearLista(wxWindow* pParent);
 		wxString RutaActual();
 		void EnviarComando(std::string pComando, int iComando);
 		void EnviarArchivo(const std::string cPath, const char* rPath, std::string strCliente);
 
 		panelFileManager(wxWindow* pParent, SOCKET sck, std::string _strID, std::string _strIP, ByteArray c_key);
-
+		
 		//Eventos
 		void OnToolBarClick(wxCommandEvent& event);
 		
 		int iMODE = -1;
-		wxStaticText* p_RutaActual = nullptr;
+		//wxStaticText* p_RutaActual = nullptr;
 		std::vector<wxString> c_RutaActual;
 		
 		void ActualizarRuta(const char*& pBuffer);
 
 		ByteArray enc_key;
 
+		wxTextCtrl* txt_Path = nullptr;
 	private:
 		std::string strID = "";
 		std::string strIP = "";
@@ -60,7 +61,10 @@ class ListCtrlManager : public wxListCtrl {
 		void MostrarCarga();
 		void OcultarCarga();
 
+		void CargarImagenes();
+
 	private:
+		wxImageList* img_list = nullptr;
 		std::mutex mtx_fm;
 		std::mutex mtx_carga;
 		SOCKET sckCliente = INVALID_SOCKET;

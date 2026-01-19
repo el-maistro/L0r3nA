@@ -26,53 +26,178 @@ wxBEGIN_EVENT_TABLE(ListCtrlManager, wxListCtrl)
 	EVT_LIST_ITEM_ACTIVATED(EnumIDS::ID_Panel_FM_List, ListCtrlManager::OnActivated)
 wxEND_EVENT_TABLE()
 
-panelFileManager::panelFileManager(wxWindow* pParent, SOCKET sck, std::string _strID, std::string _strIP, ByteArray c_key) :
-	wxFrame(pParent, wxID_ANY, "[" + _strID + "] Admin archivos", wxDefaultPosition, wxDefaultSize){
-	
+//panelFileManager::panelFileManager(wxWindow* pParent, SOCKET sck, std::string _strID, std::string _strIP, ByteArray c_key) :
+//	wxFrame(pParent, wxID_ANY, "[" + _strID + "] Admin archivos", wxDefaultPosition, wxDefaultSize){
+//	
+//	this->SetName(_strID + "-FM");
+//	this->sckCliente = sck;
+//	this->strID = _strID;
+//	this->strIP = _strIP;
+//	this->enc_key = c_key;
+//	
+//	this->p_ToolBar = new wxToolBar(this, wxID_ANY, wxDefaultPosition, wxSize(30, wxDefaultSize.GetHeight()), wxTB_VERTICAL | wxTB_LEFT);
+//	
+//	//Imagenes por https://www.flaticon.com/authors/freepik
+//	wxBitmap pcBitmap(wxT(".\\imgs\\computer.png"), wxBITMAP_TYPE_PNG);      
+//	wxBitmap desktopBitmap(wxT(".\\imgs\\desktop.png"), wxBITMAP_TYPE_PNG);  
+//	wxBitmap downloadBitmap(wxT(".\\imgs\\download.png"), wxBITMAP_TYPE_PNG);
+//	wxBitmap refreshBitmap(wxT(".\\imgs\\refresh.png"), wxBITMAP_TYPE_PNG);  
+//	wxBitmap uploadBitmap(wxT(".\\imgs\\upload.png"), wxBITMAP_TYPE_PNG);   
+//	
+//
+//	this->p_ToolBar->AddTool(EnumIDS::ID_Panel_FM_Equipo, wxT("Equipo"), pcBitmap, "Equipo");
+//	this->p_ToolBar->AddSeparator();
+//	this->p_ToolBar->AddTool(EnumIDS::ID_Panel_FM_Escritorio, wxT("Escritorio"), desktopBitmap, "Escritorio");
+//	this->p_ToolBar->AddSeparator();
+//	this->p_ToolBar->AddTool(EnumIDS::ID_Panel_FM_Descargas, wxT("Descargas"), downloadBitmap, "Descargas");
+//	this->p_ToolBar->AddSeparator();
+//	this->p_ToolBar->AddTool(EnumIDS::ID_Panel_FM_Refresh, wxT("Refrescar"), refreshBitmap, wxT("Refrescar"));
+//	this->p_ToolBar->AddSeparator();
+//	this->p_ToolBar->AddTool(EnumIDS::ID_Panel_FM_Subir, wxT("Subir"), uploadBitmap, "Subir archivo a ruta actual");
+//	this->p_ToolBar->Realize();
+//
+//	this->CrearLista();
+//
+//	this->p_RutaActual = new wxStaticText(this, EnumIDS::ID_Panel_FM_LblRuta, wxT("\\"), wxDefaultPosition, wxDefaultSize);
+//	
+//	wxBoxSizer* sizer2 = new wxBoxSizer(wxVERTICAL);
+//	sizer2->Add(this->listManager, 1, wxEXPAND | wxALL);
+//	sizer2->AddSpacer(5);
+//	sizer2->Add(this->p_RutaActual, 0, wxEXPAND | wxALL);
+//
+//	wxBoxSizer* sizer = new wxBoxSizer(wxHORIZONTAL);
+//	sizer->Add(this->p_ToolBar, 0, wxEXPAND | wxALL);
+//	sizer->AddSpacer(5);
+//	sizer->Add(sizer2, 1, wxEXPAND | wxALL);
+//
+//	this->SetSizer(sizer);
+//
+//}
+
+panelFileManager::panelFileManager(wxWindow* pParent, SOCKET sck, std::string _strID, std::string _strIP, ByteArray c_key):
+ wxFrame(pParent, wxID_ANY, "[" + _strID + "] Admin archivos", wxDefaultPosition, wxSize(700, 500)){
+	int PADDING = 5;
+
 	this->SetName(_strID + "-FM");
 	this->sckCliente = sck;
 	this->strID = _strID;
 	this->strIP = _strIP;
 	this->enc_key = c_key;
-	
-	this->p_ToolBar = new wxToolBar(this, wxID_ANY, wxDefaultPosition, wxSize(30, wxDefaultSize.GetHeight()), wxTB_VERTICAL | wxTB_LEFT);
-	
-	//Imagenes por https://www.flaticon.com/authors/freepik
-	wxBitmap pcBitmap(wxT(".\\imgs\\computer.png"), wxBITMAP_TYPE_PNG);      
-	wxBitmap desktopBitmap(wxT(".\\imgs\\desktop.png"), wxBITMAP_TYPE_PNG);  
-	wxBitmap downloadBitmap(wxT(".\\imgs\\download.png"), wxBITMAP_TYPE_PNG);
-	wxBitmap refreshBitmap(wxT(".\\imgs\\refresh.png"), wxBITMAP_TYPE_PNG);  
-	wxBitmap uploadBitmap(wxT(".\\imgs\\upload.png"), wxBITMAP_TYPE_PNG);   
-	
 
-	this->p_ToolBar->AddTool(EnumIDS::ID_Panel_FM_Equipo, wxT("Equipo"), pcBitmap, "Equipo");
+	this->p_ToolBar = new wxToolBar(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTB_HORIZONTAL | wxTB_TOP | wxTB_TEXT);
+
+	//Imagenes por https://www.flaticon.com/authors/freepik
+	wxBitmap pcBitmap(wxT(".\\imgs\\computer.png"), wxBITMAP_TYPE_PNG);
+	wxBitmap desktopBitmap(wxT(".\\imgs\\desktop.png"), wxBITMAP_TYPE_PNG);
+	wxBitmap downloadBitmap(wxT(".\\imgs\\download.png"), wxBITMAP_TYPE_PNG);
+	wxBitmap refreshBitmap(wxT(".\\imgs\\refresh.png"), wxBITMAP_TYPE_PNG);
+	
+	wxBitmap upArrow(wxT(".\\imgs\\back.png"), wxBITMAP_TYPE_PNG);
+	wxBitmap goArrow(wxT(".\\imgs\\arrow-pointing-to-right.png"), wxBITMAP_TYPE_PNG);
+	wxBitmap newFile(wxT(".\\imgs\\plus-symbol-button.png"), wxBITMAP_TYPE_PNG);
+	wxBitmap newFolder(wxT(".\\imgs\\folder.png"), wxBITMAP_TYPE_PNG);
+	wxBitmap uploadBitmap(wxT(".\\imgs\\upload.png"), wxBITMAP_TYPE_PNG);
+	wxBitmap deleteBitmap(wxT(".\\imgs\\trash-can.png"), wxBITMAP_TYPE_PNG);
+	
+	wxBitmap documentsBitmap(wxT(".\\imgs\\documents-folder.png"), wxBITMAP_TYPE_PNG);
+	
+	this->p_ToolBar->AddTool(wxID_ANY, wxT("Nuevo Archivo"), newFile, "Nuevo Archivo");
 	this->p_ToolBar->AddSeparator();
-	this->p_ToolBar->AddTool(EnumIDS::ID_Panel_FM_Escritorio, wxT("Escritorio"), desktopBitmap, "Escritorio");
+	this->p_ToolBar->AddTool(wxID_ANY, wxT("Nueva Carpeta"), newFolder, "Nueva Carpeta");
 	this->p_ToolBar->AddSeparator();
-	this->p_ToolBar->AddTool(EnumIDS::ID_Panel_FM_Descargas, wxT("Descargas"), downloadBitmap, "Descargas");
+	this->p_ToolBar->AddTool(wxID_ANY, wxT("Subir Archivo"), uploadBitmap, "Subir Archivo");
 	this->p_ToolBar->AddSeparator();
-	this->p_ToolBar->AddTool(EnumIDS::ID_Panel_FM_Refresh, wxT("Refrescar"), refreshBitmap, wxT("Refrescar"));
+	this->p_ToolBar->AddTool(wxID_ANY, wxT("Refrescar"), refreshBitmap, "Refrescar");
 	this->p_ToolBar->AddSeparator();
-	this->p_ToolBar->AddTool(EnumIDS::ID_Panel_FM_Subir, wxT("Subir"), uploadBitmap, "Subir archivo a ruta actual");
+	this->p_ToolBar->AddTool(wxID_ANY, wxT("Eliminar"), deleteBitmap, "Eliminar");
 	this->p_ToolBar->Realize();
 
-	this->CrearLista();
+	//boton para subir carpeta (regresar) 
+	//texto editable de ruta actual
+	//boton para ir a ruta del texto
 
-	this->p_RutaActual = new wxStaticText(this, EnumIDS::ID_Panel_FM_LblRuta, wxT("\\"), wxDefaultPosition, wxDefaultSize);
-	
-	wxBoxSizer* sizer2 = new wxBoxSizer(wxVERTICAL);
-	sizer2->Add(this->listManager, 1, wxEXPAND | wxALL);
-	sizer2->AddSpacer(5);
-	sizer2->Add(this->p_RutaActual, 0, wxEXPAND | wxALL);
+	wxPanel* pnl_Up = new wxPanel(this);
+	wxButton* btn_Up = new wxButton(pnl_Up, wxID_ANY, "" , wxDefaultPosition, wxSize(30, 25));
+	wxButton* btn_Go = new wxButton(pnl_Up, wxID_ANY, "", wxDefaultPosition, wxSize(30, 25));
+	this->txt_Path = new wxTextCtrl(pnl_Up, wxID_ANY, "\\");
+	btn_Up->SetBitmap(upArrow);
+	btn_Go->SetBitmap(goArrow);
 
-	wxBoxSizer* sizer = new wxBoxSizer(wxHORIZONTAL);
-	sizer->Add(this->p_ToolBar, 0, wxEXPAND | wxALL);
-	sizer->AddSpacer(5);
-	sizer->Add(sizer2, 1, wxEXPAND | wxALL);
+	wxBoxSizer* top_Sizer = new wxBoxSizer(wxHORIZONTAL);
 
-	this->SetSizer(sizer);
+	top_Sizer->AddSpacer(PADDING);
+	top_Sizer->Add(btn_Up, 0);
+	top_Sizer->AddSpacer(PADDING);
+	top_Sizer->Add(txt_Path, 1, wxALL);
+	top_Sizer->AddSpacer(PADDING);
+	top_Sizer->Add(btn_Go, 0);
+	top_Sizer->AddSpacer(PADDING);
 
+	pnl_Up->SetSizer(top_Sizer);
+
+	//Panel lateral izquierdo
+	//botones de acceso directo a folders especiales
+	// Mejor otro toolbar para botones con imagene
+
+	wxPanel* pnl_Left = new wxPanel(this);
+	wxToolBar* left_toolbar = new wxToolBar(pnl_Left, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTB_VERTICAL | wxTB_TOP | wxTB_TEXT | wxTB_FLAT | wxTB_HORZ_TEXT);
+	left_toolbar->AddTool(EnumIDS::ID_Panel_FM_Equipo, wxT("Equipo"), pcBitmap, "Equipo");
+	left_toolbar->AddSeparator();
+	left_toolbar->AddTool(EnumIDS::ID_Panel_FM_Escritorio, wxT("Escritorio"), desktopBitmap, "Escritorio");
+	left_toolbar->AddSeparator();
+	left_toolbar->AddTool(EnumIDS::ID_Panel_FM_Descargas, wxT("Descargas"), downloadBitmap, "Descargas");
+	left_toolbar->AddSeparator();
+	left_toolbar->AddTool(EnumIDS::ID_Panel_FM_Refresh, wxT("Documentos"), documentsBitmap, wxT("Documentos"));
+	left_toolbar->Realize();
+
+	wxBoxSizer* left_sizer = new wxBoxSizer(wxVERTICAL);
+	left_sizer->AddSpacer(PADDING);
+	left_sizer->Add(left_toolbar, 0, wxALL);
+
+	pnl_Left->SetSizer(left_sizer);
+
+
+	//Panel inferior derecho
+	//listctrl (admin archivos)
+	//txt de log inferior
+	wxPanel* pnl_Down = new wxPanel(this);
+	this->CrearLista(pnl_Down);
+	//this->listManager->SetParent(pnl_Down);
+	wxTextCtrl* txt_Log = new wxTextCtrl(pnl_Down, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE | wxHSCROLL | wxTE_READONLY);
+
+	wxBoxSizer* down_sizer = new wxBoxSizer(wxVERTICAL);
+
+	down_sizer->AddSpacer(PADDING);
+	down_sizer->Add(this->listManager, 1, wxALL | wxEXPAND);
+	down_sizer->AddSpacer(PADDING);
+	down_sizer->Add(txt_Log, 0, wxEXPAND);
+
+	pnl_Down->SetSizer(down_sizer);
+
+
+	wxBoxSizer* bottom_sizer = new wxBoxSizer(wxHORIZONTAL);
+
+	bottom_sizer->AddSpacer(PADDING);
+	bottom_sizer->Add(pnl_Left, 0, wxALL);
+	bottom_sizer->AddSpacer(PADDING);
+	bottom_sizer->Add(pnl_Down, 1, wxALL | wxEXPAND);
+	bottom_sizer->AddSpacer(PADDING);
+
+
+	wxBoxSizer* main_Sizer = new wxBoxSizer(wxVERTICAL);
+
+	main_Sizer->Add(this->p_ToolBar, 0, wxALL);
+	main_Sizer->Add(pnl_Up, 0, wxALL | wxEXPAND);
+	main_Sizer->AddSpacer(PADDING);
+	main_Sizer->Add(bottom_sizer, 1, wxALL | wxEXPAND);
+	main_Sizer->AddSpacer(PADDING);
+
+	this->SetSizer(main_Sizer);
+	this->SetBackgroundColour(pnl_Up->GetBackgroundColour());
+
+	this->SetMinSize(this->GetSize());
 }
+
 
 void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 	wxListItem itemCol;
@@ -84,7 +209,7 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 			this->iMODE = FM_EQUIPO;
 			strComando = DUMMY_PARAM;
 			
-			this->Enable(false);
+			this->listManager->Enable(false);
 			this->listManager->MostrarCarga();
 
 			this->EnviarComando(strComando, EnumComandos::FM_Discos);
@@ -95,7 +220,7 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 			this->iMODE = FM_NORMAL;
 			strComando = "DESCAR-DOWN";
 
-			this->Enable(false);
+			this->listManager->Enable(false);
 			this->listManager->MostrarCarga();
 
 			this->EnviarComando(strComando, EnumComandos::FM_Dir_Folder);
@@ -106,16 +231,16 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 			this->iMODE = FM_NORMAL;
 			strComando = "ESCRI-DESK";
 
-			this->Enable(false);
+			this->listManager->Enable(false);
 			this->listManager->MostrarCarga();
 
 			this->EnviarComando(strComando, EnumComandos::FM_Dir_Folder);
 			break;
 		case EnumIDS::ID_Panel_FM_Refresh:
 			this->listManager->DeleteAllItems();
-			strComando = this->p_RutaActual->GetLabelText();
+			strComando = this->txt_Path->GetValue();
 			
-			this->Enable(false);
+			this->listManager->Enable(false);
 			this->listManager->MostrarCarga();
 			
 			this->EnviarComando(strComando, EnumComandos::FM_Dir_Folder);
@@ -126,7 +251,7 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 				//dialog.GetPath() ruta al archivo seleccionado
 				std::string strTID = this->strID;
 				std::string strRutaLocal = dialog.GetPath();
-				std::string strRutaRemota = this->p_RutaActual->GetLabelText();
+				std::string strRutaRemota = this->txt_Path->GetValue();
 				strRutaRemota += dialog.GetFilename();
 				//std::thread thEnviar(&panelFileManager::EnviarArchivo, this, dialog.GetPath(), strRutaRemota.c_str(), iTempID);
 				std::thread thEnviar([this, strRutaLocal, strRutaRemota, strTID] {
@@ -138,13 +263,15 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 	}
 }
 
-void panelFileManager::CrearLista() {
-	this->listManager = new ListCtrlManager(this, EnumIDS::ID_Panel_FM_List, wxDefaultPosition,  wxDefaultSize/*wxSize(FRAME_CLIENT_SIZE_WIDTH*3, FRAME_CLIENT_SIZE_WIDTH*3)*/, wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES, this->strID, this->strIP, this->sckCliente);
+void panelFileManager::CrearLista(wxWindow* pParent) {
+	this->listManager = new ListCtrlManager(pParent, EnumIDS::ID_Panel_FM_List, wxDefaultPosition, wxDefaultSize/*wxSize(FRAME_CLIENT_SIZE_WIDTH*3, FRAME_CLIENT_SIZE_WIDTH*3)*/, wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES, this->strID, this->strIP, this->sckCliente);
 	this->listManager->SetName(this->strID + "-FM-LIST");
-	
+
 	//Spining circle
 	this->listManager->m_indicator = new wxActivityIndicator(this->listManager, wxID_ANY, wxDefaultPosition, wxDefaultSize);
 	this->listManager->m_indicator->Show(false);
+
+	this->listManager->CargarImagenes();
 }
 
 void panelFileManager::EnviarComando(std::string pComando, int iComando) {
@@ -243,17 +370,26 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 }
 
 void panelFileManager::ActualizarRuta(const char*& pBuffer) {
-	if (this->p_RutaActual) {
-		this->p_RutaActual->SetLabel(wxString(pBuffer));
-		this->c_RutaActual.clear();
+	this->txt_Path->SetValue(wxString(pBuffer));
 
-		std::vector<std::string> vcNuevaRuta = strSplit(std::string(pBuffer), CMD_DEL, 100);
-		for (std::string& sub_path : vcNuevaRuta) {
-			if (sub_path == "\\") { continue; }
-			//sub_path += "\\";
-			this->c_RutaActual.push_back(sub_path);
-		}
+	std::vector<std::string> vcNuevaRuta = strSplit(std::string(pBuffer), CMD_DEL, 100);
+	for (std::string& sub_path : vcNuevaRuta) {
+		if (sub_path == "\\") { continue; }
+		//sub_path += "\\";
+		this->c_RutaActual.push_back(sub_path);
 	}
+
+	//if (this->p_RutaActual) {
+	//	this->p_RutaActual->SetLabel(wxString(pBuffer));
+	//	this->c_RutaActual.clear();
+
+	//	std::vector<std::string> vcNuevaRuta = strSplit(std::string(pBuffer), CMD_DEL, 100);
+	//	for (std::string& sub_path : vcNuevaRuta) {
+	//		if (sub_path == "\\") { continue; }
+	//		//sub_path += "\\";
+	//		this->c_RutaActual.push_back(sub_path);
+	//	}
+	//}
 }
 
 wxString panelFileManager::RutaActual() {
@@ -390,12 +526,13 @@ std::string ListCtrlManager::ArchivoSeleccionado() {
 }
 
 std::string ListCtrlManager::CarpetaActual() {
-	std::string strCarpeta = this->itemp->p_RutaActual->GetLabelText();
+	//std::string strCarpeta = this->itemp->p_RutaActual->GetLabelText();
+	std::string strCarpeta = this->itemp->txt_Path->GetValue();
 	return strCarpeta;
 }
 
 void ListCtrlManager::OnActivated(wxListEvent& event) {
-	panelFileManager* itemp = (panelFileManager*)this->GetParent();
+	panelFileManager* itemp = (panelFileManager*)this->GetParent()->GetParent();
 	wxString strPath = "";
 	wxString strSelected = "";
 	wxListItem itemCol;
@@ -405,7 +542,8 @@ void ListCtrlManager::OnActivated(wxListEvent& event) {
 			itemp->c_RutaActual.clear();
 
 			strPath = this->GetItemText(event.GetIndex(), 0) + ":\\";
-			itemp->p_RutaActual->SetLabelText(strPath);
+			//itemp->p_RutaActual->SetLabelText(strPath);
+			itemp->txt_Path->SetValue(strPath);
 			itemp->c_RutaActual.push_back(strPath);
 			strCommand = strPath;
 
@@ -432,7 +570,7 @@ void ListCtrlManager::OnActivated(wxListEvent& event) {
 			itemCol.SetWidth(100);
 			this->InsertColumn(4, itemCol);
 
-			itemp->Enable(false);
+			this->Enable(false);
 			
 			this->MostrarCarga();
 			
@@ -451,13 +589,14 @@ void ListCtrlManager::OnActivated(wxListEvent& event) {
 						itemp->c_RutaActual.push_back(strSelected);
 					}
 
-					itemp->p_RutaActual->SetLabelText(itemp->RutaActual());
+					//itemp->p_RutaActual->SetLabelText(itemp->RutaActual());
+					itemp->txt_Path->SetValue(itemp->RutaActual());
 
 					this->DeleteAllItems();
 
 					strCommand = itemp->RutaActual();
 
-					itemp->Enable(false); 
+					this->Enable(false); 
 					
 					this->MostrarCarga();
 
@@ -474,7 +613,7 @@ void ListCtrlManager::OnActivated(wxListEvent& event) {
 void ListCtrlManager::ShowContextMenu(const wxPoint& pos, bool isFolder) {
 	wxMenu menu;
 
-	this->itemp = (panelFileManager*)this->GetParent();
+	this->itemp = (panelFileManager*)this->GetParent()->GetParent();
 	if (!isFolder) {
 		wxMenu *exec_Menu = new wxMenu;
 		exec_Menu->Append(EnumMenuFM::ID_Exec_Visible, "Normal");
@@ -601,17 +740,23 @@ void ListCtrlManager::ListarDir(const char* strData) {
 		if (vcFileEntry.size() == 5) {
 			int iCount = this->GetItemCount() > 0 ? this->GetItemCount() - 1 : 0;
 			if (iCount == -1) { iCount = 0; }
-			this->InsertItem(iCount, wxString("-"));
+			
+			if (strTama == "-") {
+				this->InsertItem(iCount, wxString("-"), 0);
+			}else {
+				this->InsertItem(iCount, wxString("-"), 1);
+			}
 			this->SetItem(iCount, 1, wxString(vcFileEntry[1]));
 			this->SetItem(iCount, 2, strTama); //tama
 			this->SetItem(iCount, 3, wxString(vcFileEntry[3]));
 			this->SetItem(iCount, 4, wxString(vcFileEntry[4]));
+			
 		}else {
 			DEBUG_MSG("La entrada no tiene los parametros requeridos: " + vcEntry);
 		}
 
 	}
-	this->GetParent()->Enable(true);
+	this->Enable(true);
 	this->OcultarCarga();
 }
 
@@ -657,7 +802,7 @@ void ListCtrlManager::ListarEquipo(const std::vector<std::string> vcDrives) {
 		}
 	}
 
-	this->GetParent()->Enable(true);
+	this->Enable(true);
 	this->OcultarCarga();
 }
 
@@ -676,4 +821,16 @@ void ListCtrlManager::OcultarCarga() {
 	std::unique_lock<std::mutex> lock(this->mtx_carga);
 	this->m_indicator->Stop();
 	this->m_indicator->Show(false);
+}
+
+void ListCtrlManager::CargarImagenes() {
+	this->img_list = new wxImageList(16, 16);
+
+	wxBitmap newFolder(wxT(".\\imgs\\folder.png"), wxBITMAP_TYPE_PNG);
+	wxBitmap newFile(wxT(".\\imgs\\document.png"), wxBITMAP_TYPE_PNG);
+
+	this->img_list->Add(newFolder);
+	this->img_list->Add(newFile);
+
+	this->AssignImageList(this->img_list, wxIMAGE_LIST_SMALL);
 }
