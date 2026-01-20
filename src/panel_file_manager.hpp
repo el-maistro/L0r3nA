@@ -63,6 +63,17 @@ class ListCtrlManager : public wxListCtrl {
 
 		void CargarImagenes();
 
+		//Eventos acciones menu contextual
+		void OnCrearFolder(wxCommandEvent& event);
+		void OnCrearArchivo(wxCommandEvent& event);
+		void OnBorrarArchivo(wxCommandEvent& event);
+		void OnEditarArchivo(wxCommandEvent& event);
+		void OnRenombrarArchivo(wxCommandEvent& event);
+		void OnDescargarArchivo(wxCommandEvent& event);
+		void OnEjecutarArchivo_Visible(wxCommandEvent& event);
+		void OnEjecutarArchivo_Oculto(wxCommandEvent& event);
+		void OnEncriptarArchivo(wxCommandEvent& event);
+
 	private:
 		wxImageList* img_list = nullptr;
 		std::mutex mtx_fm;
@@ -79,17 +90,7 @@ class ListCtrlManager : public wxListCtrl {
 		std::string strID = "";
 		std::string strIP = "";
 		
-		//Eventos acciones menu contextual
-		void OnCrearFolder(wxCommandEvent& event);
-		void OnCrearArchivo(wxCommandEvent& event);
-		void OnBorrarArchivo(wxCommandEvent& event);
-		void OnEditarArchivo(wxCommandEvent& event);
-		void OnRenombrarArchivo(wxCommandEvent& event);
-		void OnDescargarArchivo(wxCommandEvent& event);
-		void OnEjecutarArchivo_Visible(wxCommandEvent& event);
-		void OnEjecutarArchivo_Oculto(wxCommandEvent& event);
-		void OnSubirArchivo(wxCommandEvent& event);
-		void OnEncriptarArchivo(wxCommandEvent& event);
+		
 
 		wxDECLARE_EVENT_TABLE();
 };

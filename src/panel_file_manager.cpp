@@ -101,15 +101,15 @@ panelFileManager::panelFileManager(wxWindow* pParent, SOCKET sck, std::string _s
 	
 	wxBitmap documentsBitmap(wxT(".\\imgs\\documents-folder.png"), wxBITMAP_TYPE_PNG);
 	
-	this->p_ToolBar->AddTool(wxID_ANY, wxT("Nuevo Archivo"), newFile, "Nuevo Archivo");
+	this->p_ToolBar->AddTool(EnumMenuFM::ID_New_Archivo, wxT("Nuevo Archivo"), newFile, "Nuevo Archivo");
 	this->p_ToolBar->AddSeparator();
-	this->p_ToolBar->AddTool(wxID_ANY, wxT("Nueva Carpeta"), newFolder, "Nueva Carpeta");
+	this->p_ToolBar->AddTool(EnumMenuFM::ID_New_Folder, wxT("Nueva Carpeta"), newFolder, "Nueva Carpeta");
 	this->p_ToolBar->AddSeparator();
-	this->p_ToolBar->AddTool(wxID_ANY, wxT("Subir Archivo"), uploadBitmap, "Subir Archivo");
+	this->p_ToolBar->AddTool(EnumIDS::ID_Panel_FM_Subir, wxT("Subir Archivo"), uploadBitmap, "Subir Archivo");
 	this->p_ToolBar->AddSeparator();
-	this->p_ToolBar->AddTool(wxID_ANY, wxT("Refrescar"), refreshBitmap, "Refrescar");
+	this->p_ToolBar->AddTool(EnumIDS::ID_Panel_FM_Refresh, wxT("Refrescar"), refreshBitmap, "Refrescar");
 	this->p_ToolBar->AddSeparator();
-	this->p_ToolBar->AddTool(wxID_ANY, wxT("Eliminar"), deleteBitmap, "Eliminar");
+	this->p_ToolBar->AddTool(EnumMenuFM::ID_Eliminar, wxT("Eliminar"), deleteBitmap, "Eliminar");
 	this->p_ToolBar->Realize();
 
 	//boton para subir carpeta (regresar) 
@@ -200,7 +200,6 @@ panelFileManager::panelFileManager(wxWindow* pParent, SOCKET sck, std::string _s
 
 
 void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
-	wxListItem itemCol;
 	std::string strComando = "";
 	switch (event.GetId()) {
 		case EnumIDS::ID_Panel_FM_Equipo:
@@ -245,15 +244,22 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 			
 			this->EnviarComando(strComando, EnumComandos::FM_Dir_Folder);
 			break;
+		case EnumMenuFM::ID_New_Archivo:
+			this->listManager->OnCrearArchivo(event);
+			break;
+		case EnumMenuFM::ID_New_Folder:
+			this->listManager->OnCrearFolder(event);
+			break;
+		case EnumMenuFM::ID_Eliminar:
+			this->listManager->OnBorrarArchivo(event);
+			break;
 		case EnumIDS::ID_Panel_FM_Subir:
 			wxFileDialog dialog(this, "Seleccionar archivo a enviar", wxEmptyString, wxEmptyString, wxFileSelectorDefaultWildcardStr, wxFD_OPEN | wxFD_FILE_MUST_EXIST);
 			if (dialog.ShowModal() == wxID_OK) {
-				//dialog.GetPath() ruta al archivo seleccionado
 				std::string strTID = this->strID;
 				std::string strRutaLocal = dialog.GetPath();
 				std::string strRutaRemota = this->txt_Path->GetValue();
 				strRutaRemota += dialog.GetFilename();
-				//std::thread thEnviar(&panelFileManager::EnviarArchivo, this, dialog.GetPath(), strRutaRemota.c_str(), iTempID);
 				std::thread thEnviar([this, strRutaLocal, strRutaRemota, strTID] {
 					this->EnviarArchivo(strRutaLocal, strRutaRemota.c_str(), strTID);
 				});
@@ -270,6 +276,8 @@ void panelFileManager::CrearLista(wxWindow* pParent) {
 	//Spining circle
 	this->listManager->m_indicator = new wxActivityIndicator(this->listManager, wxID_ANY, wxDefaultPosition, wxDefaultSize);
 	this->listManager->m_indicator->Show(false);
+
+	this->listManager->itemp = this;
 
 	this->listManager->CargarImagenes();
 }
@@ -613,7 +621,6 @@ void ListCtrlManager::OnActivated(wxListEvent& event) {
 void ListCtrlManager::ShowContextMenu(const wxPoint& pos, bool isFolder) {
 	wxMenu menu;
 
-	this->itemp = (panelFileManager*)this->GetParent()->GetParent();
 	if (!isFolder) {
 		wxMenu *exec_Menu = new wxMenu;
 		exec_Menu->Append(EnumMenuFM::ID_Exec_Visible, "Normal");

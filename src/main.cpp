@@ -52,6 +52,10 @@ bool MyApp::OnInit(){
     this->frame = DBG_NEW MyFrame();
     this->frame->Show(true);
 
+    /*ByteArray c_key;
+    panelFileManager* temp = new panelFileManager(nullptr, INVALID_SOCKET, "RANDOM-ID", "127.0.0.1", c_key);
+    temp->Show();*/
+
     return true;
 }
 
