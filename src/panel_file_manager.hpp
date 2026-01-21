@@ -20,6 +20,7 @@ class panelFileManager: public wxFrame{
 		
 		//Eventos
 		void OnToolBarClick(wxCommandEvent& event);
+		void OnPath(wxCommandEvent& event);
 		
 		int iMODE = -1;
 		//wxStaticText* p_RutaActual = nullptr;
@@ -84,6 +85,7 @@ class ListCtrlManager : public wxListCtrl {
 
 		void ShowContextMenu(const wxPoint& pos, bool isFolder);
 		void OnContextMenu(wxContextMenuEvent& event);
+
 
 		std::string ArchivoSeleccionado();
 		std::string CarpetaActual();

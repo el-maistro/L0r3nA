@@ -10,6 +10,7 @@ extern std::mutex vector_mutex;
 
 wxBEGIN_EVENT_TABLE(panelFileManager, wxFrame)
 	EVT_MENU(wxID_ANY, panelFileManager::OnToolBarClick)
+	EVT_BUTTON(wxID_ANY, panelFileManager::OnPath)
 wxEND_EVENT_TABLE()
 
 wxBEGIN_EVENT_TABLE(ListCtrlManager, wxListCtrl)
@@ -117,8 +118,8 @@ panelFileManager::panelFileManager(wxWindow* pParent, SOCKET sck, std::string _s
 	//boton para ir a ruta del texto
 
 	wxPanel* pnl_Up = new wxPanel(this);
-	wxButton* btn_Up = new wxButton(pnl_Up, wxID_ANY, "" , wxDefaultPosition, wxSize(30, 25));
-	wxButton* btn_Go = new wxButton(pnl_Up, wxID_ANY, "", wxDefaultPosition, wxSize(30, 25));
+	wxButton* btn_Up = new wxButton(pnl_Up, EnumIDS::ID_Panel_FM_Subir_Ruta, "" , wxDefaultPosition, wxSize(30, 25));
+	wxButton* btn_Go = new wxButton(pnl_Up, EnumIDS::ID_Panel_FM_Ir, "", wxDefaultPosition, wxSize(30, 25));
 	this->txt_Path = new wxTextCtrl(pnl_Up, wxID_ANY, "\\");
 	btn_Up->SetBitmap(upArrow);
 	btn_Go->SetBitmap(goArrow);
@@ -269,6 +270,31 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 	}
 }
 
+void panelFileManager::OnPath(wxCommandEvent& event) {
+	wxString strPath = this->txt_Path->GetValue();
+
+	if (strPath.length() >= 3) {
+		if (event.GetId() == EnumIDS::ID_Panel_FM_Ir) {
+			std::string strTempPath= std::string(strPath.ToStdString());
+			const char* cPath = strTempPath.c_str();
+			this->ActualizarRuta(cPath);
+		} else if (event.GetId() == EnumIDS::ID_Panel_FM_Subir_Ruta) {
+			if (this->c_RutaActual.size() == 1) {
+				//Raiz del dispositivo
+				return;
+			}
+			this->c_RutaActual.pop_back();
+			this->txt_Path->SetValue(this->RutaActual());
+		}
+
+		this->listManager->DeleteAllItems();
+		std::string strCommand = this->RutaActual();
+		this->listManager->Enable(false);
+		this->listManager->MostrarCarga();
+		this->EnviarComando(strCommand, EnumComandos::FM_Dir_Folder);
+	}
+}
+
 void panelFileManager::CrearLista(wxWindow* pParent) {
 	this->listManager = new ListCtrlManager(pParent, EnumIDS::ID_Panel_FM_List, wxDefaultPosition, wxDefaultSize/*wxSize(FRAME_CLIENT_SIZE_WIDTH*3, FRAME_CLIENT_SIZE_WIDTH*3)*/, wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES, this->strID, this->strIP, this->sckCliente);
 	this->listManager->SetName(this->strID + "-FM-LIST");
@@ -380,30 +406,22 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 void panelFileManager::ActualizarRuta(const char*& pBuffer) {
 	this->txt_Path->SetValue(wxString(pBuffer));
 
-	std::vector<std::string> vcNuevaRuta = strSplit(std::string(pBuffer), CMD_DEL, 100);
+	std::vector<std::string> vcNuevaRuta = strSplit(std::string(pBuffer), '\\', 100);
+	if (vcNuevaRuta.size() <= 0) { return; }
+
+	this->c_RutaActual.clear();
+
 	for (std::string& sub_path : vcNuevaRuta) {
 		if (sub_path == "\\") { continue; }
-		//sub_path += "\\";
 		this->c_RutaActual.push_back(sub_path);
 	}
-
-	//if (this->p_RutaActual) {
-	//	this->p_RutaActual->SetLabel(wxString(pBuffer));
-	//	this->c_RutaActual.clear();
-
-	//	std::vector<std::string> vcNuevaRuta = strSplit(std::string(pBuffer), CMD_DEL, 100);
-	//	for (std::string& sub_path : vcNuevaRuta) {
-	//		if (sub_path == "\\") { continue; }
-	//		//sub_path += "\\";
-	//		this->c_RutaActual.push_back(sub_path);
-	//	}
-	//}
 }
 
 wxString panelFileManager::RutaActual() {
 	wxString strOut = "";
 	for (auto item : this->c_RutaActual) {
 		strOut += item;
+		strOut.append('\\');
 	}
 	return strOut;
 }
@@ -540,20 +558,20 @@ std::string ListCtrlManager::CarpetaActual() {
 }
 
 void ListCtrlManager::OnActivated(wxListEvent& event) {
-	panelFileManager* itemp = (panelFileManager*)this->GetParent()->GetParent();
 	wxString strPath = "";
 	wxString strSelected = "";
 	wxListItem itemCol;
 	std::string strCommand = "";
-	switch (itemp->iMODE) {
+	switch (this->itemp->iMODE) {
 		case FM_EQUIPO:
-			itemp->c_RutaActual.clear();
+			this->itemp->c_RutaActual.clear();
 
-			strPath = this->GetItemText(event.GetIndex(), 0) + ":\\";
+			strPath = this->GetItemText(event.GetIndex(), 0) + ":";
 			//itemp->p_RutaActual->SetLabelText(strPath);
-			itemp->txt_Path->SetValue(strPath);
-			itemp->c_RutaActual.push_back(strPath);
+			this->itemp->txt_Path->SetValue(strPath + "\\");
+			this->itemp->c_RutaActual.push_back(strPath);
 			strCommand = strPath;
+			strCommand.append(1, '\\');
 
 			this->ClearAll();
 			itemCol.SetText("-");
@@ -582,35 +600,36 @@ void ListCtrlManager::OnActivated(wxListEvent& event) {
 			
 			this->MostrarCarga();
 			
-			itemp->EnviarComando(strCommand, EnumComandos::FM_Dir_Folder);
-			itemp->iMODE = FM_NORMAL;
+			this->itemp->EnviarComando(strCommand, EnumComandos::FM_Dir_Folder);
+			this->itemp->iMODE = FM_NORMAL;
 			break;
 		case FM_NORMAL:
 			if (this->GetItemText(event.GetIndex(), 2) == wxString("-")) {
 				//Folder
-				strSelected = this->GetItemText(event.GetIndex(), 1) + "\\";
-				if (strSelected != ".\\") {
-					if (strSelected == "..\\") {
-						itemp->c_RutaActual.pop_back();
-					}
-					else {
-						itemp->c_RutaActual.push_back(strSelected);
-					}
+				strSelected = this->GetItemText(event.GetIndex(), 1);
+				
+				/*
+				strSelected = strSelected.substr(0, strSelected.size() - 1);
+				
+				if (strSelected == "..") {
+					this->itemp->c_RutaActual.pop_back();
+				}else {
+					this->itemp->c_RutaActual.push_back(strSelected);
+				}*/
+				this->itemp->c_RutaActual.push_back(strSelected);
 
-					//itemp->p_RutaActual->SetLabelText(itemp->RutaActual());
-					itemp->txt_Path->SetValue(itemp->RutaActual());
+				this->itemp->txt_Path->SetValue(this->itemp->RutaActual());
 
-					this->DeleteAllItems();
+				this->DeleteAllItems();
 
-					strCommand = itemp->RutaActual();
+				strCommand = this->itemp->RutaActual();
 
-					this->Enable(false); 
+				this->Enable(false); 
 					
-					this->MostrarCarga();
+				this->MostrarCarga();
 
-					itemp->EnviarComando(strCommand, EnumComandos::FM_Dir_Folder);
-					
-				}
+				this->itemp->EnviarComando(strCommand, EnumComandos::FM_Dir_Folder);
+				
 			}
 			break;
 		default:
@@ -747,16 +766,18 @@ void ListCtrlManager::ListarDir(const char* strData) {
 		if (vcFileEntry.size() == 5) {
 			int iCount = this->GetItemCount() > 0 ? this->GetItemCount() - 1 : 0;
 			if (iCount == -1) { iCount = 0; }
+
+			if (vcFileEntry[1] == "." || vcFileEntry[1] == "..") { continue; }
 			
 			if (strTama == "-") {
 				this->InsertItem(iCount, wxString("-"), 0);
 			}else {
 				this->InsertItem(iCount, wxString("-"), 1);
 			}
-			this->SetItem(iCount, 1, wxString(vcFileEntry[1]));
-			this->SetItem(iCount, 2, strTama); //tama
-			this->SetItem(iCount, 3, wxString(vcFileEntry[3]));
-			this->SetItem(iCount, 4, wxString(vcFileEntry[4]));
+			this->SetItem(iCount, 1, wxString(vcFileEntry[1])); //Nombre
+			this->SetItem(iCount, 2, strTama);                  //Tamanio
+			this->SetItem(iCount, 3, wxString(vcFileEntry[3])); //Fecha modificacion
+			this->SetItem(iCount, 4, wxString(vcFileEntry[4])); //Tipo archivo
 			
 		}else {
 			DEBUG_MSG("La entrada no tiene los parametros requeridos: " + vcEntry);

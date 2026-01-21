@@ -146,6 +146,8 @@ namespace EnumIDS {
         ID_Panel_Mic_BTN_Escuchar,
         ID_Panel_Mic_BTN_Detener,
         ID_Panel_FM,
+        ID_Panel_FM_Ir,
+        ID_Panel_FM_Subir_Ruta,
         ID_Panel_FM_Equipo,
         ID_Panel_FM_Escritorio,
         ID_Panel_FM_Descargas,
