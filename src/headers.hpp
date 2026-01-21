@@ -151,6 +151,7 @@ namespace EnumIDS {
         ID_Panel_FM_Equipo,
         ID_Panel_FM_Escritorio,
         ID_Panel_FM_Descargas,
+        ID_Panel_FM_Documentos,
         ID_Panel_FM_Refresh,
         ID_Panel_FM_Subir,
         ID_Panel_FM_List,

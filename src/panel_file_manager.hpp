@@ -31,6 +31,7 @@ class panelFileManager: public wxFrame{
 		ByteArray enc_key;
 
 		wxTextCtrl* txt_Path = nullptr;
+		wxTextCtrl* txt_Log = nullptr;
 	private:
 		std::string strID = "";
 		std::string strIP = "";

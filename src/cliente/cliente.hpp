@@ -131,6 +131,7 @@ class Cliente {
 		//Misc
 		std::string ObtenerDesk();
 		std::string ObtenerDown();
+		std::string ObtenerDocs();
 
 		//Sockets
 		bool bConectar(const char* cIP, const char* cPuerto);
