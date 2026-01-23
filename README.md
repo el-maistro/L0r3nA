@@ -5,7 +5,7 @@
 ![Static Badge](https://img.shields.io/badge/C++-red)
 ![Static Badge](https://img.shields.io/badge/wxWidgets-blue)
 ![Static Badge](https://img.shields.io/badge/Aes256-lightgreen)
-
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/el-maistro/L0r3nA)
 </center>
 
 <p>L0r3na es una herramienta de administracion remota escrita en C++. En el lado del servidor se usa la libreria wxWidgets para la interfaz grafica. En el lado del cliente se usa <b>C++</b> y <b>C</b> (<i>para sqlite</i>)</p>
