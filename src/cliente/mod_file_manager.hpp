@@ -8,6 +8,7 @@
 struct sDrives {
 	char cLetter[10];
 	char cLabel[50];
+	int iDriveType;
 	char cType[20];
 	double dFree;
 	double dTotal;

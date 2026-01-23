@@ -581,8 +581,7 @@ void ListCtrlManager::OnActivated(wxListEvent& event) {
 		case FM_EQUIPO:
 			this->itemp->c_RutaActual.clear();
 
-			strPath = this->GetItemText(event.GetIndex(), 0) + ":";
-			//itemp->p_RutaActual->SetLabelText(strPath);
+			strPath = this->GetItemText(event.GetIndex(), 1) + ":";
 			this->itemp->txt_Path->SetValue(strPath + "\\");
 			this->itemp->c_RutaActual.push_back(strPath);
 			strCommand = strPath;
@@ -623,14 +622,6 @@ void ListCtrlManager::OnActivated(wxListEvent& event) {
 				//Folder
 				strSelected = this->GetItemText(event.GetIndex(), 1);
 				
-				/*
-				strSelected = strSelected.substr(0, strSelected.size() - 1);
-				
-				if (strSelected == "..") {
-					this->itemp->c_RutaActual.pop_back();
-				}else {
-					this->itemp->c_RutaActual.push_back(strSelected);
-				}*/
 				this->itemp->c_RutaActual.push_back(strSelected);
 
 				this->itemp->txt_Path->SetValue(this->itemp->RutaActual());
@@ -752,7 +743,7 @@ void ListCtrlManager::ListarDir(const char* strData) {
 		this->InsertColumn(3, itemCol);
 
 		itemCol.SetText("Tipo");
-		itemCol.SetWidth(100);
+		itemCol.SetWidth(140);
 		this->InsertColumn(5, itemCol);
 	}
 
@@ -811,36 +802,59 @@ void ListCtrlManager::ListarEquipo(const std::vector<std::string> vcDrives) {
 	wxListItem itemCol;
 	this->ClearAll();
 
-	itemCol.SetText("-");
+	itemCol.SetText("");
 	itemCol.SetWidth(20);
 	itemCol.SetAlign(wxLIST_FORMAT_CENTRE);
 	this->InsertColumn(0, itemCol);
 
+	itemCol.SetText("");
+	itemCol.SetWidth(30);
+	itemCol.SetAlign(wxLIST_FORMAT_CENTRE);
+	this->InsertColumn(1, itemCol);
+
 	itemCol.SetText("Nombre");
 	itemCol.SetAlign(wxLIST_FORMAT_LEFT);
 	itemCol.SetWidth(150);
-	this->InsertColumn(1, itemCol);
+	this->InsertColumn(2, itemCol);
 
 	itemCol.SetText("Tipo");
 	itemCol.SetWidth(100);
-	this->InsertColumn(2, itemCol);
+	this->InsertColumn(3, itemCol);
 
 	itemCol.SetText("Libre");
 	itemCol.SetWidth(50);
-	this->InsertColumn(3, itemCol);
+	this->InsertColumn(4, itemCol);
 
 	itemCol.SetText("Total");
 	itemCol.SetWidth(50);
-	this->InsertColumn(4, itemCol);
+	this->InsertColumn(5, itemCol);
 	
 	for (int iCount = 0, iRowCount = 0; iCount<int(vcDrives.size()); iCount++) {
-		std::vector<std::string> vDrive = strSplit(vcDrives[iCount], '|', 5);
-		if (vDrive.size() >= 5) {
-			this->InsertItem(iRowCount, wxString(vDrive[0]));
-			this->SetItem(iRowCount, 1, wxString(vDrive[2]));
-			this->SetItem(iRowCount, 2, wxString(vDrive[1]));
-			this->SetItem(iRowCount, 3, wxString(vDrive[3]));
-			this->SetItem(iRowCount, 4, wxString(vDrive[4]));
+		std::vector<std::string> vDrive = strSplit(vcDrives[iCount], '|', 6);
+		//  "C|NTFS|Disco Duro|53.85|249.36"
+		if (vDrive.size() >= 6) {
+			int image_index = 5;
+			if (vDrive[5] == "0") { //Desconocido
+				image_index = 3;
+			}
+			else if (vDrive[5] == "1" || vDrive[5] == "4") { //No montado o remoto
+				image_index = 4;
+			}
+			else if (vDrive[5] == "2") { //USB
+				image_index = 7;
+			}
+			else if (vDrive[5] == "5") { //CDROM
+				image_index = 2;
+			}
+			else if (vDrive[5] == "6") { //RAMDISK
+				image_index = 6;
+			}
+			this->InsertItem(iRowCount, image_index);
+			this->SetItem(iRowCount, 1, wxString(vDrive[0]));
+			this->SetItem(iRowCount, 2, wxString(vDrive[2]));
+			this->SetItem(iRowCount, 3, wxString(vDrive[1]));
+			this->SetItem(iRowCount, 4, wxString(vDrive[3]));
+			this->SetItem(iRowCount, 5, wxString(vDrive[4]));
 			iRowCount++;
 		}
 	}
@@ -872,8 +886,21 @@ void ListCtrlManager::CargarImagenes() {
 	wxBitmap newFolder(wxT(".\\imgs\\folder.png"), wxBITMAP_TYPE_PNG);
 	wxBitmap newFile(wxT(".\\imgs\\document.png"), wxBITMAP_TYPE_PNG);
 
+	wxBitmap cdImg(wxT(".\\imgs\\cd.png"), wxBITMAP_TYPE_PNG);
+	wxBitmap clueImg(wxT(".\\imgs\\clue.png"), wxBITMAP_TYPE_PNG);
+	wxBitmap hardDisk(wxT(".\\imgs\\hard-disk.png"), wxBITMAP_TYPE_PNG);
+	wxBitmap hardDrive(wxT(".\\imgs\\hard-drive.png"), wxBITMAP_TYPE_PNG);
+	wxBitmap ramDrive(wxT(".\\imgs\\ram.png"), wxBITMAP_TYPE_PNG);
+	wxBitmap usbDrive(wxT(".\\imgs\\usb-flash-drive.png"), wxBITMAP_TYPE_PNG);
+
 	this->img_list->Add(newFolder);
 	this->img_list->Add(newFile);
+	this->img_list->Add(cdImg);     //CDROM                            2
+	this->img_list->Add(clueImg);   //Desconocido                      3
+	this->img_list->Add(hardDrive);  //Volumen no montado o Remoto      4
+	this->img_list->Add(hardDisk); //Disco Duro                       5
+	this->img_list->Add(ramDrive);  //RAM                              6
+	this->img_list->Add(usbDrive);  //USB                              7
 
 	this->AssignImageList(this->img_list, wxIMAGE_LIST_SMALL);
 }

@@ -26,8 +26,8 @@ std::vector<struct sDrives> Drives() {
 			char cLabel[128]; m_memset(cLabel, '\0', 128);
 			char cType[128]; m_memset(cType, '\0', 128);
 			iRet = cCliente->mod_dynamic->KERNEL32_FM.pGetVolumeInformationA(p1, cLabel, 128, nullptr, nullptr, nullptr, cType, 128);
+			UINT dt = cCliente->mod_dynamic->KERNEL32_FM.pGetDriveTypeA(p1);
 			if (strlen(cLabel) <= 0) {
-				UINT dt = cCliente->mod_dynamic->KERNEL32_FM.pGetDriveTypeA(p1);
 				switch (dt) {
 				case 0:
 					strncpy_s(cLabel, "Desconocido", 12);
@@ -56,20 +56,19 @@ std::vector<struct sDrives> Drives() {
 				}
 			}
 			struct sDrives sDrive;
+			sDrive.iDriveType = dt;
+			strncpy_s(sDrive.cLetter, p1, 10);
+			strncpy_s(sDrive.cLabel, cLabel, 50);
+
 			if (iRet != 0) {
 				__int64 FreeBytesAvaiableToUser, TotalFreeBytes;
 				cCliente->mod_dynamic->KERNEL32_FM.pGetDiskFreeSpaceExA(p1, (PULARGE_INTEGER)&FreeBytesAvaiableToUser, (PULARGE_INTEGER)&TotalFreeBytes, nullptr);
 				double dFreegigs = (((double)(FreeBytesAvaiableToUser / 1024) / 1024) / 1024);
 				double dTotalgigs = (((double)(TotalFreeBytes / 1024) / 1024) / 1024);
-				strncpy_s(sDrive.cLetter, p1, 10);
-				strncpy_s(sDrive.cLabel, cLabel, 50);
 				strncpy_s(sDrive.cType, cType, 20);
 				sDrive.dFree = dFreegigs;
 				sDrive.dTotal = dTotalgigs;
-			}
-			else {
-				strncpy_s(sDrive.cLetter, p1, 10);
-				strncpy_s(sDrive.cLabel, cLabel, 50);
+			}else {
 				strncpy_s(sDrive.cType, "-", 2);
 				sDrive.dFree = 0;
 				sDrive.dTotal = 0;
@@ -93,6 +92,7 @@ std::string strDrivesData() {
 		std::string sFree = std::to_string(dev.dFree);
 		std::string sTotal = std::to_string(dev.dTotal);
 		std::string strTemp = sLetter.substr(0, sLetter.length() - 2);
+		std::string strType = std::to_string(dev.iDriveType);
 		strTemp.append(1, '|');
 		strTemp += dev.cType;
 		strTemp.append(1, '|');
@@ -101,6 +101,8 @@ std::string strDrivesData() {
 		strTemp += sFree.substr(0, sFree.length() - 4);
 		strTemp.append(1, '|');
 		strTemp += sTotal.substr(0, sTotal.length() - 4);
+		strTemp.append(1, '|');
+		strTemp += strType;
 		strTemp.append(1, CMD_DEL);
 
 		strDipositivos += strTemp;
