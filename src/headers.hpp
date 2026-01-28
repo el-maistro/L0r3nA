@@ -154,6 +154,7 @@ namespace EnumIDS {
         ID_Panel_FM_Documentos,
         ID_Panel_FM_Refresh,
         ID_Panel_FM_Subir,
+        ID_Panel_FM_Shell,
         ID_Panel_FM_List,
         ID_Panel_FM_LblRuta,
         ID_Panel_Transferencias,

