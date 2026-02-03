@@ -7,8 +7,6 @@
 #include "notify.hpp"
 #include "misc.hpp"
 
-#include "panel_file_manager.hpp"
-
 extern Servidor* p_Servidor;
 
 const wxString strTitle = "L0r3nA v0.1";
@@ -51,10 +49,6 @@ bool MyApp::OnInit(){
 
     this->frame = DBG_NEW MyFrame();
     this->frame->Show(true);
-
-    ByteArray c_key;
-    panelFileManager* temp = new panelFileManager(nullptr, INVALID_SOCKET, "RANDOM-ID", "127.0.0.1", c_key);
-    temp->Show();
 
     return true;
 }

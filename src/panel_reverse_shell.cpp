@@ -45,6 +45,7 @@ panelReverseShell::panelReverseShell(wxWindow* pParent, SOCKET sck, std::string 
 
     this->txtConsole->Bind(wxEVT_CHAR_HOOK, &panelReverseShell::OnHook, this);
     Bind(ADD_SHELL_OUTPUT, &panelReverseShell::OnAgregarTexto, this);
+    
 }
 
 void panelReverseShell::OnHook(wxKeyEvent& event) {

