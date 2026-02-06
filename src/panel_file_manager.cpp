@@ -278,8 +278,13 @@ void panelFileManager::OnToolBarClick(wxCommandEvent& event) {
 					std::string strRutaLocal = dialog.GetPath();
 					std::string strRutaRemota = this->txt_Path->GetValue();
 					strRutaRemota += dialog.GetFilename();
-					std::thread thEnviar([this, strRutaLocal, strRutaRemota, strTID] {
-						this->EnviarArchivo(strRutaLocal, strRutaRemota.c_str(), strTID);
+
+					std::string strFileID = RandomID(4);
+					panelTransfer* transfer = new panelTransfer(this, strFileID, dialog.GetFilename().ToStdString(), this->strIP, true);
+					transfer->Show(true);
+
+					std::thread thEnviar([this, strRutaLocal, strRutaRemota, strTID, strFileID] {
+						this->EnviarArchivo(strRutaLocal, strRutaRemota.c_str(), strTID, strFileID);
 						});
 					thEnviar.detach();
 				}
@@ -336,7 +341,7 @@ void panelFileManager::EnviarComando(std::string pComando, int iComando) {
 	p_Servidor->cChunkSend(this->sckCliente, pComando.c_str(), pComando.size(), 0, false, iComando, this->enc_key);
 }
 
-void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath, std::string strCliente) {
+void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath, std::string strCliente, std::string strID) {
 	DEBUG_MSG("Enviado " + lPath);
 
 	std::ifstream localFile(lPath, std::ios::binary);
@@ -363,8 +368,6 @@ void panelFileManager::EnviarArchivo(const std::string lPath, const char* rPath,
 		return;
 	}
 	
-	std::string strID = RandomID(4);
-
 	p_Servidor->vc_Clientes[iClienteID]->Transfers_Insertar(strID, nuevo_archivo, nuevo_transfer);
 	///////////////////////////////////////////////////////////////////////
 

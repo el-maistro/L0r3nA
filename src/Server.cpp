@@ -653,6 +653,7 @@ void Cliente_Handler::Transfers_Fin(const std::string& strID) {
     if (iRet != -1) {
         std::unique_lock<std::mutex> lock(this->mt_Archivos);
         this->vcArchivos_Descarga[iRet].transfer.isDone = true;
+        lock.unlock();
 
         panelTransfer* temp = (panelTransfer*)wxWindow::FindWindowByName("TRANSFER-" + strID);
         if (temp) {
@@ -677,10 +678,13 @@ void Cliente_Handler::Transfers_IncreSize(const std::string& strID, int iSize) {
     if (iRet != -1) {
         std::unique_lock<std::mutex> lock(this->mt_Archivos);
         this->vcArchivos_Descarga[iRet].transfer.uDescargado += iSize;
-        
+        u64 descargado = this->vcArchivos_Descarga[iRet].transfer.uDescargado;
+        u64 tamanio = this->vcArchivos_Descarga[iRet].transfer.uTamano;
+        lock.unlock();
+
         panelTransfer* temp = (panelTransfer*)wxWindow::FindWindowByName("TRANSFER-" + strID);
         if (temp) {
-            temp->AgregarProgreso(this->vcArchivos_Descarga[iRet].transfer.uDescargado, this->vcArchivos_Descarga[iRet].transfer.uTamano);
+            temp->AgregarProgreso(descargado, tamanio);
         }
     }
 }

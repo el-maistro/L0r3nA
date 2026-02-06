@@ -18,7 +18,7 @@ panelTransfer::panelTransfer(wxWindow* _pParent, const std::string _strNameID, c
 	this->SetSizerAndFit(main_sizer);
 	this->SetSizeHints(this->GetSize(), this->GetSize());
 
-	this->lblProgress = new wxStaticText(this, wxID_ANY, "35%", wxPoint(this->gProgress->GetPosition().x + (this->gProgress->GetSize().GetWidth() /2), this->gProgress->GetPosition().y + (this->gProgress->GetSize().GetHeight() / 2 / 2)));
+	this->lblProgress = new wxStaticText(this, wxID_ANY, "...", wxPoint(this->gProgress->GetPosition().x + (this->gProgress->GetSize().GetWidth() /2), this->gProgress->GetPosition().y + (this->gProgress->GetSize().GetHeight() / 2 / 2)));
 }
 
 void panelTransfer::AgregarProgreso(unsigned long long descargado, unsigned long long llTotal) {
@@ -26,7 +26,12 @@ void panelTransfer::AgregarProgreso(unsigned long long descargado, unsigned long
 
 	double total = (static_cast<double>(descargado) / static_cast<double>(llTotal)) * 100;
 
-	this->gProgress->SetValue(static_cast<int>(total));
+	int nTotal = static_cast<int>(total);
+	if (nTotal > this->gProgress->GetRange()) {
+		nTotal = this->gProgress->GetRange();
+	}
+
+	this->gProgress->SetValue(nTotal);
 	this->lblProgress->SetLabelText(std::to_string(total) + "%");
 }
 
@@ -34,6 +39,5 @@ void panelTransfer::DoneOmar() {
 	std::unique_lock<std::mutex> lock(this->mtx_progress);
 
 	this->gProgress->SetValue(100);
-	this->lblProgress->SetLabelText("100%");
-	wxMessageBox("Transferencia completa", "Transferencia de arhivos", 5L, this);
+	this->lblProgress->SetLabelText("100% - Completo");
 }
