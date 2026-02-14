@@ -1,4 +1,3 @@
-#define __MOD_FM 1
 #ifdef __MOD_FM
 
 #include "mod_file_manager.hpp"

